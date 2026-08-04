@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: shibuya_test
-          POSTGRES_USER: shibuya_user
-          POSTGRES_PASSWORD: shibuya_pass
+          POSTGRES_DB: longbox_test
+          POSTGRES_USER: longbox_user
+          POSTGRES_PASSWORD: longbox_pass
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
@@ -45,9 +45,9 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DB_NAME: shibuya_test
-          DB_USER: shibuya_user
-          DB_PASSWORD: shibuya_pass
+          DB_NAME: longbox_test
+          DB_USER: longbox_user
+          DB_PASSWORD: longbox_pass
           DB_HOST: localhost
           DB_PORT: 5432
           SECRET_KEY: test-secret-key
