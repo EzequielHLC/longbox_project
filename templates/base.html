@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Longbox{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      border: 1px solid rgb(203 213 225);
+      border-radius: 0.25rem;
+      padding: 0.5rem 0.75rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+  <header class="bg-slate-900 text-white">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <a href="/" class="text-lg font-semibold tracking-wide">Longbox</a>
+      {% if user.is_authenticated %}
+        <div class="flex items-center gap-4 text-sm">
+          <span class="text-slate-300">{{ user.email }} · {{ user.get_rol_display }}</span>
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="rounded bg-slate-700 px-3 py-1 hover:bg-slate-600">
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10">
+    {% if messages %}
+      <ul class="mb-6 space-y-2">
+        {% for message in messages %}
+          <li class="rounded border border-slate-300 bg-white px-4 py-3 text-sm">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block contenido %}{% endblock %}
+  </main>
+
+  {% if user.is_authenticated %}
+  <div id="aviso-sesion"
+       class="fixed inset-x-0 bottom-0 hidden border-t border-amber-300 bg-amber-50 px-4 py-4">
+    <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
+      <p class="text-sm">
+        Tu sesión está por expirar por inactividad
+        (<span id="aviso-sesion-restante"></span>).
+      </p>
+      <button id="aviso-sesion-extender" type="button"
+              class="rounded bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700">
+        Seguir conectado
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // CU-46: aviso 5 minutos antes de que la sesión expire por inactividad,
+    // con opción de extenderla en un clic. El contador es local; el que manda
+    // es el vencimiento real de la sesión en el servidor.
+    (function () {
+      const duracion = {{ sesion_duracion_segundos }} * 1000;
+      const avisoPrevio = {{ sesion_aviso_previo_segundos }} * 1000;
+      const urlRenovar = "{% url 'accounts:renovar_sesion' %}";
+      const urlLoginExpirada = "{% url 'accounts:login' %}?expirada=1";
+
+      const aviso = document.getElementById("aviso-sesion");
+      const restante = document.getElementById("aviso-sesion-restante");
+      let vence = Date.now() + duracion;
+
+      function formatear(ms) {
+        const minutos = Math.floor(ms / 60000);
+        const segundos = Math.floor((ms % 60000) / 1000);
+        return minutos + "m " + String(segundos).padStart(2, "0") + "s";
+      }
+
+      function revisar() {
+        const falta = vence - Date.now();
+        if (falta <= 0) {
+          window.location.href = urlLoginExpirada;
+          return;
+        }
+        if (falta <= avisoPrevio) {
+          aviso.classList.remove("hidden");
+          restante.textContent = formatear(falta);
+        } else {
+          aviso.classList.add("hidden");
+        }
+      }
+
+      document.getElementById("aviso-sesion-extender").addEventListener("click", function () {
+        fetch(urlRenovar, {
+          method: "POST",
+          headers: { "X-CSRFToken": "{{ csrf_token }}" },
+        }).then(function (respuesta) {
+          if (!respuesta.ok) {
+            window.location.href = urlLoginExpirada;
+            return;
+          }
+          vence = Date.now() + duracion;
+          aviso.classList.add("hidden");
+        });
+      });
+
+      setInterval(revisar, 1000);
+    })();
+  </script>
+  {% endif %}
+
+</body>
+</html>

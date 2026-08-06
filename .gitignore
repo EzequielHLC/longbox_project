@@ -9,3 +9,6 @@ media/
 htmlcov/
 .coverage
 coverage.xml
+docs
+CLAUDE.md
+.claude

@@ -15,7 +15,8 @@ from pathlib import Path
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# config/settings/base.py -> config/settings -> config -> raíz del proyecto.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -39,11 +40,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.core",
     "apps.accounts",
     "apps.catalog",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
+
+# El login del sistema es por correo electrónico, no por username (CU-46).
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.EmailBackend"]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -60,13 +65,14 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.sesion",
             ],
         },
     },
@@ -112,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "es-ar"
 
 TIME_ZONE = "UTC"
 
@@ -125,3 +131,26 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+
+# Autenticación y sesiones (Módulo 12 — CU-46, CU-47, CU-48)
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "core:tienda"  # fallback; el destino real depende del rol
+LOGOUT_REDIRECT_URL = "accounts:login"
+
+# La sesión expira por *inactividad*: SESSION_SAVE_EVERY_REQUEST reinicia el
+# contador en cada request, de lo contrario SESSION_COOKIE_AGE sería un tope
+# absoluto desde el login.
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+
+# CU-48: el enlace de recuperación vive 30 minutos (en segundos).
+PASSWORD_RESET_TIMEOUT = 1800
+
+# CU-46, excepción de intentos fallidos. Queda como constante hasta que el
+# CU-56 (Configuración del Sistema) lo haga parametrizable desde un panel.
+LOGIN_INTENTOS_MAXIMOS = 5
+LOGIN_BLOQUEO_MINUTOS = 15
+
+DEFAULT_FROM_EMAIL = "no-responder@longbox.local"

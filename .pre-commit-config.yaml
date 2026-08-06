@@ -1,15 +1,27 @@
+# pre-commit le pasa a cada hook la lista de archivos del commit. Ojo con dos
+# consecuencias de eso:
+#   - No hay que fijar un target en `args` (por ejemplo `-r apps`): el posicional
+#     quedaría partido en dos por el resto de los flags y argparse falla.
+#   - Las exclusiones de `pyproject.toml` no alcanzan, porque solo se aplican
+#     cuando la herramienta recorre directorios por su cuenta. Para los archivos
+#     pasados a mano hay que excluirlos acá, con `exclude`.
 repos:
   - repo: https://github.com/psf/black
     rev: 24.4.2
     hooks:
       - id: black
+        exclude: /migrations/
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.0
     hooks:
       - id: ruff
         args: [--fix]
+        exclude: /migrations/
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.9
     hooks:
       - id: bandit
-        args: ["-r", "apps"]
+        args: ["-q"]
+        # Tests afuera: bandit marca cada `assert` como B101 y en una suite de
+        # pytest el assert es justamente la herramienta correcta.
+        exclude: (/tests/|/tests\.py$|/migrations/)
