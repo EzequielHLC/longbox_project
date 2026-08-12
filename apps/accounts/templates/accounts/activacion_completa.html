@@ -1,0 +1,13 @@
+{% extends "base_operativo.html" %}
+
+{% block titulo %}Cuenta activada · Longbox{% endblock %}
+{% block seccion %}Activación de cuenta{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-md border border-line bg-ash p-8">
+  <h1 class="font-display text-3xl font-bold tracking-wide">La cuenta se activó</h1>
+  <div class="marco-boton mt-8">
+    <a href="{% url 'accounts:login' %}" class="boton-primario">Iniciar sesión</a>
+  </div>
+</div>
+{% endblock %}

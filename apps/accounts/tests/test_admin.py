@@ -40,10 +40,10 @@ def test_el_rol_se_puede_cambiar_desde_la_lista(client, superusuario):
             "form-MAX_NUM_FORMS": "1000",
             "form-0-id": str(usuario.pk),
             "form-0-rol": "cajero",
-            "form-0-is_active": "on",
+            "form-0-estado": "activo",
             "form-1-id": str(superusuario.pk),
             "form-1-rol": "administrador",
-            "form-1-is_active": "on",
+            "form-1-estado": "activo",
             "_save": "Guardar",
         },
     )

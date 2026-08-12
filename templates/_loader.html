@@ -1,0 +1,17 @@
+{% comment %}
+Indicador de carga del modo operativo: siete cuadros recorriendo un circuito.
+Los estilos están en `base_operativo.html`.
+
+Uso:
+    {% include "_loader.html" %}
+    {% include "_loader.html" with clase="loader--chico" %}
+{% endcomment %}
+<div class="loader {{ clase|default:'' }}" role="status" aria-label="Cargando">
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+  <div class="loader-cuadro"></div>
+</div>

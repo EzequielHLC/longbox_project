@@ -1,0 +1,37 @@
+{% load formularios %}
+{% comment %}
+Un campo de formulario: etiqueta, control y errores. Sirve para los dos modos
+del sistema visual porque no usa más que tokens compartidos —`mono` y `static`
+para la etiqueta, `signal` para el error—, que es exactamente la parte que los
+dos modos tienen en común.
+
+    {% include "_campo.html" with campo=form.email %}
+
+Parámetros opcionales:
+  ayuda   texto de apoyo debajo del control (por ejemplo, un formato esperado).
+
+Accesibilidad: cuando el campo tiene error se le marca `aria-invalid` y se lo
+enlaza con el texto del error por `aria-describedby`. Sin eso, un lector de
+pantalla anuncia el campo y no dice qué está mal: el rojo del borde no existe
+para quien no lo ve.
+{% endcomment %}
+<div>
+  <label for="{{ campo.id_for_label }}"
+         class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+    {{ campo.label }}
+  </label>
+
+  {{ campo|con_estado_de_error }}
+
+  {% if ayuda %}
+    <p id="{{ campo.auto_id }}_ayuda" class="mt-1.5 font-mono text-[0.65rem] text-static">
+      {{ ayuda }}
+    </p>
+  {% endif %}
+
+  {% for error in campo.errors %}
+    {% comment %} `signal` acá sí: es un error de validación. {% endcomment %}
+    <p id="{{ campo.auto_id }}_error_{{ forloop.counter }}"
+       class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+  {% endfor %}
+</div>

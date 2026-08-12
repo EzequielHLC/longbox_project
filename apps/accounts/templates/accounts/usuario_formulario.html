@@ -1,0 +1,73 @@
+{% extends "base_operativo.html" %}
+
+{% block titulo %}{{ titulo }} · Longbox{% endblock %}
+{% block seccion %}Gestión de usuarios{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-2xl">
+  <a href="{% url 'accounts:usuario_lista' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a usuarios
+  </a>
+
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
+
+  {% if form.non_field_errors %}
+    <ul class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" novalidate class="mt-6 space-y-5 border border-line bg-ash p-6">
+    {% csrf_token %}
+
+    {% for field in form %}
+      {% include "_campo.html" with campo=field %}
+    {% endfor %}
+
+    {% if usuario_objetivo %}
+      <p class="border-t border-line pt-4 font-mono text-xs text-static">
+        Estado: {{ usuario_objetivo.get_estado_display }} ·
+        Última modificación: {{ usuario_objetivo.actualizado_en|date:"d/m/Y H:i" }}
+      </p>
+    {% endif %}
+
+    <div class="flex items-center gap-6 pt-2">
+      <div class="marco-boton">
+        <button type="submit" class="boton-primario">Guardar</button>
+      </div>
+      <a href="{% url 'accounts:usuario_lista' %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+        Cancelar
+      </a>
+    </div>
+  </form>
+
+  {% if usuario_objetivo.esta_pendiente_de_activacion %}
+    <div class="mt-6 border border-line bg-panel p-5">
+      <p class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+        Cuenta pendiente de activación
+      </p>
+
+      <div class="mt-4 flex flex-wrap items-center gap-4">
+        {# CU-51, flujo alternativo: regenerar el enlace de activación. #}
+        <form method="post"
+              action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="boton-menor boton-menor--tenue">
+            <span>Regenerar enlace</span>
+          </button>
+        </form>
+
+        {% if usuario_objetivo.se_puede_eliminar %}
+          {# Salida para el correo cargado con un error de tipeo. #}
+          <a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}"
+             class="boton-menor boton-menor--critico">
+            <span>Eliminar cuenta</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

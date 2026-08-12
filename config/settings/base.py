@@ -132,6 +132,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Archivos estáticos que no son de ninguna app en particular (las imágenes de
+# fondo de las pantallas públicas, por ahora). Los de cada app siguen yendo en
+# `apps/<app>/static/`, que `APP_DIRS` encuentra solo.
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
 
 # Autenticación y sesiones (Módulo 12 — CU-46, CU-47, CU-48)
 
@@ -145,8 +150,15 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 SESSION_COOKIE_AGE = 30 * 60
 SESSION_SAVE_EVERY_REQUEST = True
 
-# CU-48: el enlace de recuperación vive 30 minutos (en segundos).
-PASSWORD_RESET_TIMEOUT = 1800
+# Enlaces por correo con token de un solo uso. Los dos flujos usan el mismo
+# mecanismo (`PasswordResetTokenGenerator`) pero con vigencias distintas, y
+# Django resuelve la vigencia con un único setting global. Por eso
+# `PASSWORD_RESET_TIMEOUT` queda como *tope máximo* —el que verifica Django
+# junto con la firma— y la vigencia real de cada enlace la fija su propio
+# generador en `apps/accounts/tokens.py`.
+VIGENCIA_ENLACE_RECUPERACION = 30 * 60  # CU-48
+VIGENCIA_ENLACE_ACTIVACION = 48 * 60 * 60  # CU-50
+PASSWORD_RESET_TIMEOUT = VIGENCIA_ENLACE_ACTIVACION
 
 # CU-46, excepción de intentos fallidos. Queda como constante hasta que el
 # CU-56 (Configuración del Sistema) lo haga parametrizable desde un panel.
@@ -154,3 +166,40 @@ LOGIN_INTENTOS_MAXIMOS = 5
 LOGIN_BLOQUEO_MINUTOS = 15
 
 DEFAULT_FROM_EMAIL = "no-responder@longbox.local"
+
+
+# Datos geográficos (provincias y localidades): georef-ar-api, el servicio
+# oficial de la Secretaría de Innovación Pública sobre datos del INDEC.
+
+GEOREF_API_URL = config("GEOREF_API_URL", default="https://apis.datos.gob.ar/georef/api")
+
+# Corto a propósito. RNF-02 pide respuesta en 2 segundos, y esta consulta es
+# apenas una parte de armar el formulario: si el servicio está lento, es
+# preferible caer al respaldo local antes que hacer esperar al visitante.
+GEOREF_TIMEOUT = config("GEOREF_TIMEOUT", default=3, cast=int)
+
+# Las provincias no cambian de un día para el otro.
+GEOREF_CACHE_SEGUNDOS = config("GEOREF_CACHE_SEGUNDOS", default=60 * 60 * 24, cast=int)
+
+
+# Códigos telefónicos de país. El catálogo autoritativo es la recomendación
+# E.164 de la UIT, que no se publica como API gratuita; se usa un servicio
+# libre y el respaldo local cubre su indisponibilidad.
+
+PAISES_API_URL = config(
+    "PAISES_API_URL", default="https://countriesnow.space/api/v0.1/countries/codes"
+)
+PAISES_TIMEOUT = config("PAISES_TIMEOUT", default=3, cast=int)
+PAISES_CACHE_SEGUNDOS = config("PAISES_CACHE_SEGUNDOS", default=60 * 60 * 24 * 7, cast=int)
+
+# Explícito aunque sea el valor por defecto de Django: acá la caché no es una
+# optimización opcional, es lo que evita consultar un servicio externo en cada
+# carga del formulario de registro. En producción, con más de un proceso,
+# conviene reemplazarla por una compartida (Redis o Memcached), porque
+# `LocMemCache` es por proceso y cada worker mantendría la suya.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "longbox",
+    }
+}

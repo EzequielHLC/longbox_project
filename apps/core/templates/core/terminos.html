@@ -1,0 +1,107 @@
+{% extends "base_publico.html" %}
+{% comment %}
+Términos y condiciones / política de privacidad. Pantalla pública, enlazada
+desde el checkbox de consentimiento del registro (CU-43).
+
+**El contenido es de relleno a propósito.** Es el texto legal del sistema y lo
+tiene que redactar quien corresponda; acá está la pantalla, la URL estable y el
+enlace desde el formulario, que es lo que el CU necesita para que el
+consentimiento sea informado. Reemplazar el bloque marcado más abajo.
+{% endcomment %}
+
+{% block titulo %}Términos y condiciones · Longbox{% endblock %}
+{% block seccion %}Legales{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-3xl">
+
+  <p class="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-signal">
+    利用規約 · Legales
+  </p>
+  <h1 class="mt-3 font-display text-4xl font-extrabold tracking-wide">
+    Términos y condiciones
+  </h1>
+  <p class="mt-3 font-mono text-xs uppercase tracking-[0.15em] text-static">
+    Última actualización: pendiente
+  </p>
+
+  <div class="clip-panel mt-6 border border-line bg-panel p-5">
+    <p class="text-sm text-static">
+      Texto preliminar. El contenido definitivo de los términos, condiciones y política de
+      privacidad se encuentra en elaboración y será publicado en esta misma dirección.
+    </p>
+  </div>
+
+  {% comment %} ↓↓↓ Reemplazar desde acá ↓↓↓ {% endcomment %}
+  <div class="clip-panel mt-6 space-y-8 border border-line bg-ash p-8 text-sm leading-relaxed">
+
+    <section class="space-y-3">
+      <h2 class="font-display text-2xl font-bold tracking-wide">1. Aceptación</h2>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+        incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+        exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+      </p>
+      <p>
+        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+        nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+        officia deserunt mollit anim id est laborum.
+      </p>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="font-display text-2xl font-bold tracking-wide">2. Uso de la cuenta</h2>
+      <p>
+        Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+        laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
+        architecto beatae vitae dicta sunt explicabo.
+      </p>
+      <ul class="ml-5 list-disc space-y-2 text-static">
+        <li>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</li>
+        <li>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.</li>
+        <li>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit.</li>
+      </ul>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="font-display text-2xl font-bold tracking-wide">
+        3. Tratamiento de datos personales
+      </h2>
+      <p>
+        At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium
+        voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint
+        occaecati cupiditate non provident.
+      </p>
+      <p>
+        Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum
+        fuga. Et harum quidem rerum facilis est et expedita distinctio.
+      </p>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="font-display text-2xl font-bold tracking-wide">4. Compras y envíos</h2>
+      <p>
+        Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus
+        id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor
+        repellendus.
+      </p>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="font-display text-2xl font-bold tracking-wide">5. Contacto</h2>
+      <p>
+        Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
+        eveniet ut et voluptates repudiandae sint et molestiae non recusandae.
+      </p>
+    </section>
+
+  </div>
+  {% comment %} ↑↑↑ Reemplazar hasta acá ↑↑↑ {% endcomment %}
+
+  <p class="mt-8 text-center font-mono text-xs uppercase tracking-[0.15em] text-static">
+    <a href="{% url 'accounts:registro_cliente' %}" class="text-screen hover:text-signal">
+      ← Volver al registro
+    </a>
+  </p>
+</div>
+{% endblock %}

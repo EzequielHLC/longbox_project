@@ -1,0 +1,17 @@
+{% autoescape off %}Estimado/a {{ usuario.get_full_name|default:usuario.email }}:
+
+Se ha creado una cuenta a su nombre en el sistema Longbox, con el rol de
+{{ usuario.get_rol_display }}.
+
+Para comenzar a utilizarla, acceda al siguiente enlace y establezca su contraseña:
+
+{{ protocol }}://{{ domain }}{% url 'accounts:activar_cuenta' uidb64=uid token=token %}
+
+El enlace vence en {{ vigencia_horas }} horas y puede utilizarse una sola vez. En caso
+de haber recibido más de un correo como este, solo es válido el último: los enlaces
+anteriores quedaron invalidados.
+
+Si no esperaba recibir este mensaje, comuníquelo al administrador del sistema.
+
+Longbox
+{% endautoescape %}

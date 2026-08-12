@@ -1,0 +1,117 @@
+{% comment %}
+Buscador en vivo de una tabla del backoffice. Lo usan la tabla de usuarios del
+sistema y la de clientes, y sirve para cualquier listado que siga este contrato:
+
+  - un `<form method="get" data-sin-capa id="filtros">` con los controles;
+  - un contenedor `id="tabla"` con el fragmento de la tabla adentro;
+  - una capa `id="capa-tabla"` con el loader chico, para el feedback;
+  - la vista devuelve *solo* el fragmento cuando le llega `?parcial=1`.
+
+Sin JavaScript el formulario se envía con su botón "Buscar" y recarga la
+pantalla entera: la pantalla funciona igual, más lenta.
+
+Se consulta al servidor en lugar de esconder filas en el navegador porque la
+tabla está paginada: filtrar solo lo visible daría resultados falsos.
+{% endcomment %}
+<script>
+  (function () {
+    const PAUSA_MS = 250;
+    // Aunque el servidor conteste al instante, el indicador se muestra este
+    // mínimo: un parpadeo de 30 ms se lee como un salto raro, no como
+    // "se está buscando".
+    const MINIMO_VISIBLE_MS = 450;
+
+    const formulario = document.getElementById("filtros");
+    const contenedor = document.getElementById("tabla");
+    const capa = document.getElementById("capa-tabla");
+    if (!formulario || !contenedor) return;
+
+    const buscador = formulario.querySelector('input[type="text"]');
+    let temporizador = null;
+    let pedidoEnCurso = null;
+
+    function mostrarCapa() {
+      capa?.classList.remove("hidden");
+      capa?.classList.add("grid");
+    }
+
+    function ocultarCapa() {
+      capa?.classList.add("hidden");
+      capa?.classList.remove("grid");
+    }
+
+    function refrescar() {
+      const consulta = new URLSearchParams(new FormData(formulario)).toString();
+      const arrancoEn = Date.now();
+
+      // RNF-02: ninguna operación sin feedback visual.
+      mostrarCapa();
+
+      // Si el usuario sigue tecleando, la respuesta anterior ya no interesa.
+      if (pedidoEnCurso) pedidoEnCurso.abort();
+      pedidoEnCurso = new AbortController();
+
+      fetch(`?${consulta}&parcial=1`, {
+        signal: pedidoEnCurso.signal,
+        headers: { "X-Requested-With": "fetch" },
+      })
+        .then((respuesta) => respuesta.text())
+        .then((html) => {
+          const falta = MINIMO_VISIBLE_MS - (Date.now() - arrancoEn);
+          setTimeout(function () {
+            contenedor.innerHTML = html;
+            ocultarCapa();
+            // La URL acompaña al filtro, así la pantalla se puede compartir o
+            // recargar y muestra lo mismo.
+            history.replaceState(null, "", `?${consulta}`);
+          }, Math.max(0, falta));
+        })
+        .catch((error) => {
+          if (error.name === "AbortError") return;
+          // Si falla la actualización parcial, se recarga la pantalla entera.
+          formulario.submit();
+        });
+    }
+
+    formulario.addEventListener("submit", function (evento) {
+      evento.preventDefault();
+      refrescar();
+    });
+
+    // Los desplegables aplican al instante; el texto espera a que se deje de
+    // escribir. Se escuchan los eventos del formulario entero, así agregar un
+    // filtro nuevo a una pantalla no obliga a tocar este archivo.
+    formulario.addEventListener("change", function (evento) {
+      if (evento.target.tagName === "SELECT") refrescar();
+    });
+
+    if (buscador) {
+      buscador.addEventListener("input", function () {
+        clearTimeout(temporizador);
+        temporizador = setTimeout(refrescar, PAUSA_MS);
+      });
+
+      // Escape limpia la búsqueda sin sacar las manos del teclado.
+      buscador.addEventListener("keydown", function (evento) {
+        if (evento.key === "Escape" && buscador.value !== "") {
+          buscador.value = "";
+          refrescar();
+        }
+      });
+
+      // "/" enfoca el buscador desde cualquier parte de la pantalla, como en la
+      // mayoría de las herramientas de uso diario. No interfiere si ya se está
+      // escribiendo en un campo.
+      document.addEventListener("keydown", function (evento) {
+        const escribiendo = ["INPUT", "SELECT", "TEXTAREA"].includes(
+          document.activeElement.tagName
+        );
+        if (evento.key === "/" && !escribiendo) {
+          evento.preventDefault();
+          buscador.focus();
+          buscador.select();
+        }
+      });
+    }
+  })();
+</script>

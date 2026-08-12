@@ -11,6 +11,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from freezegun import freeze_time
 
+from apps.accounts.models import Usuario
 from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.core.models import RegistroAuditoria
 
@@ -63,7 +64,7 @@ def test_solo_se_envia_correo_a_una_cuenta_real(client, cliente):
 
 
 def test_una_cuenta_inactiva_no_recibe_enlace(client):
-    usuario = UsuarioFactory(is_active=False)
+    usuario = UsuarioFactory(estado=Usuario.INACTIVO)
 
     client.post(URL_PEDIR_ENLACE, {"email": usuario.email})
 

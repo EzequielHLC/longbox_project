@@ -6,17 +6,21 @@ from apps.accounts.models import IntentoFallido, Usuario
 
 @admin.register(Usuario)
 class UsuarioAdmin(UserAdmin):
-    list_display = ("email", "username", "rol", "is_active")
-    # El rol se puede cambiar desde la propia lista, sin entrar a cada usuario.
-    # (El alta y la baja formal de usuarios de personal son CU-50/51/52, con su
-    # propia pantalla; esto es solo la herramienta de administración de Django.)
-    list_editable = ("rol", "is_active")
+    list_display = ("email", "username", "rol", "estado", "actualizado_en")
+    # El rol y el estado se pueden cambiar desde la propia lista, sin entrar a
+    # cada usuario. (El alta, la modificación y la baja formales de usuarios de
+    # personal son CU-50/51/52, con su propia pantalla de backoffice; esto es
+    # solo la herramienta de administración de Django.)
+    list_editable = ("rol", "estado")
     list_display_links = ("email",)
-    list_filter = ("rol", "is_active")
+    list_filter = ("rol", "estado")
     search_fields = ("email", "username")
     ordering = ("email",)
-    fieldsets = UserAdmin.fieldsets + (("Longbox", {"fields": ("rol",)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + (("Longbox", {"fields": ("email", "rol")}),)
+    # `is_active` se deriva de `estado` en `Usuario.save()`: mostrarlo editable
+    # sería mentira, porque cualquier cambio se pisaría al guardar.
+    readonly_fields = ("is_active", "actualizado_en")
+    fieldsets = UserAdmin.fieldsets + (("Longbox", {"fields": ("rol", "estado")}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (("Longbox", {"fields": ("email", "rol", "estado")}),)
 
 
 @admin.register(IntentoFallido)

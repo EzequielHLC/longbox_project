@@ -1,0 +1,16 @@
+{% autoescape off %}Estimado/a {{ usuario.get_full_name|default:usuario.email }}:
+
+Su cuenta de cliente en Longbox fue creada correctamente y ya se encuentra activa.
+A partir de ahora puede iniciar sesión con este correo electrónico y la contraseña
+que eligió durante el registro:
+
+{{ protocol }}://{{ domain }}{% url 'accounts:login' %}
+
+Si olvida su contraseña, puede restablecerla desde el enlace "¿Olvidó su contraseña?"
+de la pantalla de inicio de sesión.
+
+Si usted no solicitó esta cuenta, comuníquelo respondiendo a este mensaje: alguien
+pudo haber utilizado su dirección de correo por error.
+
+Longbox
+{% endautoescape %}

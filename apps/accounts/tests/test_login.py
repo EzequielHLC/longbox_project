@@ -7,6 +7,7 @@ from apps.accounts.forms import (
     MENSAJE_CREDENCIALES,
     MENSAJE_CUENTA_INACTIVA,
 )
+from apps.accounts.models import Usuario
 from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.core.models import RegistroAuditoria
 
@@ -77,7 +78,7 @@ def test_correo_inexistente_devuelve_exactamente_el_mismo_mensaje(client, client
 
 
 def test_cuenta_inactiva_no_crea_sesion(client):
-    usuario = UsuarioFactory(is_active=False)
+    usuario = UsuarioFactory(estado=Usuario.INACTIVO)
 
     respuesta = client.post(URL_LOGIN, {"username": usuario.email, "password": PASSWORD_DE_PRUEBA})
 
@@ -88,7 +89,7 @@ def test_cuenta_inactiva_no_crea_sesion(client):
 
 def test_cuenta_inactiva_no_se_revela_a_quien_no_sabe_la_contrasena(client):
     """Sin la contraseña correcta, una cuenta inactiva responde como cualquier otra."""
-    usuario = UsuarioFactory(is_active=False)
+    usuario = UsuarioFactory(estado=Usuario.INACTIVO)
 
     respuesta = client.post(URL_LOGIN, {"username": usuario.email, "password": "otra-clave"})
 

@@ -1,0 +1,152 @@
+{% comment %}
+Autocompletado propio, en reemplazo del `<datalist>` nativo.
+
+Mismo problema —y misma solución— que el `<select>` en `_desplegable.html`: la
+lista que despliega un `<datalist>` la dibuja el navegador, no acepta nuestra
+tipografía ni nuestra paleta, y en medio de la pantalla se ve un componente de
+Windows. Acá el `<datalist>` se conserva como *fuente de datos* y se le saca al
+campo el atributo `list`, así el navegador deja de mostrar la suya y dibujamos
+la nuestra con los tokens del sistema.
+
+Sin JavaScript el atributo `list` sigue puesto y el navegador hace lo suyo: se
+degrada al comportamiento nativo, que es feo pero funciona.
+
+Se aplica a los campos con `data-autocompletado="<id del datalist>"`.
+{% endcomment %}
+<style>
+  .caja-autocompletado { position: relative; }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    for (const campo of document.querySelectorAll("[data-autocompletado]")) {
+      armarAutocompletado(campo);
+    }
+  });
+
+  function armarAutocompletado(campo) {
+    const origen = document.getElementById(campo.dataset.autocompletado);
+    if (!origen) return;
+
+    // A partir de acá manda el nuestro: sin el atributo `list`, el navegador
+    // ya no despliega su propia lista y no quedan las dos superpuestas.
+    campo.removeAttribute("list");
+
+    const MAXIMO_VISIBLE = 8;
+
+    const caja = document.createElement("div");
+    caja.className = "caja-autocompletado";
+    campo.replaceWith(caja);
+    caja.append(campo);
+
+    const lista = document.createElement("ul");
+    lista.className =
+      "absolute z-20 mt-1 hidden max-h-72 w-full overflow-y-auto border border-line bg-panel py-1";
+    lista.setAttribute("role", "listbox");
+    caja.append(lista);
+
+    campo.setAttribute("role", "combobox");
+    campo.setAttribute("aria-expanded", "false");
+    campo.setAttribute("aria-autocomplete", "list");
+
+    let indiceActivo = -1;
+
+    // "Oberá" tiene que encontrarse escribiendo "obera": nadie pone los
+    // acentos mientras busca.
+    function sinAcentos(texto) {
+      return texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    }
+
+    function coincidencias() {
+      const escrito = sinAcentos(campo.value.trim());
+      const opciones = [...origen.options].map((opcion) => opcion.value);
+      if (!escrito) return opciones.slice(0, MAXIMO_VISIBLE);
+      // Primero las que empiezan igual, después las que lo contienen: quien
+      // escribe "san" espera "San Javier" antes que "Colonia San Alberto".
+      const empiezan = opciones.filter((nombre) => sinAcentos(nombre).startsWith(escrito));
+      const contienen = opciones.filter(
+        (nombre) => !sinAcentos(nombre).startsWith(escrito) && sinAcentos(nombre).includes(escrito)
+      );
+      return [...empiezan, ...contienen].slice(0, MAXIMO_VISIBLE);
+    }
+
+    function cerrar() {
+      lista.classList.add("hidden");
+      campo.setAttribute("aria-expanded", "false");
+      indiceActivo = -1;
+    }
+
+    function pintar() {
+      lista.querySelectorAll("li").forEach((item, indice) => {
+        const activo = indice === indiceActivo;
+        item.classList.toggle("bg-ash", activo);
+        item.classList.toggle("text-static", !activo);
+        item.setAttribute("aria-selected", activo ? "true" : "false");
+      });
+    }
+
+    function elegir(nombre) {
+      campo.value = nombre;
+      cerrar();
+    }
+
+    function abrir() {
+      const nombres = coincidencias();
+      lista.replaceChildren();
+
+      if (nombres.length === 0) {
+        cerrar();
+        return;
+      }
+
+      nombres.forEach((nombre, indice) => {
+        const item = document.createElement("li");
+        item.textContent = nombre;
+        item.setAttribute("role", "option");
+        item.className = "cursor-pointer px-3 py-2 font-mono text-sm text-screen";
+        // `mousedown` y no `click`: el clic llega después del `blur` del
+        // campo, que ya cerró la lista y se llevó puesto el elemento.
+        item.addEventListener("mousedown", (evento) => {
+          evento.preventDefault();
+          elegir(nombre);
+        });
+        item.addEventListener("mouseenter", () => {
+          indiceActivo = indice;
+          pintar();
+        });
+        lista.append(item);
+      });
+
+      lista.classList.remove("hidden");
+      campo.setAttribute("aria-expanded", "true");
+      indiceActivo = -1;
+      pintar();
+    }
+
+    campo.addEventListener("input", abrir);
+    campo.addEventListener("focus", abrir);
+    campo.addEventListener("blur", cerrar);
+
+    campo.addEventListener("keydown", function (evento) {
+      const items = lista.querySelectorAll("li");
+      if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+        evento.preventDefault();
+        if (lista.classList.contains("hidden")) {
+          abrir();
+          return;
+        }
+        const paso = evento.key === "ArrowDown" ? 1 : -1;
+        indiceActivo = (indiceActivo + paso + items.length) % items.length;
+        pintar();
+        items[indiceActivo].scrollIntoView({ block: "nearest" });
+      } else if (evento.key === "Enter" && indiceActivo >= 0) {
+        // Solo se roba el Enter si hay una opción resaltada; si no, envía el
+        // formulario como cualquier otro campo.
+        evento.preventDefault();
+        elegir(items[indiceActivo].textContent);
+      } else if (evento.key === "Escape") {
+        cerrar();
+      }
+    });
+  }
+</script>

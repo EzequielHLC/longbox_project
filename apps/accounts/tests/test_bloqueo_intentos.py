@@ -10,7 +10,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from apps.accounts.forms import MENSAJE_BLOQUEO, MENSAJE_CREDENCIALES
-from apps.accounts.models import IntentoFallido
+from apps.accounts.models import IntentoFallido, Usuario
 from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.core.models import RegistroAuditoria
 
@@ -107,7 +107,7 @@ def test_tambien_se_cuentan_los_intentos_contra_correos_inexistentes(client):
 
 
 def test_una_cuenta_inactiva_con_clave_correcta_no_suma_intentos(client):
-    usuario = UsuarioFactory(is_active=False)
+    usuario = UsuarioFactory(estado=Usuario.INACTIVO)
 
     intentar(client, usuario.email, password=PASSWORD_DE_PRUEBA)
 

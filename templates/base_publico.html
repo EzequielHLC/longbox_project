@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% comment %}
+Cáscara del **modo público** del sistema visual (`/docs/diseno/sistema-visual.md`):
+las pantallas de cara al cliente —tienda, ficha de producto, carrito, checkout,
+registro—. Misma paleta y misma tipografía que el modo operativo; lo que cambia
+es que acá sí vive la identidad completa, porque estas pantallas venden.
+
+De lo permitido en modo público se implementa lo que corresponde a una pantalla
+de formulario: glitch orquestado **una sola vez por carga** sobre el título,
+grano ambiental por debajo del 5% y la geometría de esquinas cortadas. Quedan
+afuera el ticker, el halftone y el scroll-reveal, que son de las secciones de
+venta con contenido largo; cuando se implemente la tienda se agregan acá.
+
+Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
+{% endcomment %}
+
+{% block cabecera_extra %}
+  {# Los tokens (paleta, tipografías) son compartidos y viven en base.html. #}
+  <style>
+    /* ------------------------------------------------------------------
+       Geometría: esquinas cortadas en diagonal con `clip-path`, nunca
+       `border-radius`. Es el motivo que comparten los dos modos.
+       ------------------------------------------------------------------ */
+    .clip-panel {
+      clip-path: polygon(
+        0 1.6rem, 1.6rem 0,
+        100% 0, 100% calc(100% - 1.6rem),
+        calc(100% - 1.6rem) 100%, 0 100%
+      );
+    }
+
+    /* ------------------------------------------------------------------
+       Botón primario: relleno `signal`, texto `void`, hover a `screen`.
+       Uno por pantalla, en la acción que la pantalla existe para hacer.
+
+       Los botones del modo público son propios y no los del backoffice
+       (`_botones.html`): comparten paleta y tipografía, pero una pantalla
+       que vende y una que se usa cincuenta veces por día no tienen por qué
+       resolver el mismo problema igual.
+       ------------------------------------------------------------------ */
+    .boton-publico {
+      display: inline-block;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      padding: 0.9rem 2rem;
+      background: #FF1436;
+      color: #0A0A0D;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-align: center;
+      text-transform: uppercase;
+      transition: background-color 0.25s ease-in-out;
+    }
+    .boton-publico:hover { background: #EDEAE4; }
+
+    /* ------------------------------------------------------------------
+       Botón secundario: fondo `void`, texto `signal`, esquina inferior
+       derecha cortada e invertido en hover.
+
+       La sombra dura va en el envoltorio y no en el botón: `filter` se
+       aplica antes que `clip-path`, así que puesta en el mismo elemento la
+       sombra se dibujaría y el recorte se la comería. Es la misma división
+       de tareas que `.marco-boton` en el modo operativo.
+       ------------------------------------------------------------------ */
+    .marco-tenue { filter: drop-shadow(3px 3px 0 #B0102A); }
+
+    .boton-publico-menor {
+      display: block;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      /* Poco aire a los costados y `nowrap`: la etiqueta manda sobre el
+         relleno, no al revés. Con más padding, "Crear cuenta" se partía en
+         dos renglones y descuadraba la fila entera. */
+      padding: 0.9rem 0.6rem;
+      color: #FF1436;
+      background: #0A0A0D;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-align: center;
+      text-transform: uppercase;
+      white-space: nowrap;
+      clip-path: polygon(
+        0 0, 100% 0,
+        100% calc(100% - 0.6rem), calc(100% - 0.6rem) 100%,
+        0 100%
+      );
+      transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    }
+    .boton-publico-menor:hover { background: #FF1436; color: #0A0A0D; }
+
+    /* ------------------------------------------------------------------
+       Fila de acciones: la principal ocupa el espacio que le corresponde
+       por importancia y la salida secundaria lo que necesita su etiqueta.
+       `min-width: 0` en la principal y `auto` en la otra: si el ancho
+       aprieta, cede la que puede recortarse sin romperse.
+       ------------------------------------------------------------------ */
+    .fila-acciones { display: flex; gap: 0.6rem; }
+    .fila-acciones > .boton-publico { flex: 1 1 65%; min-width: 0; }
+    .fila-acciones > .marco-tenue { flex: 0 1 auto; }
+
+    /* ------------------------------------------------------------------
+       Grano ambiental. El sistema visual lo pide "sutil, opacidad < 5%":
+       es una textura fija detrás de todo, no un efecto que se mueva.
+       ------------------------------------------------------------------ */
+    .grano {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23r)'/%3E%3C/svg%3E");
+    }
+
+    /* ------------------------------------------------------------------
+       Glitch del título: **una sola vez por carga de pantalla**, nunca en
+       bucle (`animation-iteration-count: 1`). Son dos copias del mismo
+       texto —una corrida en `signal`, otra en `azure`— que se desplazan y
+       se recortan durante medio segundo y después desaparecen.
+
+       El texto se repite en `data-texto` porque las capas se dibujan con
+       `content: attr(...)`; van con `aria-hidden` implícito (los
+       pseudo-elementos no los lee el lector de pantalla).
+       ------------------------------------------------------------------ */
+    .glitch { position: relative; display: inline-block; }
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-texto);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #0A0A0D;
+      overflow: hidden;
+      animation-duration: 0.55s;
+      animation-timing-function: steps(2, end);
+      animation-iteration-count: 1;
+      animation-fill-mode: forwards;
+    }
+    .glitch::before {
+      color: #FF1436;
+      animation-name: glitch-signal;
+      clip-path: inset(0 0 55% 0);
+    }
+    .glitch::after {
+      color: #1478FF;
+      animation-name: glitch-azure;
+      clip-path: inset(55% 0 0 0);
+    }
+
+    @keyframes glitch-signal {
+      0%   { transform: translate(-0.28em, -0.04em); opacity: 1; }
+      60%  { transform: translate(0.18em, 0.04em); opacity: 1; }
+      100% { transform: translate(0, 0); opacity: 0; }
+    }
+    @keyframes glitch-azure {
+      0%   { transform: translate(0.28em, 0.04em); opacity: 1; }
+      60%  { transform: translate(-0.18em, -0.04em); opacity: 1; }
+      100% { transform: translate(0, 0); opacity: 0; }
+    }
+
+    /* Quien pidió menos movimiento no ve ni el glitch ni el grano animado. */
+    @media (prefers-reduced-motion: reduce) {
+      .glitch::before, .glitch::after { display: none; }
+    }
+
+    /* ------------------------------------------------------------------
+       Panel de formulario: barra de acento a la izquierda y una sola
+       esquina cortada, la de abajo a la derecha —donde termina de leerse
+       el formulario y está el botón—.
+       ------------------------------------------------------------------ */
+    .panel-formulario {
+      background: #141317;
+      border-left: 5px solid #FF1436;
+      clip-path: polygon(
+        0 0, 100% 0,
+        100% calc(100% - 1.25rem), calc(100% - 1.25rem) 100%,
+        0 100%
+      );
+    }
+
+    /* ------------------------------------------------------------------
+       Campos. Pisan el estilo claro de base.html (misma especificidad:
+       gana el que va después).
+
+       Sin bordes: el campo se distingue por su fondo, y el foco se marca
+       engordando una barra a la izquierda de 1px a 5px. Es el mismo gesto
+       que la barra del panel, y hace que en un formulario largo se vea de
+       un vistazo dónde está parado el cursor —bastante mejor que un
+       contorno fino, que a esta escala casi no se nota—.
+       ------------------------------------------------------------------ */
+    input[type="email"], input[type="password"], input[type="text"], input[type="tel"],
+    select, option, textarea {
+      width: 100%;
+      border: none;
+      border-left: 1px solid transparent;
+      border-radius: 0;
+      background-color: #1C1B1F;
+      color: #EDEAE4;
+      padding: 0.65rem 0.85rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.875rem;
+      transition: border-left 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-left: 5px solid #FF1436;
+      background-color: #211F25;
+    }
+
+    textarea {
+      /* Más aire que en un `input`: el texto ocupa varios renglones y pegado
+         al borde se lee peor. Los 0.85rem de la izquierda además compensan
+         que la barra de foco entra desde ese lado. */
+      padding: 0.8rem 1rem;
+      /* Se puede estirar, pero no sin fin: sin tope, arrastrando la esquina
+         se empuja el botón de enviar fuera de la pantalla. */
+      resize: vertical;
+      min-height: 5.5rem;
+      max-height: 16rem;
+      line-height: 1.5;
+    }
+
+    /* El desplegable propio reemplaza el `select` por un botón. Se le repite
+       el relleno del `input` —y no el de sus clases de utilidad— para que
+       provincia y localidad, que van una al lado de la otra, tengan
+       exactamente la misma altura. */
+    [data-desplegable] > button {
+      border: none;
+      border-left: 1px solid transparent;
+      background-color: #1C1B1F;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.875rem;
+      transition: border-left 0.2s ease-in-out;
+    }
+    [data-desplegable] > button:focus { border-left: 5px solid #FF1436; }
+    input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #FF1436;
+    }
+    input::placeholder, textarea::placeholder { color: #57525C; }
+
+    /* Lo que se ve del `select` si no hay JavaScript; con JavaScript lo
+       reemplaza el desplegable propio de `_desplegable.html`. */
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 2.25rem;
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%2357525C' d='M0 0h12L6 8z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 0.6rem;
+    }
+    option { border: 0; }
+
+    /* ------------------------------------------------------------------
+       Cuadrícula de fondo. Dos grillas superpuestas que se desplazan a
+       distinta velocidad, más una viñeta que oscurece los bordes y deja el
+       centro —donde está el formulario— limpio.
+
+       Adaptada del patrón que trajo el cian y el magenta genéricos a la
+       paleta del proyecto: la grilla grande va en `signal` y la chica en
+       `azure`, que son los dos acentos que el sistema visual ya define. Las
+       opacidades quedan por debajo del 6% para que sea textura y no
+       decoración compitiendo con el formulario.
+       ------------------------------------------------------------------ */
+    .cuadricula {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-color: #0A0A0D;
+      background-image:
+        radial-gradient(circle at center, transparent 30%, #000 90%),
+        linear-gradient(rgba(255, 20, 54, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 20, 54, 0.06) 1px, transparent 1px),
+        linear-gradient(rgba(20, 120, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20, 120, 255, 0.04) 1px, transparent 1px);
+      background-size:
+        100% 100%,
+        60px 60px, 60px 60px,
+        20px 20px, 20px 20px;
+      animation: correr-cuadricula 10s linear infinite;
+    }
+
+    @keyframes correr-cuadricula {
+      /* La viñeta no se mueve; las dos grillas sí, y a distinto paso: la
+         chica avanza 40px mientras la grande avanza 60px, así el cruce entre
+         las dos nunca se repite igual. */
+      0%   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+      100% { background-position: 0 0, 60px 60px, 60px 60px, 40px 40px, 40px 40px; }
+    }
+
+    /* Sobre una foto la cuadrícula no pinta su propio fondo: se convierte en
+       una malla encima de la imagen, y la viñeta pasa a hacer doble tarea
+       —oscurecer los bordes y despejar el centro para que se lea el panel—. */
+    .cuadricula--sobre-foto { background-color: transparent; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cuadricula { animation: none; }
+    }
+  </style>
+
+  {% include "_desplegable.html" %}
+  {% include "_autocompletado.html" %}
+  {% include "_ver_contrasena.html" %}
+
+  {% comment %}
+  Estilos propios de una pantalla, si los necesita (el fondo fotográfico del
+  login, por ejemplo). Va acá abajo para que pueda pisar lo de arriba.
+  {% endcomment %}
+  {% block estilos_pantalla %}{% endblock %}
+{% endblock %}
+
+{% block clase_body %}min-h-screen bg-void font-body text-screen{% endblock %}
+
+{% block cuerpo_inicio %}
+  {% comment %}
+  Fondo de la pantalla. Por omisión, el grano ambiental; las pantallas que
+  quieran otra cosa —el login usa la cuadrícula— pisan este bloque.
+  {% endcomment %}
+  {% block fondo %}<div class="grano" aria-hidden="true"></div>{% endblock %}
+{% endblock %}
+
+{% block encabezado %}
+<header class="relative z-10 border-b border-line">
+  <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
+    <a href="{% url 'core:tienda' %}" class="font-display text-2xl font-extrabold tracking-[0.2em]">
+      LONGBOX
+    </a>
+    <span class="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-static">
+      {% block seccion %}Comiquería{% endblock %}
+    </span>
+  </div>
+</header>
+{% endblock %}
+
+{% block clase_main %}relative z-10 mx-auto max-w-5xl px-6 py-12{% endblock %}
+
+{% block mensajes %}
+  {% if messages %}
+    <ul class="mb-8 space-y-2">
+      {% for message in messages %}
+        <li class="border-l-2 px-4 py-3 text-sm
+                   {% if message.tags == 'error' %}border-signal bg-panel
+                   {% else %}border-static bg-panel{% endif %}">
+          {{ message }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

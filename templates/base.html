@@ -5,6 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Longbox{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500&family=Rajdhani:wght@600;700;800&display=swap">
+  <script>
+    // Tokens del sistema visual (`/docs/diseno/sistema-visual.md`). Viven acá
+    // porque son *compartidos* por los dos modos: lo que cambia entre el modo
+    // público y el operativo no es la paleta ni la tipografía, sino cuánta
+    // atmósfera se permite. No agregar colores nuevos sin actualizar antes ese
+    // documento.
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            void: "#0A0A0D",
+            ash: "#141317",
+            panel: "#1C1B1F",
+            line: "#2C2A30",
+            static: "#57525C",
+            screen: "#EDEAE4",
+            signal: "#FF1436",
+            signal2: "#B0102A",
+            // Codificación de rol: Administrador en `signal`, Cajero en `azure`.
+            azure: "#1478FF",
+          },
+          fontFamily: {
+            display: ["Rajdhani", "sans-serif"],
+            body: ['"Noto Sans JP"', "sans-serif"],
+            mono: ['"JetBrains Mono"', "monospace"],
+          },
+        },
+      },
+    };
+  </script>
+
   <style>
     input[type="email"], input[type="password"], input[type="text"] {
       width: 100%;
@@ -13,9 +49,15 @@
       padding: 0.5rem 0.75rem;
     }
   </style>
+  {# Cada modo del sistema visual agrega acá sus tokens: ver base_operativo.html. #}
+  {% block cabecera_extra %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-800">
+<body class="{% block clase_body %}min-h-screen bg-slate-100 text-slate-800{% endblock %}">
 
+  {# Lugar para capas que se superponen a todo (la de carga, por ejemplo). #}
+  {% block cuerpo_inicio %}{% endblock %}
+
+  {% block encabezado %}
   <header class="bg-slate-900 text-white">
     <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
       <a href="/" class="text-lg font-semibold tracking-wide">Longbox</a>
@@ -32,30 +74,40 @@
       {% endif %}
     </div>
   </header>
+  {% endblock %}
 
-  <main class="mx-auto max-w-5xl px-4 py-10">
-    {% if messages %}
-      <ul class="mb-6 space-y-2">
-        {% for message in messages %}
-          <li class="rounded border border-slate-300 bg-white px-4 py-3 text-sm">{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+  {% comment %}
+  Cuerpo de la pantalla. El modo operativo pisa este bloque entero para meter
+  la barra lateral al costado del contenido; las pantallas hijas siguen
+  llenando solo `contenido` y no se enteran de la diferencia.
+  {% endcomment %}
+  {% block layout %}
+  <main class="{% block clase_main %}mx-auto max-w-5xl px-4 py-10{% endblock %}">
+    {% block mensajes %}
+      {% if messages %}
+        <ul class="mb-6 space-y-2">
+          {% for message in messages %}
+            <li class="rounded border border-slate-300 bg-white px-4 py-3 text-sm">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endblock %}
 
     {% block contenido %}{% endblock %}
   </main>
+  {% endblock %}
 
   {% if user.is_authenticated %}
   <div id="aviso-sesion"
        class="fixed inset-x-0 bottom-0 hidden border-t border-amber-300 bg-amber-50 px-4 py-4">
     <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
       <p class="text-sm">
-        Tu sesión está por expirar por inactividad
+        La sesión está por expirar por inactividad
         (<span id="aviso-sesion-restante"></span>).
       </p>
       <button id="aviso-sesion-extender" type="button"
               class="rounded bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700">
-        Seguir conectado
+        Mantener la sesión activa
       </button>
     </div>
   </div>

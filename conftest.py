@@ -1,0 +1,60 @@
+"""Fixtures compartidas por los tests de todas las apps.
+
+Vive en la raíz —y no dentro de `apps/accounts/tests/`— porque las cuentas son
+transversales: los tests de `core` (panel, permisos por rol) necesitan las
+mismas tres cuentas de ejemplo que los de `accounts`.
+"""
+
+from unittest.mock import patch
+
+import pytest
+from django.core.cache import cache
+
+from apps.accounts.tests.factories import UsuarioFactory
+
+
+@pytest.fixture(autouse=True)
+def sin_red(request):
+    """Ningún test sale a internet, ni siquiera sin querer.
+
+    El formulario de registro pide las provincias a georef-ar-api y los códigos
+    de país a otro servicio. Si los tests los consultaran de verdad, la batería
+    sería lenta, fallaría cuando alguno esté caído y no correría en el CI, que
+    no tiene salida. Acá se corta la llamada y todo cae al respaldo local, que
+    es justamente el camino que tiene que funcionar siempre.
+
+    Se parchea `pedir_json`, que es por donde pasan *todas* las integraciones:
+    una nueva queda cubierta sin tocar este archivo. Los tests de cada
+    integración vuelven a parchear por su cuenta para simular respuestas
+    concretas; el parche de adentro gana.
+    """
+    from apps.core import integraciones
+
+    # La caché es global al proceso: sin limpiarla, las provincias que cachea
+    # un test aparecen en el siguiente y los resultados dejan de ser fiables.
+    cache.clear()
+    with patch.object(integraciones, "pedir_json", return_value=None):
+        yield
+    cache.clear()
+
+
+@pytest.fixture
+def cliente(db):
+    return UsuarioFactory(rol="cliente")
+
+
+@pytest.fixture
+def cajero(db):
+    return UsuarioFactory(rol="cajero")
+
+
+@pytest.fixture
+def administrador(db):
+    return UsuarioFactory(rol="administrador")
+
+
+@pytest.fixture
+def client_admin(client, administrador):
+    """Navegador con sesión de Administrador: el actor de todo el Módulo 13."""
+    client.force_login(administrador)
+    return client

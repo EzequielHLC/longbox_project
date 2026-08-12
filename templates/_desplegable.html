@@ -1,0 +1,175 @@
+{% comment %}
+Desplegable propio del sistema, en reemplazo del `select` nativo. Lo incluyen
+las dos cáscaras (base_operativo.html y base_publico.html): usa solamente
+tokens compartidos, así que se ve igual en el backoffice y en la tienda.
+{% endcomment %}
+<script>
+    // ---------------------------------------------------------------------
+    // Desplegable propio, en reemplazo del `select` nativo.
+    //
+    // La lista que abre un `select` no la dibuja el navegador sino el sistema
+    // operativo: no hay CSS que le cambie la tipografía ni los colores, así
+    // que en el backoffice se veía un combo de Windows en medio del sistema.
+    //
+    // El `select` real se queda en el HTML —así el formulario sigue andando
+    // sin JavaScript y el navegador lo envía igual aunque esté oculto— y acá
+    // se lo esconde y se lo reemplaza por un desplegable armado con los tokens
+    // del sistema visual. Al elegir una opción se escribe el valor en el
+    // `select` y se dispara su evento `change`, de modo que el resto del
+    // código (el filtrado en vivo, por ejemplo) no necesita enterarse.
+    // ---------------------------------------------------------------------
+    function mejorarSelects(raiz) {
+      const contenedor = raiz || document;
+      for (const select of contenedor.querySelectorAll("select:not([data-mejorado])")) {
+        armarDesplegable(select);
+      }
+    }
+
+    function armarDesplegable(select) {
+      select.dataset.mejorado = "1";
+      select.hidden = true;
+
+      const caja = document.createElement("div");
+      caja.className = `relative ${select.className}`;
+      select.after(caja);
+
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.className =
+        "flex w-full items-center justify-between gap-3 border border-line bg-ash px-3 py-2 " +
+        "text-left font-mono text-sm text-screen hover:border-static " +
+        "focus:outline focus:outline-1 focus:outline-static";
+      boton.setAttribute("aria-haspopup", "listbox");
+      boton.setAttribute("aria-expanded", "false");
+      boton.innerHTML =
+        '<span data-etiqueta class="truncate"></span>' +
+        '<svg viewBox="0 0 12 8" aria-hidden="true" class="h-2 w-3 shrink-0 fill-static">' +
+        '<path d="M0 0h12L6 8z"/></svg>';
+      caja.append(boton);
+
+      const lista = document.createElement("ul");
+      // La lista puede ser más ancha que el control, pero nunca más angosta:
+      // el botón se dimensiona por la columna del formulario y una opción
+      // larga —"Emiratos Árabes Unidos (+971)"— quedaría partida en dos
+      // renglones. El tope evita que una opción absurda estire la lista de
+      // punta a punta de la pantalla.
+      lista.className =
+        "absolute z-20 mt-1 hidden max-h-72 w-max min-w-full max-w-[22rem] " +
+        "overflow-y-auto border border-line bg-panel py-1";
+      lista.setAttribute("role", "listbox");
+      lista.tabIndex = -1;
+      caja.append(lista);
+
+      const items = [];
+      for (const opcion of select.options) {
+        const item = document.createElement("li");
+        item.textContent = opcion.text.trim();
+        item.dataset.valor = opcion.value;
+        item.setAttribute("role", "option");
+        item.className = "cursor-pointer px-3 py-2 font-mono text-sm text-screen";
+        item.addEventListener("click", () => elegir(opcion.value));
+        // El mouse mueve el resaltado igual que las flechas del teclado: una
+        // sola noción de "opción activa" para las dos formas de recorrer.
+        const indice = items.length;
+        item.addEventListener("mouseenter", () => {
+          indiceActivo = indice;
+          pintar();
+        });
+        lista.append(item);
+        items.push(item);
+      }
+
+      let indiceActivo = Math.max(select.selectedIndex, 0);
+
+      function pintar() {
+        boton.querySelector("[data-etiqueta]").textContent =
+          select.options[select.selectedIndex]?.text.trim() ?? "";
+        items.forEach((item, indice) => {
+          const elegido = indice === select.selectedIndex;
+          const activo = indice === indiceActivo;
+          item.setAttribute("aria-selected", elegido ? "true" : "false");
+          item.classList.toggle("bg-ash", activo);
+          item.classList.toggle("font-medium", elegido);
+          item.classList.toggle("text-static", !elegido && !activo);
+        });
+      }
+
+      function abrir() {
+        cerrarTodos();
+        indiceActivo = Math.max(select.selectedIndex, 0);
+        lista.classList.remove("hidden");
+        boton.setAttribute("aria-expanded", "true");
+        pintar();
+        items[indiceActivo]?.scrollIntoView({ block: "nearest" });
+        lista.focus();
+      }
+
+      function cerrar() {
+        lista.classList.add("hidden");
+        boton.setAttribute("aria-expanded", "false");
+      }
+
+      function elegir(valor) {
+        select.value = valor;
+        cerrar();
+        pintar();
+        boton.focus();
+        // El `select` es el que manda: quien escuche su `change` se entera
+        // igual que si lo hubiera cambiado el usuario a mano.
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      function mover(paso) {
+        indiceActivo = (indiceActivo + paso + items.length) % items.length;
+        pintar();
+        items[indiceActivo].scrollIntoView({ block: "nearest" });
+      }
+
+      boton.addEventListener("click", () => {
+        lista.classList.contains("hidden") ? abrir() : cerrar();
+      });
+
+      boton.addEventListener("keydown", (evento) => {
+        if (["ArrowDown", "ArrowUp", "Enter", " "].includes(evento.key)) {
+          evento.preventDefault();
+          abrir();
+        }
+      });
+
+      lista.addEventListener("keydown", (evento) => {
+        if (evento.key === "ArrowDown") {
+          evento.preventDefault();
+          mover(1);
+        } else if (evento.key === "ArrowUp") {
+          evento.preventDefault();
+          mover(-1);
+        } else if (evento.key === "Enter" || evento.key === " ") {
+          evento.preventDefault();
+          elegir(items[indiceActivo].dataset.valor);
+        } else if (evento.key === "Escape" || evento.key === "Tab") {
+          cerrar();
+          boton.focus();
+        }
+      });
+
+      // Si el valor del `select` cambia por código (por ejemplo al limpiar los
+      // filtros), la etiqueta del botón tiene que acompañar.
+      select.addEventListener("change", pintar);
+
+      caja.dataset.desplegable = "1";
+      caja.cerrar = cerrar;
+      pintar();
+    }
+
+    function cerrarTodos() {
+      for (const caja of document.querySelectorAll("[data-desplegable]")) {
+        caja.cerrar?.();
+      }
+    }
+
+    document.addEventListener("click", (evento) => {
+      if (!evento.target.closest("[data-desplegable]")) cerrarTodos();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => mejorarSelects());
+  </script>
