@@ -1,0 +1,207 @@
+{% comment %}
+Un ítem del lote. Se dibuja dos veces: una por cada formulario del formset, y
+otra dentro de un `<template>` como molde de los que se agregan desde el
+navegador. Recibe `form` e `indice`, y lee `es_importado` del contexto.
+
+Los `data-` son el contrato con el script de la pantalla:
+
+  data-item        delimita el bloque.
+  data-numero      el rótulo que se renumera al quitar un ítem del medio.
+  data-campo="…"   envuelve un campo que aparece o desaparece según el tipo.
+  data-desglose    el bloque de valores calculados, solo en importados.
+  data-herencia    la fila que avisa que la clasificación viene de la cabecera.
+
+Qué campos se ven no está escrito acá ni en el JavaScript: sale del tipo
+elegido, que es lo mismo que lee el servidor. Ojo con la diferencia: la bandera
+decide **qué se muestra**, no qué es obligatorio.
+{% endcomment %}
+<article data-item
+         class="item-lote border border-line bg-ash p-5
+                {% if form.errors %}item-lote--con-error{% endif %}">
+
+  <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+    <div class="flex items-baseline gap-3">
+      <span data-numero class="font-display text-xl font-bold text-static">{{ indice }}</span>
+      <span class="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">Ítem</span>
+      {% if form.errors %}
+        <span class="border border-signal px-2 py-0.5 font-mono text-[0.6rem] uppercase
+                     tracking-wider text-signal">
+          {{ form.errors|length }} error{{ form.errors|length|pluralize:"es" }}
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="button" data-duplicar
+              title="Crear otro ítem con los mismos datos y el volumen siguiente"
+              class="font-mono text-[0.65rem] uppercase tracking-wider text-static
+                     hover:text-screen">
+        Duplicar
+      </button>
+      <span class="text-line" aria-hidden="true">·</span>
+      <button type="button" data-quitar
+              class="font-mono text-[0.65rem] uppercase tracking-wider text-static
+                     hover:text-signal">
+        Quitar
+      </button>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <ul class="mb-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  {# Identificación: los dos únicos campos obligatorios en todos los casos. #}
+  <div class="grid gap-5 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+    {% include "_campo.html" with campo=form.titulo %}
+    {% include "_campo.html" with campo=form.volumen %}
+  </div>
+
+  {% comment %}
+  El ISBN va junto a la identificación y no entre los datos opcionales, aunque
+  lo sea: es el criterio más confiable para detectar que este tomo ya está
+  cargado, y esconderlo en un desplegable haría que casi nunca se complete.
+  {% endcomment %}
+  <div class="mt-5 md:w-1/2 md:pr-3">
+    {% include "_campo.html" with campo=form.isbn %}
+  </div>
+
+  {% comment %}
+  Clasificación. Mientras la cabecera declare editorial y tipo, estos campos
+  llegan bloqueados con el valor heredado: lo normal es que todo el lote
+  comparta clasificación, y dejarlos sueltos es la forma más fácil de pisar sin
+  querer la editorial de un ítem y no notarlo hasta ver el resumen. El botón de
+  al lado es la salida para el caso raro, y avisa lo que implica.
+  {% endcomment %}
+  <div data-herencia class="mt-5 hidden items-center justify-between gap-4 border-l-2 border-azure
+                            bg-panel px-4 py-2.5">
+    <p class="font-mono text-[0.65rem] leading-relaxed text-static">
+      Clasificación heredada de la cabecera:
+      <span data-herencia-detalle class="text-screen"></span>
+    </p>
+    <button type="button" data-desbloquear
+            class="shrink-0 font-mono text-[0.65rem] uppercase tracking-wider text-azure
+                   hover:text-screen">
+      Usar otra
+    </button>
+  </div>
+
+  <div class="mt-5 grid gap-5 md:grid-cols-3">
+    <div data-campo="editorial" class="min-w-0">
+      {% include "_campo.html" with campo=form.editorial %}
+      {% comment %}
+      Alta de editorial sin salir de la pantalla: el caso real es llegar con un
+      tomo de una editorial que todavía no está cargada, y mandar a otra
+      pantalla a quien tiene medio lote escrito termina en un lote cargado con
+      la editorial equivocada para no perder lo hecho.
+      {% endcomment %}
+      <button type="button" data-catalogo-rapido="editorial"
+              data-url="{% url 'catalog:editorial_rapida' %}" data-etiqueta="la editorial"
+              class="mt-1.5 font-mono text-[0.65rem] uppercase tracking-wider text-static
+                     hover:text-azure">
+        + Agregar editorial
+      </button>
+    </div>
+    {% include "_campo.html" with campo=form.tipo %}
+    <div data-campo="formato" class="min-w-0">
+      {% include "_campo.html" with campo=form.formato %}
+    </div>
+  </div>
+
+  {{ form.desbloqueado }}
+
+  {% if es_importado %}
+    <div class="mt-5 grid gap-5 md:grid-cols-2">
+      {% include "_campo.html" with campo=form.costo_origen %}
+      {% include "_campo.html" with campo=form.precio %}
+    </div>
+
+    <dl data-desglose
+        class="mt-4 grid gap-4 border border-line bg-panel px-4 py-3 font-mono text-xs sm:grid-cols-3">
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Costo en pesos</dt>
+        <dd data-costo class="mt-1 text-sm">$0,00</dd>
+      </div>
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Precio base</dt>
+        <dd data-base class="mt-1 text-sm">$0,00</dd>
+      </div>
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Precio final</dt>
+        <dd data-final class="cifra-derivada mt-1 text-base">$0,00</dd>
+      </div>
+    </dl>
+
+    {% comment %}
+    Advertencia de romper el vínculo con el margen global. El rojo acá está bien
+    usado: no decora, avisa de una consecuencia que hay que aceptar antes de
+    seguir. La casilla es la confirmación, y se vuelve a exigir en el servidor.
+    {% endcomment %}
+    <div data-aviso-precio
+         class="casilla-critica mt-4 hidden border-l-2 border-signal bg-panel px-4 py-3">
+      <p class="text-sm">
+        Modificar el precio final rompe el vínculo con el margen global. Este precio no
+        será recalculado automáticamente ante cambios de margen.
+      </p>
+      <label class="mt-3 flex cursor-pointer items-center gap-2 font-mono text-xs">
+        {{ form.confirma_precio_manual }}
+        <span>{{ form.confirma_precio_manual.label }}</span>
+      </label>
+      {% for error in form.confirma_precio_manual.errors %}
+        <p class="mt-2 text-sm text-signal">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mt-5 grid gap-5 md:grid-cols-2">
+      <div>
+        {% include "_campo.html" with campo=form.precio %}
+        <p data-referencia class="mt-1.5 font-mono text-[0.65rem] text-static"></p>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="mt-5 grid gap-5 md:grid-cols-3">
+    {% include "_campo.html" with campo=form.estado %}
+    {% include "_campo.html" with campo=form.fecha_llegada %}
+    {% include "_campo.html" with campo=form.stock %}
+  </div>
+
+  {# Datos informativos: ninguno bloquea el alta. #}
+  <details class="mt-5 border-t border-line pt-4">
+    <summary class="cursor-pointer font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static
+                    hover:text-screen">
+      Datos opcionales
+    </summary>
+    <div class="mt-4 grid gap-5 md:grid-cols-2">
+      {% include "_campo.html" with campo=form.autor %}
+      {% include "_campo.html" with campo=form.portada ayuda="Sin portada, el producto queda marcado como “Imagen pendiente”." %}
+    </div>
+    <div class="mt-5">
+      {% include "_campo.html" with campo=form.sinopsis %}
+    </div>
+
+    {% comment %}
+    Etiquetas **propias** del ítem. Las del lote se declaran una sola vez en la
+    cabecera y las heredan todos; esto es para lo que distingue a este tomo del
+    resto, que es el caso raro — por eso vive acá adentro y no en el cuerpo del
+    ítem, donde veinte bloques de casillas serían insostenibles.
+    {% endcomment %}
+    <div class="mt-5 border-t border-line pt-4">
+      {% include "_etiquetas.html" with campo=form.etiquetas %}
+    </div>
+
+    <label class="mt-5 flex cursor-pointer items-start gap-3">
+      {{ form.solo_adultos }}
+      <span class="min-w-0">
+        <span class="block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+          {{ form.solo_adultos.label }}
+        </span>
+        <span class="mt-1 block font-mono text-[0.65rem] leading-relaxed text-static">
+          {{ form.solo_adultos.help_text }}
+        </span>
+      </span>
+    </label>
+  </details>
+</article>

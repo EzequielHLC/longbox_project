@@ -1,0 +1,99 @@
+{% comment %}
+Selector de archivo propio, en reemplazo del `input type="file"` nativo.
+
+Mismo problema y misma solución que el desplegable: el botón "Examinar…" lo
+dibuja el sistema operativo, no acepta nuestra tipografía ni nuestra paleta, y
+además su etiqueta cambia de idioma y de ancho según la máquina. El input real
+se queda en el formulario —oculto pero funcional, así el envío no depende de
+JavaScript— y al lado se arma el control del sistema.
+
+Sobre la vista previa: una portada cargada por error se descubre al abrir la
+ficha, cuando el producto ya está en el catálogo. Verla en el momento de
+adjuntarla cuesta una línea de `URL.createObjectURL` y evita ese viaje.
+{% endcomment %}
+<script>
+    function mejorarArchivos(raiz) {
+      const contenedor = raiz || document;
+      for (const input of contenedor.querySelectorAll('input[type="file"]:not([data-mejorado])')) {
+        armarSelectorDeArchivo(input);
+      }
+    }
+
+    function armarSelectorDeArchivo(input) {
+      input.dataset.mejorado = "1";
+      // `sr-only` en lugar de `hidden`: el input tiene que seguir siendo
+      // alcanzable por el foco del teclado y por los lectores de pantalla.
+      input.classList.add("sr-only");
+
+      const caja = document.createElement("div");
+      caja.className = "flex items-center gap-3";
+      input.after(caja);
+
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "boton-menor boton-menor--tenue";
+      boton.innerHTML = "<span>Elegir imagen</span>";
+      boton.addEventListener("click", () => input.click());
+      caja.append(boton);
+
+      const vista = document.createElement("img");
+      vista.className = "hidden h-12 w-12 shrink-0 border border-line object-cover";
+      vista.alt = "";
+      caja.append(vista);
+
+      const nombre = document.createElement("span");
+      nombre.className = "min-w-0 flex-1 truncate font-mono text-xs text-static";
+      nombre.textContent = "Ningún archivo elegido";
+      caja.append(nombre);
+
+      const quitar = document.createElement("button");
+      quitar.type = "button";
+      quitar.className = "hidden font-mono text-xs uppercase tracking-wider text-static hover:text-signal";
+      quitar.textContent = "Quitar";
+      quitar.addEventListener("click", () => {
+        input.value = "";
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      caja.append(quitar);
+
+      let urlPrevia = null;
+
+      input.addEventListener("change", () => {
+        // La URL anterior se libera a mano: si no, cada archivo elegido deja
+        // su copia en memoria hasta que se recargue la pantalla.
+        if (urlPrevia) URL.revokeObjectURL(urlPrevia);
+        urlPrevia = null;
+
+        const archivo = input.files && input.files[0];
+        if (!archivo) {
+          nombre.textContent = "Ningún archivo elegido";
+          nombre.classList.add("text-static");
+          vista.classList.add("hidden");
+          vista.removeAttribute("src");
+          quitar.classList.add("hidden");
+          return;
+        }
+
+        nombre.textContent = `${archivo.name} · ${Math.round(archivo.size / 1024)} kB`;
+        nombre.classList.remove("text-static");
+        quitar.classList.remove("hidden");
+
+        if (archivo.type.startsWith("image/")) {
+          urlPrevia = URL.createObjectURL(archivo);
+          vista.src = urlPrevia;
+          vista.classList.remove("hidden");
+        } else {
+          vista.classList.add("hidden");
+          vista.removeAttribute("src");
+        }
+      });
+
+      // El foco del teclado llega al input oculto: se lo devuelve al botón,
+      // que es lo que se ve, para que el recorrido con tabulador tenga sentido.
+      input.addEventListener("focus", () => boton.focus());
+
+      caja.dataset.selectorArchivo = "1";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => mejorarArchivos());
+  </script>

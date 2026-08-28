@@ -1,0 +1,49 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Confirmación de la baja de una fila de la tabla de precios. Es una de las pocas
+eliminaciones reales del sistema y se justifica porque una fila de precios no
+tiene historial propio: los productos ya cargados guardan su precio, y los que
+la referencian lo hacen con `SET_NULL`, así que ninguno se rompe.
+{% endcomment %}
+
+{% block titulo %}Eliminar precio de referencia · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-xl">
+  <a href="{% url 'catalog:parametros' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a parámetros
+  </a>
+
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Eliminar precio de referencia</h1>
+
+  <dl class="mt-6 grid grid-cols-[10rem_1fr] gap-y-3 border border-line bg-ash p-6 text-sm">
+    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Editorial</dt>
+    <dd>{{ precio.editorial }}</dd>
+    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Tipo</dt>
+    <dd>{{ precio.tipo }}</dd>
+    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Formato</dt>
+    <dd>{{ precio.formato }}</dd>
+    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Precio</dt>
+    <dd class="font-mono">${{ precio.pvp }}</dd>
+  </dl>
+
+  <p class="mt-6 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+    Los productos ya cargados conservan su precio: lo que se pierde es el
+    pre-completado. A partir de ahora, cada alta de esta combinación va a pedir el precio
+    a mano hasta que se cargue una fila nueva.
+  </p>
+
+  <form method="post" class="mt-6 flex items-center gap-6">
+    {% csrf_token %}
+    <div class="marco-boton">
+      <button type="submit" class="boton-primario">Eliminar</button>
+    </div>
+    <a href="{% url 'catalog:parametros' %}"
+       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+      Cancelar
+    </a>
+  </form>
+</div>
+{% endblock %}

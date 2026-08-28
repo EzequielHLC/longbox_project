@@ -8,24 +8,39 @@ dos modos tienen en común.
     {% include "_campo.html" with campo=form.email %}
 
 Parámetros opcionales:
-  ayuda   texto de apoyo debajo del control (por ejemplo, un formato esperado).
+  ayuda    texto de apoyo debajo del control. Si no se pasa, se usa el
+           `help_text` del propio campo, así el texto vive junto a su
+           definición y no repetido en cada plantilla que lo dibuja.
+  compacto oculta la etiqueta (la deja para los lectores de pantalla) cuando el
+           encabezado de la columna ya dice qué es el campo.
+
+Los obligatorios se marcan con un asterisco derivado de `field.required`: no hay
+forma de que la marca y la validación digan cosas distintas, porque salen del
+mismo dato.
 
 Accesibilidad: cuando el campo tiene error se le marca `aria-invalid` y se lo
 enlaza con el texto del error por `aria-describedby`. Sin eso, un lector de
 pantalla anuncia el campo y no dice qué está mal: el rojo del borde no existe
 para quien no lo ve.
 {% endcomment %}
-<div>
+{% comment %}
+`min-w-0`: dentro de una grilla, una celda mide por omisión lo que mide su
+contenido, así que un campo con un número largo empuja la columna y se desborda
+de la caja que lo contiene en lugar de recortarse.
+{% endcomment %}
+<div class="min-w-0">
   <label for="{{ campo.id_for_label }}"
-         class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-    {{ campo.label }}
+         class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static
+                {% if compacto %}sr-only{% endif %}">
+    {{ campo.label }}{% if campo.field.required %}<span class="ml-0.5 text-signal" aria-hidden="true">*</span>{% endif %}
   </label>
 
   {{ campo|con_estado_de_error }}
 
-  {% if ayuda %}
-    <p id="{{ campo.auto_id }}_ayuda" class="mt-1.5 font-mono text-[0.65rem] text-static">
-      {{ ayuda }}
+  {% firstof ayuda campo.field.help_text as texto_de_ayuda %}
+  {% if texto_de_ayuda %}
+    <p id="{{ campo.auto_id }}_ayuda" class="mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static">
+      {{ texto_de_ayuda }}
     </p>
   {% endif %}
 

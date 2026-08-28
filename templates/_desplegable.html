@@ -84,6 +84,13 @@ tokens compartidos, así que se ve igual en el backoffice y en la tienda.
       function pintar() {
         boton.querySelector("[data-etiqueta]").textContent =
           select.options[select.selectedIndex]?.text.trim() ?? "";
+        // El `select` real es el que manda también para el estado: si alguien
+        // lo deshabilita por código, el control que se ve tiene que
+        // acompañarlo o quedaría un botón que abre una lista inservible.
+        boton.disabled = select.disabled;
+        caja.classList.toggle("opacity-40", select.disabled);
+        caja.classList.toggle("pointer-events-none", select.disabled);
+        if (select.disabled) cerrar();
         items.forEach((item, indice) => {
           const elegido = indice === select.selectedIndex;
           const activo = indice === indiceActivo;
@@ -158,7 +165,23 @@ tokens compartidos, así que se ve igual en el backoffice y en la tienda.
 
       caja.dataset.desplegable = "1";
       caja.cerrar = cerrar;
+      select.cajaDesplegable = caja;
+      // Punto de entrada para el resto del sistema: cuando algo cambia el
+      // `select` por código —el valor, el estado, la selección heredada de una
+      // cabecera— alcanza con pedirle que se vuelva a pintar.
+      select.refrescarDesplegable = pintar;
       pintar();
+    }
+
+    // Cuando las **opciones** cambian (por ejemplo, al agregar una editorial
+    // sin recargar la pantalla) no alcanza con repintar: hay que rehacer la
+    // lista. Se destruye el control anterior y se arma de nuevo, que es más
+    // corto y más seguro que ir agregando y quitando elementos a mano.
+    function rehacerDesplegable(select) {
+      select.cajaDesplegable?.remove();
+      delete select.dataset.mejorado;
+      select.hidden = false;
+      armarDesplegable(select);
     }
 
     function cerrarTodos() {

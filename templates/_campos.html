@@ -1,0 +1,168 @@
+{% comment %}
+Controles de formulario del modo operativo: la caja de texto, el número, la
+fecha, el área de texto y la casilla de verificación.
+
+Están en un parcial aparte —igual que los botones— porque son la superficie que
+más se repite en el backoffice y porque el conjunto tiene que ser exhaustivo: un
+tipo de control que no esté acá hereda el estilo claro de la cáscara base y
+aparece con letra blanca sobre fondo blanco. Los selectores van por tipo y no
+por clase para que un campo nuevo quede bien sin que nadie se acuerde de
+agregarle nada.
+{% endcomment %}
+<style>
+    /* ------------------------------------------------------------------
+       Base común. `box-sizing` no es opcional: sin él, el relleno se suma
+       al ancho y un campo dentro de una grilla angosta —el stock, el
+       volumen— se desborda de su propia caja.
+       ------------------------------------------------------------------ */
+    .campo,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="date"],
+    textarea,
+    select {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      border: 1px solid #2C2A30;
+      border-radius: 0;
+      background-color: #141317;
+      color: #EDEAE4;
+      padding: 0.5rem 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    input::placeholder,
+    textarea::placeholder { color: #57525C; }
+
+    input:hover:not(:disabled),
+    textarea:hover:not(:disabled),
+    select:hover:not(:disabled) { border-color: #57525C; }
+
+    /* El foco se marca con el acento frío y no con el rojo: en una pantalla de
+       carga larga el cursor se mueve todo el tiempo, y el rojo tiene que
+       significar que algo está mal, no que estoy escribiendo acá. */
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #1478FF;
+      background-color: #1C1B1F;
+    }
+
+    input:disabled,
+    textarea:disabled { color: #57525C; cursor: not-allowed; }
+
+    /* Campo con error de validación. Lo pone `con_estado_de_error`, el mismo
+       filtro que ya marca `aria-invalid` para los lectores de pantalla: el
+       color y el anuncio salen del mismo lugar y no se pueden desincronizar. */
+    [aria-invalid="true"] { border-color: #FF1436; }
+    [aria-invalid="true"]:focus { border-color: #FF1436; }
+
+    /* ------------------------------------------------------------------
+       Número. Las flechitas del navegador se sacan a mano: son diminutas,
+       se dibujan distinto en cada navegador y en una grilla de carga
+       masiva se pulsan sin querer. Se cargan con el teclado.
+       ------------------------------------------------------------------ */
+    input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Los importes y las cantidades se leen alineados a la derecha, como en
+       cualquier planilla: así se comparan de un vistazo las magnitudes. */
+    input[inputmode="decimal"],
+    input[inputmode="numeric"] { text-align: right; }
+
+    /* ------------------------------------------------------------------
+       Fecha. El almanaque lo dibuja el navegador y no acepta nuestra
+       paleta; lo único que se puede tocar es su ícono, que por omisión es
+       negro sobre fondo negro y directamente no se ve.
+       ------------------------------------------------------------------ */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+    input[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+
+    textarea { min-height: 5.5rem; resize: vertical; }
+
+    /* ------------------------------------------------------------------
+       Casilla de verificación. La nativa es un cuadradito celeste del
+       sistema operativo con esquinas redondeadas: rompe el motivo
+       geométrico y no hay CSS que la alcance, así que se dibuja de cero.
+       ------------------------------------------------------------------ */
+    input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      flex-shrink: 0;
+      width: 1.05rem;
+      height: 1.05rem;
+      margin: 0;
+      border: 1px solid #57525C;
+      background-color: #141317;
+      cursor: pointer;
+      display: inline-grid;
+      place-content: center;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    input[type="checkbox"]::before {
+      content: "";
+      width: 0.55rem;
+      height: 0.55rem;
+      transform: scale(0);
+      transition: transform 0.12s ease-in-out;
+      background-color: #0A0A0D;
+      /* Tilde recortada con `clip-path`, en la misma familia geométrica que
+         el resto: diagonales, sin curvas. */
+      clip-path: polygon(14% 44%, 0 65%, 40% 100%, 100% 16%, 82% 0, 38% 66%);
+    }
+    input[type="checkbox"]:checked {
+      border-color: #1478FF;
+      background-color: #1478FF;
+    }
+    input[type="checkbox"]:checked::before { transform: scale(1); }
+    input[type="checkbox"]:focus-visible { outline: 1px solid #1478FF; outline-offset: 2px; }
+
+    /* La casilla de una advertencia se pinta con el color de la advertencia:
+       lo que se está confirmando es justamente lo crítico. */
+    .casilla-critica input[type="checkbox"]:checked {
+      border-color: #FF1436;
+      background-color: #FF1436;
+    }
+
+    /* La etiqueta, el texto de ayuda y el error no se definen acá: los arma
+       `_campo.html`, que es el mismo parcial para los dos modos del sistema
+       visual. Este archivo se ocupa solo del control en sí.
+
+       Prefijo pegado al control, para los importes. El símbolo vive fuera del
+       campo: adentro habría que sacarlo antes de mandar el número. */
+    .campo-con-prefijo { position: relative; display: block; }
+    .campo-con-prefijo > .prefijo {
+      position: absolute;
+      top: 50%;
+      left: 0.75rem;
+      transform: translateY(-50%);
+      color: #57525C;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.875rem;
+      pointer-events: none;
+    }
+    .campo-con-prefijo > input { padding-left: 1.9rem; }
+  </style>

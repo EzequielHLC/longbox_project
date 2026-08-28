@@ -1,0 +1,93 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-20 — Dar de Baja Proveedor Editorial.
+
+Esta pantalla **es** el paso 3 del CU: el informe de impacto. No es un "¿está
+seguro?" adornado — es la información con la que se toma la decisión, y por eso
+ocupa una pantalla entera en vez de un cartel del navegador.
+
+`signal` se usa acá con intención (acción destructiva), que es uno de los tres
+usos que el sistema visual le reserva en modo operativo.
+{% endcomment %}
+
+{% block titulo %}Dar de baja {{ proveedor.razon_social }} · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-2xl">
+  <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a la ficha
+  </a>
+
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Dar de baja proveedor</h1>
+  <p class="mt-2 text-sm text-static">
+    <span class="text-screen">{{ proveedor.razon_social }}</span> ·
+    <span class="font-mono text-xs">{{ proveedor.correo_comercial }}</span>
+  </p>
+
+  {% if not proveedor.esta_activo %}
+    <p class="mt-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
+      Este proveedor ya está dado de baja. No hay nada que confirmar.
+    </p>
+  {% else %}
+    <div class="mt-6 border-l-2 border-signal bg-panel px-5 py-4">
+      <h2 class="font-display text-lg font-semibold tracking-wide">Qué implica la baja</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li>
+          Su correo comercial <span class="text-signal">deja de reconocerse</span> como
+          remitente válido: los mensajes de novedades que envíe no se procesan más.
+        </li>
+        <li>
+          Los productos que entraron por este proveedor se conservan, y conservan la
+          referencia a él en el historial.
+        </li>
+        <li>La baja es lógica: no se borra nada y se puede revertir reactivándolo.</li>
+      </ul>
+    </div>
+
+    {% comment %}
+    El mapeo de impacto del paso 2. La cifra de restock no se puede calcular
+    todavía y se dice explícitamente: afirmar "0 propuestas afectadas" sería
+    mentir sobre un dato que el propio CU considera parte de la decisión.
+    {% endcomment %}
+    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+      <div class="border-l-2 bg-ash px-4 py-3
+                  {% if impacto.hay_impacto %}border-signal{% else %}border-line{% endif %}">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Productos vinculados
+        </dt>
+        <dd class="mt-1 font-display text-2xl font-bold
+                   {% if impacto.hay_impacto %}text-signal{% else %}text-static{% endif %}">
+          {{ impacto.productos_vinculados }}
+        </dd>
+      </div>
+      <div class="border-l-2 border-line bg-ash px-4 py-3">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Propuestas de restock afectadas
+        </dt>
+        <dd class="mt-1 font-mono text-xs leading-relaxed text-static">
+          No se puede determinar: el módulo de Restock todavía no está implementado.
+        </dd>
+      </div>
+    </dl>
+
+    {% if not impacto.hay_impacto %}
+      <p class="mt-4 font-mono text-[0.65rem] text-static">
+        No hay productos del catálogo vinculados a este proveedor.
+      </p>
+    {% endif %}
+
+    <form method="post" class="mt-6 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+      {% csrf_token %}
+      <div class="marco-boton">
+        <button type="submit" class="boton-primario">Confirmar baja</button>
+      </div>
+      <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+        Cancelar
+      </a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

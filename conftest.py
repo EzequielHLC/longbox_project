@@ -23,17 +23,22 @@ def sin_red(request):
     no tiene salida. Acá se corta la llamada y todo cae al respaldo local, que
     es justamente el camino que tiene que funcionar siempre.
 
-    Se parchea `pedir_json`, que es por donde pasan *todas* las integraciones:
-    una nueva queda cubierta sin tocar este archivo. Los tests de cada
-    integración vuelven a parchear por su cuenta para simular respuestas
+    Se parchea `pedir`, que es la **única** puerta de salida HTTP del proyecto:
+    una integración nueva queda cubierta sin tocar este archivo. Los tests de
+    cada integración vuelven a parchear por su cuenta para simular respuestas
     concretas; el parche de adentro gana.
+
+    Corta también `localhost`, y eso no es exceso de celo: el modelo de lenguaje
+    corre en la máquina del desarrollador, así que un test que lo llamara de
+    verdad andaría acá —dando una falsa sensación de estar cubierto— y en el CI,
+    donde ese servicio no existe, se colgaría hasta el timeout.
     """
     from apps.core import integraciones
 
     # La caché es global al proceso: sin limpiarla, las provincias que cachea
     # un test aparecen en el siguiente y los resultados dejan de ser fiables.
     cache.clear()
-    with patch.object(integraciones, "pedir_json", return_value=None):
+    with patch.object(integraciones, "pedir", return_value=None):
         yield
     cache.clear()
 

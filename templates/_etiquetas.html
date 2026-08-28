@@ -1,0 +1,51 @@
+{% comment %}
+Un campo de etiquetas, dibujado como casillas **agrupadas por su grupo**.
+
+Un `<select multiple>` nativo obliga a saber que hay que sostener Ctrl y no deja
+ver de un vistazo qué está elegido. Las casillas ocupan más lugar pero se leen
+solas; el agrupado es lo que evita que treinta valores sueltos se conviertan en
+una lista imposible de recorrer.
+
+Recibe `campo` (un `ModelMultipleChoiceField` sobre `Etiqueta`). El agrupado sale
+del `ordering` del modelo, que ya trae las etiquetas por grupo: `regroup` las
+parte y de cada casilla se llega a su etiqueta por `opcion.data.value.instance`,
+que es donde Django deja el objeto de un `ModelChoiceField`. Así el parcial no
+necesita que la vista le arme ninguna estructura aparte.
+{% endcomment %}
+<p class="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+  {{ campo.label }}
+</p>
+{% if campo.help_text %}
+  <p class="mb-3 font-mono text-[0.65rem] leading-relaxed text-static">{{ campo.help_text }}</p>
+{% endif %}
+
+{% if campo.field.queryset.exists %}
+  <div class="space-y-3">
+    {% regroup campo.field.queryset by grupo as por_grupo %}
+    {% for bloque in por_grupo %}
+      <div>
+        <p class="mb-1.5 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+          {{ bloque.grouper }}
+        </p>
+        <div class="flex flex-wrap gap-x-5 gap-y-2">
+          {% for opcion in campo %}
+            {% if opcion.data.value.instance.grupo_id == bloque.grouper.pk %}
+              <label class="flex cursor-pointer items-center gap-2 text-sm">
+                {{ opcion.tag }}
+                <span>{{ opcion.data.label }}</span>
+              </label>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-sm text-static">
+    No hay etiquetas cargadas. Se administran desde Parámetros globales.
+  </p>
+{% endif %}
+
+{% for error in campo.errors %}
+  <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+{% endfor %}

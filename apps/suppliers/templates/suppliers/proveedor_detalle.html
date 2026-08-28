@@ -1,0 +1,206 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-21 paso 4 — la ficha completa del proveedor.
+
+Es el nudo del módulo: desde acá arrancan CU-19 (editar) y CU-20 (dar de baja),
+y acá llega el enlace del conflicto de E2 del CU-18. Por eso las acciones viven
+en esta pantalla y no repartidas por el listado.
+{% endcomment %}
+
+{% block titulo %}{{ proveedor.razon_social }} · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-4xl">
+  <a href="{% url 'suppliers:proveedor_lista' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a proveedores
+  </a>
+
+  <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="font-display text-3xl font-bold tracking-wide">{{ proveedor.razon_social }}</h1>
+      <p class="mt-2 flex flex-wrap items-center gap-3">
+        <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
+                     {% if proveedor.esta_activo %}border-static text-screen
+                     {% else %}border-line text-static{% endif %}">
+          {{ proveedor.get_estado_display }}
+        </span>
+        <span class="font-mono text-[0.65rem] text-static">
+          Alta: {{ proveedor.creado_en|date:"d/m/Y" }} ·
+          Última modificación: {{ proveedor.actualizado_en|date:"d/m/Y H:i" }}
+        </span>
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <a href="{% url 'suppliers:proveedor_edicion' proveedor.pk %}" class="boton-menor">
+        <span>Editar</span>
+      </a>
+      {% if proveedor.esta_activo %}
+        <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}"
+           class="boton-menor boton-menor--critico"><span>Dar de baja</span></a>
+      {% else %}
+        <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-menor">
+          <span>Reactivar</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% comment %}
+  El estado del correo como remitente es la consecuencia práctica del estado del
+  proveedor, y no se deduce sola de la palabra "Inactivo": se dice.
+  {% endcomment %}
+  <div class="mt-6 border border-line bg-ash p-6">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Datos de contacto</h2>
+
+    <dl class="mt-4 grid gap-5 sm:grid-cols-2">
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Correo comercial
+        </dt>
+        <dd class="mt-1 break-all font-mono text-sm">{{ proveedor.correo_comercial }}</dd>
+        {% comment %}
+        Estar activo ya no alcanza para responder "por qué de este proveedor no
+        llega nada": puede estar activo y con el procesamiento apagado. Los dos
+        motivos se distinguen, porque se arreglan en lugares distintos.
+        {% endcomment %}
+        <dd class="mt-1 font-mono text-[0.65rem] text-static">
+          {% if proveedor.es_remitente_valido %}
+            Reconocido como remitente válido del procesamiento automático.
+          {% elif not proveedor.esta_activo %}
+            No se reconoce como remitente: el proveedor está dado de baja.
+          {% else %}
+            No se reconoce como remitente: el procesamiento automático está apagado
+            para este proveedor.
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Nombre de contacto
+        </dt>
+        <dd class="mt-1 text-sm">{{ proveedor.nombre_contacto|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Teléfono</dt>
+        <dd class="mt-1 font-mono text-sm">{{ proveedor.telefono|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Productos vinculados
+        </dt>
+        <dd class="mt-1 font-display text-2xl font-bold">{{ cantidad_productos }}</dd>
+      </div>
+    </dl>
+
+    {% comment %}
+    Lo que aporta a los borradores que genere su casilla. Está separado de los
+    datos de contacto porque no es contacto: es la cabecera de todo lo que entre
+    por acá, y es lo primero que hay que mirar cuando un borrador sale con la
+    editorial equivocada.
+    {% endcomment %}
+    <div class="mt-5 border-t border-line pt-4">
+      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+        Cabecera de sus borradores
+      </p>
+      <dl class="mt-3 grid gap-5 sm:grid-cols-2">
+        <div>
+          <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">Editorial</dt>
+          {% if proveedor.trae_varias_editoriales %}
+            <dd class="mt-1 text-sm text-static">
+              Varias — se extrae de cada correo
+            </dd>
+          {% else %}
+            <dd class="mt-1 text-sm">{{ proveedor.editorial }}</dd>
+          {% endif %}
+        </div>
+        <div>
+          <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+            Tipo de material habitual
+          </dt>
+          <dd class="mt-1 text-sm {% if not proveedor.tipo_por_defecto %}text-static{% endif %}">
+            {{ proveedor.tipo_por_defecto|default:"Sin declarar — se extrae de cada correo" }}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    {% if proveedor.notas %}
+      <div class="mt-5 border-t border-line pt-4">
+        <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Notas internas
+        </p>
+        <p class="mt-2 whitespace-pre-line text-sm">{{ proveedor.notas }}</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <section class="mt-8">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Productos del catálogo</h2>
+    <p class="mt-1 text-sm text-static">
+      Los que entraron al catálogo por este proveedor. Se conservan aunque el proveedor se
+      dé de baja.
+    </p>
+
+    {% if productos %}
+      <div class="mt-4 overflow-x-auto border border-line">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                       tracking-[0.15em] text-static">
+              <th class="px-4 py-3 font-medium">Título</th>
+              <th class="px-4 py-3 font-medium">Vol.</th>
+              <th class="px-4 py-3 font-medium">Editorial</th>
+              <th class="px-4 py-3 font-medium">Estado</th>
+              <th class="px-4 py-3 text-right font-medium">Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for producto in productos %}
+              <tr class="border-b border-line last:border-b-0 hover:bg-panel">
+                <td class="px-4 py-3">
+                  <a href="{% url 'catalog:producto_detalle' producto.pk %}"
+                     class="block max-w-[18rem] truncate hover:text-signal"
+                     title="{{ producto.titulo }}">{{ producto.titulo }}</a>
+                </td>
+                <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen }}</td>
+                <td class="px-4 py-3 text-static">{{ producto.editorial }}</td>
+                <td class="whitespace-nowrap px-4 py-3">
+                  <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
+                               {% if producto.estado == 'pre_venta' %}border-azure text-azure
+                               {% else %}border-line text-static{% endif %}">
+                    {{ producto.get_estado_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-xs">{{ producto.stock }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if cantidad_productos > productos|length %}
+        <p class="mt-2 font-mono text-xs text-static">
+          Se muestran {{ productos|length }} de {{ cantidad_productos }}.
+        </p>
+      {% endif %}
+    {% else %}
+      <p class="mt-4 border border-line bg-panel px-4 py-6 text-sm text-static">
+        Todavía no hay productos vinculados a este proveedor. El vínculo se establece al
+        confirmar las altas que llegan por el procesamiento automático de sus novedades.
+      </p>
+    {% endif %}
+  </section>
+
+  {% comment %}
+  CU-21 paso 4 pide además el historial de pedidos de restock despachados. El
+  módulo de Restock no está implementado todavía, así que se dice que falta en
+  vez de mostrar una tabla vacía que se leería como "nunca se le pidió nada".
+  {% endcomment %}
+  <p class="mt-6 border-l-2 border-line bg-ash px-4 py-3 font-mono text-[0.65rem] text-static">
+    El historial de pedidos de restock aparece acá cuando se implemente el módulo de
+    Restock.
+  </p>
+</div>
+{% endblock %}

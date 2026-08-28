@@ -1,0 +1,319 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Diagnóstico del modelo de lenguaje.
+
+No es de ningún caso de uso: es una herramienta de operación. El pipeline de
+CU-04 depende de un servicio que corre afuera de Django y que se apaga sin
+avisar, y sin esta pantalla la única forma de descubrirlo es que un correo quede
+fallido con un mensaje genérico.
+
+Modo operativo, con una licencia deliberada: el indicador de estado de arriba es
+más grande de lo que pide una pantalla densa. Se justifica porque es **el único
+dato que se viene a mirar** — quien abre esta pantalla tiene una pregunta sí/no
+y tiene que responderla sin leer.
+
+Los tres acentos se usan con su significado del sistema visual: `signal` para lo
+que hay que atender (servicio caído, reparos), `azure` para lo que derivó el
+sistema (latencias, valores interpretados), `static` para el resto.
+{% endcomment %}
+
+{% block titulo %}Diagnóstico del modelo · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block cabecera_extra %}
+  {{ block.super }}
+  <style>
+    /* El punto del indicador late solo cuando el servicio está en línea: un
+       latido sobre un servicio caído sería exactamente la señal equivocada. */
+    .pulso {
+      width: 0.6rem; height: 0.6rem;
+      background: #1478FF;
+      animation: latir 2s ease-in-out infinite;
+    }
+    @keyframes latir { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+    @media (prefers-reduced-motion: reduce) { .pulso { animation: none; } }
+
+    .bloque-crudo {
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 22rem;
+      overflow-y: auto;
+    }
+  </style>
+{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-4xl">
+  <div class="mb-6">
+    <h1 class="font-display text-3xl font-bold tracking-wide">Diagnóstico del modelo</h1>
+    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+      Estado del servicio de extracción · Herramienta de operación
+    </p>
+  </div>
+
+  {# --------------------------------------------------------------- #}
+  {# Bloque 1: la pregunta sí/no, respondida sin leer.                #}
+  {# --------------------------------------------------------------- #}
+  <section class="border-l-2 bg-ash px-6 py-5
+                  {% if estado.disponible %}border-azure{% else %}border-signal{% endif %}">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        {% if estado.disponible %}
+          <span class="pulso" aria-hidden="true"></span>
+          <span class="font-display text-2xl font-bold tracking-wide text-azure">En línea</span>
+        {% else %}
+          <span class="h-[0.6rem] w-[0.6rem] bg-signal" aria-hidden="true"></span>
+          <span class="font-display text-2xl font-bold tracking-wide text-signal">
+            Sin respuesta
+          </span>
+        {% endif %}
+      </div>
+      {% if estado.milisegundos %}
+        <p class="font-mono text-xs text-static">
+          Respondió en <span class="text-azure">{{ estado.milisegundos }} ms</span>
+        </p>
+      {% endif %}
+    </div>
+
+    {% if estado.detalle %}
+      <p class="mt-3 text-sm {% if estado.disponible %}text-static{% else %}text-signal{% endif %}">
+        {{ estado.detalle }}
+      </p>
+    {% endif %}
+
+    {% if estado.modelos %}
+      <div class="mt-4 border-t border-line pt-4">
+        <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Modelos cargados
+        </p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          {% for modelo in estado.modelos %}
+            <span class="border border-line px-2 py-1 font-mono text-xs">{{ modelo }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  {# --------------------------------------------------------------- #}
+  {# Bloque 2: con qué está configurado.                              #}
+  {# --------------------------------------------------------------- #}
+  <section class="mt-6 border border-line bg-ash p-6">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Configuración</h2>
+    <p class="mt-1 text-sm text-static">
+      Sale del <code class="font-mono text-xs">.env</code>. El modelo corre local: los correos de
+      un proveedor son información comercial y no salen de esta máquina.
+    </p>
+
+    <dl class="mt-4 grid gap-5 sm:grid-cols-2">
+      <div class="min-w-0">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Dirección</dt>
+        <dd class="mt-1 break-all font-mono text-sm">{{ configuracion.url }}</dd>
+      </div>
+      <div class="min-w-0">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Modelo</dt>
+        <dd class="mt-1 font-mono text-sm">{{ configuracion.modelo }}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Espera máxima
+        </dt>
+        <dd class="mt-1 font-mono text-sm">
+          {{ configuracion.timeout }} s
+          <span class="text-static">· generoso: no corre en una pantalla</span>
+        </dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Temperatura
+        </dt>
+        <dd class="mt-1 font-mono text-sm">
+          {{ configuracion.temperatura }}
+          <span class="text-static">· sin variación: acá se copia, no se redacta</span>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  {# --------------------------------------------------------------- #}
+  {# Bloque 3: el banco de pruebas.                                   #}
+  {# --------------------------------------------------------------- #}
+  <section class="mt-8">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Banco de pruebas</h2>
+    <p class="mt-1 text-sm text-static">
+      Corre <strong class="text-screen">la misma función que el pipeline</strong>, no una copia
+      simplificada: una prueba que ejercite otro camino puede pasar mientras el camino real
+      está roto. El texto es editable — se le puede pegar el contenido de un correo que salió
+      mal y ver qué entiende, sin meterlo antes en la cola.
+    </p>
+
+    <form method="post" novalidate class="mt-5 border border-line bg-ash p-6">
+      {% csrf_token %}
+      {% include "_campo.html" with campo=form.contenido %}
+
+      <div class="mt-5 flex flex-wrap items-center gap-6">
+        <div class="marco-boton">
+          <button type="submit" class="boton-primario">Probar extracción</button>
+        </div>
+        {% if not estado.disponible %}
+          <p class="font-mono text-[0.65rem] text-signal">
+            El servicio no responde: la prueba va a fallar hasta que esté en línea.
+          </p>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  {# --------------------------------------------------------------- #}
+  {# Bloque 4: qué pasó. Solo después de probar.                      #}
+  {# --------------------------------------------------------------- #}
+  {% comment %}
+  Ojo con la condición: `Extraccion` es **falso cuando hubo error**, así que
+  `{% if resultado %}` no sirve para preguntar "¿se corrió una prueba?" — con el
+  servicio caído escondería justo el bloque que explica por qué. Acá se pregunta
+  por la existencia del objeto, y adentro por si salió bien.
+  {% endcomment %}
+  {% if resultado is not None %}
+    <section class="mt-8">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <h2 class="font-display text-lg font-semibold tracking-wide">Resultado</h2>
+        <p class="font-mono text-xs text-static">
+          {{ resultado.milisegundos }} ms · prompt v{{ version_prompt }}
+        </p>
+      </div>
+
+      {% if resultado %}
+        <dl class="mt-4 grid gap-4 sm:grid-cols-4">
+          <div class="border-l-2 border-azure bg-ash px-4 py-3">
+            <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+              Intención
+            </dt>
+            <dd class="mt-1 font-display text-lg font-bold text-azure">
+              {{ resultado.intencion }}
+            </dd>
+          </div>
+          <div class="border-l-2 border-line bg-ash px-4 py-3">
+            <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+              Productos
+            </dt>
+            <dd class="mt-1 font-display text-lg font-bold">{{ resultado.resumen.productos }}</dd>
+          </div>
+          <div class="border-l-2 border-line bg-ash px-4 py-3">
+            <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+              Completos
+            </dt>
+            <dd class="mt-1 font-display text-lg font-bold">{{ resultado.resumen.completos }}</dd>
+          </div>
+          {% comment %}
+          Los reparos en `signal` porque sí piden atención: son datos que el
+          sistema le descartó al modelo. No es lo mismo que una confianza baja,
+          que la declara el modelo sobre sí mismo.
+          {% endcomment %}
+          <div class="border-l-2 bg-ash px-4 py-3
+                      {% if resultado.resumen.con_reparos %}border-signal{% else %}border-line{% endif %}">
+            <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+              Con reparos
+            </dt>
+            <dd class="mt-1 font-display text-lg font-bold
+                       {% if resultado.resumen.con_reparos %}text-signal{% else %}text-static{% endif %}">
+              {{ resultado.resumen.con_reparos }}
+            </dd>
+          </div>
+        </dl>
+
+        {% if resultado.productos %}
+          <div class="mt-4 overflow-x-auto border border-line">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                           tracking-[0.15em] text-static">
+                  <th class="px-4 py-3 font-medium">ISBN</th>
+                  <th class="px-4 py-3 font-medium">Título</th>
+                  <th class="px-4 py-3 font-medium">Vol.</th>
+                  <th class="px-4 py-3 font-medium">Formato</th>
+                  <th class="px-4 py-3 text-right font-medium">Precio</th>
+                  <th class="px-4 py-3 font-medium">Portada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for producto in resultado.productos %}
+                  <tr class="border-b border-line last:border-b-0">
+                    <td class="px-4 py-3 font-mono text-xs
+                               {% if not producto.isbn %}text-static{% endif %}">
+                      {{ producto.isbn|default:"—" }}
+                    </td>
+                    <td class="px-4 py-3">{{ producto.titulo|default:"—" }}</td>
+                    <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen|default:"—" }}</td>
+                    <td class="px-4 py-3 text-static">{{ producto.formato|default:"—" }}</td>
+                    <td class="px-4 py-3 text-right font-mono text-xs">
+                      {{ producto.precio|default:"—" }}
+                    </td>
+                    <td class="px-4 py-3 font-mono text-[0.65rem] text-static">
+                      {{ producto.imagen|default:"—" }}
+                    </td>
+                  </tr>
+                  {% if producto.reparos %}
+                    <tr class="border-b border-line last:border-b-0">
+                      <td colspan="6" class="px-4 pb-3 pt-0">
+                        {% for reparo in producto.reparos %}
+                          <p class="border-l-2 border-signal pl-3 font-mono text-[0.65rem]
+                                    leading-relaxed text-signal">{{ reparo }}</p>
+                        {% endfor %}
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="mt-4 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
+            No se extrajo ningún producto. Si la intención no es «novedades», es el
+            comportamiento correcto: solo los anuncios producen productos.
+          </p>
+        {% endif %}
+      {% else %}
+        <div class="mt-4 border-l-2 border-signal bg-panel px-4 py-3">
+          <p class="text-sm">
+            {% if resultado.sin_servicio %}
+              No se pudo consultar el modelo. El servicio no respondió dentro de la espera
+              máxima configurada.
+            {% else %}
+              El modelo respondió algo que no se pudo interpretar. Suele ser el prompt o el
+              modelo elegido, no el contenido.
+            {% endif %}
+          </p>
+          <p class="mt-1 font-mono text-[0.65rem] text-static">
+            Tardó {{ resultado.milisegundos }} ms en llegar a esta conclusión.
+          </p>
+        </div>
+      {% endif %}
+
+      {% comment %}
+      Lo crudo y el prompt van plegados: no se miran siempre, pero cuando algo
+      sale raro son lo único que explica por qué. Y son también lo que hace que
+      el pipeline se pueda mostrar en vez de tener que creerlo.
+      {% endcomment %}
+      {% if resultado.crudo %}
+        <details class="mt-4 border border-line bg-ash">
+          <summary class="cursor-pointer px-4 py-3 font-mono text-[0.7rem] uppercase
+                          tracking-[0.2em] text-static hover:text-screen">
+            Respuesta en crudo del modelo
+          </summary>
+          <p class="bloque-crudo border-t border-line px-4 py-3 font-mono text-xs
+                    leading-relaxed">{{ resultado.crudo }}</p>
+        </details>
+      {% endif %}
+
+      <details class="mt-3 border border-line bg-ash">
+        <summary class="cursor-pointer px-4 py-3 font-mono text-[0.7rem] uppercase
+                        tracking-[0.2em] text-static hover:text-screen">
+          Instrucciones que recibe el modelo (prompt v{{ version_prompt }})
+        </summary>
+        <p class="bloque-crudo border-t border-line px-4 py-3 font-mono text-xs
+                  leading-relaxed text-static">{{ prompt }}</p>
+      </details>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -14,6 +14,7 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
 {% block cabecera_extra %}
   {# Los tokens (paleta, tipografías) son compartidos y viven en base.html. #}
   {% include "_botones.html" %}
+  {% include "_campos.html" %}
   <style>
     /* ------------------------------------------------------------------
        Loader: siete cuadros recorriendo un circuito cerrado, rotado 45°.
@@ -88,22 +89,14 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
       .capa-carga { animation-delay: 0s; animation-duration: 0.01s; }
     }
 
-    /* Pisa el estilo de inputs claros de base.html (misma especificidad, gana
-       el que va después). */
-    input[type="email"], input[type="password"], input[type="text"], select, option {
-      width: 100%;
-      border: 1px solid #2C2A30;
-      border-radius: 0;
+    /* Estilo del `select` nativo: es lo que se ve si no hay JavaScript. Con
+       JavaScript lo reemplaza el desplegable propio del script de más abajo.
+       El resto de los controles vive en `_campos.html`. */
+    option {
+      border: 0;
       background-color: #141317;
       color: #EDEAE4;
-      padding: 0.5rem 0.75rem;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.875rem;
     }
-    input:focus, select:focus { outline: 1px solid #57525C; outline-offset: -1px; }
-
-    /* Estilo del `select` nativo: es lo que se ve si no hay JavaScript. Con
-       JavaScript lo reemplaza el desplegable propio del script de más abajo. */
     select {
       appearance: none;
       -webkit-appearance: none;
@@ -113,7 +106,6 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
       background-position: right 0.75rem center;
       background-size: 0.6rem;
     }
-    option { border: 0; }
 
     /* ------------------------------------------------------------------
        Menú lateral. Los grupos son `<details>` nativos; acá solo se les
@@ -121,7 +113,9 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
        que el menú se vea igual en Windows, Mac y Linux.
        ------------------------------------------------------------------ */
     .menu-enlace {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
       padding: 0.5rem 1.25rem;
       border-left: 2px solid transparent;
       color: #EDEAE4;
@@ -130,6 +124,12 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
       letter-spacing: 0.04em;
       transition: background-color 0.15s, border-color 0.15s, color 0.15s;
     }
+    /* El icono queda un tono por debajo del texto: acompaña la lectura sin
+       competir con ella, y se enciende junto con el resto de la fila. */
+    .menu-enlace svg, .menu-titulo svg { color: #57525C; transition: color 0.15s; }
+    .menu-enlace:hover svg,
+    .menu-titulo:hover svg,
+    .menu-enlace--actual svg { color: #EDEAE4; }
     .menu-enlace:hover { background: #1C1B1F; }
 
     /* Dónde estoy parado: la barra en `signal`. Es de las pocas veces que el
@@ -140,11 +140,15 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
       background: #1C1B1F;
       font-weight: 500;
     }
-    .menu-enlace--hijo { padding-left: 2.25rem; }
+    .menu-enlace--hijo { padding-left: 2.5rem; }
     .menu-enlace--inactivo { color: #57525C; cursor: default; }
     .menu-enlace--inactivo:hover { background: transparent; }
+    .menu-enlace--inactivo:hover svg { color: #57525C; }
 
     .menu-titulo {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
       padding: 0.5rem 1.25rem;
       cursor: pointer;
       color: #EDEAE4;
@@ -155,15 +159,16 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
     }
     .menu-titulo::-webkit-details-marker { display: none; }
     .menu-titulo:hover { background: #1C1B1F; }
-    /* Flecha propia: apunta a la derecha cerrado, abajo abierto. */
-    .menu-titulo::before {
+    /* Flecha propia, al final de la fila: apunta a la derecha cerrado y abajo
+       abierto. Va al margen derecho y no antes del rótulo para que el icono del
+       grupo quede alineado con el de las entradas sueltas. */
+    .menu-titulo::after {
       content: "▸";
-      display: inline-block;
-      width: 1rem;
+      margin-left: auto;
       color: #57525C;
       transition: transform 0.15s;
     }
-    .menu-grupo[open] > .menu-titulo::before { transform: rotate(90deg); }
+    .menu-grupo[open] > .menu-titulo::after { transform: rotate(90deg); }
 
     /* En pantalla angosta el menú se despliega desde el encabezado. */
     #menu-lateral.menu-abierto {
@@ -177,9 +182,17 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
   </style>
 
   {% include "_desplegable.html" %}
+  {% include "_archivo.html" %}
 {% endblock %}
 
-{% block clase_body %}min-h-screen bg-void font-body text-screen{% endblock %}
+{% comment %}
+La cáscara es una columna de alto completo: encabezado arriba y, debajo, una
+fila que ocupa todo lo que sobra. Es lo que hace que la barra lateral llegue
+hasta el pie aunque la pantalla tenga tres líneas de contenido; sin esto su
+borde se cortaba a la altura del último elemento y la pantalla quedaba partida
+por la mitad.
+{% endcomment %}
+{% block clase_body %}flex min-h-screen flex-col bg-void font-body text-screen{% endblock %}
 
 {% block cuerpo_inicio %}
 <div id="capa-carga" class="capa-carga">
@@ -264,7 +277,8 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-46).
 {% endblock %}
 
 {% block layout %}
-<div class="flex">
+{# `flex-1` reparte a la fila todo el alto que el encabezado no usa. #}
+<div class="flex flex-1">
   {% include "_menu_lateral.html" %}
 
   {% comment %}

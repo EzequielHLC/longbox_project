@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from decimal import Decimal
 from pathlib import Path
 
 from decouple import config
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.catalog",
+    "apps.suppliers",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
@@ -138,6 +140,13 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 
+# Archivos subidos por el personal: las portadas de los productos (RF-04).
+# No se versionan —son datos, no código— y en producción esto pasa a un
+# almacenamiento aparte; en desarrollo alcanza con una carpeta del proyecto.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+
 # Autenticación y sesiones (Módulo 12 — CU-46, CU-47, CU-48)
 
 LOGIN_URL = "accounts:login"
@@ -168,6 +177,61 @@ LOGIN_BLOQUEO_MINUTOS = 15
 DEFAULT_FROM_EMAIL = "no-responder@longbox.local"
 
 
+# Alta Editorial (Módulo 01 — CU-01, CU-02)
+#
+# Los dos valores son parámetros de negocio, no constantes técnicas: el panel de
+# Configuración del Sistema (CU-56, Módulo 17) los va a exponer para que el
+# Administrador los edite sin tocar código. Hasta entonces viven acá, y salen
+# del `.env` para poder cambiarlos sin editar el repositorio.
+
+# Precondición de CU-02: el margen de ganancia global está configurado. Se
+# expresa como proporción, no como porcentaje: 0.40 es un 40%.
+MARGEN_GANANCIA_GLOBAL = config("MARGEN_GANANCIA_GLOBAL", default="0.40", cast=Decimal)
+
+# Stock con el que nace un borrador automatizado que no lo declara (CU-05).
+# El alta manual de CU-01/CU-02 **no** usa este valor: si el Administrador no
+# contó unidades, el producto nace en cero. Inventarle stock a un sistema de
+# stock es la clase de error que después se paga vendiendo lo que no hay.
+STOCK_INICIAL_POR_DEFECTO = config("STOCK_INICIAL_POR_DEFECTO", default=1, cast=int)
+
+
+# Modelo de lenguaje (CU-04): extracción de novedades desde el correo del
+# proveedor.
+#
+# **Corre local**, en LM Studio, que expone una API compatible con la de OpenAI.
+# La decisión no es solo de costo: los correos de un proveedor son información
+# comercial de la comiquería, y mandarla a un tercero para que la lea es una
+# decisión que este proyecto no necesita tomar. Además hace que la defensa no
+# dependa de tener conexión ni una credencial vigente.
+#
+# Que la API sea compatible con la de OpenAI es lo que deja la puerta abierta:
+# cambiar a un servicio remoto es cambiar tres valores del `.env`, no reescribir
+# el wrapper.
+
+LLM_URL = config("LLM_URL", default="http://127.0.0.1:1234/v1/chat/completions")
+
+# Vacío significa "el que esté cargado en el servidor". LM Studio acepta eso, y
+# es lo cómodo mientras se prueban modelos; contra un servicio remoto hay que
+# declararlo.
+LLM_MODELO = config("LLM_MODELO", default="")
+
+# LM Studio no la valida, pero la cabecera viaja igual para que apuntar a un
+# servicio remoto no requiera tocar código.
+LLM_API_KEY = config("LLM_API_KEY", default="lm-studio")
+
+# **Generoso a propósito**, y es la diferencia más grande con el resto de las
+# integraciones. Los catálogos usan tres segundos porque RNF-02 pide que una
+# pantalla responda en dos; esto no corre en una pantalla sino en una tarea de
+# fondo, y un modelo local leyendo un catálogo de cuarenta productos tarda
+# minutos. Cortarlo a los tres segundos sería no usarlo nunca.
+LLM_TIMEOUT = config("LLM_TIMEOUT", default=300, cast=int)
+
+# Cuánta variación se le permite. En cero el modelo elige siempre la
+# continuación más probable, que es lo que se quiere para transcribir una tabla:
+# acá no hay nada que redactar, hay datos que copiar sin inventar.
+LLM_TEMPERATURA = config("LLM_TEMPERATURA", default="0", cast=Decimal)
+
+
 # Datos geográficos (provincias y localidades): georef-ar-api, el servicio
 # oficial de la Secretaría de Innovación Pública sobre datos del INDEC.
 
@@ -191,6 +255,21 @@ PAISES_API_URL = config(
 )
 PAISES_TIMEOUT = config("PAISES_TIMEOUT", default=3, cast=int)
 PAISES_CACHE_SEGUNDOS = config("PAISES_CACHE_SEGUNDOS", default=60 * 60 * 24 * 7, cast=int)
+
+
+# Cotización del peso frente al dólar, el euro y el yen, para el alta de lotes
+# importados. Se pide con base en dólares y las otras dos salen por paridad
+# cruzada, así la pantalla espera un solo pedido y no tres.
+
+COTIZACIONES_API_URL = config(
+    "COTIZACIONES_API_URL", default="https://open.er-api.com/v6/latest/USD"
+)
+COTIZACIONES_TIMEOUT = config("COTIZACIONES_TIMEOUT", default=3, cast=int)
+
+# Seis horas, mucho menos que los otros catálogos: una provincia no cambia
+# nunca y un tipo de cambio cambia todos los días. Igual el valor que se ofrece
+# es una sugerencia editable, así que la caché nunca decide un precio sola.
+COTIZACIONES_CACHE_SEGUNDOS = config("COTIZACIONES_CACHE_SEGUNDOS", default=60 * 60 * 6, cast=int)
 
 # Explícito aunque sea el valor por defecto de Django: acá la caché no es una
 # optimización opcional, es lo que evita consultar un servicio externo en cada

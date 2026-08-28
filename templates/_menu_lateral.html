@@ -6,6 +6,12 @@ de JavaScript, funcionan con teclado, y el navegador ya sabe cómo tratarlos. Se
 abre solo el grupo donde está parado el usuario, que se detecta comparando
 `request.resolver_match.view_name` con cada destino.
 
+Los iconos van como SVG en línea y no como fuente de iconos ni imágenes: son
+nueve trazos, heredan el color del texto con `currentColor` —así acompañan solos
+el resaltado de la pantalla actual— y no agregan un pedido de red ni una
+dependencia externa. Cada uno se dibuja con la misma familia geométrica que el
+resto del sistema: trazo de 1,5px, sin relleno, sin curvas innecesarias.
+
 Las secciones que todavía no existen se muestran igual, apagadas y marcadas.
 Mostrar el mapa completo del sistema desde el principio le dice al personal qué
 va a haber, y a nosotros nos evita rediseñar el menú en cada módulo nuevo.
@@ -17,8 +23,13 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
 
 {% with actual=request.resolver_match.view_name %}
 <aside id="menu-lateral"
-       class="hidden w-60 shrink-0 border-r border-line bg-ash md:block">
-  <nav class="sticky top-0 flex max-h-screen flex-col overflow-y-auto py-6">
+       class="hidden w-60 shrink-0 border-r border-line bg-ash md:flex md:flex-col">
+  {% comment %}
+  `sticky` con `top-0` y alto de pantalla: en un listado largo el menú acompaña
+  el scroll en vez de quedarse arriba, y su propia lista scrollea aparte si no
+  entra.
+  {% endcomment %}
+  <nav class="sticky top-0 flex h-screen flex-col overflow-y-auto py-6">
 
     <p class="px-5 pb-3 font-mono text-[0.6rem] uppercase tracking-[0.25em] text-static">
       Operación
@@ -26,7 +37,8 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
 
     <a href="{% url 'core:panel' %}"
        class="menu-enlace {% if actual == 'core:panel' %}menu-enlace--actual{% endif %}">
-      Panel
+      {% include "_iconos.html" with icono="panel" %}
+      <span>Panel</span>
     </a>
 
     {% if user.rol == 'administrador' %}
@@ -37,19 +49,96 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       {% endcomment %}
       <details class="menu-grupo"
                {% if 'accounts:usuario' in actual or 'accounts:cliente' in actual %}open{% endif %}>
-        <summary class="menu-titulo">Cuentas</summary>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="cuentas" %}
+          <span>Cuentas</span>
+        </summary>
 
         <a href="{% url 'accounts:usuario_lista' %}"
            class="menu-enlace menu-enlace--hijo
                   {% if 'accounts:usuario' in actual %}menu-enlace--actual{% endif %}">
-          Usuarios del sistema
+          {% include "_iconos.html" with icono="personal" %}
+          <span>Usuarios del sistema</span>
         </a>
         <a href="{% url 'accounts:cliente_lista' %}"
            class="menu-enlace menu-enlace--hijo
                   {% if 'accounts:cliente' in actual %}menu-enlace--actual{% endif %}">
-          Clientes
+          {% include "_iconos.html" with icono="clientes" %}
+          <span>Clientes</span>
         </a>
       </details>
+
+      {% comment %}
+      Catálogo. Las dos altas son pantallas distintas porque lo que cambia entre
+      ellas es de dónde sale el precio: la tabla de referencia o el costo de
+      importación.
+      {% endcomment %}
+      <details class="menu-grupo" {% if 'catalog:' in actual %}open{% endif %}>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="catalogo" %}
+          <span>Catálogo</span>
+        </summary>
+
+        <a href="{% url 'catalog:producto_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="inventario" %}
+          <span>Inventario</span>
+        </a>
+        <a href="{% url 'catalog:lote_nacional' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if actual == 'catalog:lote_nacional' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="lote" %}
+          <span>Nuevo lote nacional</span>
+        </a>
+        <a href="{% url 'catalog:lote_importado' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if actual == 'catalog:lote_importado' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="importado" %}
+          <span>Nuevo lote importado</span>
+        </a>
+      </details>
+
+      {% comment %}
+      La cola de correos va dentro de Proveedores y no como sección aparte:
+      es la casilla de ellos lo que la alimenta, y su ficha es donde se
+      resuelve por qué un proveedor manda o no manda a la cola.
+      {% endcomment %}
+      <details class="menu-grupo" {% if 'suppliers:' in actual %}open{% endif %}>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="proveedores" %}
+          <span>Proveedores</span>
+        </summary>
+
+        <a href="{% url 'suppliers:proveedor_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'suppliers:proveedor' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="proveedores" %}
+          <span>Padrón</span>
+        </a>
+        <a href="{% url 'suppliers:correo_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'suppliers:correo' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="lote" %}
+          <span>Correos recibidos</span>
+        </a>
+        {% comment %}
+        No es una pantalla de negocio sino de operación, pero vive acá porque lo
+        que diagnostica es el servicio del que depende esta casilla.
+        {% endcomment %}
+        <a href="{% url 'suppliers:diagnostico_llm' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'suppliers:diagnostico' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="parametros" %}
+          <span>Diagnóstico del modelo</span>
+        </a>
+      </details>
+
+      <a href="{% url 'catalog:parametros' %}"
+         class="menu-enlace {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual or 'catalog:precio' in actual %}menu-enlace--actual{% endif %}">
+        {% include "_iconos.html" with icono="parametros" %}
+        <span>Parámetros globales</span>
+      </a>
     {% endif %}
 
     <p class="px-5 pb-3 pt-6 font-mono text-[0.6rem] uppercase tracking-[0.25em] text-static">
@@ -61,16 +150,30 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     menú y la estructura de apps se lean igual. Son `<span>`, no `<a>`: no
     llevan a ninguna parte y no deben poder enfocarse con el tabulador.
     {% endcomment %}
-    <span class="menu-enlace menu-enlace--inactivo">Catálogo</span>
-    <span class="menu-enlace menu-enlace--inactivo">Precios</span>
-    <span class="menu-enlace menu-enlace--inactivo">Proveedores</span>
-    <span class="menu-enlace menu-enlace--inactivo">Ventas y caja</span>
-    <span class="menu-enlace menu-enlace--inactivo">Tienda online</span>
-    <span class="menu-enlace menu-enlace--inactivo">Devoluciones</span>
-    <span class="menu-enlace menu-enlace--inactivo">Puntos</span>
-    <span class="menu-enlace menu-enlace--inactivo">Reportes y auditoría</span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="precios" %}<span>Precios</span>
+    </span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="caja" %}<span>Ventas y caja</span>
+    </span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="tienda" %}<span>Tienda online</span>
+    </span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="devoluciones" %}<span>Devoluciones</span>
+    </span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="puntos" %}<span>Puntos</span>
+    </span>
+    <span class="menu-enlace menu-enlace--inactivo">
+      {% include "_iconos.html" with icono="reportes" %}<span>Reportes y auditoría</span>
+    </span>
 
-    <div class="mt-6 border-t border-line px-5 pt-4">
+    {% comment %}
+    La identificación de la cuenta va al pie y `mt-auto` la empuja ahí: en un
+    menú corto queda abajo igual, sin depender de cuántas entradas haya arriba.
+    {% endcomment %}
+    <div class="mt-auto border-t border-line px-5 pt-4">
       <p class="font-mono text-[0.6rem] uppercase tracking-[0.2em]
                 {% if user.rol == 'administrador' %}text-signal{% else %}text-azure{% endif %}">
         {{ user.get_rol_display }}

@@ -1,0 +1,305 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La ficha de un correo de la cola: qué llegó, qué se extrajo y qué se hace.
+
+Lo que se muestra es el **contenido extraído**, no el HTML original. Es
+exactamente lo que se le va a mandar al modelo, y poder leerlo antes de aprobar
+es lo que permite darse cuenta de que la extracción salió mal —columnas
+corridas, una tabla que no se reconoció— sin haber gastado un solo ciclo.
+
+Las filas de una tabla de datos se distinguen de la prosa con un borde: si el
+bloque no muestra ninguna fila marcada, la extracción aplanó la tabla y el
+correo no está listo para procesarse.
+{% endcomment %}
+
+{% block titulo %}{{ correo.asunto|default:"Correo" }} · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block cabecera_extra %}
+  {{ block.super }}
+  <style>
+    /* El contenido extraído se lee como un bloque de datos, no como prosa: la
+       alineación de las barras es lo que deja ver de un vistazo si las columnas
+       quedaron parejas. */
+    .linea-extraida { white-space: pre-wrap; }
+    .linea-extraida--fila { border-left: 2px solid #1478FF; padding-left: 0.75rem; }
+  </style>
+{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-4xl">
+  <a href="{% url 'suppliers:correo_lista' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a la cola
+  </a>
+
+  <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0">
+      <h1 class="font-display text-3xl font-bold tracking-wide">
+        {{ correo.asunto|default:"Sin asunto" }}
+      </h1>
+      <p class="mt-2 flex flex-wrap items-center gap-3">
+        <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
+                     {% if correo.estado == 'pendiente' %}border-azure text-azure
+                     {% elif correo.estado == 'fallido' %}border-signal text-signal
+                     {% else %}border-line text-static{% endif %}">
+          {{ correo.get_estado_display }}
+        </span>
+        <a href="{% url 'suppliers:proveedor_detalle' correo.proveedor.pk %}"
+           class="font-mono text-xs text-static hover:text-screen">
+          {{ correo.proveedor }}
+        </a>
+      </p>
+    </div>
+
+    {% if correo.archivo %}
+      <a href="{{ correo.archivo.url }}" class="boton-menor"><span>Ver original</span></a>
+    {% endif %}
+  </div>
+
+  <div class="mt-6 border border-line bg-ash p-6">
+    <dl class="grid gap-5 sm:grid-cols-2">
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Remitente</dt>
+        <dd class="mt-1 break-all font-mono text-sm">{{ correo.remitente }}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Fecha del correo
+        </dt>
+        <dd class="mt-1 font-mono text-sm">
+          {{ correo.fecha|date:"d/m/Y H:i"|default:"—" }}
+        </dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Ingresado</dt>
+        <dd class="mt-1 font-mono text-sm">{{ correo.recibido_en|date:"d/m/Y H:i" }}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Portadas embebidas
+        </dt>
+        <dd class="mt-1 font-display text-2xl font-bold">{{ correo.cantidad_imagenes }}</dd>
+      </div>
+    </dl>
+
+    {% comment %}
+    La cabecera que van a heredar los borradores de este correo. Se muestra acá
+    y no solo en la ficha del proveedor porque es lo que hay que verificar antes
+    de aprobar: si el proveedor tiene la editorial equivocada, todo lo que salga
+    de este correo va a nacer mal.
+    {% endcomment %}
+    <div class="mt-5 border-t border-line pt-4">
+      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+        Sus borradores van a heredar
+      </p>
+      <p class="mt-2 text-sm">
+        <span class="{% if correo.proveedor.trae_varias_editoriales %}text-static{% endif %}">
+          {{ correo.proveedor.editorial|default:"Editorial: se extrae de cada correo" }}
+        </span>
+        <span class="text-line" aria-hidden="true"> · </span>
+        <span class="{% if not correo.proveedor.tipo_por_defecto %}text-static{% endif %}">
+          {{ correo.proveedor.tipo_por_defecto|default:"Tipo: se extrae de cada correo" }}
+        </span>
+      </p>
+    </div>
+  </div>
+
+  {% comment %}
+  Las portadas: identificador, tipo y tamaño. No se muestran las imágenes en sí
+  porque todavía no están extraídas del original — se sacan cuando haya un
+  borrador al que asociarlas, y copiarlas antes sería duplicar bytes que ya
+  están archivados.
+  {% endcomment %}
+  {% if correo.imagenes %}
+    <section class="mt-8">
+      <h2 class="font-display text-lg font-semibold tracking-wide">Portadas embebidas</h2>
+      <p class="mt-1 text-sm text-static">
+        Vinieron dentro del correo, no hay nada que descargar. Cada una se asocia a su
+        producto por el identificador que aparece en la fila.
+      </p>
+      <div class="mt-4 overflow-x-auto border border-line">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                       tracking-[0.15em] text-static">
+              <th class="px-4 py-3 font-medium">Identificador</th>
+              <th class="px-4 py-3 font-medium">Tipo</th>
+              <th class="px-4 py-3 text-right font-medium">Tamaño</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for imagen in correo.imagenes %}
+              <tr class="border-b border-line last:border-b-0">
+                <td class="px-4 py-3 font-mono text-xs">{{ imagen.cid }}</td>
+                <td class="px-4 py-3 font-mono text-xs text-static">{{ imagen.tipo }}</td>
+                <td class="px-4 py-3 text-right font-mono text-xs text-static">
+                  {{ imagen.bytes|filesizeformat }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {% comment %}
+  Lo que el modelo entendió, **antes** de que se convierta en borradores. Es un
+  paso más de la misma idea que el contenido extraído: cada etapa del pipeline
+  se puede mirar antes de que la siguiente gaste algo.
+
+  Los reparos van en `signal` y la confianza baja en `static`: son cosas
+  distintas. La confianza la declara el modelo —"esto lo leí dudando"— y el
+  reparo lo detectamos nosotros —"esto lo descarté porque no verifica"—.
+  {% endcomment %}
+  {% if correo.extraccion %}
+    <section class="mt-8">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <h2 class="font-display text-lg font-semibold tracking-wide">Lo que entendió el modelo</h2>
+        <p class="font-mono text-[0.65rem] text-static">
+          Intención: <span class="text-screen">{{ correo.intencion|default:"—" }}</span>
+          {% if correo.version_prompt %}· prompt v{{ correo.version_prompt }}{% endif %}
+        </p>
+      </div>
+
+      {% if correo.productos_extraidos %}
+        <div class="mt-4 overflow-x-auto border border-line">
+          <table class="w-full text-left text-sm">
+            <thead>
+              <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                         tracking-[0.15em] text-static">
+                <th class="px-4 py-3 font-medium">ISBN</th>
+                <th class="px-4 py-3 font-medium">Título</th>
+                <th class="px-4 py-3 font-medium">Vol.</th>
+                <th class="px-4 py-3 font-medium">Formato</th>
+                <th class="px-4 py-3 text-right font-medium">Precio</th>
+                <th class="px-4 py-3 font-medium">Portada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for producto in correo.productos_extraidos %}
+                <tr class="border-b border-line last:border-b-0
+                           {% if producto.reparos %}bg-panel{% endif %}">
+                  <td class="px-4 py-3 font-mono text-xs
+                             {% if not producto.isbn %}text-static{% endif %}">
+                    {{ producto.isbn|default:"—" }}
+                  </td>
+                  <td class="px-4 py-3">{{ producto.titulo|default:"—" }}</td>
+                  <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen|default:"—" }}</td>
+                  <td class="px-4 py-3 text-static">{{ producto.formato|default:"—" }}</td>
+                  <td class="px-4 py-3 text-right font-mono text-xs
+                             {% if not producto.precio %}text-signal{% endif %}">
+                    {{ producto.precio|default:"sin precio" }}
+                  </td>
+                  <td class="px-4 py-3 font-mono text-[0.65rem] text-static">
+                    {% if producto.imagen %}sí{% else %}—{% endif %}
+                  </td>
+                </tr>
+                {% if producto.reparos %}
+                  <tr class="border-b border-line last:border-b-0">
+                    <td colspan="6" class="px-4 pb-3 pt-0">
+                      {% for reparo in producto.reparos %}
+                        <p class="border-l-2 border-signal pl-3 font-mono text-[0.65rem]
+                                  leading-relaxed text-signal">{{ reparo }}</p>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 font-mono text-[0.65rem] text-static">
+          Todavía no son productos del catálogo: la confirmación es un paso aparte.
+          La editorial y el tipo los aporta la ficha del proveedor, no el correo.
+        </p>
+      {% else %}
+        <p class="mt-4 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
+          {% if correo.intencion == "novedades" %}
+            El modelo lo clasificó como novedades pero no identificó ningún producto.
+            Conviene revisar el contenido extraído de más abajo.
+          {% else %}
+            No es un anuncio de novedades, así que no se extrajo ningún producto.
+          {% endif %}
+        </p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <section class="mt-8">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Contenido extraído</h2>
+    <p class="mt-1 text-sm text-static">
+      Es exactamente lo que se le va a entregar al modelo. Las líneas marcadas en azul
+      son filas de una tabla de datos; si no hay ninguna, la extracción no reconoció la
+      estructura y conviene revisar el original antes de procesarlo.
+    </p>
+
+    {% if lineas %}
+      <div class="mt-4 space-y-1 overflow-x-auto border border-line bg-panel px-5 py-4
+                  font-mono text-xs leading-relaxed">
+        {% for linea in lineas %}
+          <p class="linea-extraida {% if linea.es_fila %}linea-extraida--fila{% else %}text-static{% endif %}">{{ linea.texto }}</p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+        No se pudo extraer contenido de este correo. Revise el original: puede venir vacío,
+        solo con una imagen, o en un formato que la extracción no contempla.
+      </p>
+    {% endif %}
+  </section>
+
+  {% comment %}
+  La decisión. Por ahora la única acción es descartar: aprobar tiene sentido
+  recién cuando exista el extractor que consume esta cola, y ofrecer un botón
+  que no hace nada sería peor que no ofrecerlo.
+  {% endcomment %}
+  <section class="mt-8 border-t border-line pt-6">
+    {% if correo.esta_abierto %}
+      <h2 class="font-display text-lg font-semibold tracking-wide">Qué hacer con este correo</h2>
+      <p class="mt-1 text-sm text-static">
+        Descartarlo lo saca de la cola sin procesarlo. El procesamiento automático se
+        habilita cuando esté el extractor conectado.
+      </p>
+
+      <form method="post" novalidate class="mt-4 max-w-xl">
+        {% csrf_token %}
+        {% include "_campo.html" with campo=form.motivo %}
+        <div class="mt-5 flex items-center gap-6">
+          <div class="marco-boton">
+            <button type="submit" class="boton-primario">Descartar correo</button>
+          </div>
+          <a href="{% url 'suppliers:correo_lista' %}"
+             class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+            Dejarlo pendiente
+          </a>
+        </div>
+      </form>
+    {% else %}
+      <h2 class="font-display text-lg font-semibold tracking-wide">Ya resuelto</h2>
+      <dl class="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Resultado</dt>
+          <dd class="mt-1 text-sm">{{ correo.get_estado_display }}</dd>
+        </div>
+        <div>
+          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Resuelto</dt>
+          <dd class="mt-1 font-mono text-sm">
+            {{ correo.resuelto_en|date:"d/m/Y H:i"|default:"—" }}
+            {% if correo.resuelto_por %}
+              · {{ correo.resuelto_por.get_full_name|default:correo.resuelto_por.email }}
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+      {% if correo.motivo %}
+        <div class="mt-4 border-l-2 border-line bg-ash px-4 py-3">
+          <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Motivo</p>
+          <p class="mt-1 whitespace-pre-line text-sm">{{ correo.motivo }}</p>
+        </div>
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

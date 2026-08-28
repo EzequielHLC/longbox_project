@@ -1,0 +1,113 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-21 — Consultar Proveedores. Punto de entrada del módulo.
+
+Modo operativo: tabla densa, `mono` para correos y cifras, sin `clip-path` por
+fila. Una sola acción principal —el alta— porque el resto de las operaciones
+salen de la ficha de cada proveedor, tal como las encadena el CU.
+{% endcomment %}
+
+{% block titulo %}Proveedores · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-bold tracking-wide">Proveedores</h1>
+    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+      Editoriales y distribuidoras · Remitentes del procesamiento automático
+    </p>
+  </div>
+
+  <div class="marco-boton">
+    <a href="{% url 'suppliers:proveedor_alta' %}" class="boton-primario">Nuevo proveedor</a>
+  </div>
+</div>
+
+{% comment %}
+Estado del padrón completo, no del recorte filtrado. Los inactivos van en
+`static` y no en `signal`: estar de baja no es un problema que haya que atender,
+es una decisión ya tomada.
+
+"Activos" y "alimentan el pipeline" son dos cifras distintas a propósito. La
+diferencia entre las dos son los proveedores activos con el procesamiento
+apagado — el grupo que de otro modo quedaría invisible y que explica por qué de
+alguien deja de llegar material sin que nadie lo haya dado de baja. El azul es
+el del sistema visual para lo que deriva de un cálculo, no decoración.
+{% endcomment %}
+<dl class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="border-l-2 border-line bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Registrados</dt>
+    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.total }}</dd>
+  </div>
+  <div class="border-l-2 border-line bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Activos</dt>
+    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.activos }}</dd>
+  </div>
+  <div class="border-l-2 border-azure bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+      Alimentan el pipeline
+    </dt>
+    <dd class="mt-1 font-display text-2xl font-bold text-azure">{{ resumen.alimentan }}</dd>
+  </div>
+  <div class="border-l-2 border-line bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Dados de baja</dt>
+    <dd class="mt-1 font-display text-2xl font-bold text-static">{{ resumen.inactivos }}</dd>
+  </div>
+</dl>
+
+{% comment %}
+El formulario funciona sin JavaScript: se envía con el botón "Buscar" y recarga
+la pantalla. Con JavaScript, `_tabla_filtrable.html` lo intercepta y refresca
+solo la tabla mientras se escribe.
+{% endcomment %}
+<form id="filtros" method="get" data-sin-capa
+      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
+  <div class="grow">
+    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Buscar
+    </label>
+    <input type="text" id="q" name="q" value="{{ busqueda }}"
+           placeholder="Buscar por razón social, correo o contacto — atajo: /" autocomplete="off"
+           class="w-full min-w-[26rem]">
+  </div>
+
+  <div>
+    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Estado
+    </label>
+    <select id="estado" name="estado" class="w-56">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
+          {{ etiqueta }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button type="submit" class="boton-menor boton-menor--tenue">
+    <span>Buscar</span>
+  </button>
+
+  {% if busqueda or estado_elegido %}
+    <a href="{% url 'suppliers:proveedor_lista' %}"
+       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static
+              hover:text-screen">
+      Limpiar filtros
+    </a>
+  {% endif %}
+</form>
+
+<div class="relative">
+  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
+    {% include "_loader.html" with clase="loader--chico" %}
+  </div>
+
+  <div id="tabla">
+    {% include "suppliers/_tabla_proveedores.html" %}
+  </div>
+</div>
+
+{% include "_tabla_filtrable.html" %}
+{% endblock %}

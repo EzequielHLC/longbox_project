@@ -1,0 +1,201 @@
+{% extends "base_operativo.html" %}
+{% load l10n %}
+{% comment %}
+Resultado de una carga en lote.
+
+Es una pantalla propia y no un mensaje de una línea por dos motivos: cada
+colisión tiene que enlazar a la ficha del producto con el que se chocó, y el
+resultado se guarda con el lote, así que se puede volver a mirar, recargar y
+compartir en vez de vivir en la sesión y perderse al refrescar.
+{% endcomment %}
+
+{% block titulo %}Resumen del lote · Longbox{% endblock %}
+{% block seccion %}Alta editorial{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-5xl">
+  <a href="{% url 'catalog:producto_lista' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver al inventario
+  </a>
+
+  <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="font-display text-3xl font-bold tracking-wide">
+        Lote {{ lote.get_origen_display|lower }} registrado
+      </h1>
+      <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+        {{ lote.creado_en|date:"d/m/Y H:i" }} ·
+        {% if lote.es_mixto %}
+          cabecera mixta
+        {% else %}
+          {{ lote.editorial }} · {{ lote.tipo }}{% if lote.formato %} · {{ lote.formato }}{% endif %}
+        {% endif %}
+        {% if lote.creado_por %} · {{ lote.creado_por.get_full_name|default:lote.creado_por.email }}{% endif %}
+      </p>
+    </div>
+    <span class="border border-azure px-3 py-1.5 font-mono text-[0.7rem] uppercase
+                 tracking-wider text-azure">
+      Lote #{{ lote.pk }}
+    </span>
+  </div>
+
+  {% comment %}
+  Las cifras del lote. `signal` solo en los rechazados, y solo si hubo alguno:
+  es lo único de esta pantalla que pide una acción.
+  {% endcomment %}
+  <dl class="mt-6 grid gap-4 sm:grid-cols-3">
+    <div class="border-l-2 border-azure bg-ash px-4 py-3">
+      <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Creados</dt>
+      <dd class="mt-1 font-display text-3xl font-bold text-azure">{{ creados|length }}</dd>
+    </div>
+    <div class="border-l-2 bg-ash px-4 py-3 {% if rechazados %}border-signal{% else %}border-line{% endif %}">
+      <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+        Rechazados por duplicado
+      </dt>
+      <dd class="mt-1 font-display text-3xl font-bold {% if rechazados %}text-signal{% else %}text-static{% endif %}">
+        {{ rechazados|length }}
+      </dd>
+    </div>
+    <div class="border-l-2 border-line bg-ash px-4 py-3">
+      <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+        Con precio a mano
+      </dt>
+      <dd class="mt-1 font-display text-3xl font-bold text-static">
+        {{ con_precio_manual|length }}
+      </dd>
+    </div>
+  </dl>
+
+  {% if lote.origen == 'importado' %}
+    <dl class="mt-4 grid gap-4 border border-line bg-panel px-4 py-3 font-mono text-xs sm:grid-cols-3">
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Costo relativo de envío</dt>
+        <dd class="mt-1 text-azure">{{ lote.cre|unlocalize }}</dd>
+      </div>
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Margen vigente al alta</dt>
+        <dd class="mt-1 text-azure">{{ lote.margen_aplicado|unlocalize }}</dd>
+      </div>
+      <div>
+        <dt class="uppercase tracking-[0.15em] text-static">Cotización</dt>
+        <dd class="mt-1">
+          {% if lote.tiene_conversion %}
+            1 {{ lote.moneda_origen }} = ${{ lote.cotizacion }}
+          {% else %}
+            en pesos
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  {% endif %}
+
+  {% if rechazados %}
+    <section class="mt-8">
+      <h2 class="font-display text-lg font-semibold tracking-wide">Excluidos del alta</h2>
+      <p class="mt-1 text-sm text-static">
+        Estos ítems reproducen una combinación de título, volumen, formato y editorial que ya
+        existe en el catálogo. El resto del lote se registró con normalidad.
+      </p>
+
+      <div class="mt-4 overflow-x-auto border border-line">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                       tracking-[0.15em] text-static">
+              <th class="px-4 py-3 font-medium">Título</th>
+              <th class="px-4 py-3 font-medium">Volumen</th>
+              <th class="px-4 py-3 font-medium">Editorial</th>
+              <th class="px-4 py-3 text-right font-medium">Producto existente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rechazado in rechazados %}
+              <tr class="border-b border-line last:border-b-0 hover:bg-panel">
+                <td class="px-4 py-3">{{ rechazado.titulo }}</td>
+                <td class="px-4 py-3 font-mono text-xs">{{ rechazado.volumen }}</td>
+                <td class="px-4 py-3">{{ rechazado.editorial }}</td>
+                <td class="px-4 py-3 text-right">
+                  {% if rechazado.existente %}
+                    <a href="{% url 'catalog:producto_detalle' rechazado.existente.pk %}"
+                       class="boton-menor"><span>Ver ficha</span></a>
+                  {% else %}
+                    <span class="font-mono text-xs text-static">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="mt-8">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Productos registrados</h2>
+
+    {% if creados %}
+      <div class="mt-4 overflow-x-auto border border-line">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                       tracking-[0.15em] text-static">
+              <th class="px-4 py-3 font-medium">Título</th>
+              <th class="px-4 py-3 font-medium">Vol.</th>
+              <th class="px-4 py-3 font-medium">Editorial</th>
+              <th class="px-4 py-3 font-medium">Estado</th>
+              <th class="px-4 py-3 text-right font-medium">Stock</th>
+              <th class="px-4 py-3 text-right font-medium">Precio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for producto in creados %}
+              <tr class="border-b border-line last:border-b-0 hover:bg-panel">
+                <td class="px-4 py-3">
+                  <a href="{% url 'catalog:producto_detalle' producto.pk %}"
+                     class="hover:text-azure">{{ producto.titulo }}</a>
+                  {% if producto.portada_pendiente %}
+                    <span class="ml-2 border border-line px-1.5 py-0.5 font-mono text-[0.6rem]
+                                 uppercase tracking-wider text-static">Imagen pendiente</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen }}</td>
+                <td class="px-4 py-3">{{ producto.editorial }}</td>
+                <td class="whitespace-nowrap px-4 py-3">
+                  <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
+                               {% if producto.esta_en_pre_venta %}border-azure text-azure
+                               {% else %}border-static text-screen{% endif %}">
+                    {{ producto.get_estado_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-xs">{{ producto.stock }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs">
+                  ${{ producto.precio }}
+                  {% if producto.precio_manual %}
+                    <span class="ml-1 text-static">· a mano</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="mt-4 border border-line bg-panel px-4 py-6 text-sm text-static">
+        No se registró ningún producto de este lote.
+      </p>
+    {% endif %}
+  </section>
+
+  <div class="mt-8 flex items-center gap-6 border-t border-line pt-6">
+    <div class="marco-boton">
+      <a href="{% if lote.origen == 'importado' %}{% url 'catalog:lote_importado' %}{% else %}{% url 'catalog:lote_nacional' %}{% endif %}"
+         class="boton-primario">Cargar otro lote</a>
+    </div>
+    <a href="{% url 'catalog:producto_lista' %}"
+       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+      Ver el inventario
+    </a>
+  </div>
+</div>
+{% endblock %}

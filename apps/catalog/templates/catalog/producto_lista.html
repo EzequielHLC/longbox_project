@@ -1,0 +1,169 @@
+{% extends "base_operativo.html" %}
+
+{% block titulo %}Inventario · Longbox{% endblock %}
+{% block seccion %}Catálogo{% endblock %}
+
+{% block contenido %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-bold tracking-wide">Inventario</h1>
+    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+      Productos del catálogo · Solo consulta
+    </p>
+  </div>
+
+  {% comment %}
+  Las dos altas pesan lo mismo: son los dos caminos por los que entra material
+  al catálogo, y ninguna es accesoria de la otra. Misma pieza y mismo tamaño,
+  distinto acento —cálido para lo nacional, frío para lo importado—, que es lo
+  que las distingue de un vistazo sin sugerir una jerarquía que no existe.
+  {% endcomment %}
+  <div class="flex flex-wrap items-center gap-7">
+    <div class="marco-boton">
+      <a href="{% url 'catalog:lote_nacional' %}" class="boton-primario">Nuevo lote nacional</a>
+    </div>
+    <div class="marco-boton">
+      <a href="{% url 'catalog:lote_importado' %}" class="boton-primario boton-primario--frio">
+        Nuevo lote importado
+      </a>
+    </div>
+  </div>
+</div>
+
+{% comment %}
+Estado del inventario completo, no del recorte filtrado: es el tablero de la
+pantalla y tiene que decir lo mismo esté o no aplicado un filtro. El rojo
+aparece solo cuando hay productos publicados sin unidades, que es lo único de
+acá que pide una acción.
+{% endcomment %}
+<dl class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="border-l-2 border-line bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">En el catálogo</dt>
+    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.total }}</dd>
+  </div>
+  <div class="border-l-2 border-line bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Activos</dt>
+    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.activos }}</dd>
+  </div>
+  <div class="border-l-2 border-azure bg-ash px-4 py-3">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">En pre-venta</dt>
+    <dd class="mt-1 font-display text-2xl font-bold text-azure">{{ resumen.pre_venta }}</dd>
+  </div>
+  <div class="border-l-2 bg-ash px-4 py-3 {% if resumen.sin_stock %}border-signal{% else %}border-line{% endif %}">
+    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+      Activos sin stock
+    </dt>
+    <dd class="mt-1 font-display text-2xl font-bold {% if resumen.sin_stock %}text-signal{% else %}text-static{% endif %}">
+      {{ resumen.sin_stock }}
+    </dd>
+  </div>
+</dl>
+
+<form id="filtros" method="get" data-sin-capa
+      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
+  <div class="grow">
+    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Buscar
+    </label>
+    <input type="text" id="q" name="q" value="{{ busqueda }}"
+           placeholder="Buscar por título, autor o editorial — atajo: /" autocomplete="off"
+           class="w-full min-w-[22rem]">
+  </div>
+
+  <div>
+    <label for="origen" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Origen
+    </label>
+    <select id="origen" name="origen" class="w-48">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in origenes %}
+        <option value="{{ valor }}" {% if origen_elegido == valor %}selected{% endif %}>
+          {{ etiqueta }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label for="tipo" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Tipo
+    </label>
+    <select id="tipo" name="tipo" class="w-40">
+      <option value="">Todos</option>
+      {% for tipo in tipos %}
+        <option value="{{ tipo.pk }}" {% if tipo_elegido == tipo.pk %}selected{% endif %}>
+          {{ tipo.nombre }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% comment %}
+  El filtro por etiqueta solo aparece si hay alguna con productos: es el único
+  eje que puede no aplicarle a ningún producto —ninguna es obligatoria— y un
+  desplegable vacío ocuparía lugar sin filtrar nada.
+
+  Las opciones van agrupadas con `<optgroup>`: es lo que evita que franquicias,
+  géneros y colecciones queden mezclados en una sola lista revuelta, que es
+  justamente el motivo por el que las etiquetas tienen grupo.
+  {% endcomment %}
+  {% if etiquetas %}
+    <div>
+      <label for="etiqueta" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+        Etiqueta
+      </label>
+      <select id="etiqueta" name="etiqueta" class="w-56">
+        <option value="">Todas</option>
+        {% regroup etiquetas by grupo as por_grupo %}
+        {% for bloque in por_grupo %}
+          <optgroup label="{{ bloque.grouper }}">
+            {% for etiqueta in bloque.list %}
+              <option value="{{ etiqueta.pk }}"
+                      {% if etiqueta_elegida == etiqueta.pk %}selected{% endif %}>
+                {{ etiqueta.nombre }}
+              </option>
+            {% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+  {% endif %}
+
+  <div>
+    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Estado
+    </label>
+    <select id="estado" name="estado" class="w-48">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
+          {{ etiqueta }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button type="submit" class="boton-menor boton-menor--tenue">
+    <span>Buscar</span>
+  </button>
+
+  {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
+    <a href="{% url 'catalog:producto_lista' %}"
+       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
+      Limpiar filtros
+    </a>
+  {% endif %}
+</form>
+
+<div class="relative">
+  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
+    {% include "_loader.html" with clase="loader--chico" %}
+  </div>
+
+  <div id="tabla">
+    {% include "catalog/_tabla_productos.html" %}
+  </div>
+</div>
+
+{% include "_tabla_filtrable.html" %}
+{% endblock %}

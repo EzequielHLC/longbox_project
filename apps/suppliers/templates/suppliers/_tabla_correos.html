@@ -1,0 +1,100 @@
+{% comment %}
+Fragmento de la cola de correos. Se renderiza incrustado en `correo_lista.html`
+y solo, cuando el buscador lo pide con `?parcial=1`. Por eso no puede depender
+de nada que esté fuera de él.
+{% endcomment %}
+{% if correos %}
+  <p class="mb-2 font-mono text-xs text-static">
+    {{ paginator.count }} correo{{ paginator.count|pluralize }}
+    {% if busqueda or estado_elegido %}
+      que coincide{{ paginator.count|pluralize:"n" }} con el filtro
+    {% endif %}
+  </p>
+
+  <div class="overflow-x-auto border border-line">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                   tracking-[0.15em] text-static">
+          <th class="px-4 py-3 font-medium">Asunto</th>
+          <th class="px-4 py-3 font-medium">Proveedor</th>
+          <th class="px-4 py-3 font-medium">Recibido</th>
+          <th class="px-4 py-3 text-right font-medium">Portadas</th>
+          <th class="px-4 py-3 font-medium">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for correo in correos %}
+          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
+            <td class="px-4 py-3">
+              <a href="{% url 'suppliers:correo_detalle' correo.pk %}"
+                 class="block max-w-[22rem] truncate hover:text-signal"
+                 title="{{ correo.asunto|default:'Sin asunto' }}">
+                {{ correo.asunto|default:"Sin asunto" }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-static">
+              <span class="block max-w-[14rem] truncate">{{ correo.proveedor }}</span>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
+              {{ correo.recibido_en|date:"d/m/Y H:i" }}
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-static">
+              {{ correo.cantidad_imagenes }}
+            </td>
+            {% comment %}
+            El pendiente es el único estado que pide una acción, así que es el
+            único que se resalta. `azure` porque no es un problema que haya que
+            atender —para eso está `signal`— sino algo que el sistema dejó
+            esperando una decisión.
+            {% endcomment %}
+            <td class="whitespace-nowrap px-4 py-3">
+              <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
+                           {% if correo.estado == 'pendiente' %}border-azure text-azure
+                           {% elif correo.estado == 'fallido' %}border-signal text-signal
+                           {% else %}border-line text-static{% endif %}">
+                {{ correo.get_estado_display }}
+              </span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <div class="mt-4 flex items-center justify-between font-mono text-xs text-static">
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      <span class="flex gap-4">
+        {% if page_obj.has_previous %}
+          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
+             class="hover:text-screen">← Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
+             class="hover:text-screen">Siguiente →</a>
+        {% endif %}
+      </span>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="border border-line bg-panel px-4 py-6">
+    {% if busqueda or estado_elegido %}
+      <p class="text-sm text-static">Ningún correo coincide con los criterios de búsqueda.</p>
+      <a href="{% url 'suppliers:correo_lista' %}"
+         class="mt-3 inline-block font-mono text-[0.7rem] uppercase tracking-wider text-static
+                hover:text-screen">
+        Limpiar filtros
+      </a>
+    {% else %}
+      {% comment %}
+      No es un error ni un estado vacío que haya que resolver: es el resultado
+      normal de un ciclo sin novedades, que el propio CU-04 contempla en E6.
+      {% endcomment %}
+      <p class="text-sm text-static">
+        No hay correos en la cola. Los de los proveedores con el procesamiento
+        automático habilitado van a aparecer acá cuando lleguen.
+      </p>
+    {% endif %}
+  </div>
+{% endif %}

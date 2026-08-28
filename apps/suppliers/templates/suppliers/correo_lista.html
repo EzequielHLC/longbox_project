@@ -1,0 +1,85 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La cola de correos de proveedores: la antesala del pipeline de CU-04.
+
+No corresponde a ningún caso de uso. Existe porque la fuente da por sentado que
+todo correo de un remitente registrado se procesa solo, y en la práctica por esa
+misma dirección llegan facturas, promociones y avisos de demora. Acá cada correo
+espera una decisión antes de que se gaste un solo ciclo en procesarlo.
+
+Modo operativo, sin acción principal: en esta pantalla no se crea nada. Lo que
+se hace con un correo se decide en su ficha, mirando lo que se extrajo.
+{% endcomment %}
+
+{% block titulo %}Correos de proveedores · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<div class="mb-6">
+  <h1 class="font-display text-3xl font-bold tracking-wide">Correos de proveedores</h1>
+  <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+    Cola de aprobación · Nada se procesa sin confirmación
+  </p>
+</div>
+
+{% comment %}
+Una sola cifra, y solo cuando hay algo que hacer. Un tablero de cuatro
+recuadros acá contaría estados que no piden ninguna acción; lo único que importa
+al abrir la pantalla es cuántos esperan una decisión.
+{% endcomment %}
+{% if pendientes %}
+  <div class="mb-6 border-l-2 border-azure bg-ash px-4 py-3">
+    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+      Esperando decisión
+    </p>
+    <p class="mt-1 font-display text-2xl font-bold text-azure">{{ pendientes }}</p>
+  </div>
+{% endif %}
+
+<form id="filtros" method="get" data-sin-capa
+      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
+  <div class="grow">
+    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Buscar
+    </label>
+    <input type="text" id="q" name="q" value="{{ busqueda }}"
+           placeholder="Buscar por asunto, remitente o proveedor — atajo: /" autocomplete="off"
+           class="w-full min-w-[26rem]">
+  </div>
+
+  <div>
+    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Estado
+    </label>
+    <select id="estado" name="estado" class="w-56">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
+          {{ etiqueta }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button type="submit" class="boton-menor boton-menor--tenue"><span>Buscar</span></button>
+
+  {% if busqueda or estado_elegido %}
+    <a href="{% url 'suppliers:correo_lista' %}"
+       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
+      Limpiar filtros
+    </a>
+  {% endif %}
+</form>
+
+<div class="relative">
+  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
+    {% include "_loader.html" with clase="loader--chico" %}
+  </div>
+
+  <div id="tabla">
+    {% include "suppliers/_tabla_correos.html" %}
+  </div>
+</div>
+
+{% include "_tabla_filtrable.html" %}
+{% endblock %}

@@ -1,0 +1,865 @@
+{% extends "base_operativo.html" %}
+{% load l10n %}
+{% comment %}
+Carga de un lote editorial, nacional o importado.
+
+La pantalla está partida en pasos numerados porque el orden importa: lo que se
+declara arriba define qué queda obligatorio abajo. Si la cabecera no declara
+editorial y tipo, el lote es mixto y cada ítem tiene que declararlos por su
+cuenta.
+
+Sobre el color: el acento frío marca todo lo que **calculó o completó el
+sistema** —el desglose, el precio de referencia, la clasificación heredada de
+la cabecera— y lo separa de lo que escribió la persona. El rojo queda reservado
+para lo que hay que atender: un error de validación y la advertencia de romper
+el vínculo con el margen.
+{% endcomment %}
+
+{% block titulo %}{{ titulo }} · Longbox{% endblock %}
+{% block seccion %}Alta editorial{% endblock %}
+
+{% block cabecera_extra %}
+  {{ block.super }}
+  <style>
+    /* Encabezado de paso: el número grande y apagado ordena la lectura sin
+       competir con el título, y la barra fría lo ancla al margen izquierdo. */
+    .paso {
+      display: flex;
+      align-items: baseline;
+      gap: 0.9rem;
+      border-left: 2px solid #1478FF;
+      padding-left: 0.9rem;
+    }
+    .paso-numero {
+      font-family: "Rajdhani", sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #57525C;
+    }
+
+    /* Bloque de un ítem. El borde izquierdo es su estado: neutro en reposo,
+       frío mientras se escribe adentro, rojo si quedó algo mal. Es la señal
+       más barata de leer cuando hay quince bloques iguales. */
+    .item-lote {
+      border-left: 2px solid #2C2A30;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .item-lote:focus-within { border-left-color: #1478FF; }
+    .item-lote--con-error { border-left-color: #FF1436; }
+
+    /* Cifra derivada del cálculo. Distingue de un vistazo el número que puso
+       el sistema del que escribió el Administrador. */
+    .cifra-derivada { color: #1478FF; font-family: "Rajdhani", sans-serif; font-weight: 700; }
+
+    .regla-acento {
+      height: 1px;
+      background: linear-gradient(90deg, #FF1436 0%, #B0102A 18%, #2C2A30 55%, transparent 100%);
+    }
+  </style>
+{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-5xl">
+  <a href="{% url 'catalog:producto_lista' %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver al inventario
+  </a>
+
+  <div class="mt-4">
+    <h1 class="font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
+    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
+      {% if es_importado %}
+        Precio calculado desde el costo en origen, el envío del lote y el margen global
+      {% else %}
+        Precio tomado de la tabla de referencia por editorial, tipo y formato
+      {% endif %}
+    </p>
+    <div class="regla-acento mt-4"></div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate id="formulario-lote"
+        class="mt-8 space-y-8">
+    {% csrf_token %}
+
+    {# ---------------------------------------------------------------- #}
+    <section>
+      <div class="paso">
+        <span class="paso-numero">01</span>
+        <div>
+          <h2 class="font-display text-lg font-semibold tracking-wide">Cabecera del lote</h2>
+          <p class="mt-0.5 text-sm text-static">
+            Lo que comparten todos los ítems. Si declara editorial y tipo, los ítems los
+            heredan bloqueados; si los deja en blanco, cada ítem declara los suyos.
+          </p>
+        </div>
+      </div>
+
+      {% if cabecera.non_field_errors %}
+        <ul class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+          {% for error in cabecera.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="mt-5 border border-line bg-ash p-6">
+        <div class="grid gap-5 md:grid-cols-3">
+          <div class="min-w-0">
+            {% include "_campo.html" with campo=cabecera.editorial %}
+            <button type="button" data-catalogo-rapido="editorial"
+                    data-url="{% url 'catalog:editorial_rapida' %}" data-etiqueta="la editorial"
+                    class="mt-1.5 font-mono text-[0.65rem] uppercase tracking-wider text-static
+                           hover:text-azure">
+              + Agregar editorial
+            </button>
+          </div>
+          {% include "_campo.html" with campo=cabecera.tipo %}
+          <div data-campo="formato" class="min-w-0">
+            {% include "_campo.html" with campo=cabecera.formato %}
+          </div>
+        </div>
+
+        <div class="mt-5 md:w-1/3 md:pr-3">
+          {% include "_campo.html" with campo=cabecera.fecha_llegada ayuda="Con fecha, los ítems nacen en Pre-venta." %}
+        </div>
+
+        {% comment %}
+        Las etiquetas van acá arriba y no por ítem porque es donde se declaran
+        una sola vez: veinte tomos de la misma serie comparten franquicia y
+        género igual que comparten editorial. Cada ítem puede sumar las suyas
+        desde sus datos opcionales, que es el caso raro.
+        {% endcomment %}
+        <div class="mt-6 border-t border-line pt-5">
+          {% include "_etiquetas.html" with campo=cabecera.etiquetas %}
+        </div>
+      </div>
+    </section>
+
+    {% if es_importado %}
+      {# -------------------------------------------------------------- #}
+      <section>
+        <div class="paso">
+          <span class="paso-numero">02</span>
+          <div>
+            <h2 class="font-display text-lg font-semibold tracking-wide">Calculadora de envío</h2>
+            <p class="mt-0.5 text-sm text-static">
+              El envío del lote se reparte entre los ítems en proporción a su costo. Los dos
+              totales van en la moneda de origen.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-5 border border-line bg-ash p-6">
+          <div class="grid gap-5 md:grid-cols-2">
+            {% include "_campo.html" with campo=cabecera.moneda_origen %}
+            <div>
+              {% include "_campo.html" with campo=cabecera.cotizacion %}
+              <p id="referencia-cotizacion"
+                 class="mt-1.5 hidden font-mono text-[0.65rem] leading-relaxed"></p>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-5 md:grid-cols-2">
+            {% include "_campo.html" with campo=cabecera.costo_envio_total %}
+            {% include "_campo.html" with campo=cabecera.valor_compra_total %}
+          </div>
+
+          <dl class="mt-6 grid gap-4 border-t border-line pt-5 font-mono text-xs sm:grid-cols-2">
+            <div>
+              <dt class="uppercase tracking-[0.15em] text-static">Costo relativo de envío</dt>
+              <dd id="cre-mostrado" class="cifra-derivada mt-1 text-2xl">
+                {{ cre|default:0|unlocalize }}
+              </dd>
+              <p class="mt-1 text-[0.65rem] text-static">envío ÷ compra</p>
+            </div>
+            <div>
+              <dt class="uppercase tracking-[0.15em] text-static">Margen global vigente</dt>
+              <dd class="cifra-derivada mt-1 text-2xl">{{ margen|unlocalize }}</dd>
+              <p class="mt-1 text-[0.65rem] text-static">se aplica sobre el precio base</p>
+            </div>
+          </dl>
+        </div>
+      </section>
+    {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    <section>
+      {{ formset.management_form }}
+
+      <div class="paso">
+        <span class="paso-numero">{% if es_importado %}03{% else %}02{% endif %}</span>
+        <div class="flex w-full flex-wrap items-baseline justify-between gap-4">
+          <div>
+            <h2 class="font-display text-lg font-semibold tracking-wide">Ítems del lote</h2>
+            <p class="mt-0.5 text-sm text-static">
+              <span id="contador-items" class="cifra-derivada"></span>
+              en el lote. Los ítems que queden vacíos se descartan solos.
+            </p>
+          </div>
+          <button type="button" id="agregar-item" class="boton-menor boton-menor--tenue">
+            <span>Agregar ítem</span>
+          </button>
+        </div>
+      </div>
+
+      {% if formset.non_form_errors %}
+        <ul class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+          {% for error in formset.non_form_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% comment %}
+      El margen y la URL de la consulta de precios viajan en el HTML porque son
+      datos del servidor: `unlocalize` en el margen no es un detalle, porque en
+      es-AR saldría "0,40" y `parseFloat` lo lee como 0.
+      {% endcomment %}
+      <div id="items" class="mt-5 space-y-4"
+           data-margen="{{ margen|default:0|unlocalize }}"
+           data-moneda-local="{{ moneda_local|default:'ARS' }}"
+           data-url-precio="{% url 'catalog:precio_referencia' %}">
+        {% for form in formset %}
+          {% include "catalog/_item_lote.html" with form=form indice=forloop.counter %}
+        {% endfor %}
+      </div>
+
+      <template id="molde-item">
+        {% include "catalog/_item_lote.html" with form=formset.empty_form indice="__indice__" %}
+      </template>
+    </section>
+
+    <div class="flex flex-wrap items-center gap-6 border-t border-line pt-6">
+      <div class="marco-boton">
+        <button type="submit" class="boton-primario">Guardar lote</button>
+      </div>
+      <a href="{% url 'catalog:producto_lista' %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+        Cancelar
+      </a>
+      <p class="ml-auto font-mono text-[0.65rem] text-static">
+        Los duplicados contra el catálogo se informan al guardar y no frenan el resto del lote.
+      </p>
+    </div>
+  </form>
+</div>
+
+{{ reglas_de_tipo|json_script:"reglas-de-tipo" }}
+{% if es_importado %}
+  {% comment %}
+  Las cotizaciones viajan como JSON escapado y no incrustadas en el script: un
+  dato del servidor no puede terminar ejecutándose como código en la pantalla.
+  {% endcomment %}
+  {{ cotizaciones.valores|json_script:"cotizaciones-de-referencia" }}
+  <script id="datos-cotizacion" type="application/json">
+    {"fecha": "{{ cotizaciones.fecha|date:'d/m/Y' }}",
+     "desactualizada": {% if cotizaciones.desactualizada %}true{% else %}false{% endif %}}
+  </script>
+{% endif %}
+
+<script>
+  // =====================================================================
+  // Alta, baja y duplicado de ítems.
+  //
+  // Un formset de Django viaja con los campos numerados de corrido
+  // (`form-0-…`, `form-1-…`) y un contador en el formulario de gestión. Al
+  // quitar un ítem del medio hay que renumerar los que quedan: si quedara un
+  // hueco, el servidor dejaría de ver los ítems posteriores al hueco.
+  // =====================================================================
+  (function () {
+    const contenedor = document.getElementById("items");
+    const molde = document.getElementById("molde-item");
+    const total = document.getElementById("id_form-TOTAL_FORMS");
+    const contador = document.getElementById("contador-items");
+    if (!contenedor || !molde || !total) return;
+
+    const PREFIJO = /form-(\d+|__prefix__)-/g;
+
+    function items() {
+      return Array.from(contenedor.querySelectorAll("[data-item]"));
+    }
+    window.itemsDelLote = items;
+
+    function renumerar() {
+      items().forEach((item, indice) => {
+        for (const elemento of item.querySelectorAll("[name], [id], label[for]")) {
+          for (const atributo of ["name", "id", "for"]) {
+            const valor = elemento.getAttribute(atributo);
+            if (valor) elemento.setAttribute(atributo, valor.replace(PREFIJO, `form-${indice}-`));
+          }
+        }
+        const numero = item.querySelector("[data-numero]");
+        if (numero) numero.textContent = String(indice + 1).padStart(2, "0");
+      });
+      total.value = items().length;
+      actualizarContador();
+    }
+
+    function actualizarContador() {
+      const cantidad = items().length;
+      if (contador) contador.textContent = `${cantidad} ítem${cantidad === 1 ? "" : "s"}`;
+      // Con un solo ítem no se ofrece quitarlo: un lote sin ítems no se guarda,
+      // y esconder el botón explica la regla mejor que un cartel de error.
+      for (const boton of contenedor.querySelectorAll("[data-quitar]")) {
+        boton.classList.toggle("invisible", cantidad <= 1);
+      }
+    }
+
+    function crear() {
+      const envoltorio = document.createElement("div");
+      envoltorio.innerHTML = molde.innerHTML.replaceAll("__indice__", "0");
+      const nuevo = envoltorio.firstElementChild;
+      contenedor.append(nuevo);
+      renumerar();
+      // Los controles propios se arman al cargar la pantalla: un ítem recién
+      // clonado necesita que se los arme a él.
+      mejorarSelects(nuevo);
+      mejorarArchivos(nuevo);
+      window.actualizarClasificacion?.();
+      window.recalcularItem?.(nuevo);
+      return nuevo;
+    }
+
+    document.getElementById("agregar-item").addEventListener("click", () => {
+      const nuevo = crear();
+      nuevo.scrollIntoView({ behavior: "smooth", block: "center" });
+      nuevo.querySelector('input[name$="-titulo"]')?.focus();
+    });
+
+    contenedor.addEventListener("click", (evento) => {
+      const quitar = evento.target.closest("[data-quitar]");
+      if (quitar) {
+        if (items().length <= 1) return;
+        quitar.closest("[data-item]").remove();
+        renumerar();
+        return;
+      }
+
+      const duplicar = evento.target.closest("[data-duplicar]");
+      if (!duplicar) return;
+
+      // Duplicar copia la clasificación y avanza el volumen: cargar los doce
+      // tomos de una serie es el caso normal, y es donde más se tipea de más.
+      const origen = duplicar.closest("[data-item]");
+      const nuevo = crear();
+      for (const campo of origen.querySelectorAll("input, select, textarea")) {
+        const sufijo = (campo.name || "").replace(PREFIJO, "");
+        if (!sufijo || campo.type === "file") continue;
+        const destino = nuevo.querySelector(`[name$="-${sufijo}"]`);
+        if (!destino) continue;
+        if (campo.type === "checkbox") {
+          destino.checked = campo.checked;
+        } else if (sufijo === "volumen") {
+          const numero = parseInt(campo.value, 10);
+          destino.value = Number.isFinite(numero) ? numero + 1 : campo.value;
+        } else {
+          destino.value = campo.value;
+        }
+        destino.refrescarDesplegable?.();
+      }
+      window.actualizarClasificacion?.();
+      window.recalcularItem?.(nuevo);
+      nuevo.scrollIntoView({ behavior: "smooth", block: "center" });
+      nuevo.querySelector('input[name$="-volumen"]')?.focus();
+    });
+
+    actualizarContador();
+  })();
+
+  // =====================================================================
+  // Clasificación: herencia de la cabecera y campos según el tipo.
+  //
+  // Las dos cosas van juntas porque dependen del mismo dato: qué tipo rige
+  // para el ítem. Y qué campos pide cada tipo no está escrito acá, sale de las
+  // banderas de la tabla de tipos —las mismas que valida el servidor—, así que
+  // agregar un tipo nuevo no obliga a tocar este archivo.
+  // =====================================================================
+  (function () {
+    const contenedor = document.getElementById("items");
+    if (!contenedor) return;
+
+    const reglas = JSON.parse(document.getElementById("reglas-de-tipo")?.textContent || "{}");
+    const editorialCabecera = document.getElementById("id_editorial");
+    const tipoCabecera = document.getElementById("id_tipo");
+    const formatoCabecera = document.getElementById("id_formato");
+
+    const etiqueta = (select) =>
+      select?.options[select.selectedIndex]?.text.trim() || "";
+
+    function bloquear(select, bloqueado) {
+      if (!select) return;
+      select.disabled = bloqueado;
+      select.refrescarDesplegable?.();
+    }
+
+    // Las opciones completas de cada desplegable de formato, guardadas la
+    // primera vez que se lo toca: recortar sin haberlas guardado dejaría el
+    // desplegable vacío para siempre en cuanto se cambie de tipo dos veces.
+    function recortarFormatos(select, permitidos) {
+      if (!select) return;
+      if (!select.todasLasOpciones) {
+        select.todasLasOpciones = Array.from(select.options).map((opcion) => ({
+          value: opcion.value,
+          text: opcion.text,
+        }));
+      }
+
+      const elegido = select.value;
+      const admitidas = permitidos
+        ? select.todasLasOpciones.filter(
+            (opcion) => !opcion.value || permitidos.includes(opcion.value)
+          )
+        : select.todasLasOpciones;
+
+      select.replaceChildren();
+      for (const opcion of admitidas) select.add(new Option(opcion.text, opcion.value));
+      // Si lo que estaba elegido ya no aplica, se suelta: dejarlo puesto haría
+      // que el servidor lo rechace al guardar, con veinte ítems ya cargados.
+      select.value = admitidas.some((opcion) => opcion.value === elegido) ? elegido : "";
+      select.refrescarDesplegable?.();
+    }
+
+    function mostrar(item, campo, visible) {
+      const caja = item.querySelector(`[data-campo="${campo}"]`);
+      if (!caja) return;
+      caja.classList.toggle("hidden", !visible);
+      // Un campo escondido no puede seguir arrastrando el valor de la
+      // selección anterior: si el tipo cambió de manga a artbook, el formato
+      // que había quedado elegido ya no corresponde a nada.
+      if (!visible) {
+        const control = caja.querySelector("select");
+        if (control && control.value) {
+          control.value = "";
+          control.refrescarDesplegable?.();
+        }
+      }
+    }
+
+    // La clasificación que finalmente rige para un ítem, con la misma regla que
+    // usa el servidor: bloqueado manda la cabecera, desbloqueado manda el ítem.
+    window.clasificacionDe = function (item) {
+      const desbloqueado = item.querySelector('[name$="-desbloqueado"]')?.value === "1";
+      const propio = (campo) => item.querySelector(`[name$="-${campo}"]`)?.value || "";
+      const heredado = { editorial: editorialCabecera, tipo: tipoCabecera, formato: formatoCabecera };
+      const dePadre = (campo) => heredado[campo]?.value || "";
+
+      if (desbloqueado || !(dePadre("editorial") && dePadre("tipo"))) {
+        return {
+          editorial: propio("editorial") || dePadre("editorial"),
+          tipo: propio("tipo") || dePadre("tipo"),
+          formato: propio("formato") || dePadre("formato"),
+          desbloqueado,
+        };
+      }
+      return {
+        editorial: dePadre("editorial"),
+        tipo: dePadre("tipo"),
+        formato: dePadre("formato") || propio("formato"),
+        desbloqueado,
+      };
+    };
+
+    window.actualizarClasificacion = function () {
+      const cabeceraCompleta = Boolean(editorialCabecera?.value && tipoCabecera?.value);
+
+      // El formato de la cabecera solo tiene sentido si su tipo lo usa.
+      const reglaCabecera = reglas[tipoCabecera?.value];
+      const cajaFormatoCabecera = document.querySelector('form [data-campo="formato"]');
+      if (cajaFormatoCabecera && !cajaFormatoCabecera.closest("[data-item]")) {
+        const usa = !tipoCabecera?.value || reglaCabecera?.usa_formato;
+        cajaFormatoCabecera.classList.toggle("hidden", !usa);
+        if (!usa && formatoCabecera?.value) {
+          formatoCabecera.value = "";
+          formatoCabecera.refrescarDesplegable?.();
+        }
+      }
+
+      for (const item of window.itemsDelLote()) {
+        const { tipo, desbloqueado } = window.clasificacionDe(item);
+        const bloqueado = cabeceraCompleta && !desbloqueado;
+        const regla = reglas[tipo];
+
+        for (const campo of ["editorial", "tipo", "formato"]) {
+          bloquear(item.querySelector(`[name$="-${campo}"]`), bloqueado);
+        }
+
+        const fila = item.querySelector("[data-herencia]");
+        fila?.classList.toggle("hidden", !bloqueado);
+        fila?.classList.toggle("flex", bloqueado);
+        if (bloqueado) {
+          const partes = [etiqueta(editorialCabecera), etiqueta(tipoCabecera)];
+          if (formatoCabecera?.value) partes.push(etiqueta(formatoCabecera));
+          item.querySelector("[data-herencia-detalle]").textContent = partes.join(" · ");
+        }
+
+        // Qué muestra el tipo. Sin tipo elegido se muestra el formato, para no
+        // esconder algo que enseguida va a hacer falta.
+        mostrar(item, "formato", !bloqueado && (!regla || regla.usa_formato));
+
+        // Y qué **opciones** muestra: un manga no ofrece grapa. Los formatos
+        // que aplican vienen del servidor, que es el que después valida, así
+        // que la lista de la pantalla no puede discrepar con la aceptada.
+        recortarFormatos(item.querySelector('[name$="-formato"]'), regla?.formatos);
+
+        const nueva = item.querySelector('[data-catalogo-rapido="editorial"]');
+        nueva?.classList.toggle("hidden", bloqueado);
+      }
+
+      window.recalcularTodo?.();
+    };
+
+    for (const campo of [editorialCabecera, tipoCabecera, formatoCabecera]) {
+      campo?.addEventListener("change", window.actualizarClasificacion);
+    }
+
+    contenedor.addEventListener("change", (evento) => {
+      if (evento.target.name?.match(/-(editorial|tipo|formato)$/)) {
+        window.actualizarClasificacion();
+      }
+    });
+
+    contenedor.addEventListener("click", (evento) => {
+      const boton = evento.target.closest("[data-desbloquear]");
+      if (!boton) return;
+
+      const confirmado = window.confirm(
+        "Este ítem va a usar su propia editorial, tipo y formato.\n\n" +
+          "Como la cabecera deja de describir a todo el lote, el lote se registra " +
+          "como mixto y cada ítem queda con la clasificación que tenga.\n\n¿Continuar?"
+      );
+      if (!confirmado) return;
+
+      const item = boton.closest("[data-item]");
+      item.querySelector('[name$="-desbloqueado"]').value = "1";
+      // Arranca con lo que venía heredando, para no obligar a recargar tres
+      // desplegables cuando lo único que cambia es la editorial.
+      for (const campo of ["editorial", "tipo", "formato"]) {
+        const destino = item.querySelector(`[name$="-${campo}"]`);
+        const origen = { editorial: editorialCabecera, tipo: tipoCabecera, formato: formatoCabecera }[campo];
+        if (destino && origen && !destino.value) destino.value = origen.value;
+      }
+      window.actualizarClasificacion();
+    });
+
+    window.actualizarClasificacion();
+  })();
+
+  // =====================================================================
+  // Cotización sugerida.
+  //
+  // El valor se ofrece pre-cargado y editable: el tipo de cambio con el que se
+  // pagó una factura casi nunca es el de la tabla de referencia del día, y el
+  // que tiene que quedar guardado es el real.
+  // =====================================================================
+  (function () {
+    const moneda = document.getElementById("id_moneda_origen");
+    const cotizacion = document.getElementById("id_cotizacion");
+    if (!moneda || !cotizacion) return;
+
+    const contenedor = document.getElementById("items");
+    const local = contenedor?.dataset.monedaLocal || "ARS";
+    const tasas = JSON.parse(
+      document.getElementById("cotizaciones-de-referencia")?.textContent || "{}"
+    );
+    const meta = JSON.parse(document.getElementById("datos-cotizacion")?.textContent || "{}");
+    const nota = document.getElementById("referencia-cotizacion");
+
+    function aplicar({ pisarValor }) {
+      const elegida = moneda.value || local;
+      const enPesos = elegida === local;
+
+      cotizacion.disabled = enPesos;
+      cotizacion.closest("div")?.classList.toggle("opacity-50", enPesos);
+
+      if (enPesos) {
+        cotizacion.value = "";
+        nota?.classList.add("hidden");
+        return;
+      }
+
+      const sugerida = tasas[elegida];
+      if (pisarValor && sugerida) cotizacion.value = sugerida;
+
+      if (nota) {
+        nota.classList.remove("hidden");
+        if (!sugerida) {
+          nota.textContent = "No hay cotización de referencia disponible: cárguela a mano.";
+          nota.className = "mt-1.5 font-mono text-[0.65rem] leading-relaxed text-signal";
+        } else if (meta.desactualizada) {
+          nota.textContent =
+            `Referencia del ${meta.fecha || "—"}: 1 ${elegida} = $${sugerida}. ` +
+            "El dato tiene más de una semana; verifíquelo antes de confirmar.";
+          nota.className = "mt-1.5 font-mono text-[0.65rem] leading-relaxed text-signal";
+        } else {
+          nota.textContent =
+            `Referencia del ${meta.fecha || "—"}: 1 ${elegida} = $${sugerida}. Editable.`;
+          nota.className = "mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static";
+        }
+      }
+    }
+
+    // Al cambiar de moneda se pisa el valor con la sugerencia; al cargar la
+    // pantalla no, porque puede venir de un envío rechazado con el número que
+    // el Administrador ya había escrito.
+    moneda.addEventListener("change", () => {
+      aplicar({ pisarValor: true });
+      window.recalcularTodo?.();
+    });
+    aplicar({ pisarValor: !cotizacion.value });
+  })();
+
+  // =====================================================================
+  // Desglose del precio importado.
+  //
+  // El cálculo que vale es el del servidor; este adelanta lo que se va a
+  // guardar, porque mostrar los tres valores recién después de confirmar no le
+  // sirve a nadie. Encadena los mismos redondeos que `precios.py`: si
+  // calculara de una sola tirada, el número de la pantalla y el guardado
+  // diferirían en un peso cada tanto.
+  // =====================================================================
+  (function () {
+    const raiz = document.getElementById("items");
+    if (!raiz || !raiz.querySelector("[data-desglose]")) return;
+
+    const envio = document.getElementById("id_costo_envio_total");
+    const compra = document.getElementById("id_valor_compra_total");
+    const cotizacion = document.getElementById("id_cotizacion");
+    const creMostrado = document.getElementById("cre-mostrado");
+    const margen = parseFloat(raiz.dataset.margen || "0");
+
+    const numero = (campo) => {
+      const valor = parseFloat(campo?.value);
+      return Number.isFinite(valor) ? valor : 0;
+    };
+    const cre = () => (numero(compra) ? numero(envio) / numero(compra) : 0);
+    const centavos = (valor) => Math.round(valor * 100) / 100;
+    const pesos = (valor) =>
+      "$" + valor.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    window.recalcularItem = function (item) {
+      const desglose = item.querySelector("[data-desglose]");
+      if (!desglose) return;
+
+      const costo = numero(item.querySelector('[name$="-costo_origen"]'));
+      const tasa = numero(cotizacion) || 1;
+      const enPesos = centavos(costo * tasa);
+      const base = centavos(enPesos * (1 + cre()));
+      const final = Math.round(base * (1 + margen));
+
+      desglose.querySelector("[data-costo]").textContent = pesos(enPesos);
+      desglose.querySelector("[data-base]").textContent = pesos(base);
+      desglose.querySelector("[data-final]").textContent = pesos(final);
+
+      const precio = item.querySelector('[name$="-precio"]');
+      const aviso = item.querySelector("[data-aviso-precio]");
+      const editado = precio.value !== "" && Math.abs(parseFloat(precio.value) - final) > 0.009;
+      aviso?.classList.toggle("hidden", !editado);
+      if (!editado) {
+        const casilla = item.querySelector('[name$="-confirma_precio_manual"]');
+        if (casilla) casilla.checked = false;
+      }
+      precio.placeholder = final ? String(final) : "";
+    };
+
+    window.recalcularTodo = function () {
+      window.itemsDelLote().forEach(window.recalcularItem);
+    };
+
+    for (const campo of [envio, compra, cotizacion]) {
+      campo?.addEventListener("input", () => {
+        if (creMostrado) creMostrado.textContent = cre().toFixed(6);
+        window.recalcularTodo();
+      });
+    }
+    raiz.addEventListener("input", (evento) => {
+      const item = evento.target.closest("[data-item]");
+      if (item) window.recalcularItem(item);
+    });
+
+    window.recalcularTodo();
+  })();
+
+  // =====================================================================
+  // Precio de referencia del lote nacional.
+  //
+  // Se consulta al servidor y no se embute la tabla entera en la pantalla: la
+  // tabla de precios la edita otra pantalla y podría cambiar mientras esta
+  // está abierta.
+  // =====================================================================
+  (function () {
+    const raiz = document.getElementById("items");
+    if (!raiz || raiz.querySelector("[data-desglose]")) return;
+
+    const url = raiz.dataset.urlPrecio;
+    const cache = new Map();
+
+    async function precioDe(editorial, tipo, formato) {
+      if (!(editorial && tipo && formato)) return null;
+      const clave = `${editorial}|${tipo}|${formato}`;
+      if (cache.has(clave)) return cache.get(clave);
+      try {
+        const parametros = new URLSearchParams({ editorial, tipo, formato });
+        const respuesta = await fetch(`${url}?${parametros}`);
+        const datos = await respuesta.json();
+        cache.set(clave, datos.pvp);
+        return datos.pvp;
+      } catch {
+        return null;
+      }
+    }
+
+    window.recalcularItem = async function (item) {
+      const precio = item.querySelector('[name$="-precio"]');
+      const nota = item.querySelector("[data-referencia]");
+      if (!precio) return;
+
+      const { editorial, tipo, formato } = window.clasificacionDe(item);
+      const pvp = await precioDe(editorial, tipo, formato);
+
+      // Solo se ofrece como marcador de posición: escribir el número en el
+      // campo lo marcaría como precio fijado a mano, que es justo lo contrario
+      // de lo que significa tomarlo de la tabla.
+      precio.placeholder = pvp ? pvp : "sin referencia";
+      if (!nota) return;
+
+      if (pvp) {
+        nota.textContent = `Referencia: $${pvp}`;
+        nota.classList.remove("text-signal");
+      } else if (editorial && tipo && formato) {
+        nota.textContent = "Sin precio de referencia para esta combinación: cárguelo a mano";
+        nota.classList.add("text-signal");
+      } else {
+        nota.textContent = "";
+        nota.classList.remove("text-signal");
+      }
+    };
+
+    window.recalcularTodo = () => window.itemsDelLote().forEach(window.recalcularItem);
+    window.recalcularTodo();
+  })();
+
+  // =====================================================================
+  // Validación en pantalla.
+  //
+  // No reemplaza a la del servidor —esa es la que decide— sino que evita el
+  // viaje de ida y vuelta con veinte ítems cargados. Se apoya en los `min`,
+  // `max` y `maxlength` que Django ya escribe en el HTML desde la definición
+  // del campo, así que un tope se cambia en un solo lugar.
+  // =====================================================================
+  (function () {
+    const formulario = document.getElementById("formulario-lote");
+    if (!formulario) return;
+
+    // Los volúmenes y el stock son cantidades enteras: el campo numérico del
+    // navegador acepta igual "e", "+" y "-" porque los admite en notación
+    // científica, y después llegan al servidor como un valor vacío sin que
+    // nadie entienda por qué.
+    formulario.addEventListener("keydown", (evento) => {
+      if (!evento.target.matches("[data-solo-enteros]")) return;
+      if (["e", "E", "+", "-", ",", "."].includes(evento.key)) evento.preventDefault();
+    });
+    formulario.addEventListener("paste", (evento) => {
+      if (!evento.target.matches("[data-solo-enteros]")) return;
+      const pegado = (evento.clipboardData || window.clipboardData).getData("text");
+      if (!/^\d+$/.test(pegado.trim())) evento.preventDefault();
+    });
+
+    // Un ítem en blanco es un ítem que se descarta, no uno incompleto: la
+    // pantalla arranca con tres y lo normal es usar uno o dos. Reclamarle los
+    // campos obligatorios sería marcar en rojo lo que el servidor ni siquiera
+    // va a mirar.
+    function enItemVacio(campo) {
+      const item = campo.closest("[data-item]");
+      if (!item) return false;
+      return !Array.from(item.querySelectorAll("input, textarea, select")).some(
+        (control) =>
+          control.type !== "hidden" && control.type !== "checkbox" && control.value.trim()
+      );
+    }
+
+    function problema(campo) {
+      if (campo.disabled || campo.type === "hidden" || enItemVacio(campo)) return null;
+
+      if (campo.required && !campo.value.trim()) return "Este campo es obligatorio.";
+      if (!campo.value) return null;
+
+      if (campo.type === "number") {
+        const valor = parseFloat(campo.value);
+        if (!Number.isFinite(valor)) return "Escriba un número.";
+        if (campo.min !== "" && valor < parseFloat(campo.min)) return `El mínimo es ${campo.min}.`;
+        if (campo.max !== "" && valor > parseFloat(campo.max)) return `El máximo es ${campo.max}.`;
+      }
+      if (campo.type === "date" && campo.value < new Date().toISOString().slice(0, 10)) {
+        return "La fecha no puede ser anterior a hoy.";
+      }
+      if (campo.minLength > 0 && campo.value.trim().length < campo.minLength) {
+        return `Necesita al menos ${campo.minLength} caracteres.`;
+      }
+      return null;
+    }
+
+    function marcar(campo, { exigirObligatorios = true } = {}) {
+      const detalle = exigirObligatorios || campo.value ? problema(campo) : null;
+      campo.setAttribute("aria-invalid", detalle ? "true" : "false");
+
+      let aviso = campo.parentElement.querySelector("[data-aviso-vivo]");
+      if (!detalle) {
+        aviso?.remove();
+        return false;
+      }
+      if (!aviso) {
+        aviso = document.createElement("p");
+        aviso.dataset.avisoVivo = "1";
+        aviso.className = "mt-2 border-l-2 border-signal pl-3 text-sm text-signal";
+        campo.parentElement.append(aviso);
+      }
+      aviso.textContent = detalle;
+      return true;
+    }
+
+    // Mientras se escribe se marca lo que ya está mal, pero no se reclama por
+    // un campo obligatorio que todavía no se llegó a completar: sería marcar en
+    // rojo todo lo que falta apenas se empieza a cargar el primer ítem.
+    formulario.addEventListener("input", (evento) => {
+      if (evento.target.matches("input")) marcar(evento.target, { exigirObligatorios: false });
+    });
+    formulario.addEventListener(
+      "blur",
+      (evento) => {
+        if (evento.target.matches("input")) marcar(evento.target);
+      },
+      true
+    );
+
+    formulario.addEventListener("submit", (evento) => {
+      const conProblemas = Array.from(formulario.querySelectorAll("input")).filter((campo) =>
+        marcar(campo)
+      );
+      if (!conProblemas.length) {
+        formulario.dataset.enviado = "1";
+        return;
+      }
+      evento.preventDefault();
+      evento.stopPropagation();
+      conProblemas[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      conProblemas[0].focus();
+    });
+
+    // Salir con un lote a medio cargar se pierde entero. El navegador muestra
+    // su propio cartel; no se puede personalizar y está bien que así sea.
+    window.addEventListener("beforeunload", (evento) => {
+      if (formulario.dataset.enviado) return;
+      const hayDatos = Array.from(formulario.querySelectorAll("input, textarea")).some(
+        (campo) => campo.type !== "hidden" && campo.type !== "checkbox" && campo.value
+      );
+      if (!hayDatos) return;
+      evento.preventDefault();
+      evento.returnValue = "";
+    });
+  })();
+</script>
+
+{% comment %}
+El atajo para dar de alta una editorial o una etiqueta sin abandonar el lote.
+Vive en un parcial compartido porque el alta de proveedor necesita exactamente
+lo mismo: los botones de esta pantalla solo declaran qué catálogo crean.
+{% endcomment %}
+{% include "_catalogo_rapido.html" %}
+{% endblock %}

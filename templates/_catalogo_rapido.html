@@ -1,0 +1,93 @@
+{% comment %}
+Alta de un catálogo simple sin salir de la pantalla en la que se está.
+
+Nació en la carga de lotes —llegar con un tomo de una editorial que todavía no
+está cargada y tener que abandonar el lote a medio escribir es la clase de
+fricción que termina en un lote cargado mal "para no perder lo hecho"— y sirve
+igual en el alta de un proveedor, que necesita vincularse a una editorial que
+probablemente tampoco exista todavía.
+
+Contrato: cualquier botón de la pantalla con
+
+  data-catalogo-rapido="editorial"        el nombre del campo. De ahí sale a qué
+                                          desplegables se agrega la opción nueva.
+  data-url="…"                            la vista que la crea.
+  data-etiqueta="la editorial"            cómo nombrarla al preguntar y al fallar.
+
+El parcial no sabe nada de ninguna editorial ni de ninguna etiqueta en
+particular: agregar un catálogo más es poner un botón, no tocar este archivo.
+
+Lo que **no** hace es tener reglas propias. El alta la resuelve del otro lado el
+mismo formulario que usa la pantalla de parámetros —misma normalización, mismo
+chequeo de repetidos, misma auditoría—: si el atajo fuera más laxo, sería
+justamente la puerta de entrada de los duplicados que ese formulario existe para
+evitar.
+
+Depende de `rehacerDesplegable`, que define `_desplegable.html` y que la cáscara
+operativa ya incluye en todas sus pantallas.
+{% endcomment %}
+<script>
+  (function () {
+    const csrf = document.querySelector('[name="csrfmiddlewaretoken"]')?.value;
+
+    document.addEventListener("click", async (evento) => {
+      const boton = evento.target.closest("[data-catalogo-rapido]");
+      if (!boton) return;
+
+      const campo = boton.dataset.catalogoRapido;
+      const url = boton.dataset.url;
+      const etiqueta = boton.dataset.etiqueta || campo;
+      if (!campo || !url) return;
+
+      const nombre = window.prompt(`Nombre de ${etiqueta} nueva:`);
+      if (!nombre) return;
+
+      const cuerpo = new FormData();
+      cuerpo.append("nombre", nombre);
+      cuerpo.append("activa", "on");
+
+      let datos;
+      try {
+        const respuesta = await fetch(url, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrf },
+          body: cuerpo,
+        });
+        datos = await respuesta.json();
+        if (!respuesta.ok) {
+          window.alert(datos.errores?.join("\n") || `No se pudo crear ${etiqueta}.`);
+          return;
+        }
+      } catch {
+        window.alert(`No se pudo crear ${etiqueta}: revise la conexión.`);
+        return;
+      }
+
+      // La opción nueva se agrega a **todos** los desplegables del mismo campo
+      // que haya en la pantalla, no solo al que se usó: en una carga en lote el
+      // ítem siguiente no la encontraría y habría que recargar perdiendo lo
+      // escrito. Los dos selectores cubren el campo suelto (`editorial`) y el
+      // que viene con prefijo de formset (`form-3-editorial`).
+      //
+      // El molde de los ítems nuevos entra en la cuenta porque los que se
+      // agregan después salen de él; sin esto nacerían sin la opción recién
+      // creada. En una pantalla sin formset simplemente no existe.
+      const selectores = `select[name="${campo}"], select[name$="-${campo}"]`;
+      const molde = document.getElementById("molde-item");
+      for (const raiz of [document, molde?.content].filter(Boolean)) {
+        for (const select of raiz.querySelectorAll(selectores)) {
+          select.add(new Option(datos.nombre, datos.id));
+          rehacerDesplegable(select);
+        }
+      }
+
+      // Y se deja elegida en el desplegable desde el que se pidió, que es lo
+      // que la persona estaba por hacer cuando descubrió que faltaba.
+      const propio = boton.parentElement.querySelector("select");
+      if (propio) {
+        propio.value = datos.id;
+        propio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  })();
+</script>
