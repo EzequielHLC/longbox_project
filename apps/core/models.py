@@ -39,10 +39,88 @@ class ConfiguracionSistema(models.Model):
 
     stock_inicial_por_defecto = models.PositiveIntegerField(
         "stock inicial por defecto",
-        help_text=(
-            "Con cuántas unidades nace un borrador automatizado que no lo declara. "
-            "El alta manual no lo usa: si nadie contó unidades, el producto nace en cero."
-        ),
+        # Solo lo usan los borradores del procesamiento automático. El alta
+        # manual nace en cero: el sistema no inventa unidades que nadie contó (A3).
+        help_text="Unidades con las que nace un borrador que no declara stock.",
+    )
+
+    # ------------------------------------------------------------------
+    # El modelo de lenguaje (CU-04)
+    #
+    # Vive acá y no en `settings` por el mismo motivo que el margen: es un
+    # parámetro operativo que el negocio cambia sin tocar código. Pero además
+    # por uno propio y más urgente — **el proyecto se demuestra desplegado.**
+    # El modelo local corre en una máquina de escritorio que no viaja, así que
+    # sin poder apuntar a un proveedor remoto desde la pantalla, la mitad del
+    # sistema no se puede mostrar fuera de esa máquina.
+    # ------------------------------------------------------------------
+
+    LOCAL = "local"
+    REMOTO = "remoto"
+
+    # Sin nombrar proveedores. Los dos valores describen **dónde corre** el
+    # modelo, que es lo que cambia el comportamiento del sistema; qué servidor o
+    # qué empresa lo hospeda es un dato de la dirección, no del modo. Poner una
+    # marca en un desplegable la convierte además en una recomendación que el
+    # proyecto no tiene por qué hacer.
+    MODO_LLM_CHOICES = [  # noqa: RUF012
+        (LOCAL, "Local"),
+        (REMOTO, "Remoto"),
+    ]
+
+    # No cambia lo que el sistema hace —la API es la misma, compatible con la de
+    # OpenAI— pero sí lo que hay que mirar cuando algo falla: en local se revisa
+    # si el servidor está levantado, y en remoto la credencial y el saldo. La
+    # pantalla de diagnóstico usa esto para decir dónde buscar.
+    llm_modo = models.CharField(
+        "modo del modelo de lenguaje",
+        max_length=10,
+        choices=MODO_LLM_CHOICES,
+        default=LOCAL,
+    )
+
+    llm_url = models.URLField(
+        "dirección de la API",
+        max_length=300,
+        # Los tres valores por defecto son los del modelo local, que es con lo
+        # que se desarrolla. No duplican a `settings`: son el valor con el que
+        # nace la columna, y `obtener()` los pisa con los del entorno la
+        # primera vez que crea la fila.
+        default="http://127.0.0.1:1234/v1/chat/completions",
+        help_text="La ruta de chat, compatible con la API de OpenAI.",
+    )
+
+    llm_modelo = models.CharField(
+        "modelo",
+        max_length=120,
+        blank=True,
+        help_text="Vacío usa el que el servidor tenga cargado. Los remotos exigen nombrarlo.",
+    )
+
+    # **Se guarda y no se muestra nunca.** Es una credencial, no un parámetro: la
+    # pantalla la pide una vez y después solo enseña los últimos caracteres, lo
+    # justo para reconocer cuál está puesta sin exponerla.
+    #
+    # Que viva en la base y no solo en el entorno es una decisión tomada a ojos
+    # abiertos: rotar la clave sin acceso al servidor es lo que permite arreglar
+    # una demostración a mitad de camino, y ese riesgo —no poder demostrar el
+    # sistema— pesa más en este proyecto que el de tener el secreto en la base.
+    # A cambio, nunca se devuelve al formulario y cada cambio queda auditado.
+    llm_api_key = models.CharField("clave de la API", max_length=200, blank=True)
+
+    llm_timeout = models.PositiveIntegerField(
+        "tiempo de espera (segundos)",
+        default=300,
+        help_text="Un correo de cincuenta productos puede tardar minutos.",
+    )
+
+    llm_temperatura = models.DecimalField(
+        "temperatura",
+        max_digits=3,
+        decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text="Para extraer datos conviene dejarla en 0.",
     )
 
     actualizado_en = models.DateTimeField("última modificación", auto_now=True)
@@ -68,6 +146,23 @@ class ConfiguracionSistema(models.Model):
     def delete(self, *args, **kwargs):
         raise RegistroAuditoriaError("La configuración del sistema no se borra, se edita.")
 
+    @property
+    def usa_modelo_remoto(self):
+        return self.llm_modo == self.REMOTO
+
+    @property
+    def clave_enmascarada(self):
+        """Lo justo para reconocer qué clave está puesta, sin exponerla.
+
+        Se muestran los últimos cuatro caracteres porque es lo que alcanza para
+        distinguir dos claves entre sí; los primeros no sirven —los proveedores
+        usan prefijos iguales para todas— y mostrarlos enteros convertiría la
+        pantalla de configuración en un lugar del que copiar el secreto.
+        """
+        if not self.llm_api_key:
+            return ""
+        return f"…{self.llm_api_key[-4:]}"
+
     @classmethod
     def obtener(cls):
         """La configuración vigente, creándola con los valores de `settings`.
@@ -81,6 +176,15 @@ class ConfiguracionSistema(models.Model):
             defaults={
                 "margen_ganancia": settings.MARGEN_GANANCIA_GLOBAL,
                 "stock_inicial_por_defecto": settings.STOCK_INICIAL_POR_DEFECTO,
+                # `settings` sigue siendo la semilla del primer arranque, no la
+                # fuente de verdad: el `.env` del despliegue decide con qué
+                # arranca el sistema, y la pantalla lo cambia después sin
+                # reiniciar nada.
+                "llm_url": settings.LLM_URL,
+                "llm_modelo": settings.LLM_MODELO,
+                "llm_api_key": settings.LLM_API_KEY,
+                "llm_timeout": settings.LLM_TIMEOUT,
+                "llm_temperatura": settings.LLM_TEMPERATURA,
             },
         )
         return configuracion
@@ -110,12 +214,17 @@ class RegistroAuditoria(models.Model):
     ELIMINACION_PENDIENTE = "eliminacion_pendiente"
     REGISTRO_CLIENTE = "registro_cliente"
     ALTA_LOTE_EDITORIAL = "alta_lote_editorial"
+    ALTA_PRODUCTO_NO_EDITORIAL = "alta_producto_no_editorial"
     PARAMETRO_MODIFICADO = "parametro_modificado"
     ALTA_PROVEEDOR = "alta_proveedor"
     MODIFICACION_PROVEEDOR = "modificacion_proveedor"
     BAJA_PROVEEDOR = "baja_proveedor"
     REACTIVACION_PROVEEDOR = "reactivacion_proveedor"
     CORREO_DESCARTADO = "correo_descartado"
+    BORRADORES_GENERADOS = "borradores_generados"
+    BORRADOR_CONFIRMADO = "borrador_confirmado"
+    BORRADOR_RECHAZADO = "borrador_rechazado"
+    SESION_REVISION_CERRADA = "sesion_revision_cerrada"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -131,12 +240,17 @@ class RegistroAuditoria(models.Model):
         (ELIMINACION_PENDIENTE, "Eliminación de cuenta pendiente de activación"),
         (REGISTRO_CLIENTE, "Registro de cuenta de cliente"),
         (ALTA_LOTE_EDITORIAL, "Alta de lote de material editorial"),
+        (ALTA_PRODUCTO_NO_EDITORIAL, "Alta de producto no editorial"),
         (PARAMETRO_MODIFICADO, "Modificación de parámetros globales"),
         (ALTA_PROVEEDOR, "Alta de proveedor editorial"),
         (MODIFICACION_PROVEEDOR, "Modificación de proveedor editorial"),
         (BAJA_PROVEEDOR, "Baja de proveedor editorial"),
         (REACTIVACION_PROVEEDOR, "Reactivación de proveedor editorial"),
         (CORREO_DESCARTADO, "Descarte de un correo de proveedor"),
+        (BORRADORES_GENERADOS, "Generación de borradores desde un correo"),
+        (BORRADOR_CONFIRMADO, "Confirmación de un borrador de producto"),
+        (BORRADOR_RECHAZADO, "Rechazo de un borrador de producto"),
+        (SESION_REVISION_CERRADA, "Cierre de una sesión de revisión"),
     ]
 
     actor = models.ForeignKey(

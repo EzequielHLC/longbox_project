@@ -35,7 +35,8 @@ escriben a mano. La fuente de verdad sigue siendo la API, el archivo es su
 
 import json
 import logging
-from urllib.error import URLError
+from dataclasses import dataclass
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from django.core.cache import cache
@@ -65,6 +66,53 @@ CABECERA_JSON = {"Content-Type": "application/json"}
 # rato: si el servicio vuelve en cinco minutos, no queremos seguir un día
 # entero sirviendo la foto vieja.
 CACHE_TRAS_FALLA_SEGUNDOS = 5 * 60
+
+
+# Por qué no hubo respuesta. Se distinguen porque **se arreglan en lugares
+# distintos**, y esa es toda la razón de que existan: con un servicio remoto, una
+# credencial vencida y un servidor caído son el mismo `None` y la pantalla de
+# diagnóstico termina mandando a buscar el problema donde no está.
+SIN_CONEXION = "sin_conexion"
+RECHAZADO = "rechazado"
+ILEGIBLE = "ilegible"
+
+
+@dataclass
+class Respuesta:
+    """Lo que devolvió un servicio externo, o por qué no devolvió nada.
+
+    **Es falsa cuando falló**, así que `if not respuesta` sigue siendo la forma
+    de preguntar y ningún llamador tiene que aprender un protocolo nuevo.
+
+    Existe por un caso concreto: mientras el único servicio externo fue un
+    catálogo público, `None` alcanzaba —hay respaldo local y da igual por qué no
+    contestó—. Con el modelo de lenguaje corriendo en un proveedor remoto eso
+    dejó de alcanzar: **una clave vencida y un servidor caído son problemas
+    distintos**, el primero se arregla en una pantalla y el segundo esperando, y
+    sin distinguirlos el diagnóstico manda a buscar donde no hay nada.
+    """
+
+    datos: object = None
+    motivo: str = ""
+    estado_http: int | None = None
+    detalle: str = ""
+
+    def __bool__(self):
+        return self.datos is not None
+
+    @property
+    def no_autorizado(self):
+        """401 o 403: la credencial no sirve, el servicio está perfecto."""
+        return self.estado_http in (401, 403)
+
+    @property
+    def sin_credito(self):
+        """402: la cuenta del proveedor se quedó sin saldo.
+
+        Merece su propia pregunta porque es el fallo que más rápido aparece en
+        un proveedor pago y el que peor se adivina desde un mensaje genérico.
+        """
+        return self.estado_http == 402
 
 
 def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
@@ -97,15 +145,63 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
     )
     try:
         with urlopen(pedido, timeout=timeout) as respuesta:  # noqa: S310
-            return json.loads(respuesta.read())
-    except (URLError, TimeoutError, ValueError, OSError) as error:
+            return Respuesta(datos=json.loads(respuesta.read()))
+    except HTTPError as error:
+        # El servicio **contestó**, y contestó que no. Es el caso que antes se
+        # perdía: una clave vencida llegaba acá y salía como "no respondió".
+        # El cuerpo del error suele traer el motivo en texto, y es lo único que
+        # explica un 400 de un proveedor remoto.
+        cuerpo_del_error = _texto_del_error(error)
+        logger.warning("El servicio externo rechazó el pedido (%s): %s", url, error)
+        return Respuesta(
+            motivo=RECHAZADO,
+            estado_http=error.code,
+            detalle=cuerpo_del_error or f"{error.code} {error.reason}",
+        )
+    except (URLError, TimeoutError, OSError) as error:
         logger.warning("El servicio externo no respondió (%s): %s", url, error)
-        return None
+        return Respuesta(motivo=SIN_CONEXION, detalle=str(error))
+    except ValueError as error:
+        # Contestó, pero no con JSON. Pasa cuando una dirección apunta a algo
+        # que no es la API que se cree —una página de error de un proxy, por
+        # ejemplo— y es un problema de configuración, no de red.
+        logger.warning("El servicio externo devolvió algo ilegible (%s): %s", url, error)
+        return Respuesta(motivo=ILEGIBLE, detalle=str(error))
+
+
+def _texto_del_error(error):
+    """El cuerpo de una respuesta de error, recortado y en una línea.
+
+    Los proveedores remotos explican ahí por qué rechazaron —clave inválida,
+    modelo inexistente, sin crédito— y sin leerlo el diagnóstico se queda en el
+    número. Se recorta porque algunos devuelven una página entera.
+    """
+    try:
+        crudo = error.read().decode("utf-8", errors="replace")
+    except (OSError, AttributeError):
+        return ""
+    try:
+        datos = json.loads(crudo)
+    except ValueError:
+        return " ".join(crudo.split())[:300]
+    if isinstance(datos, dict):
+        detalle = datos.get("error") or datos.get("message") or datos
+        if isinstance(detalle, dict):
+            detalle = detalle.get("message") or detalle
+        return " ".join(str(detalle).split())[:300]
+    return " ".join(str(datos).split())[:300]
 
 
 def pedir_json(url, timeout):
-    """Un GET, que es lo que necesitan los catálogos. Envoltorio de `pedir`."""
-    return pedir(url, timeout=timeout)
+    """Un GET que devuelve el JSON o `None`. Es lo que necesitan los catálogos.
+
+    Descarta el diagnóstico a propósito: un catálogo tiene respaldo local y le da
+    igual **por qué** el servicio no contestó — lo que hace es lo mismo en todos
+    los casos. Quien sí necesita distinguirlos es el modelo de lenguaje, y para
+    eso llama a `pedir` directamente.
+    """
+    respuesta = pedir(url, timeout=timeout)
+    return respuesta.datos if respuesta else None
 
 
 def leer_respaldo(ruta):

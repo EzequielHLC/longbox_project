@@ -38,7 +38,14 @@ def sin_red(request):
     # La caché es global al proceso: sin limpiarla, las provincias que cachea
     # un test aparecen en el siguiente y los resultados dejan de ser fiables.
     cache.clear()
-    with patch.object(integraciones, "pedir", return_value=None):
+    # Se devuelve un fallo **con su motivo**, no `None`: desde que la puerta HTTP
+    # distingue los modos de falla, `None` dejó de ser lo que produce una red
+    # cortada. Una fixture que simula algo que el sistema ya no genera prueba un
+    # camino que no existe.
+    sin_conexion = integraciones.Respuesta(
+        motivo=integraciones.SIN_CONEXION, detalle="Red cortada por la fixture de tests."
+    )
+    with patch.object(integraciones, "pedir", return_value=sin_conexion):
         yield
     cache.clear()
 

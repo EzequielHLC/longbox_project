@@ -16,7 +16,8 @@ import pytest
 from django.urls import reverse
 
 from apps.accounts.tests.factories import UsuarioFactory
-from apps.core import llm
+from apps.core import integraciones, llm
+from apps.core.models import ConfiguracionSistema
 from apps.suppliers import extraccion, muestras
 
 pytestmark = pytest.mark.django_db
@@ -45,12 +46,30 @@ def producto(**cambios):
     return base
 
 
-def extraccion_valida(productos=None):
+def extraccion_valida(productos=None, periodo=""):
     contenido = {
         "intencion": extraccion.NOVEDADES,
+        "periodo": periodo,
         "productos": productos if productos is not None else [producto()],
     }
     return {"choices": [{"message": {"content": json.dumps(contenido)}}]}
+
+
+def _como_respuesta(valor):
+    """Envuelve lo que el servidor devolvería en el tipo que usa la puerta HTTP.
+
+    Desde que `integraciones.pedir` distingue los modos de falla, devuelve una
+    `Respuesta` y no un diccionario pelado. Los tests siguen escribiendo el JSON
+    del servidor, que es lo legible, y esto lo lleva al contrato real — un test
+    que parchea con la forma vieja probaría un camino que ya no existe.
+
+    `None` se traduce a un fallo de conexión, que es lo que significaba antes.
+    """
+    if valor is None:
+        return integraciones.Respuesta(motivo=integraciones.SIN_CONEXION)
+    if isinstance(valor, integraciones.Respuesta):
+        return valor
+    return integraciones.Respuesta(datos=valor)
 
 
 def contestando(*valores):
@@ -60,9 +79,10 @@ def contestando(*valores):
     primero el catálogo de modelos para el indicador de estado, y solo si el
     servicio está en línea, la extracción.
     """
-    if len(valores) == 1:
-        return patch("apps.core.integraciones.pedir", return_value=valores[0])
-    return patch("apps.core.integraciones.pedir", side_effect=list(valores))
+    envueltos = [_como_respuesta(valor) for valor in valores]
+    if len(envueltos) == 1:
+        return patch("apps.core.integraciones.pedir", return_value=envueltos[0])
+    return patch("apps.core.integraciones.pedir", side_effect=envueltos)
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +109,9 @@ def test_muestra_el_servicio_caido_cuando_no_responde(client_admin):
     contenido = respuesta.content.decode()
     assert respuesta.context["estado"].disponible is False
     assert "Sin respuesta" in contenido
-    assert "Verifique que esté corriendo" in contenido
+    # El mensaje dejó de ser solo de LM Studio: con un proveedor remoto la
+    # causa es otra, y el texto ahora nombra las dos.
+    assert "verifique que el servidor" in contenido
 
 
 def test_el_estado_se_consulta_con_un_timeout_corto():
@@ -310,3 +332,193 @@ def test_el_menu_la_enlaza_dentro_de_proveedores(client_admin):
 
     assert URL in contenido
     assert "Diagnóstico del modelo" in contenido
+
+
+# ---------------------------------------------------------------------------
+# El período
+#
+# Es la parte más nueva y más frágil del prompt, y la que decide si los
+# borradores nacen en Pre-venta o Activos. Que no se viera en esta pantalla era
+# el defecto más grave que tenía: el operador no tenía forma de saber si el
+# modelo lo encontró.
+# ---------------------------------------------------------------------------
+
+
+def test_la_pantalla_muestra_el_periodo_que_copio_el_modelo(client_admin):
+    with contestando(CATALOGO, extraccion_valida(periodo="Novedades de marzo 2026")):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    contenido = respuesta.content.decode()
+    assert "Período que copió el modelo" in contenido
+    assert "Novedades de marzo 2026" in contenido
+
+
+def test_la_pantalla_muestra_la_fecha_interpretada(client_admin):
+    """Son dos valores encadenados y hay que ver los dos: un período que el
+    modelo leyó bien y el intérprete no entendió se arregla en otro lugar que uno
+    que el modelo no encontró."""
+    with contestando(CATALOGO, extraccion_valida(periodo="marzo 2026")):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    assert "01/03/2026" in respuesta.content.decode()
+
+
+def test_un_periodo_ilegible_se_ve_en_la_pantalla(client_admin):
+    """Su efecto —todos los borradores naciendo Activos— es de los que no dan
+    ningún síntoma, así que tiene que decirse acá."""
+    with contestando(CATALOGO, extraccion_valida(periodo="cuando salga")):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    contenido = respuesta.content.decode()
+    assert "no se pudo interpretar" in contenido
+    # Y el reparo del correo entero, que antes no se mostraba en ninguna parte.
+    assert "Período ilegible" in contenido
+
+
+def test_sin_periodo_la_pantalla_lo_dice_sin_alarmar(client_admin):
+    """No anunciar fecha es el caso normal, no un problema."""
+    with contestando(CATALOGO, extraccion_valida()):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    assert "no encontró ninguno" in respuesta.content.decode()
+
+
+def test_la_pantalla_dice_con_que_estado_nacerian_los_borradores(client_admin):
+    """Es la consecuencia concreta del período, y es lo que se viene a mirar."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    futuro = (timezone.localdate() + timedelta(days=60)).isoformat()
+
+    with contestando(CATALOGO, extraccion_valida(periodo=futuro)):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    assert "en Pre-venta" in respuesta.content.decode()
+
+
+def test_un_periodo_pasado_deja_los_borradores_activos(client_admin):
+    with contestando(CATALOGO, extraccion_valida(periodo="marzo 2020")):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    assert "Activos" in respuesta.content.decode()
+
+
+# ---------------------------------------------------------------------------
+# La confianza declarada, que es distinta de un reparo
+# ---------------------------------------------------------------------------
+
+
+def test_la_pantalla_muestra_la_confianza_que_no_es_alta(client_admin):
+    confianza = {"isbn": "alta", "titulo": "alta", "precio": "baja"}
+
+    with contestando(CATALOGO, extraccion_valida([producto(confianza=confianza)])):
+        respuesta = client_admin.post(URL, {"contenido": CONTENIDO})
+
+    contenido = respuesta.content.decode()
+    assert "precio" in contenido
+    assert "baja" in contenido
+
+
+def test_la_muestra_de_la_pantalla_anuncia_un_periodo_futuro(client_admin):
+    """Si anunciara una fecha pasada, el banco de pruebas nunca ejercitaría la
+    rama de Pre-venta, que es de la que hay que desconfiar."""
+    from datetime import date
+
+    with contestando(CATALOGO):
+        respuesta = client_admin.get(URL)
+
+    formulario = respuesta.context["form"]
+    assert formulario.muestra.periodo > date.today()
+
+
+# ---------------------------------------------------------------------------
+# El modelo en uso, no el catálogo del servidor
+#
+# Acá se listaban todos los que el servidor declara. Con un servidor local eran
+# dos o tres y parecía útil; con un proveedor remoto son cientos, y la pantalla
+# se llenaba de nombres que a nadie le importan enterrando lo único que se vino
+# a mirar.
+# ---------------------------------------------------------------------------
+
+
+def catalogo(*modelos):
+    return {"data": [{"id": modelo} for modelo in modelos]}
+
+
+def test_solo_se_muestra_el_modelo_configurado(client_admin):
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modelo = "el/que/uso"
+    configuracion.save()
+
+    with contestando(catalogo("el/que/uso", "otro/cualquiera", "un/tercero")):
+        contenido = client_admin.get(URL).content.decode()
+
+    assert "el/que/uso" in contenido
+    assert "otro/cualquiera" not in contenido
+    assert "un/tercero" not in contenido
+
+
+def test_se_avisa_si_el_servidor_no_ofrece_el_modelo_configurado(client_admin):
+    """Adelanta el 404 más común —un identificador mal copiado— antes de gastar
+    una corrida y recibirlo en medio de un procesamiento."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modelo = "un/modelo/que/no/existe"
+    configuracion.save()
+
+    with contestando(catalogo("otro/cualquiera")):
+        contenido = client_admin.get(URL).content.decode()
+
+    assert "No disponible en este servidor" in contenido
+
+
+def test_con_el_modelo_disponible_se_dice_que_lo_ofrece(client_admin):
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modelo = "el/que/uso"
+    configuracion.save()
+
+    with contestando(catalogo("el/que/uso")):
+        contenido = client_admin.get(URL).content.decode()
+
+    assert "Disponible" in contenido
+
+
+def test_sin_modelo_declarado_se_muestran_los_cargados(client_admin):
+    """Ahí sí la lista **es** la respuesta: es lo que el servidor va a contestar.
+    Es el caso normal con un servidor local."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modelo = ""
+    configuracion.save()
+
+    with contestando(catalogo("el/unico/cargado")):
+        contenido = client_admin.get(URL).content.decode()
+
+    assert "el/unico/cargado" in contenido
+    assert "se usa el que el servidor tenga cargado" in contenido
+
+
+def test_el_total_de_modelos_se_dice_como_cifra(client_admin):
+    """La cifra sirve —confirma que la dirección apunta a la API que se cree—;
+    la lista de nombres, no."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modelo = "el/que/uso"
+    configuracion.save()
+
+    with contestando(catalogo("el/que/uso", "otro", "tercero")):
+        contenido = client_admin.get(URL).content.decode()
+
+    assert "ofrece 3 modelos en total" in contenido
+
+
+def test_el_modo_no_nombra_proveedores(client_admin):
+    """Los dos valores describen dónde corre el modelo; qué empresa lo hospeda es
+    un dato de la dirección. Nombrar una en un desplegable la convierte en una
+    recomendación que el proyecto no hace."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modo = ConfiguracionSistema.REMOTO
+    configuracion.save()
+
+    contenido = client_admin.get(URL).content.decode()
+
+    assert "OpenRouter" not in contenido
+    assert "LM Studio" not in contenido

@@ -47,7 +47,7 @@ sistema (latencias, valores interpretados), `static` para el resto.
   <div class="mb-6">
     <h1 class="font-display text-3xl font-bold tracking-wide">Diagnóstico del modelo</h1>
     <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-      Estado del servicio de extracción · Herramienta de operación
+      Estado del servicio de extracción
     </p>
   </div>
 
@@ -58,9 +58,22 @@ sistema (latencias, valores interpretados), `static` para el resto.
                   {% if estado.disponible %}border-azure{% else %}border-signal{% endif %}">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
+        {% comment %}
+        Tres estados y no dos, y la diferencia no es cosmética: **"rechazado" se
+        arregla en otro lado que "sin respuesta"**. Un servicio caído se espera;
+        una credencial vencida se cambia en Parámetros globales. Antes los dos
+        aparecían como "sin respuesta" y mandaban a buscar donde no había nada —
+        que es justo lo que esta pantalla existe para evitar.
+        {% endcomment %}
         {% if estado.disponible %}
           <span class="pulso" aria-hidden="true"></span>
           <span class="font-display text-2xl font-bold tracking-wide text-azure">En línea</span>
+        {% elif estado.rechazado %}
+          <span class="h-[0.6rem] w-[0.6rem] bg-signal" aria-hidden="true"></span>
+          <span class="font-display text-2xl font-bold tracking-wide text-signal">
+            Rechazado
+          </span>
+          <span class="font-mono text-xs text-static">HTTP {{ estado.estado_http }}</span>
         {% else %}
           <span class="h-[0.6rem] w-[0.6rem] bg-signal" aria-hidden="true"></span>
           <span class="font-display text-2xl font-bold tracking-wide text-signal">
@@ -81,16 +94,60 @@ sistema (latencias, valores interpretados), `static` para el resto.
       </p>
     {% endif %}
 
-    {% if estado.modelos %}
+    {% comment %}
+    **El modelo que se está usando, no el catálogo del servidor.** Acá se listaban
+    todos los que el servidor declara: con LM Studio eran dos o tres y parecía
+    información útil, pero un proveedor remoto declara cientos y la pantalla se
+    llenaba de nombres que a nadie le importan, enterrando lo único que se vino a
+    mirar.
+
+    Y lo que queda no es solo menos: **es un diagnóstico**. Que el modelo
+    configurado no figure entre los que el servidor ofrece adelanta el 404 más
+    común —un identificador mal copiado— antes de gastar una corrida y recibirlo
+    en medio de un procesamiento.
+    {% endcomment %}
+    {% if estado.disponible %}
       <div class="mt-4 border-t border-line pt-4">
         <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Modelos cargados
+          Modelo en uso
         </p>
-        <div class="mt-2 flex flex-wrap gap-2">
-          {% for modelo in estado.modelos %}
-            <span class="border border-line px-2 py-1 font-mono text-xs">{{ modelo }}</span>
-          {% endfor %}
-        </div>
+        {% if estado.modelo_configurado %}
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <span class="border px-2 py-1 font-mono text-xs
+                         {% if estado.modelo_disponible %}border-line{% else %}border-signal text-signal{% endif %}">
+              {{ estado.modelo_configurado }}
+            </span>
+            {% if estado.modelo_disponible %}
+              <span class="font-mono text-[0.65rem] text-static">Disponible</span>
+            {% else %}
+              <span class="font-mono text-[0.65rem] text-signal">
+                No disponible en este servidor
+              </span>
+            {% endif %}
+          </div>
+        {% else %}
+          {% comment %}
+          Sin modelo declarado, el servidor usa el que tenga cargado — y ahí sí
+          la lista **es** la respuesta, porque es lo que va a contestar. Es el
+          caso normal en local.
+          {% endcomment %}
+          <div class="mt-2 flex flex-wrap gap-2">
+            {% for modelo in estado.modelos %}
+              <span class="border border-line px-2 py-1 font-mono text-xs">{{ modelo }}</span>
+            {% empty %}
+              <span class="font-mono text-xs text-static">el servidor no declara ninguno</span>
+            {% endfor %}
+          </div>
+          <p class="mt-2 font-mono text-[0.65rem] text-static">
+            Sin modelo declarado: se usa el que el servidor tenga cargado.
+          </p>
+        {% endif %}
+
+        {% if estado.modelos|length > 1 %}
+          <p class="mt-3 font-mono text-[0.65rem] text-static">
+            El servidor ofrece {{ estado.modelos|length }} modelos en total.
+          </p>
+        {% endif %}
       </div>
     {% endif %}
   </section>
@@ -100,12 +157,43 @@ sistema (latencias, valores interpretados), `static` para el resto.
   {# --------------------------------------------------------------- #}
   <section class="mt-6 border border-line bg-ash p-6">
     <h2 class="font-display text-lg font-semibold tracking-wide">Configuración</h2>
+    {% comment %}
+    Sale de la base y no del `.env`: es lo que el sistema está usando **ahora**,
+    que después de mover la configuración a la pantalla dejó de ser lo mismo que
+    con lo que arrancó. Se cambia en Parámetros globales.
+    {% endcomment %}
     <p class="mt-1 text-sm text-static">
-      Sale del <code class="font-mono text-xs">.env</code>. El modelo corre local: los correos de
-      un proveedor son información comercial y no salen de esta máquina.
+      Se cambia en
+      <a href="{% url 'catalog:parametros' %}" class="text-screen hover:text-signal">Parámetros
+      globales</a>.
     </p>
 
     <dl class="mt-4 grid gap-5 sm:grid-cols-2">
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Modo</dt>
+        <dd class="mt-1 font-mono text-sm {% if configuracion.remoto %}text-azure{% endif %}">
+          {{ configuracion.modo }}
+        </dd>
+      </div>
+      <div>
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Clave de la API
+        </dt>
+        {% comment %}
+        Solo los últimos caracteres: alcanza para reconocer cuál está puesta y no
+        convierte esta pantalla en un lugar del que copiar el secreto.
+        {% endcomment %}
+        <dd class="mt-1 font-mono text-sm
+                   {% if not configuracion.clave and configuracion.remoto %}text-signal{% endif %}">
+          {% if configuracion.clave %}
+            {{ configuracion.clave }}
+          {% elif configuracion.remoto %}
+            sin configurar
+          {% else %}
+            no hace falta
+          {% endif %}
+        </dd>
+      </div>
       <div class="min-w-0">
         <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Dirección</dt>
         <dd class="mt-1 break-all font-mono text-sm">{{ configuracion.url }}</dd>
@@ -120,7 +208,6 @@ sistema (latencias, valores interpretados), `static` para el resto.
         </dt>
         <dd class="mt-1 font-mono text-sm">
           {{ configuracion.timeout }} s
-          <span class="text-static">· generoso: no corre en una pantalla</span>
         </dd>
       </div>
       <div>
@@ -129,7 +216,6 @@ sistema (latencias, valores interpretados), `static` para el resto.
         </dt>
         <dd class="mt-1 font-mono text-sm">
           {{ configuracion.temperatura }}
-          <span class="text-static">· sin variación: acá se copia, no se redacta</span>
         </dd>
       </div>
     </dl>
@@ -140,11 +226,13 @@ sistema (latencias, valores interpretados), `static` para el resto.
   {# --------------------------------------------------------------- #}
   <section class="mt-8">
     <h2 class="font-display text-lg font-semibold tracking-wide">Banco de pruebas</h2>
+    {% comment %}
+    Corre **la misma función que el procesamiento real**, no una copia
+    simplificada: una prueba que ejercite otro camino puede pasar mientras el
+    camino real está roto.
+    {% endcomment %}
     <p class="mt-1 text-sm text-static">
-      Corre <strong class="text-screen">la misma función que el pipeline</strong>, no una copia
-      simplificada: una prueba que ejercite otro camino puede pasar mientras el camino real
-      está roto. El texto es editable — se le puede pegar el contenido de un correo que salió
-      mal y ver qué entiende, sin meterlo antes en la cola.
+      Pegue el contenido de un correo para ver qué datos extrae el modelo.
     </p>
 
     <form method="post" novalidate class="mt-5 border border-line bg-ash p-6">
@@ -157,7 +245,7 @@ sistema (latencias, valores interpretados), `static` para el resto.
         </div>
         {% if not estado.disponible %}
           <p class="font-mono text-[0.65rem] text-signal">
-            El servicio no responde: la prueba va a fallar hasta que esté en línea.
+            El servicio no responde. La prueba va a fallar hasta que vuelva a estar en línea.
           </p>
         {% endif %}
       </div>
@@ -221,6 +309,86 @@ sistema (latencias, valores interpretados), `static` para el resto.
           </div>
         </dl>
 
+        {% comment %}
+        El período, que es lo que decide si los borradores nacen en Pre-venta o
+        Activos. Va en su propio bloque y no como un recuadro más porque son dos
+        valores encadenados —lo que el modelo copió y lo que el sistema pudo
+        interpretar—, y porque la diferencia entre los dos es justamente lo que
+        hay que poder mirar: un período que el modelo leyó bien y el intérprete
+        no entendió se arregla en un lugar distinto que uno que el modelo no
+        encontró.
+        {% endcomment %}
+        <div class="mt-4 border border-line bg-ash px-4 py-3">
+          <dl class="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+            <div>
+              <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                Período que copió el modelo
+              </dt>
+              <dd class="mt-1 font-mono text-sm
+                         {% if not resultado.periodo_texto %}text-static{% endif %}">
+                {{ resultado.periodo_texto|default:"no encontró ninguno" }}
+              </dd>
+            </div>
+            <div>
+              <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                Fecha interpretada
+              </dt>
+              {% comment %}
+              En `azure`: la fecha no la escribió nadie, la derivó el sistema del
+              texto de arriba. En `signal` solo cuando había texto y no se pudo
+              interpretar, que sí es algo que atender.
+              {% endcomment %}
+              <dd class="mt-1 font-mono text-sm
+                         {% if resultado.periodo %}text-azure
+                         {% elif resultado.periodo_texto %}text-signal
+                         {% else %}text-static{% endif %}">
+                {% if resultado.periodo %}
+                  {{ resultado.periodo|date:"d/m/Y" }}
+                {% elif resultado.periodo_texto %}
+                  no se pudo interpretar
+                {% else %}
+                  —
+                {% endif %}
+              </dd>
+            </div>
+            <div>
+              <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                Estado inicial
+              </dt>
+              <dd class="mt-1 font-mono text-sm text-azure">
+                {% if resultado.periodo and resultado.periodo > hoy %}
+                  en Pre-venta
+                {% else %}
+                  Activos
+                {% endif %}
+              </dd>
+            </div>
+          </dl>
+
+          {% comment %}
+          Los reparos del correo entero, que no pertenecen a ningún producto. Sin
+          esto un período ilegible no se vería en ninguna parte, y su efecto
+          —todos los borradores naciendo Activos— es de los que no dan síntoma.
+          {% endcomment %}
+          {% for reparo in resultado.reparos %}
+            <p class="mt-3 border-l-2 border-signal pl-3 font-mono text-[0.65rem]
+                      leading-relaxed text-signal">{{ reparo }}</p>
+          {% endfor %}
+
+          {% comment %}
+          Sin esta línea la pantalla se lee al revés de como es. El modelo declara
+          la fecha de confianza baja en casi todos los productos —correctamente,
+          porque la **fila** no la trae— y quien mire la tabla de abajo va a
+          concluir que ningún borrador va a ser confirmable en lote. No es así:
+          esa confianza se descarta al generar el borrador, porque califica una
+          celda vacía y no el valor que el borrador termina teniendo.
+          {% endcomment %}
+          <p class="mt-3 font-mono text-[0.65rem] leading-relaxed text-static">
+            La confianza sobre <span class="text-screen">fecha</span> solo se conserva
+            cuando la fila trae una fecha propia.
+          </p>
+        </div>
+
         {% if resultado.productos %}
           <div class="mt-4 overflow-x-auto border border-line">
             <table class="w-full text-left text-sm">
@@ -232,6 +400,7 @@ sistema (latencias, valores interpretados), `static` para el resto.
                   <th class="px-4 py-3 font-medium">Vol.</th>
                   <th class="px-4 py-3 font-medium">Formato</th>
                   <th class="px-4 py-3 text-right font-medium">Precio</th>
+                  <th class="px-4 py-3 font-medium">Fecha propia</th>
                   <th class="px-4 py-3 font-medium">Portada</th>
                 </tr>
               </thead>
@@ -248,13 +417,44 @@ sistema (latencias, valores interpretados), `static` para el resto.
                     <td class="px-4 py-3 text-right font-mono text-xs">
                       {{ producto.precio|default:"—" }}
                     </td>
+                    {% comment %}
+                    Casi siempre vacía, y eso está bien: la fecha la anuncia el
+                    correo entero. Cuando la fila trae una propia, pisa al período
+                    — y esta columna es la única forma de ver cuál de las dos mandó.
+                    {% endcomment %}
+                    <td class="px-4 py-3 font-mono text-xs
+                               {% if not producto.fecha %}text-static{% endif %}">
+                      {% if producto.fecha %}{{ producto.fecha|date:"d/m/Y" }}{% else %}del período{% endif %}
+                    </td>
                     <td class="px-4 py-3 font-mono text-[0.65rem] text-static">
                       {{ producto.imagen|default:"—" }}
                     </td>
                   </tr>
+                  {% comment %}
+                  La confianza que **declaró el modelo**, y solo la que no es
+                  alta: listar los cinco campos en verde sería ruido en una tabla
+                  que se mira de un vistazo. Va en `static` y no en `signal`
+                  porque no es un problema detectado sino una duda declarada —
+                  los reparos de abajo, que sí los detectamos nosotros, van en
+                  rojo. Que se distingan es el punto de toda la pantalla.
+                  {% endcomment %}
+                  {% if producto.confianza %}
+                    <tr class="border-b border-line last:border-b-0">
+                      <td colspan="7" class="px-4 pb-2 pt-0">
+                        <p class="font-mono text-[0.65rem] text-static">
+                          {% for campo, nivel in producto.confianza.items %}
+                            {% if nivel != "alta" %}
+                              <span class="uppercase tracking-wider">{{ campo }}</span>:
+                              <span class="text-screen">{{ nivel }}</span>&nbsp;&nbsp;
+                            {% endif %}
+                          {% empty %}{% endfor %}
+                        </p>
+                      </td>
+                    </tr>
+                  {% endif %}
                   {% if producto.reparos %}
                     <tr class="border-b border-line last:border-b-0">
-                      <td colspan="6" class="px-4 pb-3 pt-0">
+                      <td colspan="7" class="px-4 pb-3 pt-0">
                         {% for reparo in producto.reparos %}
                           <p class="border-l-2 border-signal pl-3 font-mono text-[0.65rem]
                                     leading-relaxed text-signal">{{ reparo }}</p>
@@ -268,8 +468,7 @@ sistema (latencias, valores interpretados), `static` para el resto.
           </div>
         {% else %}
           <p class="mt-4 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
-            No se extrajo ningún producto. Si la intención no es «novedades», es el
-            comportamiento correcto: solo los anuncios producen productos.
+            No se extrajo ningún producto. Solo los correos de novedades los producen.
           </p>
         {% endif %}
       {% else %}
@@ -279,12 +478,11 @@ sistema (latencias, valores interpretados), `static` para el resto.
               No se pudo consultar el modelo. El servicio no respondió dentro de la espera
               máxima configurada.
             {% else %}
-              El modelo respondió algo que no se pudo interpretar. Suele ser el prompt o el
-              modelo elegido, no el contenido.
+              El modelo respondió algo que no se pudo interpretar. Revise el modelo elegido.
             {% endif %}
           </p>
           <p class="mt-1 font-mono text-[0.65rem] text-static">
-            Tardó {{ resultado.milisegundos }} ms en llegar a esta conclusión.
+            Tardó {{ resultado.milisegundos }} ms.
           </p>
         </div>
       {% endif %}

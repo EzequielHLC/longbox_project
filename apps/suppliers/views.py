@@ -12,17 +12,17 @@ pipeline de CU-04, donde cada correo espera una decisión antes de que se gaste
 un solo ciclo en procesarlo.
 """
 
-from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.accounts.models import Usuario
 from apps.core import llm
 from apps.core.mixins import RolRequeridoMixin
-from apps.core.models import RegistroAuditoria
+from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import obtener_ip
 from apps.suppliers import extraccion, services
 from apps.suppliers.forms import (
@@ -144,7 +144,7 @@ class ProveedorDetalleView(ProveedoresMixin, DetailView):
         # Los primeros productos alcanzan para reconocer al proveedor; el
         # inventario completo tiene su propia pantalla y su propio buscador.
         contexto["productos"] = self.object.productos.select_related(
-            "editorial", "tipo", "formato"
+            "tipo", "productoeditorial__editorial", "productoeditorial__formato"
         )[:25]
         contexto["cantidad_productos"] = self.object.productos.count()
         return contexto
@@ -423,6 +423,15 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
             {"texto": linea, "es_fila": linea.startswith("|")}
             for linea in self.object.contenido.splitlines()
         ]
+        # Lo que la extracción produjo. Se muestra acá, junto al contenido del
+        # que salió, porque es la única forma de ver si el modelo entendió la
+        # tabla: un borrador con el precio del tomo siguiente solo se nota
+        # teniendo las dos cosas a la vista.
+        contexto["borradores"] = (
+            self.object.borradores.select_related("editorial", "tipo", "formato")
+            .prefetch_related("confianzas")
+            .all()
+        )
         return contexto
 
     def post(self, request, *args, **kwargs):
@@ -492,15 +501,28 @@ class DiagnosticoLLMView(ProveedoresMixin, TemplateView):
         # dos veces en el mismo pedido no aporta nada.
         if "estado" not in contexto:
             contexto["estado"] = llm.estado()
+        # Sale de la base y no de `settings`: es lo que el sistema está usando
+        # de verdad en este momento, que después de mover la configuración a la
+        # pantalla dejó de ser lo mismo que el `.env` del arranque.
+        configuracion = ConfiguracionSistema.obtener()
+        contexto["parametros"] = configuracion
         contexto["configuracion"] = {
-            "url": settings.LLM_URL,
-            "modelo": settings.LLM_MODELO or "el que esté cargado en el servidor",
-            "timeout": settings.LLM_TIMEOUT,
-            "temperatura": settings.LLM_TEMPERATURA,
+            "modo": configuracion.get_llm_modo_display(),
+            "remoto": configuracion.usa_modelo_remoto,
+            "url": configuracion.llm_url,
+            "modelo": configuracion.llm_modelo or "el que esté cargado en el servidor",
+            "clave": configuracion.clave_enmascarada,
+            "timeout": configuracion.llm_timeout,
+            "temperatura": configuracion.llm_temperatura,
         }
         contexto.setdefault("form", PruebaDelModeloForm())
         contexto["prompt"] = extraccion.SISTEMA
         contexto["version_prompt"] = extraccion.VERSION_PROMPT
+        # Para poder decir en pantalla si el período interpretado dejaría los
+        # borradores en Pre-venta o Activos. Se compara acá y no en el modelo
+        # porque el diagnóstico no crea ningún borrador: solo muestra qué
+        # pasaría, que es de lo que se trata la pantalla.
+        contexto["hoy"] = timezone.localdate()
         return contexto
 
     def post(self, request, *args, **kwargs):
