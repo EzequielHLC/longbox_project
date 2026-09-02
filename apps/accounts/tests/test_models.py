@@ -1,3 +1,10 @@
+"""El modelo de usuario: las garantías que la base sostiene por su cuenta.
+
+Se prueban acá y no en los tests de las pantallas porque son invariantes del
+modelo: valen para el alta desde el backoffice, para el registro de un cliente y
+para cualquier `create()` que se escriba mañana en un comando.
+"""
+
 import pytest
 from django.db import IntegrityError
 

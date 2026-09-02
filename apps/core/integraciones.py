@@ -62,6 +62,10 @@ CABECERAS = {
 # cuerpo confunde a algunos servidores y no aporta nada.
 CABECERA_JSON = {"Content-Type": "application/json"}
 
+# Lo único que la puerta abre. `urlopen` soporta `file://` y `ftp://`, y ninguno
+# de los dos tiene nada que hacer en una integración de este sistema.
+ESQUEMAS_PERMITIDOS = ("http://", "https://")
+
 # Cuando la API falla se cachea igual el resultado del respaldo, pero por poco
 # rato: si el servicio vuelve en cinco minutos, no queremos seguir un día
 # entero sirviendo la foto vieja.
@@ -132,19 +136,28 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
     Usa `urlopen` de la biblioteca estándar: no hace falta sumar `requests` al
     proyecto para un puñado de pedidos.
     """
+    # `urlopen` abre también `file://`, y desde que la dirección del modelo de
+    # lenguaje se configura desde una pantalla, una de las URL que llegan acá es
+    # texto que escribió alguien. El `URLField` del formulario ya rechaza los
+    # esquemas raros, pero la puerta no puede depender de que quien la use haya
+    # validado antes: es el único punto por el que sale todo.
+    if not url.lower().startswith(ESQUEMAS_PERMITIDOS):
+        logger.warning("Esquema no permitido en %s", url)
+        return Respuesta(motivo=SIN_CONEXION, detalle="La dirección no es http ni https.")
+
     datos = None
     propias = dict(cabeceras or {})
     if cuerpo is not None:
         datos = json.dumps(cuerpo).encode("utf-8")
         propias = {**CABECERA_JSON, **propias}
-    pedido = Request(  # noqa: S310
+    pedido = Request(  # nosec B310 - el esquema se validó arriba
         url,
         data=datos,
         method=metodo,
         headers={**CABECERAS, **propias},
     )
     try:
-        with urlopen(pedido, timeout=timeout) as respuesta:  # noqa: S310
+        with urlopen(pedido, timeout=timeout) as respuesta:  # nosec B310
             return Respuesta(datos=json.loads(respuesta.read()))
     except HTTPError as error:
         # El servicio **contestó**, y contestó que no. Es el caso que antes se

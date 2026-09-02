@@ -1099,19 +1099,32 @@ class EtiquetaForm(forms.ModelForm):
         return datos
 
 
-class TipoForm(forms.ModelForm):
+class TipoForm(CatalogoNombradoForm):
+    """El rubro del material: manga, cómic, artbook, figura.
+
+    Se identifica por su nombre como el resto de los catálogos, y por eso hereda
+    la normalización en vez de repetirla. Acá importa más que en ningún otro:
+    `Tipo` entra en la clave de unicidad del producto **y** en la tabla de
+    precios de referencia, así que "Manga" y "manga" conviviendo no serían dos
+    filas repetidas sino dos rubros con dos grillas de precios distintas.
+    """
+
+    mensaje_repetido = "Ya existe un tipo llamado «{nombre}»."
+
     class Meta:
         model = Tipo
         fields = ["nombre", "usa_formato", "activo", "orden"]
 
 
-class FormatoForm(forms.ModelForm):
+class FormatoForm(CatalogoNombradoForm):
     """El tamaño del tomo y en qué tipos se ofrece.
 
     Dejar los tipos sin declarar es la opción válida y frecuente: significa que
     el formato es universal. Es lo que hace que "Tapa dura" no haya que cargarla
     tres veces, una por rubro, partiendo la tabla de precios.
     """
+
+    mensaje_repetido = "Ya existe un formato llamado «{nombre}»."
 
     class Meta:
         model = Formato

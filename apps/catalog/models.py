@@ -75,13 +75,16 @@ class ProductoAbstractoError(Exception):
 class Editorial(models.Model):
     """Quién publica el material."""
 
-    nombre = models.CharField("nombre", max_length=120, unique=True)
+    nombre = models.CharField("nombre", max_length=120)
     activa = models.BooleanField("activa", default=True)
 
     class Meta:
         verbose_name = "editorial"
         verbose_name_plural = "editoriales"
         ordering = ["nombre"]
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(Lower("nombre"), name="editorial_unica_por_nombre")
+        ]
 
     def __str__(self):
         return self.nombre
@@ -101,7 +104,7 @@ class GrupoEtiqueta(models.Model):
     de parámetros y no tocando el modelo.
     """
 
-    nombre = models.CharField("nombre", max_length=60, unique=True)
+    nombre = models.CharField("nombre", max_length=60)
     activo = models.BooleanField("activo", default=True)
     orden = models.PositiveSmallIntegerField(
         "orden", default=0, help_text="Posición en los filtros. Menor va primero."
@@ -111,6 +114,9 @@ class GrupoEtiqueta(models.Model):
         verbose_name = "grupo de etiquetas"
         verbose_name_plural = "grupos de etiquetas"
         ordering = ["orden", "nombre"]
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(Lower("nombre"), name="grupo_etiqueta_unico_por_nombre")
+        ]
 
     def __str__(self):
         return self.nombre
@@ -175,7 +181,7 @@ class Tipo(models.Model):
     `True`, y una bandera que nunca es falsa no es una bandera.
     """
 
-    nombre = models.CharField("nombre", max_length=60, unique=True)
+    nombre = models.CharField("nombre", max_length=60)
 
     # De qué rubro es este tipo. Hace falta porque **cuatro de los cinco
     # consumidores de esta tabla son solo editoriales**: la tabla de precios de
@@ -213,6 +219,9 @@ class Tipo(models.Model):
         verbose_name = "tipo de material"
         verbose_name_plural = "tipos de material"
         ordering = ["orden", "nombre"]
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(Lower("nombre"), name="tipo_unico_por_nombre")
+        ]
 
     def __str__(self):
         return self.nombre
@@ -239,7 +248,7 @@ class Formato(models.Model):
     razonamiento que hace que el catálogo sea compartido entre editoriales.
     """
 
-    nombre = models.CharField("nombre", max_length=60, unique=True)
+    nombre = models.CharField("nombre", max_length=60)
     descripcion = models.CharField(
         "medidas", max_length=120, blank=True, help_text="Por ejemplo: 12,8 × 18,2 cm."
     )
@@ -264,6 +273,9 @@ class Formato(models.Model):
         verbose_name = "formato"
         verbose_name_plural = "formatos"
         ordering = ["orden", "nombre"]
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(Lower("nombre"), name="formato_unico_por_nombre")
+        ]
 
     def __str__(self):
         return self.nombre

@@ -122,7 +122,7 @@ def armar(cantidad=3, semilla=None):
     mitad interesante de la demostración — muestra que el sistema le desconfía al
     modelo, no solo que el modelo copia bien.
     """
-    azar = random.Random(semilla)  # noqa: S311
+    azar = random.Random(semilla)  # nosec B311 - datos de demostración, no criptografía
     base = azar.randrange(1, 999_000)
 
     # Cuál sale roto se sortea también: si fuera siempre el último, alcanzaría

@@ -1,3 +1,11 @@
+"""El registro de auditoría: lo que queda escrito y lo que no se puede reescribir.
+
+`RegistroAuditoria` apunta a su objetivo con una clave genérica y no con una
+foránea a `Usuario`, porque los módulos que vinieron después auditan lotes,
+borradores y sesiones de revisión. El correo del objetivo queda desnormalizado
+para el caso que la clave genérica no cubre: la cuenta que se elimina.
+"""
+
 import pytest
 
 from apps.accounts.tests.factories import UsuarioFactory

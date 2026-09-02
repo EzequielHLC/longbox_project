@@ -12,3 +12,24 @@ select = ["E", "F", "I", "DJ"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]
+
+[tool.coverage.run]
+source = ["apps"]
+# Los tests se ejecutan enteros por definición, así que contarlos como código
+# cubierto sube el número sin decir nada: eran ~6200 sentencias al 100 % que
+# diluían el porcentaje del código que importa. Sacándolos, la medición pasa a
+# ser de lo que se prueba y no de lo que prueba.
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/apps.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+# `if TYPE_CHECKING:` y los `__repr__` de depuración no se prueban y no deberían
+# contar como deuda.
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
