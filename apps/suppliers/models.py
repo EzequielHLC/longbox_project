@@ -102,7 +102,7 @@ class Proveedor(models.Model):
         default=True,
         help_text=(
             "Sus correos entran a la cola de procesamiento automático. "
-            "Apagarlo no afecta el resto de la relación con el proveedor."
+            "Apagarlo no cambia el estado del proveedor."
         ),
     )
 
@@ -134,10 +134,7 @@ class Proveedor(models.Model):
         blank=True,
         related_name="proveedores",
         verbose_name="editorial que publica",
-        help_text=(
-            "Dejar sin declarar solo si el proveedor trae material de varias "
-            "editoriales: en ese caso se extrae de cada correo."
-        ),
+        help_text=("Déjelo sin declarar si el proveedor trae varias editoriales."),
     )
 
     # El rubro con el que nacen sus borradores. Es un valor por defecto, no una

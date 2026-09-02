@@ -61,7 +61,7 @@ def test_el_informe_no_afirma_que_no_hay_propuestas_de_restock(client_admin):
     respuesta = client_admin.get(url_baja(proveedor))
 
     assert respuesta.context["impacto"].propuestas_de_restock is None
-    assert "No se puede determinar" in respuesta.content.decode()
+    assert "No disponible todavía" in respuesta.content.decode()
 
 
 def test_mirar_el_informe_no_da_de_baja_nada(client_admin):
@@ -158,7 +158,10 @@ def test_reactivar_conserva_los_datos_y_el_historial(client_admin):
 
     proveedor.refresh_from_db()
     assert proveedor.nombre_contacto == "Laura"
-    assert producto in proveedor.productos.all()
+    # Se compara la fila y no la instancia: `proveedor.productos` devuelve
+    # instancias del padre y acá se tiene una de la hija, y para Django dos
+    # modelos concretos distintos nunca son iguales aunque compartan clave.
+    assert producto.pk in proveedor.productos.values_list("pk", flat=True)
 
 
 def test_reactivar_queda_auditado(client_admin):

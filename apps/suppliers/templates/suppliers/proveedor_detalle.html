@@ -165,8 +165,8 @@ en esta pantalla y no repartidas por el listado.
                      class="block max-w-[18rem] truncate hover:text-signal"
                      title="{{ producto.titulo }}">{{ producto.titulo }}</a>
                 </td>
-                <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen }}</td>
-                <td class="px-4 py-3 text-static">{{ producto.editorial }}</td>
+                <td class="px-4 py-3 font-mono text-xs">{{ producto.especifico.volumen|default:"—" }}</td>
+                <td class="px-4 py-3 text-static">{% if producto.es_editorial %}{{ producto.especifico.editorial }}{% else %}—{% endif %}</td>
                 <td class="whitespace-nowrap px-4 py-3">
                   <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
                                {% if producto.estado == 'pre_venta' %}border-azure text-azure
@@ -199,8 +199,7 @@ en esta pantalla y no repartidas por el listado.
   vez de mostrar una tabla vacía que se leería como "nunca se le pidió nada".
   {% endcomment %}
   <p class="mt-6 border-l-2 border-line bg-ash px-4 py-3 font-mono text-[0.65rem] text-static">
-    El historial de pedidos de restock aparece acá cuando se implemente el módulo de
-    Restock.
+    El historial de pedidos de reposición se va a mostrar acá.
   </p>
 </div>
 {% endblock %}

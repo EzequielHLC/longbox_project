@@ -566,3 +566,198 @@ def test_un_precio_de_referencia_con_un_formato_que_no_aplica_es_rechazado(clien
     assert respuesta.status_code == 200
     assert respuesta.context["form"].errors["formato"]
     assert not TablaPrecioReferencia.objects.filter(formato=grapa).exists()
+
+
+# ---------------------------------------------------------------------------
+# El modelo de lenguaje (A16, extendido)
+#
+# Se configura desde acá y no desde el `.env` por una restricción que no es
+# técnica: **el sistema se demuestra desplegado**, y el modelo local corre en una
+# máquina que no viaja. Una de sus dos mitades es una credencial, y eso cambia
+# las reglas de la pantalla.
+# ---------------------------------------------------------------------------
+
+
+def datos_del_modelo(**cambios):
+    base = {
+        "guardar_modelo": "1",
+        "llm_modo": ConfiguracionSistema.LOCAL,
+        "llm_url": "http://127.0.0.1:1234/v1/chat/completions",
+        "llm_modelo": "",
+        "api_key": "",
+        "llm_timeout": "300",
+        "llm_temperatura": "0",
+    }
+    base.update(cambios)
+    return base
+
+
+@pytest.mark.django_db
+def test_se_puede_cambiar_a_un_proveedor_remoto(client_admin):
+    client_admin.post(
+        URL_PARAMETROS,
+        datos_del_modelo(
+            llm_modo=ConfiguracionSistema.REMOTO,
+            llm_url="https://openrouter.ai/api/v1/chat/completions",
+            llm_modelo="un/modelo:free",
+            api_key="sk-or-secreta",
+        ),
+    )
+
+    configuracion = ConfiguracionSistema.obtener()
+    assert configuracion.usa_modelo_remoto
+    assert configuracion.llm_modelo == "un/modelo:free"
+    assert configuracion.llm_api_key == "sk-or-secreta"
+
+
+@pytest.mark.django_db
+def test_un_proveedor_remoto_sin_clave_se_rechaza(client_admin):
+    """Sin clave no va a contestar nunca, y el fallo aparecería recién en la
+    pantalla de diagnóstico. Se avisa donde se puede arreglar.
+
+    Se vacía primero la que trae la semilla del entorno: el formulario solo
+    exige que **haya** una, y juzgar si sirve es tarea del diagnóstico — que
+    ahora sabe leer un 401 como "la credencial no vale".
+    """
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_api_key = ""
+    configuracion.save()
+
+    respuesta = client_admin.post(
+        URL_PARAMETROS,
+        datos_del_modelo(llm_modo=ConfiguracionSistema.REMOTO, llm_modelo="un/modelo", api_key=""),
+    )
+
+    assert respuesta.status_code == 200
+    assert ConfiguracionSistema.obtener().llm_modo == ConfiguracionSistema.LOCAL
+
+
+@pytest.mark.django_db
+def test_un_proveedor_remoto_sin_modelo_se_rechaza(client_admin):
+    """Los proveedores hospedan cientos: sin nombrarlo devuelven un error que
+    cuesta interpretar."""
+    respuesta = client_admin.post(
+        URL_PARAMETROS,
+        datos_del_modelo(
+            llm_modo=ConfiguracionSistema.REMOTO, llm_modelo="", api_key="sk-or-secreta"
+        ),
+    )
+
+    assert respuesta.status_code == 200
+    assert ConfiguracionSistema.obtener().llm_modo == ConfiguracionSistema.LOCAL
+
+
+@pytest.mark.django_db
+def test_dejar_la_clave_vacia_no_la_borra(client_admin):
+    """El campo llega vacío siempre, así que un vacío significa "no la cambies"
+    y no "borrala". Sin esto, ajustar el timeout dejaría el sistema sin clave."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_modo = ConfiguracionSistema.REMOTO
+    configuracion.llm_api_key = "sk-or-original"
+    configuracion.llm_modelo = "un/modelo"
+    configuracion.save()
+
+    client_admin.post(
+        URL_PARAMETROS,
+        datos_del_modelo(
+            llm_modo=ConfiguracionSistema.REMOTO,
+            llm_modelo="un/modelo",
+            api_key="",
+            llm_timeout="120",
+        ),
+    )
+
+    configuracion.refresh_from_db()
+    assert configuracion.llm_api_key == "sk-or-original"
+    assert configuracion.llm_timeout == 120
+
+
+@pytest.mark.django_db
+def test_la_clave_nunca_se_dibuja_entera(client_admin):
+    """La pantalla no puede ser un lugar del que copiar el secreto."""
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.llm_api_key = "sk-or-v1-0123456789abcdef"
+    configuracion.save()
+
+    contenido = client_admin.get(URL_PARAMETROS).content.decode()
+
+    assert "sk-or-v1-0123456789abcdef" not in contenido
+    assert "…cdef" in contenido
+
+
+@pytest.mark.django_db
+def test_la_clave_no_entra_en_la_auditoria(client_admin):
+    """El log es inmutable y consultable: un secreto que pasa por ahí queda ahí
+    para siempre. Se registra **que** cambió, que es lo que hace falta saber."""
+    client_admin.post(
+        URL_PARAMETROS,
+        datos_del_modelo(
+            llm_modo=ConfiguracionSistema.REMOTO,
+            llm_modelo="un/modelo",
+            api_key="sk-or-secretisima",
+        ),
+    )
+
+    detalles = " ".join(
+        RegistroAuditoria.objects.filter(accion=RegistroAuditoria.PARAMETRO_MODIFICADO).values_list(
+            "detalle", flat=True
+        )
+    )
+    assert "sk-or-secretisima" not in detalles
+    assert "se reemplazó la clave" in detalles
+
+
+@pytest.mark.django_db
+def test_el_cambio_de_modelo_queda_auditado(client_admin):
+    client_admin.post(URL_PARAMETROS, datos_del_modelo(llm_modelo="otro/modelo"))
+
+    detalle = (
+        RegistroAuditoria.objects.filter(accion=RegistroAuditoria.PARAMETRO_MODIFICADO)
+        .first()
+        .detalle
+    )
+    assert "otro/modelo" in detalle
+
+
+@pytest.mark.django_db
+def test_guardar_el_modelo_no_toca_el_margen(client_admin):
+    """Son dos formularios porque se tocan por motivos distintos: un error en
+    uno no puede borrar lo escrito en el otro."""
+    configuracion = ConfiguracionSistema.obtener()
+    margen = configuracion.margen_ganancia
+
+    client_admin.post(URL_PARAMETROS, datos_del_modelo(llm_modelo="otro/modelo"))
+
+    configuracion.refresh_from_db()
+    assert configuracion.margen_ganancia == margen
+
+
+@pytest.mark.django_db
+def test_una_direccion_sin_la_ruta_de_la_api_se_rechaza(client_admin):
+    """Pegar la dirección base del servidor es el error más natural acá, y el
+    formulario lo aceptaba: quedaba una configuración que no puede funcionar y
+    el diagnóstico decía "no parece una API compatible", que es verdad pero no
+    dice qué corregir."""
+    respuesta = client_admin.post(URL_PARAMETROS, datos_del_modelo(llm_url="http://127.0.0.1:1234"))
+
+    assert respuesta.status_code == 200
+    assert "Falta la ruta de la API" in respuesta.content.decode()
+
+
+@pytest.mark.django_db
+def test_la_direccion_completa_se_acepta_en_los_dos_modos(client_admin):
+    for url in (
+        "http://127.0.0.1:1234/v1/chat/completions",
+        "https://un-proveedor.test/api/v1/chat/completions",
+    ):
+        client_admin.post(URL_PARAMETROS, datos_del_modelo(llm_url=url))
+        assert ConfiguracionSistema.obtener().llm_url == url
+
+
+@pytest.mark.django_db
+def test_la_barra_final_de_mas_no_molesta(client_admin):
+    client_admin.post(
+        URL_PARAMETROS, datos_del_modelo(llm_url="http://127.0.0.1:1234/v1/chat/completions/")
+    )
+
+    assert ConfiguracionSistema.obtener().llm_url.endswith("completions")

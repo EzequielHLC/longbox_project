@@ -200,9 +200,8 @@ class PruebaDelModeloForm(forms.Form):
         label="Contenido a interpretar",
         widget=forms.Textarea(attrs={"rows": 10, "spellcheck": "false"}),
         help_text=(
-            "Como sale de la extracción de un correo: las filas de datos van entre barras "
-            "y las portadas como [imagen:identificador]. Se genera una muestra distinta en "
-            "cada carga; también se puede pegar el contenido de un correo real."
+            "Se genera una muestra distinta en cada carga. También puede pegar el "
+            "contenido de un correo real."
         ),
     )
 

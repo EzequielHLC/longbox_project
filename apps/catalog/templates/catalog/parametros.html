@@ -67,14 +67,63 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
   </section>
 
   {# ------------------------------------------------------------------ #}
+  {% comment %}
+  El modelo de lenguaje. Va en esta pantalla porque es un parámetro operativo
+  más (A16), pero en su propio formulario: se toca por otro motivo que el margen
+  —lo cambia quien despliega, no el negocio— y una de sus mitades es una
+  credencial.
+
+  El motivo de que sea configurable y no una variable de entorno: **el sistema se
+  demuestra desplegado**, y el modelo local corre en una máquina que no viaja.
+  Sin poder apuntar a un proveedor remoto desde acá, la mitad del sistema no se
+  puede mostrar fuera de esa máquina.
+  {% endcomment %}
+  <section class="mt-10 bloque-parametro pl-5">
+    <h2 class="font-display text-xl font-semibold tracking-wide">Modelo de lenguaje</h2>
+    <p class="mt-1 max-w-3xl text-sm text-static">
+      Servicio que extrae los datos de los correos de novedades. Después de cambiarlo,
+      verifíquelo en
+      <a href="{% url 'suppliers:diagnostico_llm' %}" class="text-screen hover:text-signal">Diagnóstico
+      del modelo</a>.
+    </p>
+
+    <form method="post" novalidate class="mt-5 border border-line bg-ash p-6">
+      {% csrf_token %}
+      <div class="grid gap-5 md:grid-cols-2">
+        {% include "_campo.html" with campo=form_modelo.llm_modo %}
+        {% include "_campo.html" with campo=form_modelo.llm_modelo %}
+      </div>
+      {% include "_campo.html" with campo=form_modelo.llm_url %}
+
+      <div class="grid gap-5 md:grid-cols-3">
+        {% include "_campo.html" with campo=form_modelo.api_key %}
+        {% include "_campo.html" with campo=form_modelo.llm_timeout %}
+        {% include "_campo.html" with campo=form_modelo.llm_temperatura %}
+      </div>
+
+      {% comment %}
+      La clave nunca se devuelve al formulario: se muestran los últimos cuatro
+      caracteres, que es lo justo para reconocer cuál está puesta. Mostrarla
+      entera convertiría esta pantalla en un lugar del que copiar el secreto.
+      {% endcomment %}
+      <div class="mt-6">
+        <div class="marco-boton">
+          <button type="submit" name="guardar_modelo" value="1" class="boton-primario">
+            Guardar configuración del modelo
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
   <section class="mt-10 bloque-parametro pl-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 class="font-display text-lg font-semibold tracking-wide">Tipos de material</h2>
         <p class="mt-1 text-sm text-static">
-          Qué clase de material es. La bandera decide si el alta pide el tamaño del tomo,
-          que es lo único que cambia de un tipo a otro: las etiquetas se ofrecen para
-          todos por igual.
+          Qué clase de material es. Los tipos marcados por formato piden además el tamaño
+          del tomo al darlo de alta.
         </p>
       </div>
       <a href="{% url 'catalog:tipo_crear' %}" class="boton-menor"><span>Nuevo tipo</span></a>
@@ -133,9 +182,8 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       <div>
         <h2 class="font-display text-lg font-semibold tracking-wide">Formatos</h2>
         <p class="mt-1 text-sm text-static">
-          El tamaño del tomo, que es lo que fija su precio. El nombre es compartido por
-          todas las editoriales; lo que cambia de una a otra es el precio. Cada formato
-          declara en qué tipos se ofrece — sin declarar ninguno, se ofrece en todos.
+          El tamaño del tomo, que es lo que fija su precio. Sin tipos declarados, el
+          formato se ofrece para todos.
         </p>
       </div>
       <a href="{% url 'catalog:formato_crear' %}" class="boton-menor"><span>Nuevo formato</span></a>
@@ -200,7 +248,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       <div>
         <h2 class="font-display text-lg font-semibold tracking-wide">Editoriales</h2>
         <p class="mt-1 text-sm text-static">
-          También se pueden agregar sin salir de la pantalla de carga de un lote.
+          Quién publica el material editorial. También se agregan desde la carga de un lote.
         </p>
       </div>
       <a href="{% url 'catalog:editorial_crear' %}" class="boton-menor">
@@ -268,9 +316,13 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       <div>
         <h2 class="font-display text-lg font-semibold tracking-wide">Etiquetas</h2>
         <p class="mt-1 text-sm text-static">
-          Describen el producto sin identificarlo ni fijar su precio: franquicia, género,
-          colección. Un producto puede tener varias, y ninguna es obligatoria. Si algo
-          decide algo —el tamaño, la editorial— es un campo, no una etiqueta.
+          {% comment %}
+          La doctrina que ordena el modelo —"si algo decide, es un campo; si solo
+          describe, es una etiqueta"— vive en `catalog/models.py` y en A17 de
+          `alta_editorial.md`. Acá alcanza con qué son y qué se puede hacer.
+          {% endcomment %}
+          Sirven para buscar y agrupar productos: franquicia, género, colección.
+          Un producto puede tener varias y ninguna es obligatoria.
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
@@ -333,8 +385,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           {% empty %}
             <tr>
               <td colspan="5" class="px-4 py-6 text-sm text-static">
-                No hay etiquetas cargadas. Ninguna alta se traba por eso: describen el
-                producto, no lo identifican.
+                No hay etiquetas cargadas. Ninguna es obligatoria.
               </td>
             </tr>
           {% endfor %}
