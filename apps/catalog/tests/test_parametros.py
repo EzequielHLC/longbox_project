@@ -55,25 +55,32 @@ def test_el_sistema_arranca_con_los_grupos_de_etiqueta_sembrados():
     """No pretenden ser la taxonomía completa: existen para que la pantalla no
     arranque vacía y el primer producto se pueda describir sin inventar los ejes
     desde cero."""
-    assert set(GrupoEtiqueta.objects.values_list("nombre", flat=True)) == {
-        "Franquicia",
-        "Género",
-        "Colección",
-        "Edición",
-    }
+    sembrados = set(GrupoEtiqueta.objects.values_list("nombre", flat=True))
+
+    assert {"Franquicia", "Género", "Colección", "Edición"} <= sembrados
 
 
-def test_las_franquicias_sembradas_sobrevivieron_como_etiquetas():
-    """La migración las trasladó en vez de borrarlas: RF-04 nombra estas tres al
-    explicar por qué el universo es un discriminante independiente de la
-    editorial, y eso sigue valiendo — cambió el mecanismo, no el dato."""
-    franquicias = Etiqueta.objects.filter(grupo__nombre="Franquicia")
+def test_hay_grupos_para_el_rubro_no_editorial():
+    """Los sembrados originalmente describen material editorial, y la pantalla
+    de una figura ofrecía cuatro ejes y ninguno aplicable: una figura no tiene
+    demografía ni género literario, y etiquetarla igual ensucia los filtros."""
+    sembrados = set(GrupoEtiqueta.objects.values_list("nombre", flat=True))
 
-    assert set(franquicias.values_list("nombre", flat=True)) == {
-        "Marvel",
-        "Star Wars",
-        "Universo DC",
-    }
+    assert {"Fabricante", "Escala", "Material"} <= sembrados
+
+
+def test_franquicia_sirve_para_los_dos_rubros():
+    """Es el único eje compartido, y por eso no se duplicó: una figura de Marvel
+    y un cómic de Marvel comparten franquicia."""
+    franquicias = set(
+        Etiqueta.objects.filter(grupo__nombre="Franquicia").values_list("nombre", flat=True)
+    )
+
+    # RF-04 nombra estas tres al explicar por qué el universo es un
+    # discriminante independiente de la editorial. La migración que reemplazó al
+    # modelo `Franquicia` las trasladó en vez de borrarlas.
+    assert {"Marvel", "Star Wars", "Universo DC"} <= franquicias
+    assert {"Pokémon", "Dragon Ball"} <= franquicias
 
 
 # ---------------------------------------------------------------------------
@@ -81,21 +88,29 @@ def test_las_franquicias_sembradas_sobrevivieron_como_etiquetas():
 # ---------------------------------------------------------------------------
 
 
-def test_la_pantalla_muestra_los_cinco_catalogos(client_admin):
-    """Los cinco se administran acá y no desde el admin de Django: es la
-    pantalla que tiene el diseño del sistema y la que usa el personal."""
+def test_la_pantalla_muestra_los_catalogos(client_admin):
+    """Se administran acá y no desde el admin de Django: es la pantalla que
+    tiene el diseño del sistema y la que usa el personal."""
     PrecioReferenciaFactory(editorial=EditorialFactory(nombre="Ivrea"))
-    EtiquetaFactory(nombre="Universo DC")
 
     contenido = client_admin.get(URL_PARAMETROS).content.decode()
 
     assert "Tipos de material" in contenido
     assert "Formatos" in contenido
     assert "Editoriales" in contenido
-    assert "Etiquetas" in contenido
     assert "Tabla de precios de referencia" in contenido
     assert "Ivrea" in contenido
-    assert "Universo DC" in contenido
+
+
+def test_las_etiquetas_se_administran_en_su_propia_pantalla(client_admin):
+    """Salieron de acá porque son el único catálogo abierto de los seis. Queda
+    el acceso y el resumen de grupos, no la lista entera."""
+    EtiquetaFactory(nombre="Universo DC")
+
+    contenido = client_admin.get(URL_PARAMETROS).content.decode()
+
+    assert reverse("catalog:etiquetas") in contenido
+    assert "Universo DC" not in contenido
 
 
 def test_la_tabla_de_precios_se_puede_filtrar_por_editorial(client_admin):
@@ -251,7 +266,7 @@ def test_se_puede_dar_de_alta_un_tipo_con_su_bandera(client_admin):
     bandera habría valido siempre `True`."""
     respuesta = client_admin.post(
         reverse("catalog:tipo_crear"),
-        {"nombre": "Fanzine", "usa_formato": "on", "activo": "on", "orden": "60"},
+        {"nombre": "Fanzine", "usa_formato": "on", "activo": "on"},
     )
 
     assert respuesta.status_code == 302
@@ -263,7 +278,7 @@ def test_se_puede_editar_un_formato(client_admin):
 
     client_admin.post(
         reverse("catalog:formato_editar", args=[formato.pk]),
-        {"nombre": "B6", "descripcion": "12,8 × 18,2 cm", "activo": "on", "orden": "20"},
+        {"nombre": "B6", "descripcion": "12,8 × 18,2 cm", "activo": "on"},
     )
 
     formato.refresh_from_db()
@@ -481,7 +496,7 @@ def test_el_alta_de_etiqueta_queda_auditada(client_admin):
 def test_se_puede_dar_de_alta_un_grupo_de_etiquetas(client_admin):
     respuesta = client_admin.post(
         reverse("catalog:grupo_etiqueta_crear"),
-        {"nombre": "Formato de lectura", "activo": "on", "orden": "50"},
+        {"nombre": "Formato de lectura", "activo": "on"},
     )
 
     assert respuesta.status_code == 302
@@ -491,7 +506,7 @@ def test_se_puede_dar_de_alta_un_grupo_de_etiquetas(client_admin):
 def test_un_grupo_repetido_es_rechazado(client_admin):
     respuesta = client_admin.post(
         reverse("catalog:grupo_etiqueta_crear"),
-        {"nombre": "género", "activo": "on", "orden": "0"},
+        {"nombre": "género", "activo": "on"},
     )
 
     assert respuesta.status_code == 200

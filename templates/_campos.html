@@ -165,4 +165,88 @@ agregarle nada.
       pointer-events: none;
     }
     .campo-con-prefijo > input { padding-left: 1.9rem; }
+
+    /* ------------------------------------------------------------------
+       Interruptor de estado.
+
+       **Es para lo que se prende y se apaga, no para lo que se confirma.**
+       Un estado —una editorial activa, un tipo que se clasifica por formato—
+       se lee de un vistazo y se cambia de un clic; una confirmación crítica
+       —romper el vinculo del precio, aceptar un duplicado— tiene que costar un
+       acto deliberado, y para eso se queda la casilla. Deslizar es demasiado
+       facil para algo que no se deshace.
+
+       El sesgo es el mismo motivo geometrico del resto del sistema, un grado
+       menos marcado que el de los botones (-21deg) para que un control chico y
+       repetido no compita con la accion principal de la pantalla.
+
+       El color codifica igual que en todos lados: `azure` cuando esta
+       encendido, porque es estado y no alerta. `signal` sigue reservado para
+       error y accion destructiva.
+       ------------------------------------------------------------------ */
+    .interruptor { display: inline-flex; align-items: center; gap: 0.65rem; cursor: pointer; }
+    .interruptor > input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+    .interruptor-pista {
+      position: relative;
+      display: block;
+      width: 3.6rem;
+      height: 1.6rem;
+      flex-shrink: 0;
+      overflow: hidden;
+      transform: skew(-12deg);
+      background: #2C2A30;
+      border: 1px solid #57525C;
+      transition: background-color 0.18s ease, border-color 0.18s ease;
+    }
+
+    /* Las dos leyendas viven en el mismo lugar y se corren juntas. Van
+       contra-sesgadas para que el texto quede derecho dentro de la pieza
+       inclinada, igual que la etiqueta del boton secundario. */
+    .interruptor-pista::before,
+    .interruptor-pista::after {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      line-height: 1.5rem;
+      text-align: center;
+      transform: skew(12deg);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: left 0.18s ease;
+    }
+    .interruptor-pista::before {
+      content: attr(data-apagado);
+      left: 0;
+      color: #57525C;
+    }
+    .interruptor-pista::after {
+      content: attr(data-encendido);
+      left: 100%;
+      color: #0A0A0D;
+    }
+
+    .interruptor > input:checked + .interruptor-pista {
+      background: #1478FF;
+      border-color: #1478FF;
+    }
+    .interruptor > input:checked + .interruptor-pista::before { left: -100%; }
+    .interruptor > input:checked + .interruptor-pista::after { left: 0; }
+
+    .interruptor > input:focus-visible + .interruptor-pista {
+      outline: 1px solid #1478FF;
+      outline-offset: 3px;
+    }
+    .interruptor:hover > input:not(:checked) + .interruptor-pista { border-color: #EDEAE4; }
+
+    /* Sin animacion para quien la pidio apagada: el control tiene que seguir
+       diciendo en que estado esta, y lo dice la leyenda, no el movimiento. */
+    @media (prefers-reduced-motion: reduce) {
+      .interruptor-pista,
+      .interruptor-pista::before,
+      .interruptor-pista::after { transition: none; }
+    }
   </style>

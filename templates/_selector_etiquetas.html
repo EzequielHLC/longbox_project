@@ -1,0 +1,210 @@
+{% comment %}
+El comportamiento del selector de etiquetas. Va una sola vez, en la cáscara
+operativa, y se aplica a cada `[data-selector-etiquetas]` de la pantalla.
+
+Está separado del parcial que dibuja el control por el mismo motivo que el
+desplegable y el selector de archivo: el marcado se repite una vez por campo y
+el guion, ninguna.
+
+**El `<select multiple>` real es el que manda.** Se lo esconde y se lo maneja por
+código: marcar y desmarcar `option.selected` es lo único que este archivo hace
+sobre el formulario. Así el POST sale igual que sin JavaScript y no hay un
+segundo estado que pueda desincronizarse del primero.
+{% endcomment %}
+<script>
+  (function () {
+    // Comparar sin acentos ni mayúsculas: quien busca "genero" tiene que
+    // encontrar "Género". Es la diferencia entre un buscador que sirve y uno
+    // que obliga a saber cómo se escribió la etiqueta.
+    function normalizar(texto) {
+      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    function armarSelector(raiz) {
+      const select = raiz.querySelector("select");
+      if (!select) return;
+
+      const fichas = raiz.querySelector("[data-fichas]");
+      const buscador = raiz.querySelector("[data-buscador]");
+      const lista = raiz.querySelector("[data-lista]");
+      select.classList.add("sr-only");
+      select.setAttribute("tabindex", "-1");
+
+      // Cada opción del select, con su grupo, para no volver a leer el DOM en
+      // cada tecla.
+      const opciones = Array.from(select.options).map((option) => {
+        const partes = option.textContent.split("·");
+        const grupo = partes.length > 1 ? partes[0].trim() : "";
+        const nombre = partes.length > 1 ? partes.slice(1).join("·").trim() : option.textContent.trim();
+        return { option, grupo, nombre, buscable: normalizar(option.textContent) };
+      });
+
+      let resaltado = -1;
+
+      function elegidas() {
+        return opciones.filter((o) => o.option.selected);
+      }
+
+      function pintarFichas() {
+        for (const vieja of fichas.querySelectorAll("[data-ficha]")) vieja.remove();
+        for (const dato of elegidas()) {
+          const ficha = document.createElement("span");
+          ficha.dataset.ficha = "1";
+          ficha.className =
+            "inline-flex items-center gap-1.5 border border-line bg-ash px-2 py-1 " +
+            "font-mono text-[0.7rem] text-screen";
+          const texto = document.createElement("span");
+          texto.textContent = dato.grupo ? `${dato.grupo} · ${dato.nombre}` : dato.nombre;
+          ficha.append(texto);
+
+          const quitar = document.createElement("button");
+          quitar.type = "button";
+          quitar.className = "text-static hover:text-signal";
+          quitar.setAttribute("aria-label", `Quitar ${dato.nombre}`);
+          quitar.textContent = "×";
+          quitar.addEventListener("click", () => {
+            dato.option.selected = false;
+            pintarFichas();
+            pintarLista();
+            buscador.focus();
+          });
+          ficha.append(quitar);
+          fichas.insertBefore(ficha, buscador);
+        }
+      }
+
+      function coincidencias() {
+        const texto = normalizar(buscador.value.trim());
+        return opciones.filter((o) => !o.option.selected && (!texto || o.buscable.includes(texto)));
+      }
+
+      function pintarLista() {
+        const visibles = coincidencias();
+        lista.innerHTML = "";
+        resaltado = visibles.length ? 0 : -1;
+
+        if (!visibles.length) {
+          const vacio = document.createElement("p");
+          vacio.className = "px-3 py-2.5 font-mono text-[0.7rem] text-static";
+          vacio.textContent = buscador.value.trim()
+            ? "Ninguna etiqueta coincide."
+            : "Ya están todas elegidas.";
+          lista.append(vacio);
+          return;
+        }
+
+        let grupoDibujado = null;
+        visibles.forEach((dato, indice) => {
+          if (dato.grupo && dato.grupo !== grupoDibujado) {
+            grupoDibujado = dato.grupo;
+            const encabezado = document.createElement("p");
+            encabezado.className =
+              "border-b border-line bg-ash px-3 py-1.5 font-mono text-[0.6rem] " +
+              "uppercase tracking-[0.2em] text-static";
+            encabezado.textContent = dato.grupo;
+            lista.append(encabezado);
+          }
+          const fila = document.createElement("button");
+          fila.type = "button";
+          fila.dataset.indice = String(indice);
+          fila.setAttribute("role", "option");
+          fila.className = "block w-full px-3 py-2 text-left text-sm hover:bg-ash";
+          fila.textContent = dato.nombre;
+          fila.addEventListener("mousedown", (evento) => {
+            // `mousedown` y no `click`: el `blur` del buscador cierra la lista
+            // antes de que el clic llegue a destino.
+            evento.preventDefault();
+            elegir(dato);
+          });
+          lista.append(fila);
+        });
+        marcarResaltado();
+      }
+
+      function marcarResaltado() {
+        const filas = lista.querySelectorAll("[data-indice]");
+        filas.forEach((fila, indice) => {
+          const activa = indice === resaltado;
+          fila.classList.toggle("bg-ash", activa);
+          fila.classList.toggle("text-screen", activa);
+          if (activa) fila.scrollIntoView({ block: "nearest" });
+        });
+      }
+
+      function elegir(dato) {
+        dato.option.selected = true;
+        buscador.value = "";
+        pintarFichas();
+        pintarLista();
+        buscador.focus();
+      }
+
+      function abrir() {
+        lista.classList.remove("hidden");
+        buscador.setAttribute("aria-expanded", "true");
+        pintarLista();
+      }
+
+      function cerrar() {
+        lista.classList.add("hidden");
+        buscador.setAttribute("aria-expanded", "false");
+      }
+
+      buscador.addEventListener("focus", abrir);
+      buscador.addEventListener("input", () => {
+        if (lista.classList.contains("hidden")) abrir();
+        else pintarLista();
+      });
+      buscador.addEventListener("blur", cerrar);
+
+      buscador.addEventListener("keydown", (evento) => {
+        const visibles = coincidencias();
+        if (evento.key === "ArrowDown" || evento.key === "ArrowUp") {
+          evento.preventDefault();
+          if (lista.classList.contains("hidden")) return abrir();
+          const paso = evento.key === "ArrowDown" ? 1 : -1;
+          resaltado = (resaltado + paso + visibles.length) % visibles.length;
+          marcarResaltado();
+        } else if (evento.key === "Enter") {
+          if (resaltado >= 0 && visibles[resaltado]) {
+            evento.preventDefault();
+            elegir(visibles[resaltado]);
+          }
+        } else if (evento.key === "Escape") {
+          cerrar();
+        } else if (evento.key === "Backspace" && !buscador.value) {
+          // Lo que hace cualquier campo de fichas: el retroceso con el campo
+          // vacío se lleva la última.
+          const puestas = elegidas();
+          if (puestas.length) {
+            puestas[puestas.length - 1].option.selected = false;
+            pintarFichas();
+            pintarLista();
+          }
+        }
+      });
+
+      // Un clic en cualquier parte de la caja lleva el foco al buscador: el
+      // control se lee como uno solo, así que tiene que comportarse como uno.
+      fichas.addEventListener("mousedown", (evento) => {
+        if (evento.target === fichas) {
+          evento.preventDefault();
+          buscador.focus();
+        }
+      });
+
+      pintarFichas();
+    }
+
+    function mejorarSelectores(raiz) {
+      const contenedor = raiz || document;
+      for (const nodo of contenedor.querySelectorAll("[data-selector-etiquetas]:not([data-listo])")) {
+        nodo.dataset.listo = "1";
+        armarSelector(nodo);
+      }
+    }
+
+    window.mejorarSelectoresDeEtiquetas = mejorarSelectores;
+    document.addEventListener("DOMContentLoaded", () => mejorarSelectores());
+  })();
+</script>

@@ -1,0 +1,67 @@
+{% load formularios %}
+{% comment %}
+Un campo booleano. Existe porque `_campo.html` dibuja la etiqueta **arriba** del
+control, que es lo correcto para todo salvo para una casilla: ahí el texto va al
+lado, y arriba queda flotando sin decir a qué pertenece.
+
+    {% include "_casilla.html" with campo=form.solo_adultos %}
+    {% include "_casilla.html" with campo=form.activo interruptor=1 %}
+
+Parámetros opcionales:
+  interruptor  dibuja un interruptor en vez de una casilla.
+  encendido    leyenda del interruptor prendido (por defecto "Sí").
+  apagado      leyenda del interruptor apagado (por defecto "No").
+  critico      pinta la casilla en `signal`. Para las confirmaciones.
+  ayuda        reemplaza al `help_text` del campo.
+
+**Cuál de los dos usar** está decidido y no es una preferencia de pantalla:
+
+- **Interruptor** para lo que describe un estado que se prende y se apaga —una
+  editorial activa, un tipo que se clasifica por formato—. Se lee de un vistazo
+  y se cambia de un clic.
+- **Casilla** para lo que se confirma. Romper el vínculo del precio o aceptar un
+  duplicado tiene que costar un acto deliberado, y deslizar es demasiado fácil
+  para algo que después no se deshace.
+
+El control real es el mismo `<input type="checkbox">` en los dos casos: cambia
+cómo se dibuja, no qué se envía.
+{% endcomment %}
+<div class="min-w-0">
+  {% if interruptor %}
+    <label class="interruptor" for="{{ campo.id_for_label }}">
+      {{ campo }}
+      <span class="interruptor-pista"
+            data-encendido="{% firstof encendido 'Sí' %}"
+            data-apagado="{% firstof apagado 'No' %}"
+            aria-hidden="true"></span>
+      <span class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+        {{ campo.label }}
+      </span>
+    </label>
+  {% else %}
+    <label class="flex cursor-pointer items-start gap-2.5 text-sm
+                  {% if critico %}casilla-critica{% endif %}"
+           for="{{ campo.id_for_label }}">
+      {% comment %}
+      `mt-0.5` alinea la casilla con la primera línea del texto y no con el
+      centro del bloque: con una etiqueta de dos renglones, centrada queda a la
+      altura del segundo y parece pertenecer a otra cosa.
+      {% endcomment %}
+      <span class="mt-0.5">{{ campo|con_estado_de_error }}</span>
+      <span>{{ campo.label }}</span>
+    </label>
+  {% endif %}
+
+  {% firstof ayuda campo.field.help_text as texto_de_ayuda %}
+  {% if texto_de_ayuda %}
+    <p id="{{ campo.auto_id }}_ayuda"
+       class="mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static">
+      {{ texto_de_ayuda }}
+    </p>
+  {% endif %}
+
+  {% for error in campo.errors %}
+    <p id="{{ campo.auto_id }}_error_{{ forloop.counter }}"
+       class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+  {% endfor %}
+</div>

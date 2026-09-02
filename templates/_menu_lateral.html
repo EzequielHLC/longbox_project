@@ -151,6 +151,17 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="parametros" %}
         <span>Parámetros globales</span>
       </a>
+
+      {% comment %}
+      Las etiquetas cuelgan de parámetros pero tienen entrada propia: son el
+      único catálogo abierto de los seis y el que más se toca.
+      {% endcomment %}
+      <a href="{% url 'catalog:etiquetas' %}"
+         class="menu-enlace menu-enlace--hijo
+                {% if 'catalog:etiqueta' in actual or 'catalog:grupo' in actual %}menu-enlace--actual{% endif %}">
+        {% include "_iconos.html" with icono="parametros" %}
+        <span>Etiquetas</span>
+      </a>
     {% endif %}
 
     <p class="px-5 pb-3 pt-6 font-mono text-[0.6rem] uppercase tracking-[0.25em] text-static">

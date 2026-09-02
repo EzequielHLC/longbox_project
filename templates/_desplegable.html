@@ -20,7 +20,10 @@ tokens compartidos, así que se ve igual en el backoffice y en la tienda.
     // ---------------------------------------------------------------------
     function mejorarSelects(raiz) {
       const contenedor = raiz || document;
-      for (const select of contenedor.querySelectorAll("select:not([data-mejorado])")) {
+      // Los múltiples quedan afuera: este componente elige **un** valor y
+      // cerrarse al elegirlo es la mitad de lo que hace. El de etiquetas tiene
+      // su propio control, con búsqueda y fichas.
+      for (const select of contenedor.querySelectorAll("select:not([data-mejorado]):not([multiple])")) {
         armarDesplegable(select);
       }
     }

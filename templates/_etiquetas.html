@@ -1,51 +1,66 @@
 {% comment %}
-Un campo de etiquetas, dibujado como casillas **agrupadas por su grupo**.
+Selector de etiquetas: se escribe para buscar, se elige, y lo elegido queda como
+fichas con una × para quitar.
 
-Un `<select multiple>` nativo obliga a saber que hay que sostener Ctrl y no deja
-ver de un vistazo qué está elegido. Las casillas ocupan más lugar pero se leen
-solas; el agrupado es lo que evita que treinta valores sueltos se conviertan en
-una lista imposible de recorrer.
+**Por qué se reemplazó la lista de casillas.** Con cinco etiquetas se leía sola;
+con doscientas —que es a donde va un catálogo real— era una pared que había que
+recorrer entera para encontrar una, y no había forma de ver de un vistazo qué
+estaba elegido sin volver a recorrerla. El problema no era el agrupado sino el
+formato: una lista completa no escala, y el patrón que sí lo hace es buscar y
+acumular.
 
-Recibe `campo` (un `ModelMultipleChoiceField` sobre `Etiqueta`). El agrupado sale
-del `ordering` del modelo, que ya trae las etiquetas por grupo: `regroup` las
-parte y de cada casilla se llega a su etiqueta por `opcion.data.value.instance`,
-que es donde Django deja el objeto de un `ModelChoiceField`. Así el parcial no
-necesita que la vista le arme ninguna estructura aparte.
+**El control real sigue siendo el `<select multiple>` del formulario.** Queda en
+el HTML, oculto, y es el que se envía: sin JavaScript la pantalla sigue
+funcionando con el desplegable nativo, igual que el resto de los controles
+reemplazados del sistema. Nada de lo que se dibuja acá participa del POST.
+
+Cómo se maneja, que es la mitad del motivo para hacerlo:
+
+- Se escribe y la lista filtra sola, sin distinguir mayúsculas ni acentos.
+- Flechas para recorrer, Enter para elegir, Escape para cerrar.
+- Retroceso con el campo vacío quita la última ficha, que es lo que hace todo
+  campo de fichas y lo que la mano espera.
+
+Recibe `campo` (un `ModelMultipleChoiceField` sobre `Etiqueta`).
 {% endcomment %}
-<p class="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-  {{ campo.label }}
-</p>
-{% if campo.help_text %}
-  <p class="mb-3 font-mono text-[0.65rem] leading-relaxed text-static">{{ campo.help_text }}</p>
-{% endif %}
-
-{% if campo.field.queryset.exists %}
-  <div class="space-y-3">
-    {% regroup campo.field.queryset by grupo as por_grupo %}
-    {% for bloque in por_grupo %}
-      <div>
-        <p class="mb-1.5 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-          {{ bloque.grouper }}
-        </p>
-        <div class="flex flex-wrap gap-x-5 gap-y-2">
-          {% for opcion in campo %}
-            {% if opcion.data.value.instance.grupo_id == bloque.grouper.pk %}
-              <label class="flex cursor-pointer items-center gap-2 text-sm">
-                {{ opcion.tag }}
-                <span>{{ opcion.data.label }}</span>
-              </label>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <p class="text-sm text-static">
-    No hay etiquetas cargadas. Se administran desde Parámetros globales.
+<div class="min-w-0" data-selector-etiquetas>
+  <p class="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+    {{ campo.label }}
   </p>
-{% endif %}
 
-{% for error in campo.errors %}
-  <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
-{% endfor %}
+  {% if campo.field.queryset.exists %}
+    {{ campo }}
+
+    <div class="border border-line bg-panel">
+      {% comment %}
+      Las fichas y el campo de texto comparten caja y se leen como un solo
+      control: el cursor sigue a la última ficha, que es donde va a caer lo
+      próximo que se elija.
+      {% endcomment %}
+      <div class="flex flex-wrap items-center gap-1.5 px-2 py-2" data-fichas>
+        <input type="text" data-buscador
+               class="min-w-[8rem] flex-1 border-0 bg-transparent px-1 py-0.5 text-sm
+                      text-screen outline-none placeholder:text-static"
+               placeholder="Buscar etiqueta…"
+               autocomplete="off" role="combobox" aria-expanded="false"
+               aria-autocomplete="list" aria-label="{{ campo.label }}">
+      </div>
+
+      <div class="hidden max-h-56 overflow-y-auto border-t border-line" data-lista role="listbox">
+      </div>
+    </div>
+
+    {% if campo.help_text %}
+      <p class="mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static">{{ campo.help_text }}</p>
+    {% endif %}
+  {% else %}
+    <p class="border border-line bg-panel px-4 py-3 text-sm text-static">
+      No hay etiquetas cargadas. Se administran desde
+      <a href="{% url 'catalog:etiquetas' %}" class="text-screen hover:text-signal">Etiquetas</a>.
+    </p>
+  {% endif %}
+
+  {% for error in campo.errors %}
+    <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+  {% endfor %}
+</div>

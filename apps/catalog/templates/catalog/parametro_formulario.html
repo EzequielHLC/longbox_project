@@ -1,9 +1,18 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-Alta y edición de cualquiera de los catálogos de parámetros: editorial, tipo,
-formato y precio de referencia. Los cinco se comportan igual —guardar, auditar y
-volver— así que comparten esta plantilla. Lo que cambia es el título, la
-explicación y los campos, y eso lo aporta cada vista.
+Alta y edición de cualquiera de los catálogos de parámetros: editorial, grupo de
+etiquetas, etiqueta, tipo, formato y precio de referencia. Se comportan igual
+—guardar, auditar y volver— así que comparten esta plantilla. Lo que cambia es el
+título, la explicación y los campos, y eso lo aporta cada vista.
+
+El recorrido de campos elige el control por el tipo de campo y no por su nombre,
+así un catálogo nuevo se dibuja bien sin tocar esta plantilla:
+
+  - booleano  → interruptor. Todos los de esta pantalla son estados que se
+                prenden y se apagan; ninguno es una confirmación crítica, que es
+                lo que se queda con la casilla.
+  - múltiple  → control de ámbito, donde no elegir nada significa "todos".
+  - el resto  → el campo común.
 {% endcomment %}
 
 {% block titulo %}{{ titulo }} · Longbox{% endblock %}
@@ -11,9 +20,9 @@ explicación y los campos, y eso lo aporta cada vista.
 
 {% block contenido %}
 <div class="mx-auto max-w-2xl">
-  <a href="{% url 'catalog:parametros' %}"
+  <a href="{{ volver_a }}"
      class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a parámetros
+    ← Volver
   </a>
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
@@ -31,24 +40,14 @@ explicación y los campos, y eso lo aporta cada vista.
     {% csrf_token %}
 
     {% for campo in form %}
-      {% if campo.field.widget.input_type == "checkbox" %}
-        <div class="flex items-start gap-3">
-          {{ campo }}
-          <div class="min-w-0">
-            <label for="{{ campo.id_for_label }}"
-                   class="block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-              {{ campo.label }}
-            </label>
-            {% if campo.help_text %}
-              <p class="mt-1 font-mono text-[0.65rem] leading-relaxed text-static">
-                {{ campo.help_text }}
-              </p>
-            {% endif %}
-            {% for error in campo.errors %}
-              <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
-            {% endfor %}
-          </div>
-        </div>
+      {% comment %}
+      El ámbito va primero: su widget es un grupo de casillas, así que el
+      `input_type` de abajo también lo atraparía.
+      {% endcomment %}
+      {% if campo.name == "tipos" %}
+        {% include "_ambito.html" with campo=campo universal="Todos los tipos" acotado="Solo estos" %}
+      {% elif campo.field.widget.input_type == "checkbox" %}
+        {% include "_casilla.html" with campo=campo interruptor=1 %}
       {% else %}
         {% include "_campo.html" with campo=campo %}
       {% endif %}
@@ -58,7 +57,7 @@ explicación y los campos, y eso lo aporta cada vista.
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Guardar</button>
       </div>
-      <a href="{% url 'catalog:parametros' %}"
+      <a href="{{ volver_a }}"
          class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
         Cancelar
       </a>

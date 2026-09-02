@@ -60,6 +60,9 @@ urlpatterns = [
     path("editoriales/rapida/", views.EditorialRapidaView.as_view(), name="editorial_rapida"),
     # Parámetros globales.
     path("parametros/", views.ParametrosView.as_view(), name="parametros"),
+    # Las etiquetas salieron de la pantalla de parámetros: son el único catálogo
+    # abierto de los seis y necesitan buscador propio.
+    path("parametros/etiquetas/", views.EtiquetasView.as_view(), name="etiquetas"),
     path(
         "parametros/editoriales/nueva/",
         views.EditorialCrearView.as_view(),

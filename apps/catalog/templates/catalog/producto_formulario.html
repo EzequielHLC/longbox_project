@@ -107,7 +107,7 @@ leer un informe de impacto.
               referencia. Editarlo acá lo desvincula de forma permanente.
             </p>
             <div class="mt-2">
-              {% include "_campo.html" with campo=form.confirma_precio_manual %}
+              {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
             </div>
           </div>
         {% else %}
@@ -132,10 +132,10 @@ leer un informe de impacto.
       {% if es_editorial %}
         {% include "_campo.html" with campo=form.autor %}
       {% endif %}
-      {% include "_archivo.html" with campo=form.portada %}
+      {% include "_campo.html" with campo=form.portada %}
     </div>
     {% include "_campo.html" with campo=form.descripcion %}
-    {% include "_campo.html" with campo=form.solo_adultos %}
+    {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}
   </section>
 
@@ -146,7 +146,7 @@ leer un informe de impacto.
   {% endcomment %}
   {% if duplicado and not es_editorial %}
     <section class="mt-6 border-l-2 border-signal bg-ash px-5 py-4">
-      {% include "_campo.html" with campo=form.confirma_duplicado %}
+      {% include "_casilla.html" with campo=form.confirma_duplicado critico=1 %}
     </section>
   {% endif %}
 

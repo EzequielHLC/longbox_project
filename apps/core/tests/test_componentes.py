@@ -113,3 +113,51 @@ def test_los_campos_obligatorios_se_marcan_solos(client_admin):
     html = client_admin.get(reverse("catalog:lote_importado")).content.decode()
 
     assert 'class="ml-0.5 text-signal"' in html
+
+
+# ---------------------------------------------------------------------------
+# Los controles compuestos: que la pantalla dibuje el control **real**
+#
+# Estos tres salieron de un error del mismo tipo que el de arriba, pero peor:
+# `_archivo.html` es solo el guion que mejora los `input[type=file]`, y tres
+# pantallas lo incluian pasandole `campo=form.portada` creyendo que dibujaba el
+# campo. No dibujaba nada, y la portada no se podia subir en ninguna de las tres.
+#
+# La bateria no lo atrapo porque verificaba `portada_pendiente`, que es
+# exactamente lo que queda cuando no se sube ningun archivo.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_las_pantallas_de_producto_dibujan_el_campo_de_portada(client_admin):
+    from apps.catalog.tests.factories import ProductoFactory
+
+    producto = ProductoFactory()
+    pantallas = [
+        reverse("catalog:producto_no_editorial_alta"),
+        reverse("catalog:producto_editar", args=[producto.pk]),
+    ]
+
+    for url in pantallas:
+        contenido = client_admin.get(url).content.decode()
+        assert 'type="file"' in contenido, url
+
+
+@pytest.mark.django_db
+def test_el_selector_de_etiquetas_dibuja_el_select_real(client_admin):
+    """Lo que viaja en el POST es el `<select multiple>`: el buscador con fichas
+    se arma encima. Sin el control real, el campo no envia nada."""
+    contenido = client_admin.get(reverse("catalog:producto_no_editorial_alta")).content.decode()
+
+    assert "data-selector-etiquetas" in contenido
+    assert 'name="etiquetas"' in contenido
+    assert "multiple" in contenido
+
+
+@pytest.mark.django_db
+def test_el_desplegable_propio_no_toca_los_multiples(client_admin):
+    """Ese componente elige **un** valor y cerrarse al elegirlo es la mitad de lo
+    que hace. Aplicado a un multiple, lo esconde y lo rompe."""
+    hoja = (Path(settings.BASE_DIR) / "templates" / "_desplegable.html").read_text(encoding="utf-8")
+
+    assert "not([multiple])" in hoja

@@ -27,10 +27,10 @@ pytestmark = pytest.mark.django_db
 
 # Cada catálogo con su formulario y los datos mínimos para que valide.
 CATALOGOS = [
-    (Tipo, TipoForm, {"orden": 0}, "tipo"),
-    (Formato, FormatoForm, {"orden": 0}, "formato"),
+    (Tipo, TipoForm, {}, "tipo"),
+    (Formato, FormatoForm, {}, "formato"),
     (Editorial, EditorialForm, {}, "editorial"),
-    (GrupoEtiqueta, GrupoEtiquetaForm, {"orden": 0}, "grupo"),
+    (GrupoEtiqueta, GrupoEtiquetaForm, {}, "grupo"),
 ]
 
 IDS = [c[3] for c in CATALOGOS]
@@ -113,10 +113,10 @@ def test_la_restriccion_esta_en_la_base(modelo, _f, extra, _):
 
 
 PANTALLAS_DE_EDICION = [
-    ("catalog:tipo_editar", Tipo, {"orden": 0}),
-    ("catalog:formato_editar", Formato, {"orden": 0}),
+    ("catalog:tipo_editar", Tipo, {}),
+    ("catalog:formato_editar", Formato, {}),
     ("catalog:editorial_editar", Editorial, {}),
-    ("catalog:grupo_etiqueta_editar", GrupoEtiqueta, {"orden": 0}),
+    ("catalog:grupo_etiqueta_editar", GrupoEtiqueta, {}),
 ]
 
 

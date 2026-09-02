@@ -8,7 +8,7 @@ operativo**: ninguna pantalla de este módulo es pública.
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -470,21 +470,21 @@ class ParametrosView(CatalogoAdminMixin, View):
             configuracion.actualizado_por = request.user
             configuracion.save()
 
-            cambios = [
+            detalles = [
                 f"modo: {anterior[0]} → {configuracion.get_llm_modo_display()}",
                 f"dirección: {anterior[1]} → {configuracion.llm_url}",
                 f"modelo: {anterior[2]} → "
                 f"{configuracion.llm_modelo or 'el que tenga cargado el servidor'}",
             ]
             if formulario.cleaned_data.get("api_key"):
-                cambios.append("se reemplazó la clave de la API")
+                detalles.append("se reemplazó la clave de la API")
 
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
                 actor=request.user,
                 objetivo=configuracion,
                 ip=obtener_ip(request),
-                detalle="; ".join(cambios),
+                detalle="; ".join(detalles),
             )
 
         messages.success(
@@ -522,6 +522,64 @@ class ParametrosView(CatalogoAdminMixin, View):
         }
 
 
+class EtiquetasView(CatalogoAdminMixin, ListView):
+    """Las etiquetas del catálogo, en su propia pantalla.
+
+    Estaban como una sección más de Parámetros globales, y ahí no daban abasto
+    por una razón de escala: los otros catálogos de esa pantalla son cerrados y
+    chicos —nueve tipos, siete formatos, un puñado de editoriales— y se tocan una
+    vez por semestre. Las etiquetas son abiertas y crecen sin techo: cada
+    franquicia, cada género y cada colección nueva suma una.
+
+    Un catálogo que crece necesita buscador, y un buscador dentro de una pantalla
+    que tiene otras cinco secciones filtra la pantalla equivocada.
+
+    Se agrupa por grupo porque es como se piensan y como se eligen: nadie busca
+    "una etiqueta", busca una franquicia o un género.
+    """
+
+    template_name = "catalog/etiquetas.html"
+    context_object_name = "grupos"
+
+    def get_queryset(self):
+        """Los grupos con sus etiquetas y el uso de cada una.
+
+        `prefetch_related` con un `Prefetch` propio y no `etiquetas.all()` en la
+        plantilla: sin él son tantas consultas como grupos, más una por etiqueta
+        para contarle los productos.
+        """
+        etiquetas = Etiqueta.objects.annotate(cantidad_productos=Count("productos")).order_by(
+            "nombre"
+        )
+        if self.busqueda:
+            etiquetas = etiquetas.filter(nombre__icontains=self.busqueda)
+
+        grupos = GrupoEtiqueta.objects.prefetch_related(
+            Prefetch("etiquetas", queryset=etiquetas, to_attr="etiquetas_visibles")
+        )
+        if self.busqueda:
+            # Un grupo sin coincidencias no se dibuja: con el buscador escrito,
+            # una lista de encabezados vacíos es ruido que hay que saltear.
+            grupos = grupos.filter(etiquetas__nombre__icontains=self.busqueda).distinct()
+        return grupos
+
+    @property
+    def busqueda(self):
+        return self.request.GET.get("q", "").strip()
+
+    def get_template_names(self):
+        if self.request.GET.get("parcial"):
+            return ["catalog/_tabla_etiquetas.html"]
+        return [self.template_name]
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["busqueda"] = self.busqueda
+        contexto["total"] = Etiqueta.objects.count()
+        contexto["sin_grupos"] = not GrupoEtiqueta.objects.exists()
+        return contexto
+
+
 class ParametroFormularioMixin(CatalogoAdminMixin):
     """Alta y edición de cualquiera de los catálogos de parámetros.
 
@@ -539,6 +597,10 @@ class ParametroFormularioMixin(CatalogoAdminMixin):
         contexto = super().get_context_data(**kwargs)
         contexto["titulo"] = self.titulo
         contexto["descripcion"] = self.descripcion
+        # Volver adonde se vino: los de etiqueta salen de su pantalla y el resto
+        # de parámetros. Sale del propio destino de guardado, así que no pueden
+        # discrepar.
+        contexto["volver_a"] = str(self.success_url)
         return contexto
 
     def form_valid(self, form):
@@ -580,6 +642,7 @@ class GrupoEtiquetaCrearView(ParametroFormularioMixin, CreateView):
         "El eje en el que describe una etiqueta. Cada grupo es un filtro aparte en la "
         "tienda: sin ellos, franquicias y géneros quedarían mezclados en una sola caja."
     )
+    success_url = reverse_lazy("catalog:etiquetas")
 
 
 class GrupoEtiquetaEditarView(ParametroFormularioMixin, UpdateView):
@@ -587,6 +650,7 @@ class GrupoEtiquetaEditarView(ParametroFormularioMixin, UpdateView):
     form_class = GrupoEtiquetaForm
     titulo = "Editar grupo de etiquetas"
     descripcion = "Desactivarlo saca del alta a todas sus etiquetas, sin perder ninguna."
+    success_url = reverse_lazy("catalog:etiquetas")
 
 
 class EtiquetaCrearView(ParametroFormularioMixin, CreateView):
@@ -597,6 +661,7 @@ class EtiquetaCrearView(ParametroFormularioMixin, CreateView):
         "Describe el producto pero no lo identifica ni fija su precio: si algo decide "
         "algo, es un campo, no una etiqueta."
     )
+    success_url = reverse_lazy("catalog:etiquetas")
 
 
 class EtiquetaEditarView(ParametroFormularioMixin, UpdateView):
@@ -607,6 +672,7 @@ class EtiquetaEditarView(ParametroFormularioMixin, UpdateView):
         "Desactivarla la saca de los desplegables de alta, pero conserva sus productos "
         "y su historial."
     )
+    success_url = reverse_lazy("catalog:etiquetas")
 
 
 class TipoCrearView(ParametroFormularioMixin, CreateView):

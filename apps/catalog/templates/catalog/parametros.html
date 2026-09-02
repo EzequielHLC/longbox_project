@@ -303,95 +303,45 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
 
   {# ------------------------------------------------------------------ #}
   {% comment %}
-  Las etiquetas van después de las editoriales porque son el otro eje que crece
-  con el uso, y antes de la tabla de precios porque no entran en ella: a
-  diferencia del tipo y del formato, una etiqueta no interviene en el precio.
-  Describe y filtra, nada más.
+  Las etiquetas se fueron a su propia pantalla y acá queda el acceso.
 
-  Los grupos se listan arriba y compactos: son pocos, se tocan poco, y lo que se
-  viene a hacer a esta sección casi siempre es agregar una etiqueta.
+  Es el unico catalogo abierto de los seis: los tipos, los formatos y las
+  editoriales son cerrados y se tocan una vez por semestre, y las etiquetas
+  crecen con cada franquicia, genero y coleccion nueva. Un catalogo que crece
+  necesita buscador, y un buscador dentro de esta pantalla filtraria la seccion
+  equivocada.
   {% endcomment %}
   <section class="mt-10 bloque-parametro pl-5">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 class="font-display text-lg font-semibold tracking-wide">Etiquetas</h2>
         <p class="mt-1 text-sm text-static">
-          {% comment %}
-          La doctrina que ordena el modelo —"si algo decide, es un campo; si solo
-          describe, es una etiqueta"— vive en `catalog/models.py` y en A17 de
-          `alta_editorial.md`. Acá alcanza con qué son y qué se puede hacer.
-          {% endcomment %}
-          Sirven para buscar y agrupar productos: franquicia, género, colección.
+          Sirven para buscar y agrupar productos: franquicia, genero, coleccion.
           Un producto puede tener varias y ninguna es obligatoria.
         </p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="boton-menor">
-          <span>Nuevo grupo</span>
-        </a>
-        <a href="{% url 'catalog:etiqueta_crear' %}" class="boton-menor">
-          <span>Nueva etiqueta</span>
-        </a>
-      </div>
+      <a href="{% url 'catalog:etiquetas' %}" class="boton-menor">
+        <span>Administrar etiquetas</span>
+      </a>
     </div>
 
     {% if grupos %}
       <div class="mt-4 flex flex-wrap gap-2">
         {% for grupo in grupos %}
-          <a href="{% url 'catalog:grupo_etiqueta_editar' grupo.pk %}"
+          <a href="{% url 'catalog:etiquetas' %}"
              class="border px-3 py-1.5 font-mono text-[0.7rem] hover:border-static
                     {% if grupo.activo %}border-line text-screen{% else %}border-line text-static{% endif %}">
             {{ grupo.nombre }}
-            <span class="text-static">· {{ grupo.cantidad_etiquetas }}</span>
-            {% if not grupo.activo %}<span class="text-static">· inactivo</span>{% endif %}
+            <span class="text-static">&middot; {{ grupo.cantidad_etiquetas }}</span>
+            {% if not grupo.activo %}<span class="text-static">&middot; inactivo</span>{% endif %}
           </a>
         {% endfor %}
       </div>
+    {% else %}
+      <p class="mt-4 border border-line bg-ash px-4 py-3 text-sm text-static">
+        Todavia no hay grupos de etiquetas cargados.
+      </p>
     {% endif %}
-
-    <div class="mt-4 overflow-x-auto border border-line">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                     tracking-[0.15em] text-static">
-            <th class="px-4 py-3 font-medium">Grupo</th>
-            <th class="px-4 py-3 font-medium">Etiqueta</th>
-            <th class="px-4 py-3 font-medium">Productos</th>
-            <th class="px-4 py-3 font-medium">Estado</th>
-            <th class="px-4 py-3 text-right font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for etiqueta in etiquetas %}
-            <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-              <td class="px-4 py-3 font-mono text-xs text-static">{{ etiqueta.grupo }}</td>
-              <td class="px-4 py-3">{{ etiqueta.nombre }}</td>
-              <td class="px-4 py-3 font-mono text-xs text-static">
-                {{ etiqueta.cantidad_productos }}
-              </td>
-              <td class="px-4 py-3">
-                <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                             {% if etiqueta.activa %}border-static text-screen
-                             {% else %}border-line text-static{% endif %}">
-                  {% if etiqueta.activa %}Activa{% else %}Inactiva{% endif %}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <a href="{% url 'catalog:etiqueta_editar' etiqueta.pk %}" class="boton-menor">
-                  <span>Editar</span>
-                </a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5" class="px-4 py-6 text-sm text-static">
-                No hay etiquetas cargadas. Ninguna es obligatoria.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
   </section>
 
   {# ------------------------------------------------------------------ #}

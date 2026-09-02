@@ -170,26 +170,26 @@ def _campo_importe(etiqueta, *, required=True, maximo=IMPORTE_MAXIMO, ayuda="", 
 
 
 def _campo_etiquetas(etiqueta, ayuda):
-    """El selector de etiquetas: casillas, no un desplegable múltiple.
+    """El selector de etiquetas: se busca y se acumulan fichas.
 
-    Un `<select multiple>` nativo obliga a saber que hay que sostener Ctrl y no
-    deja ver de un vistazo qué está elegido. Las casillas ocupan más lugar pero
-    se leen solas, y la pantalla las agrupa por grupo para que el bloque no sea
-    una lista de treinta valores sueltos.
+    El widget es el `<select multiple>` nativo a propósito: la pantalla lo
+    esconde y arma encima el buscador con fichas, pero el que viaja en el POST
+    sigue siendo este. Sin JavaScript el campo sigue funcionando.
+
+    Antes eran casillas agrupadas. Con cinco etiquetas se leían solas; con
+    doscientas —que es a donde va un catálogo real— eran una pared que había que
+    recorrer entera para encontrar una.
     """
-    campo = forms.ModelMultipleChoiceField(
+    return forms.ModelMultipleChoiceField(
         label=etiqueta,
         queryset=Etiqueta.objects.none(),
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        # `Etiqueta.__str__` da "Franquicia · Marvel", y de ahí sale el agrupado
+        # de la lista: el guion lo parte en grupo y nombre sin que la vista
+        # tenga que armar ninguna estructura aparte.
+        widget=forms.SelectMultiple,
         help_text=ayuda,
     )
-    # `Etiqueta.__str__` incluye el grupo —"Franquicia · Marvel"— porque en una
-    # lista suelta hace falta para desambiguar. Acá las casillas ya vienen
-    # agrupadas bajo el encabezado del grupo, así que repetirlo en cada una
-    # sería ruido: se muestra solo el nombre.
-    campo.label_from_instance = lambda etiqueta: etiqueta.nombre
-    return campo
 
 
 class CabeceraLoteForm(forms.Form):
@@ -930,11 +930,11 @@ class ProductoNoEditorialForm(forms.ModelForm):
         # confiable por venir de esta pantalla.
         self.fields["tipo"].queryset = Tipo.objects.filter(
             activo=True, clase=NO_EDITORIAL
-        ).order_by("orden", "nombre")
+        ).order_by("nombre")
         self.fields["tipo"].empty_label = "Elegir categoría"
 
         self.fields["etiquetas"].queryset = etiquetas_activas()
-        self.fields["etiquetas"].widget = forms.CheckboxSelectMultiple()
+        self.fields["etiquetas"].widget = forms.SelectMultiple()
 
         # Los cuatro obligatorios de CU-08 paso 2, menos la imagen: no bloquea el
         # alta en ninguno de los dos rubros (A5 de `alta_editorial.md`, unificado
@@ -952,8 +952,12 @@ class ProductoNoEditorialForm(forms.ModelForm):
         # Editando (CU-09) el código no se ofrece. Es la identidad del producto y
         # el modelo la declara inmutable; un campo editable que el `save()` va a
         # ignorar es peor que no tenerlo, porque promete un cambio que no ocurre.
+        #
+        # Y el stock deja de llamarse "inicial": en el alta describe con cuántas
+        # unidades nace el producto, y editando eso ya pasó.
         if self.instance.pk:
             del self.fields["codigo"]
+            self.fields["stock"].label = "Stock"
 
     def clean_titulo(self):
         # Sin normalizar, "Llavero  Naruto" y "Llavero Naruto" serían dos
@@ -1045,7 +1049,7 @@ class ProductoEditorialForm(forms.ModelForm):
         self.fields["tipo"].queryset = tipos_activos().filter(clase=EDITORIAL)
         self.fields["formato"].queryset = formatos_activos()
         self.fields["etiquetas"].queryset = etiquetas_activas()
-        self.fields["etiquetas"].widget = forms.CheckboxSelectMultiple()
+        self.fields["etiquetas"].widget = forms.SelectMultiple()
 
         self.fields["isbn"].required = False
         self.fields["portada"].required = False
@@ -1234,7 +1238,7 @@ class GrupoEtiquetaForm(CatalogoNombradoForm):
 
     class Meta:
         model = GrupoEtiqueta
-        fields = ["nombre", "activo", "orden"]
+        fields = ["nombre", "activo"]
 
 
 class EtiquetaForm(forms.ModelForm):
@@ -1292,7 +1296,7 @@ class TipoForm(CatalogoNombradoForm):
 
     class Meta:
         model = Tipo
-        fields = ["nombre", "usa_formato", "activo", "orden"]
+        fields = ["nombre", "usa_formato", "activo"]
 
 
 class FormatoForm(CatalogoNombradoForm):
@@ -1307,7 +1311,7 @@ class FormatoForm(CatalogoNombradoForm):
 
     class Meta:
         model = Formato
-        fields = ["nombre", "descripcion", "tipos", "activo", "orden"]
+        fields = ["nombre", "descripcion", "tipos", "activo"]
         widgets = {"tipos": forms.CheckboxSelectMultiple}  # noqa: RUF012
 
     def __init__(self, *args, **kwargs):

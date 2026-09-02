@@ -1,0 +1,74 @@
+{% comment %}
+El comportamiento de `_ambito.html`. Va una sola vez en la cáscara operativa.
+
+Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
+
+- **El modo se deduce del estado, no se guarda.** Si hay alguna casilla marcada
+  el campo arranca en "acotado"; si no, en "universal". Así no hace falta un
+  dato nuevo en el modelo para recordar algo que el propio contenido ya dice.
+- **Volver a "universal" desmarca todo.** Es lo que hace que el significado sea
+  verdadero: universal *es* la lista vacía, no un estado paralelo que conviva
+  con casillas marcadas que nadie ve.
+{% endcomment %}
+<style>
+  /* La ficha elegida se pinta en `azure`: es estado, no alerta. */
+  .ficha-opcion:has(input:checked) {
+    border-color: #1478FF;
+    color: #EDEAE4;
+    background-color: rgba(20, 120, 255, 0.12);
+  }
+  .ficha-opcion:hover { border-color: #57525C; }
+  .ficha-opcion:has(input:focus-visible) { outline: 1px solid #1478FF; outline-offset: 2px; }
+</style>
+<script>
+  (function () {
+    function armarAmbito(raiz) {
+      const modos = raiz.querySelectorAll("[data-modo]");
+      const opciones = raiz.querySelector("[data-opciones]");
+      const casillas = raiz.querySelectorAll('[data-opciones] input[type="checkbox"]');
+      if (!modos.length || !opciones) return;
+
+      const hayAlguna = () => Array.from(casillas).some((casilla) => casilla.checked);
+
+      function mostrar(acotado) {
+        opciones.classList.toggle("hidden", !acotado);
+        opciones.classList.toggle("flex", acotado);
+        if (!acotado) {
+          for (const casilla of casillas) casilla.checked = false;
+        }
+      }
+
+      for (const modo of modos) {
+        modo.addEventListener("change", () => mostrar(modo.value === "acotado"));
+      }
+
+      // Marcar una ficha con el modo en "universal" no tendría a dónde ir: se
+      // pasa a "acotado" solo, que es lo que la persona quiso decir.
+      for (const casilla of casillas) {
+        casilla.addEventListener("change", () => {
+          if (casilla.checked) {
+            const acotado = raiz.querySelector('[data-modo][value="acotado"]');
+            if (acotado && !acotado.checked) {
+              acotado.checked = true;
+              mostrar(true);
+            }
+          }
+        });
+      }
+
+      const acotado = hayAlguna();
+      raiz.querySelector(`[data-modo][value="${acotado ? "acotado" : "universal"}"]`).checked = true;
+      mostrar(acotado);
+    }
+
+    function mejorarAmbitos(raiz) {
+      const contenedor = raiz || document;
+      for (const nodo of contenedor.querySelectorAll("[data-ambito]:not([data-listo])")) {
+        nodo.dataset.listo = "1";
+        armarAmbito(nodo);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => mejorarAmbitos());
+  })();
+</script>

@@ -87,9 +87,9 @@ propio campo al guardar, que es lo que el servidor exige. Ver `A7`.
 
   <section class="mt-6 border border-line bg-ash px-5 py-5">
     <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Datos opcionales</h2>
-    {% include "_archivo.html" with campo=form.portada %}
+    {% include "_campo.html" with campo=form.portada %}
     {% include "_campo.html" with campo=form.descripcion %}
-    {% include "_campo.html" with campo=form.solo_adultos %}
+    {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}
   </section>
 
@@ -101,7 +101,7 @@ propio campo al guardar, que es lo que el servidor exige. Ver `A7`.
   {% endcomment %}
   {% if duplicado %}
     <section class="mt-6 border-l-2 border-signal bg-ash px-5 py-4">
-      {% include "_campo.html" with campo=form.confirma_duplicado %}
+      {% include "_casilla.html" with campo=form.confirma_duplicado critico=1 %}
     </section>
   {% endif %}
 

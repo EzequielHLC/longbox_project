@@ -32,7 +32,7 @@ class EditorialAdmin(admin.ModelAdmin):
 
 @admin.register(GrupoEtiqueta)
 class GrupoEtiquetaAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "activo", "orden")
+    list_display = ("nombre", "activo")
     list_filter = ("activo",)
     search_fields = ("nombre",)
 
@@ -46,14 +46,14 @@ class EtiquetaAdmin(admin.ModelAdmin):
 
 @admin.register(Tipo)
 class TipoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "usa_formato", "activo", "orden")
+    list_display = ("nombre", "usa_formato", "activo")
     list_filter = ("usa_formato", "activo")
     search_fields = ("nombre",)
 
 
 @admin.register(Formato)
 class FormatoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "descripcion", "activo", "orden")
+    list_display = ("nombre", "descripcion", "activo")
     list_filter = ("activo", "tipos")
     filter_horizontal = ("tipos",)
     search_fields = ("nombre",)

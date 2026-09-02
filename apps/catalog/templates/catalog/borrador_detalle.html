@@ -140,7 +140,7 @@ campo corresponde cada marca.
         {% include "_campo.html" with campo=form.estado_sugerido %}
         {% include "catalog/_campo_con_confianza.html" with campo=form.fecha_llegada confianzas=confianzas nombre="fecha" %}
         {% include "_campo.html" with campo=form.stock_inicial %}
-        {% include "_campo.html" with campo=form.solo_adultos %}
+        {% include "_casilla.html" with campo=form.solo_adultos %}
       </section>
     </div>
 
@@ -148,7 +148,7 @@ campo corresponde cada marca.
       <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Datos opcionales</h2>
       <div class="grid gap-6 lg:grid-cols-2">
         {% include "_campo.html" with campo=form.autor %}
-        {% include "_archivo.html" with campo=form.portada %}
+        {% include "_campo.html" with campo=form.portada %}
       </div>
       {% include "_campo.html" with campo=form.sinopsis %}
     </section>

@@ -106,14 +106,11 @@ class GrupoEtiqueta(models.Model):
 
     nombre = models.CharField("nombre", max_length=60)
     activo = models.BooleanField("activo", default=True)
-    orden = models.PositiveSmallIntegerField(
-        "orden", default=0, help_text="Posición en los filtros. Menor va primero."
-    )
 
     class Meta:
         verbose_name = "grupo de etiquetas"
         verbose_name_plural = "grupos de etiquetas"
-        ordering = ["orden", "nombre"]
+        ordering = ["nombre"]
         constraints = [  # noqa: RUF012
             models.UniqueConstraint(Lower("nombre"), name="grupo_etiqueta_unico_por_nombre")
         ]
@@ -145,7 +142,7 @@ class Etiqueta(models.Model):
     class Meta:
         verbose_name = "etiqueta"
         verbose_name_plural = "etiquetas"
-        ordering = ["grupo__orden", "grupo__nombre", "nombre"]
+        ordering = ["grupo__nombre", "nombre"]
         constraints = [  # noqa: RUF012
             # Única **dentro de su grupo**, no en todo el catálogo: "Terror"
             # puede ser un género y también el nombre de una colección, y son
@@ -211,14 +208,11 @@ class Tipo(models.Model):
     )
 
     activo = models.BooleanField("activo", default=True)
-    orden = models.PositiveSmallIntegerField(
-        "orden", default=0, help_text="Posición en los desplegables. Menor va primero."
-    )
 
     class Meta:
         verbose_name = "tipo de material"
         verbose_name_plural = "tipos de material"
-        ordering = ["orden", "nombre"]
+        ordering = ["nombre"]
         constraints = [  # noqa: RUF012
             models.UniqueConstraint(Lower("nombre"), name="tipo_unico_por_nombre")
         ]
@@ -267,12 +261,11 @@ class Formato(models.Model):
     )
 
     activo = models.BooleanField("activo", default=True)
-    orden = models.PositiveSmallIntegerField("orden", default=0)
 
     class Meta:
         verbose_name = "formato"
         verbose_name_plural = "formatos"
-        ordering = ["orden", "nombre"]
+        ordering = ["nombre"]
         constraints = [  # noqa: RUF012
             models.UniqueConstraint(Lower("nombre"), name="formato_unico_por_nombre")
         ]
@@ -317,7 +310,7 @@ class TablaPrecioReferencia(models.Model):
     class Meta:
         verbose_name = "precio de referencia"
         verbose_name_plural = "tabla de precios de referencia"
-        ordering = ["editorial__nombre", "tipo__orden", "formato__orden"]
+        ordering = ["editorial__nombre", "tipo__nombre", "formato__nombre"]
         constraints = [  # noqa: RUF012
             models.UniqueConstraint(
                 fields=["editorial", "tipo", "formato"],
