@@ -1,0 +1,117 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-10 — Dar de Baja Producto.
+
+Esta pantalla es el informe de impacto que el CU exige antes de la confirmación,
+no un "¿está seguro?" adornado. Ocupa una pantalla entera por eso.
+
+Las cuatro categorías salen de `ImpactoDeBaja.categorias` y no están escritas
+acá: hoy ninguna se puede calcular, y cuando aparezca cada módulo lo que hay que
+tocar es el servicio, no esta plantilla.
+
+`signal` se usa con intención (acción destructiva), uno de los tres usos que el
+sistema visual le reserva en modo operativo.
+{% endcomment %}
+
+{% block titulo %}Dar de baja {{ producto.titulo }} · Longbox{% endblock %}
+{% block seccion %}Catálogo{% endblock %}
+
+{% block contenido %}
+<div class="mx-auto max-w-2xl">
+  <a href="{% url 'catalog:producto_detalle' producto.pk %}"
+     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+    ← Volver a la ficha
+  </a>
+
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Dar de baja producto</h1>
+  <p class="mt-2 text-sm text-static">
+    <span class="text-screen">{{ producto.titulo }}</span> ·
+    <span class="font-mono text-xs">{{ producto.codigo }}</span> · {{ producto.tipo }}
+  </p>
+
+  {% if producto.estado == "descatalogado" %}
+    <p class="mt-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
+      Este producto ya está fuera del catálogo. No hay nada que confirmar.
+    </p>
+  {% elif producto.estado == "cancelado_editorial" %}
+    <p class="mt-6 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+      Este producto está cancelado por editorial. Ese estado ya lo mantiene fuera del
+      catálogo y no admite otra baja.
+    </p>
+  {% else %}
+    <div class="mt-6 border-l-2 border-signal bg-panel px-5 py-4">
+      <h2 class="font-display text-lg font-semibold tracking-wide">Qué implica la baja</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li>
+          Deja de <span class="text-signal">verse en el catálogo público</span> y no se
+          puede vender.
+        </li>
+        <li>
+          Se conserva en el inventario interno, con su stock, su código y su historial
+          de ventas.
+        </li>
+        <li>Se puede revertir reactivándolo, y vuelve con la misma identidad.</li>
+      </ul>
+    </div>
+
+    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+      <div class="border-l-2 border-line bg-ash px-4 py-3">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Stock actual
+        </dt>
+        <dd class="mt-1 font-display text-2xl font-bold
+                   {% if impacto.stock %}text-signal{% else %}text-static{% endif %}">
+          {{ impacto.stock }}
+        </dd>
+      </div>
+      <div class="border-l-2 border-line bg-ash px-4 py-3">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Estado actual
+        </dt>
+        <dd class="mt-1 font-display text-2xl font-bold">{{ impacto.estado }}</dd>
+      </div>
+    </dl>
+
+    <h2 class="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
+      Referencias al producto
+    </h2>
+    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+      {% for etiqueta, valor in impacto.categorias %}
+        <div class="border-l-2 border-line bg-ash px-4 py-3">
+          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+            {{ etiqueta }}
+          </dt>
+          {% if valor is None %}
+            <dd class="mt-1 font-mono text-xs leading-relaxed text-static">
+              No disponible todavía.
+            </dd>
+          {% else %}
+            <dd class="mt-1 font-display text-2xl font-bold
+                       {% if valor %}text-signal{% else %}text-static{% endif %}">
+              {{ valor }}
+            </dd>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </dl>
+
+    {% if impacto.todo_sin_determinar %}
+      <p class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+        Ninguna de estas referencias se puede consultar todavía. Revise por fuera del
+        sistema si hay compromisos pendientes con este producto antes de confirmar.
+      </p>
+    {% endif %}
+
+    <form method="post" class="mt-6 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+      {% csrf_token %}
+      <div class="marco-boton">
+        <button type="submit" class="boton-primario">Confirmar baja</button>
+      </div>
+      <a href="{% url 'catalog:producto_detalle' producto.pk %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+        Cancelar
+      </a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

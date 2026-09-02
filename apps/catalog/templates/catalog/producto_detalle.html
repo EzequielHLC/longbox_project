@@ -1,10 +1,15 @@
 {% extends "base_operativo.html" %}
 {% load l10n %}
 {% comment %}
-Ficha del producto, solo lectura. La abren el listado del inventario y el enlace
-de una colisión por duplicado. Editar y dar de baja pertenecen al módulo de
-Catálogo, todavía no implementado: hasta entonces esta pantalla no ofrece
-ninguna acción, y eso es deliberado, no una omisión.
+Ficha del producto. La abren el listado del inventario y el enlace de una
+colisión por duplicado.
+
+Es también el punto de entrada de CU-09 y CU-10: las acciones se agregan acá en
+vez de repartirse en pantallas propias, porque las tres se deciden mirando estos
+mismos datos.
+
+Las acciones son del Administrador. Para el Cajero la ficha es de solo lectura,
+y el bloque **no se dibuja** en lugar de esconderse con CSS.
 {% endcomment %}
 
 {% block titulo %}{{ producto.titulo }} · Longbox{% endblock %}
@@ -208,6 +213,25 @@ propuestas de restock. Un cero acá se leería como "nadie lo tiene reservado", 
 es exactamente la conclusión equivocada para decidir una baja.
 {% endcomment %}
 {% if es_administrador %}
+  <section class="mt-8 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+    <div class="marco-boton">
+      <a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-primario">
+        Editar producto
+      </a>
+    </div>
+    {% if producto.estado == "descatalogado" %}
+      <a href="{% url 'catalog:producto_reactivar' producto.pk %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
+        Reactivar
+      </a>
+    {% elif producto.estado != "cancelado_editorial" %}
+      <a href="{% url 'catalog:producto_baja' producto.pk %}"
+         class="font-mono text-xs uppercase tracking-wider text-static hover:text-signal">
+        Dar de baja
+      </a>
+    {% endif %}
+  </section>
+
   <section class="mt-8 border-t border-line pt-6">
     <h2 class="font-display text-lg font-semibold tracking-wide">Información interna</h2>
 

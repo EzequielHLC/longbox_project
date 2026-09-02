@@ -17,7 +17,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.catalog import borradores as borradores_de_producto
-from apps.core import llm
+from apps.core import cambios, llm
 from apps.suppliers import correos
 from apps.suppliers import extraccion as extraccion_de_novedades
 from apps.suppliers.models import CorreoProveedor, Proveedor
@@ -71,18 +71,12 @@ def calcular_impacto_de_baja(proveedor):
 
 def cambios_entre(anterior, nuevo):
     """`{campo: (valor_anterior, valor_nuevo)}` de los campos que cambiaron."""
-    return {
-        campo: (leer(anterior), leer(nuevo))
-        for campo, leer in CAMPOS_AUDITADOS.items()
-        if leer(anterior) != leer(nuevo)
-    }
+    return cambios.entre(anterior, nuevo, CAMPOS_AUDITADOS)
 
 
-def describir_cambios(cambios):
+def describir_cambios(lo_que_cambio):
     """Texto para el log: no alcanza con el estado final, va el par completo."""
-    return "; ".join(
-        f"{campo}: '{anterior}' → '{nuevo}'" for campo, (anterior, nuevo) in cambios.items()
-    )
+    return cambios.describir(lo_que_cambio)
 
 
 # ---------------------------------------------------------------------------

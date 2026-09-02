@@ -18,6 +18,7 @@ from django.utils.http import urlsafe_base64_encode
 
 from apps.accounts.models import IntentoFallido
 from apps.accounts.tokens import token_de_activacion
+from apps.core import cambios
 from apps.core.mail import enviar_correo
 from apps.core.models import RegistroAuditoria
 
@@ -246,15 +247,9 @@ CAMPOS_AUDITADOS = {  # noqa: RUF012
 
 def cambios_entre(anterior, nuevo):
     """`{campo: (valor_anterior, valor_nuevo)}` de los campos que cambiaron."""
-    return {
-        campo: (leer(anterior), leer(nuevo))
-        for campo, leer in CAMPOS_AUDITADOS.items()
-        if leer(anterior) != leer(nuevo)
-    }
+    return cambios.entre(anterior, nuevo, CAMPOS_AUDITADOS)
 
 
-def describir_cambios(cambios):
+def describir_cambios(lo_que_cambio):
     """Texto para el log: no alcanza con el estado final, va el par completo."""
-    return "; ".join(
-        f"{campo}: '{anterior}' → '{nuevo}'" for campo, (anterior, nuevo) in cambios.items()
-    )
+    return cambios.describir(lo_que_cambio)

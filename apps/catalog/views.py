@@ -28,6 +28,7 @@ from apps.catalog.forms import (
     GrupoEtiquetaForm,
     ModeloDeLenguajeForm,
     PrecioReferenciaForm,
+    ProductoEditorialForm,
     ProductoNoEditorialForm,
     RechazoDeBorradorForm,
     TipoForm,
@@ -48,7 +49,7 @@ from apps.catalog.models import (
     TablaPrecioReferencia,
     Tipo,
 )
-from apps.core import cotizaciones
+from apps.core import cambios, cotizaciones
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import obtener_ip
@@ -1223,3 +1224,226 @@ class CerrarSesionRevisionView(CatalogoAdminMixin, View):
                     f"{envio.intentos} intentos. Los productos quedaron cargados igual.",
                 )
         return redirect("catalog:borrador_lista")
+
+
+# ---------------------------------------------------------------------------
+# CU-09 y CU-10 — editar, dar de baja y reactivar un producto
+# ---------------------------------------------------------------------------
+
+
+class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
+    """CU-09 — Editar Producto, de los dos rubros.
+
+    **Una vista y dos formularios**, elegidos por el rubro del producto. La
+    alternativa era un formulario que supiera de los dos, y sería peor: los
+    campos no se solapan casi en nada —volumen, ISBN y editorial contra marca— y
+    un formulario condicional termina siendo dos formularios con `if` de por
+    medio, más difícil de leer que dos declarados.
+
+    El del rubro no editorial es **el mismo que usa el alta**, no uno parecido.
+    Es la misma regla que gobierna los catálogos: dos caminos con la regla
+    escrita dos veces es la forma más segura de que uno quede más laxo.
+
+    **La precondición del CU es amplia y conviene respetarla:** el producto se
+    edita en cualquier estado, descatalogado incluido. A diferencia de una cuenta
+    de usuario, que se congela al darse de baja, un producto de baja no habilita
+    nada mientras lo esté, y mantener sus datos al día es lo que permite
+    reactivarlo.
+    """
+
+    model = Producto
+    template_name = "catalog/producto_formulario.html"
+    context_object_name = "producto"
+
+    def get_queryset(self):
+        return Producto.objects.select_related("tipo")
+
+    def get_object(self, queryset=None):
+        """La instancia de la hija: es sobre la que trabaja su formulario."""
+        return super().get_object(queryset).especifico
+
+    def get_form_class(self):
+        if self.object.clase == Producto.EDITORIAL:
+            return ProductoEditorialForm
+        return ProductoNoEditorialForm
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["duplicado"] = getattr(contexto["form"], "duplicado", None)
+        contexto["es_editorial"] = self.object.clase == Producto.EDITORIAL
+        return contexto
+
+    def form_valid(self, form):
+        # Se lee de la base **antes** de guardar: `form.instance` ya viene con
+        # los valores nuevos aplicados, así que compararlo contra sí mismo no
+        # daría ninguna diferencia.
+        anterior = type(self.object).objects.get(pk=self.object.pk)
+
+        with transaction.atomic():
+            producto = form.save()
+            lo_que_cambio = cambios.entre(anterior, producto, self._campos_auditados(producto))
+            if lo_que_cambio:
+                RegistroAuditoria.registrar(
+                    RegistroAuditoria.MODIFICACION_PRODUCTO,
+                    actor=self.request.user,
+                    ip=obtener_ip(self.request),
+                    objetivo=producto,
+                    detalle=f"{producto.codigo} · {cambios.describir(lo_que_cambio)}",
+                )
+
+        self.object = producto
+        if lo_que_cambio:
+            messages.success(self.request, f"Se actualizó «{producto.titulo}».")
+        else:
+            # Guardar sin haber tocado nada no es un error, pero decir "se
+            # actualizó" sería afirmar algo que el historial de la ficha
+            # desmiente: no va a mostrar ninguna entrada nueva.
+            messages.info(self.request, "No había cambios para guardar.")
+        return redirect("catalog:producto_detalle", pk=producto.pk)
+
+    @staticmethod
+    def _campos_auditados(producto):
+        """Qué se registra en el log, con su par anterior → nuevo.
+
+        Los comunes primero y los del rubro después. No entra todo el modelo a
+        propósito: un log con la portada y la descripción completa adentro deja
+        de poder leerse, y lo que importa reconstruir es qué cambió de la
+        identidad, del precio y del stock.
+        """
+        auditados = {
+            "título": lambda p: p.titulo,
+            "tipo": lambda p: str(p.tipo),
+            "precio": lambda p: f"${p.precio}",
+            "stock": lambda p: str(p.stock),
+            "código de barras": lambda p: p.codigo_barras or "sin declarar",
+            "solo adultos": lambda p: "sí" if p.solo_adultos else "no",
+        }
+        if producto.clase == Producto.EDITORIAL:
+            auditados.update(
+                {
+                    "volumen": lambda p: str(p.volumen),
+                    "ISBN": lambda p: p.isbn or "sin declarar",
+                    "editorial": lambda p: str(p.editorial),
+                    "formato": lambda p: str(p.formato) if p.formato else "sin formato",
+                    "autor": lambda p: p.autor or "sin declarar",
+                    "precio fijado a mano": lambda p: "sí" if p.precio_manual else "no",
+                }
+            )
+        else:
+            auditados["marca"] = lambda p: p.marca or "sin marca"
+        return auditados
+
+
+class ProductoBajaView(CatalogoAdminMixin, DetailView):
+    """CU-10 — Dar de Baja Producto.
+
+    El GET **no** es un trámite de confirmación: es el informe de impacto que el
+    Administrador tiene que leer antes de decidir, y por eso la baja es una
+    pantalla propia y no un botón con un cartel del navegador. Es el mismo
+    criterio con el que se construyó la baja de proveedor de CU-20.
+
+    **La baja es lógica, nunca un `DELETE`.** Lo pide la postcondición del CU:
+    el producto se conserva en el inventario interno y en el historial de ventas.
+
+    Los pasos 7 a 9 —resolver las referencias y notificar a los clientes
+    afectados— quedan afuera: dependen de Pedidos, Restock, Pricing y Tienda.
+    """
+
+    model = Producto
+    template_name = "catalog/producto_baja.html"
+    context_object_name = "producto"
+
+    def get_object(self, queryset=None):
+        return super().get_object(queryset).especifico
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["impacto"] = services.calcular_impacto_de_baja(self.object)
+        return contexto
+
+    def post(self, request, *args, **kwargs):
+        producto = self.get_object()
+
+        # Se vuelve a chequear acá y no solo escondiendo el botón: un doble envío
+        # no debe registrar dos bajas del mismo producto.
+        if producto.estado == Producto.DESCATALOGADO:
+            messages.info(request, f"«{producto.titulo}» ya estaba fuera del catálogo.")
+            return redirect("catalog:producto_detalle", pk=producto.pk)
+
+        # Un título cancelado por la editorial no llega nunca y no se reactiva.
+        # Descatalogarlo lo movería a un estado del que sí se vuelve, borrando la
+        # única marca de que ese tomo no existe.
+        if producto.estado in Producto.ESTADOS_TERMINALES:
+            messages.error(
+                request,
+                f"«{producto.titulo}» está {producto.get_estado_display().lower()} "
+                "y no admite otra baja.",
+            )
+            return redirect("catalog:producto_detalle", pk=producto.pk)
+
+        impacto = services.calcular_impacto_de_baja(producto)
+        with transaction.atomic():
+            producto.estado = Producto.DESCATALOGADO
+            producto.save(update_fields=["estado"])
+            RegistroAuditoria.registrar(
+                RegistroAuditoria.BAJA_PRODUCTO,
+                actor=request.user,
+                ip=obtener_ip(request),
+                objetivo=producto,
+                detalle=(
+                    f"{producto.codigo} · «{producto.titulo}» · estado anterior: "
+                    f"{impacto.estado} · stock al momento de la baja: {impacto.stock}"
+                ),
+            )
+
+        messages.success(
+            request,
+            f"«{producto.titulo}» salió del catálogo. Sigue en el inventario interno.",
+        )
+        return redirect("catalog:producto_detalle", pk=producto.pk)
+
+
+class ProductoReactivarView(CatalogoAdminMixin, DetailView):
+    """La vuelta de la baja de CU-10. **Ningún CU la describe.**
+
+    Se agrega porque sin ella la baja es un camino de ida, y el propio CU-09
+    quedaría sin sentido en su parte más explícita: su precondición dice que un
+    producto se edita estando de baja, y mantener al día los datos de algo que no
+    puede volver no sirve para nada.
+
+    Volver a cargarlo tampoco sería equivalente: el código es único e inmutable,
+    así que el producto reingresaría con otra identidad y perdería su historial
+    de auditoría, que es justo lo que la baja lógica se propuso conservar.
+
+    Vuelve a **Activo** y no al estado que tenía antes. Un producto que estaba en
+    Pre-venta cuando se lo dio de baja lleva meses fuera del catálogo, y su fecha
+    de llegada ya no describe nada.
+    """
+
+    model = Producto
+    template_name = "catalog/producto_reactivar.html"
+    context_object_name = "producto"
+
+    def get_object(self, queryset=None):
+        return super().get_object(queryset).especifico
+
+    def post(self, request, *args, **kwargs):
+        producto = self.get_object()
+
+        if producto.estado != Producto.DESCATALOGADO:
+            messages.info(request, f"«{producto.titulo}» ya está en el catálogo.")
+            return redirect("catalog:producto_detalle", pk=producto.pk)
+
+        with transaction.atomic():
+            producto.estado = Producto.ACTIVO
+            producto.save(update_fields=["estado"])
+            RegistroAuditoria.registrar(
+                RegistroAuditoria.REACTIVACION_PRODUCTO,
+                actor=request.user,
+                ip=obtener_ip(request),
+                objetivo=producto,
+                detalle=f"{producto.codigo} · «{producto.titulo}» vuelve al catálogo activo",
+            )
+
+        messages.success(request, f"«{producto.titulo}» volvió al catálogo.")
+        return redirect("catalog:producto_detalle", pk=producto.pk)

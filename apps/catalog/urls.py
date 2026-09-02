@@ -9,6 +9,20 @@ urlpatterns = [
     # pertenece al módulo de Catálogo, todavía no implementado.
     path("productos/", views.ProductoListaView.as_view(), name="producto_lista"),
     path("productos/<int:pk>/", views.ProductoDetalleView.as_view(), name="producto_detalle"),
+    # CU-09 y CU-10 le agregan las acciones a la ficha que ya existe, en vez de
+    # duplicar la pantalla: el listado y el detalle de CU-11 son el punto de
+    # entrada de las tres.
+    path(
+        "productos/<int:pk>/editar/",
+        views.ProductoEdicionView.as_view(),
+        name="producto_editar",
+    ),
+    path("productos/<int:pk>/baja/", views.ProductoBajaView.as_view(), name="producto_baja"),
+    path(
+        "productos/<int:pk>/reactivar/",
+        views.ProductoReactivarView.as_view(),
+        name="producto_reactivar",
+    ),
     # CU-05 — revisión de los borradores que genera el pipeline de novedades.
     path("borradores/", views.BorradorListaView.as_view(), name="borrador_lista"),
     path("borradores/<int:pk>/", views.BorradorDetalleView.as_view(), name="borrador_detalle"),

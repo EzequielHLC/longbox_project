@@ -29,6 +29,7 @@ from django.utils import timezone
 from apps.catalog import isbn as isbn_util
 from apps.catalog import precios, services
 from apps.catalog.models import (
+    EDITORIAL,
     NO_EDITORIAL,
     BorradorProducto,
     Editorial,
@@ -858,6 +859,15 @@ ADVERTENCIA_DUPLICADO = (
     "—otra medida, otro proveedor, otra edición— confirmelo para continuar."
 )
 
+# El equivalente editorial, y a propósito **no** ofrece salida: la unicidad de una
+# edición la sostiene la base, así que no hay confirmación que pueda dejarla
+# pasar. El mensaje dice qué hacer en vez de invitar a reintentar.
+CHOQUE_DE_EDICION = (
+    "«{producto}» ya ocupa esta edición. Dos filas con el mismo título, volumen, "
+    "tipo, formato y editorial son el mismo tomo: corrija los datos o edite el "
+    "producto existente."
+)
+
 
 class ProductoNoEditorialForm(forms.ModelForm):
     """Alta de TCG, figura, merchandising o insumo (CU-08).
@@ -896,6 +906,10 @@ class ProductoNoEditorialForm(forms.ModelForm):
             "codigo",
             "codigo_barras",
             "descripcion",
+            # Está en `Producto`, así que este rubro lo tiene igual que el otro.
+            # Sin ofrecerlo, una figura para adultos no se podría excluir nunca
+            # del catálogo público, que es lo único que este campo hace.
+            "solo_adultos",
             "etiquetas",
         ]
         labels = {  # noqa: RUF012
@@ -935,6 +949,12 @@ class ProductoNoEditorialForm(forms.ModelForm):
             "Opcional: si se deja vacío, el sistema genera uno y no se repite nunca."
         )
 
+        # Editando (CU-09) el código no se ofrece. Es la identidad del producto y
+        # el modelo la declara inmutable; un campo editable que el `save()` va a
+        # ignorar es peor que no tenerlo, porque promete un cambio que no ocurre.
+        if self.instance.pk:
+            del self.fields["codigo"]
+
     def clean_titulo(self):
         # Sin normalizar, "Llavero  Naruto" y "Llavero Naruto" serían dos
         # productos distintos para cualquiera que compare sin hacerlo — y la
@@ -955,7 +975,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
         # sigue — porque dos artículos con el mismo nombre y la misma categoría
         # pueden ser dos productos de verdad.
         self.duplicado = services.buscar_duplicado_no_editorial(
-            datos.get("titulo", ""), datos.get("tipo")
+            datos.get("titulo", ""), datos.get("tipo"), excluir=self.instance.pk
         )
         if self.duplicado and not datos.get("confirma_duplicado"):
             self.add_error(
@@ -963,6 +983,165 @@ class ProductoNoEditorialForm(forms.ModelForm):
                 ADVERTENCIA_DUPLICADO.format(producto=self.duplicado),
             )
         return datos
+
+
+class ProductoEditorialForm(forms.ModelForm):
+    """Edición de un tomo ya cargado (CU-09).
+
+    **No existe un alta editorial de a uno**: el material editorial entra por
+    lote, porque veinte tomos de una serie comparten editorial, tipo y formato.
+    Este formulario es solo para editar, y por eso no hereda del formulario de
+    ítem del lote: aquel trabaja sobre datos sueltos que después arman el
+    producto, y este trabaja sobre el producto que ya existe.
+
+    **Qué no se ofrece, y por qué:**
+
+    - `codigo` — es la identidad y el modelo la declara inmutable.
+    - `estado` — el ciclo de vida lo gobiernan los CU que lo mueven. Ofrecerlo
+      acá permitiría descatalogar un producto sin pasar por el informe de
+      impacto de CU-10, que es justamente para lo que ese informe existe.
+    - `origen`, `lote`, `precio_base`, `costo_origen` — describen de dónde vino
+      el producto y con qué aritmética se le fijó el precio. Son la historia del
+      lote, no datos del tomo: cambiarlos acá haría que el resumen del lote
+      dejara de coincidir con sus propios productos.
+    - `demorado`, `fecha_estimada`, `nota_demora` — son de CU-06, que está
+      bloqueado por Pedidos.
+    """
+
+    confirma_precio_manual = forms.BooleanField(
+        label="Confirmo la edición del precio", required=False
+    )
+
+    class Meta:
+        model = ProductoEditorial
+        fields = [
+            "titulo",
+            "volumen",
+            "isbn",
+            "editorial",
+            "tipo",
+            "formato",
+            "precio",
+            "stock",
+            "fecha_llegada",
+            "autor",
+            "portada",
+            "descripcion",
+            "codigo_barras",
+            "solo_adultos",
+            "etiquetas",
+        ]
+        labels = {  # noqa: RUF012
+            "titulo": "Título",
+            "tipo": "Tipo de material",
+            "precio": "Precio de venta al público",
+            "portada": "Portada",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["editorial"].queryset = editoriales_activas()
+        self.fields["tipo"].queryset = tipos_activos().filter(clase=EDITORIAL)
+        self.fields["formato"].queryset = formatos_activos()
+        self.fields["etiquetas"].queryset = etiquetas_activas()
+        self.fields["etiquetas"].widget = forms.CheckboxSelectMultiple()
+
+        self.fields["isbn"].required = False
+        self.fields["portada"].required = False
+        self.fields["formato"].required = False
+
+        self.fields["titulo"].validators.append(MinLengthValidator(TITULO_MINIMO))
+        self.fields["volumen"].validators.append(MaxValueValidator(VOLUMEN_MAXIMO))
+        self.fields["stock"].validators.append(MaxValueValidator(STOCK_MAXIMO))
+
+        # De qué precio se parte para decidir si lo editaron. Se guarda antes de
+        # que el formulario toque nada: comparar contra `self.instance` después
+        # de `_post_clean` compararía el valor nuevo consigo mismo.
+        self.precio_original = self.instance.precio
+        self.era_manual = self.instance.precio_manual
+
+    def clean_titulo(self):
+        return " ".join((self.cleaned_data.get("titulo") or "").split())
+
+    def clean_isbn(self):
+        """Se verifica la aritmética del dígito de control, no una API.
+
+        Un dígito mal copiado no falla de forma ruidosa: pasa a identificar algo
+        que no existe, y como el ISBN es el criterio primario de duplicados, uno
+        inválido deja de encontrar el tomo que ya está cargado.
+        """
+        valor = isbn_util.normalizar(self.cleaned_data.get("isbn") or "")
+        if not valor:
+            return ""
+        motivo = isbn_util.motivo_de_rechazo(valor)
+        if motivo:
+            raise forms.ValidationError(motivo)
+        return valor
+
+    def clean_precio(self):
+        precio = self.cleaned_data.get("precio")
+        if precio is not None and precio > IMPORTE_MAXIMO:
+            raise forms.ValidationError(f"El máximo es ${IMPORTE_MAXIMO}.")
+        return precio
+
+    def clean(self):
+        datos = super().clean()
+
+        # **Acá el duplicado bloquea y no se puede confirmar**, al revés que en
+        # el rubro no editorial. No es una decisión de este formulario: la base
+        # tiene `producto_editorial_unico_por_clave` y
+        # `producto_editorial_unico_por_isbn`, así que la fila no entra de
+        # ninguna manera. Ofrecer una casilla de confirmación sería prometer una
+        # salida que termina en un error de integridad.
+        #
+        # Que las dos políticas sean opuestas es correcto y está razonado en el
+        # A4 del módulo: dos llaveros de Naruto pueden ser dos productos
+        # distintos, pero dos filas con el mismo ISBN son la misma edición
+        # cargada dos veces.
+        self.duplicado = services.buscar_duplicado(
+            datos.get("titulo", ""),
+            datos.get("volumen"),
+            datos.get("tipo"),
+            datos.get("formato"),
+            datos.get("editorial"),
+            isbn=datos.get("isbn", ""),
+            excluir=self.instance.pk,
+        )
+        if self.duplicado:
+            self.add_error("titulo", CHOQUE_DE_EDICION.format(producto=self.duplicado))
+
+        self._revisar_precio(datos)
+        return datos
+
+    def _revisar_precio(self, datos):
+        """A1 de CU-09 — editar el precio a mano rompe el vínculo automático.
+
+        La regla se expresa sobre el estado del producto y no sobre de dónde
+        vino el precio, que es lo que la vuelve una sola regla para los dos
+        orígenes: un nacional está atado a la tabla de referencia y un importado
+        al margen global, pero **los dos dejan de estarlo por la misma razón**.
+
+        Si el producto ya tenía el precio fijado a mano no hay vínculo que
+        romper, y volver a pedir la confirmación sería un trámite que enseña a
+        tildar sin leer.
+        """
+        precio = datos.get("precio")
+        if precio is None or self.era_manual or precio == self.precio_original:
+            return
+
+        if not datos.get("confirma_precio_manual"):
+            self.add_error("precio", ADVERTENCIA_PRECIO_MANUAL)
+        datos["precio_manual"] = True
+
+    def save(self, commit=True):
+        producto = super().save(commit=False)
+        if self.cleaned_data.get("precio_manual"):
+            producto.precio_manual = True
+        if commit:
+            producto.save()
+            self.save_m2m()
+        return producto
 
 
 class PrecioReferenciaForm(forms.ModelForm):

@@ -215,6 +215,9 @@ class RegistroAuditoria(models.Model):
     REGISTRO_CLIENTE = "registro_cliente"
     ALTA_LOTE_EDITORIAL = "alta_lote_editorial"
     ALTA_PRODUCTO_NO_EDITORIAL = "alta_producto_no_editorial"
+    MODIFICACION_PRODUCTO = "modificacion_producto"
+    BAJA_PRODUCTO = "baja_producto"
+    REACTIVACION_PRODUCTO = "reactivacion_producto"
     PARAMETRO_MODIFICADO = "parametro_modificado"
     ALTA_PROVEEDOR = "alta_proveedor"
     MODIFICACION_PROVEEDOR = "modificacion_proveedor"
@@ -241,6 +244,9 @@ class RegistroAuditoria(models.Model):
         (REGISTRO_CLIENTE, "Registro de cuenta de cliente"),
         (ALTA_LOTE_EDITORIAL, "Alta de lote de material editorial"),
         (ALTA_PRODUCTO_NO_EDITORIAL, "Alta de producto no editorial"),
+        (MODIFICACION_PRODUCTO, "Modificación de producto"),
+        (BAJA_PRODUCTO, "Baja de producto del catálogo"),
+        (REACTIVACION_PRODUCTO, "Reactivación de producto"),
         (PARAMETRO_MODIFICADO, "Modificación de parámetros globales"),
         (ALTA_PROVEEDOR, "Alta de proveedor editorial"),
         (MODIFICACION_PROVEEDOR, "Modificación de proveedor editorial"),

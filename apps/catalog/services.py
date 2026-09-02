@@ -32,7 +32,7 @@ class ResultadoLote:
         return [producto for producto in self.creados if producto.precio_manual]
 
 
-def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn=""):
+def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn="", excluir=None):
     """El producto que ya ocupa esa identidad, o `None`.
 
     Hay **dos criterios y uno manda sobre el otro**:
@@ -55,14 +55,22 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn=""):
     El título se compara sin distinguir mayúsculas y sin espacios sobrantes,
     igual que la restricción de la base: quien carga "Batman " un martes y
     "batman" el jueves está cargando el mismo tomo dos veces.
+
+    `excluir` es la clave del producto que se está editando (CU-09). Sin eso,
+    guardar una ficha sin tocarle la identidad la haría chocar consigo misma y
+    ningún producto se podría editar dos veces.
     """
+    candidatos = ProductoEditorial.objects.all()
+    if excluir is not None:
+        candidatos = candidatos.exclude(pk=excluir)
+
     if isbn:
-        por_isbn = ProductoEditorial.objects.filter(isbn=isbn).first()
+        por_isbn = candidatos.filter(isbn=isbn).first()
         if por_isbn:
             return por_isbn
 
     return (
-        ProductoEditorial.objects.annotate(titulo_normalizado=Lower("titulo"))
+        candidatos.annotate(titulo_normalizado=Lower("titulo"))
         .filter(
             titulo_normalizado=titulo.strip().lower(),
             volumen=volumen,
@@ -74,7 +82,7 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn=""):
     )
 
 
-def buscar_duplicado_no_editorial(titulo, tipo):
+def buscar_duplicado_no_editorial(titulo, tipo, excluir=None):
     """El artículo que ya ocupa ese nombre en esa categoría, o `None`.
 
     Es la clave que CU-08 paso 6 declara. **Pero no bloquea el alta**, a
@@ -86,11 +94,17 @@ def buscar_duplicado_no_editorial(titulo, tipo):
 
     Compara sin distinguir mayúsculas y con los espacios internos colapsados,
     igual que el resto de los catálogos que se identifican por su nombre.
+
+    `excluir` es la clave del producto que se está editando (CU-09): sin eso, un
+    artículo chocaría consigo mismo apenas se abra y se guarde su ficha.
     """
     if not tipo:
         return None
+    candidatos = ProductoNoEditorial.objects.all()
+    if excluir is not None:
+        candidatos = candidatos.exclude(pk=excluir)
     return (
-        ProductoNoEditorial.objects.annotate(titulo_normalizado=Lower("titulo"))
+        candidatos.annotate(titulo_normalizado=Lower("titulo"))
         .filter(titulo_normalizado=" ".join((titulo or "").split()).lower(), tipo=tipo)
         .first()
     )
@@ -263,3 +277,63 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
         )
 
     return resultado
+
+
+# ---------------------------------------------------------------------------
+# CU-10 — el informe de impacto previo a la baja
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ImpactoDeBaja:
+    """Lo que CU-10 tiene que informar antes de pedir la confirmacion.
+
+    El CU enumera cuatro categorias, y **hoy ninguna de las cuatro se puede
+    calcular**: pedidos activos, suscripciones de reposicion, ofertas vigentes y
+    carritos de clientes pertenecen a Pedidos, Restock, Pricing y Tienda, que no
+    existen todavia.
+
+    Las cuatro se declaran igual y en `None`, no en cero, por el mismo criterio
+    con el que la baja de proveedor no inventa la cifra que no puede calcular
+    (CU-20). Cero significaria "revise: no afecta a nadie", que es una afirmacion
+    sobre datos que el propio CU considera parte de la decision.
+
+    Dejar las cuatro declaradas tiene una consecuencia practica: cuando aparezca
+    cada modulo, sumar su cifra es llenar un hueco y no rediseniar la pantalla.
+
+    `stock` y `estado` no son categorias del CU. Van igual porque son lo unico
+    verificable en la pantalla, y sin ellos la decision se tomaria sin ningun
+    dato del producto.
+    """
+
+    stock: int
+    estado: str
+    pedidos_activos: int | None = None
+    suscripciones_de_reposicion: int | None = None
+    ofertas_vigentes: int | None = None
+    carritos_con_el_producto: int | None = None
+
+    # Las cuatro categorias del CU, en el orden en que las enumera, con el
+    # nombre que la pantalla muestra. Vive aca y no en la plantilla para que
+    # agregar una cifra sea tocar un solo lugar.
+    CATEGORIAS = (  # noqa: RUF012
+        ("pedidos_activos", "Pedidos activos que lo incluyen"),
+        ("suscripciones_de_reposicion", "Suscripciones de reposición"),
+        ("ofertas_vigentes", "Ofertas vigentes"),
+        ("carritos_con_el_producto", "Carritos de clientes"),
+    )
+
+    @property
+    def categorias(self):
+        """`[(etiqueta, valor)]` para la pantalla. `None` se dibuja distinto."""
+        return [(etiqueta, getattr(self, campo)) for campo, etiqueta in self.CATEGORIAS]
+
+    @property
+    def todo_sin_determinar(self):
+        """Ninguna categoria se pudo calcular. Es el estado de hoy."""
+        return all(valor is None for _, valor in self.categorias)
+
+
+def calcular_impacto_de_baja(producto):
+    """El mapeo de impacto que CU-10 exige antes de la confirmacion."""
+    return ImpactoDeBaja(stock=producto.stock, estado=producto.get_estado_display())
