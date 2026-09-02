@@ -282,3 +282,10 @@ CACHES = {
         "LOCATION": "longbox",
     }
 }
+
+
+# Donde deja los respaldos `manage.py respaldar_base`. Fuera del arbol del
+# proyecto no queda por defecto porque en la maquina de desarrollo complica mas
+# de lo que ayuda; en un servidor conviene apuntarlo a otro disco, que es de lo
+# que protege un respaldo.
+RESPALDOS_DIR = config("RESPALDOS_DIR", default=str(BASE_DIR / "respaldos"))
