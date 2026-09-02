@@ -1,0 +1,133 @@
+{% comment %}
+Aviso de que lo que se está cargando quizás ya existe, **mientras se escribe**.
+
+    {% include "_aviso_de_duplicado.html" %}
+
+Contrato, por atributos en el contenedor:
+
+  data-aviso-duplicado   marca el contenedor. Va vacío.
+  data-url               la vista que responde el JSON.
+  data-campos            los `name` de los campos que alimentan la consulta,
+                         separados por coma. Viajan como parámetros con ese
+                         mismo nombre.
+
+La vista contesta `{"exacto": {...} | null, "parecidos": [{...}]}`, y cada
+producto trae `titulo`, `categoria`, `codigo` y `url`.
+
+**Esto es comodidad, no control.** Quien decide si un alta procede es el
+formulario, del lado del servidor: este bloque se puede esquivar, ignorar o no
+llegar nunca, y el duplicado se informa igual al guardar. Es el mismo reparto que
+la confirmación del precio manual —el cartel avisa, el servidor exige— y la razón
+por la que existe es la misma que la del pre-completado de precios: enterarse al
+guardar significa enterarse con el formulario entero ya escrito.
+
+**Por qué es un parcial y no está pegado a la pantalla del alta.** Hoy lo usa una
+sola —CU-08— y el contrato va a tener que revisarse cuando aparezca la segunda.
+Se extrajo igual porque el patrón es el que queremos repetir en el resto del
+proyecto, y tenerlo suelto invita a que la segunda pantalla lo copie con
+variaciones en vez de reusarlo.
+{% endcomment %}
+<style>
+  .aviso-duplicado { display: none; }
+  .aviso-duplicado[data-visible] { display: block; }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    for (const caja of document.querySelectorAll("[data-aviso-duplicado]")) {
+      armarAvisoDeDuplicado(caja);
+    }
+  });
+
+  function armarAvisoDeDuplicado(caja) {
+    const formulario = caja.closest("form");
+    if (!formulario || !caja.dataset.url) return;
+
+    const nombres = (caja.dataset.campos || "").split(",").map((n) => n.trim());
+    const campos = nombres
+      .map((nombre) => formulario.querySelector(`[name="${nombre}"]`))
+      .filter(Boolean);
+    if (!campos.length) return;
+
+    let pedido = 0;
+
+    async function consultar() {
+      const parametros = new URLSearchParams();
+      for (const campo of campos) parametros.set(campo.name, campo.value);
+
+      // Cada consulta lleva su número: si dos se cruzan —se escribe rápido y la
+      // primera tarda más que la segunda— solo la última puede pintar. Sin esto
+      // una respuesta vieja pisa a una nueva y el aviso queda mintiendo.
+      const mio = ++pedido;
+      let datos;
+      try {
+        const respuesta = await fetch(`${caja.dataset.url}?${parametros}`, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (!respuesta.ok) return;
+        datos = await respuesta.json();
+      } catch {
+        // Sin red o con el servidor caído el aviso simplemente no aparece. No se
+        // avisa del fallo: es una comodidad, y un cartel de error sobre algo que
+        // el usuario no pidió es peor que el silencio.
+        return;
+      }
+      if (mio !== pedido) return;
+      pintar(datos);
+    }
+
+    function pintar(datos) {
+      const encontrados = [];
+      if (datos.exacto) encontrados.push({ ...datos.exacto, exacto: true });
+      for (const parecido of datos.parecidos || []) encontrados.push(parecido);
+
+      if (!encontrados.length) {
+        caja.removeAttribute("data-visible");
+        caja.innerHTML = "";
+        return;
+      }
+
+      const hayExacto = Boolean(datos.exacto);
+      caja.innerHTML = `
+        <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] ${
+          hayExacto ? "text-signal" : "text-static"
+        }">
+          ${hayExacto ? "Ya existe con esta categoría" : "Hay productos parecidos"}
+        </p>
+        <ul class="mt-2 space-y-1">
+          ${encontrados
+            .map(
+              (p) => `
+            <li class="font-mono text-xs">
+              <a href="${p.url}" target="_blank" rel="noopener"
+                 class="${p.exacto ? "text-signal" : "text-static"} hover:text-screen">
+                ${p.codigo} · ${escapar(p.titulo)}
+                <span class="text-static">(${escapar(p.categoria)})</span>
+              </a>
+            </li>`
+            )
+            .join("")}
+        </ul>`;
+      caja.setAttribute("data-visible", "");
+    }
+
+    function escapar(texto) {
+      const caja = document.createElement("span");
+      caja.textContent = texto;
+      return caja.innerHTML;
+    }
+
+    let temporizador;
+    for (const campo of campos) {
+      // Al salir del campo y al cambiar de categoría se consulta enseguida;
+      // mientras se tipea se espera. Sin la espera habría una consulta por
+      // tecla, y el aviso parpadearía con resultados de nombres a medio escribir.
+      campo.addEventListener("change", consultar);
+      campo.addEventListener("blur", consultar);
+      campo.addEventListener("input", function () {
+        clearTimeout(temporizador);
+        temporizador = setTimeout(consultar, 400);
+      });
+    }
+  }
+</script>
