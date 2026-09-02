@@ -194,4 +194,83 @@ ninguna acción, y eso es deliberado, no una omisión.
     {% endif %}
   </p>
 </div>
+
+{% comment %}
+CU-11 paso 6: los campos que el Administrador ve y el Cajero no. La ficha no
+esconde el bloque con CSS — no se dibuja, que es lo único que cuenta cuando lo
+que se protege es información y no una acción.
+
+De los tres que el CU le reserva al Administrador, dos dependen de módulos que no
+existen: el stock reservado en pedidos y los suscriptores de reposición activos.
+Se dice que no se pueden determinar en vez de mostrar un cero, con el mismo
+criterio con el que la baja de proveedor de CU-20 no inventa la cifra de
+propuestas de restock. Un cero acá se leería como "nadie lo tiene reservado", que
+es exactamente la conclusión equivocada para decidir una baja.
+{% endcomment %}
+{% if es_administrador %}
+  <section class="mt-8 border-t border-line pt-6">
+    <h2 class="font-display text-lg font-semibold tracking-wide">Información interna</h2>
+
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div class="border-l-2 border-line bg-ash px-4 py-3">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Stock reservado en pedidos
+        </dt>
+        <dd class="mt-1 text-sm text-static">
+          No disponible todavía.
+        </dd>
+      </div>
+      <div class="border-l-2 border-line bg-ash px-4 py-3">
+        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
+          Suscriptores de reposición
+        </dt>
+        <dd class="mt-1 text-sm text-static">
+          No disponible todavía.
+        </dd>
+      </div>
+    </dl>
+
+    <h3 class="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
+      Historial de modificaciones
+    </h3>
+    {% if historial %}
+      <div class="mt-3 overflow-x-auto border border-line">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
+                       tracking-[0.15em] text-static">
+              <th class="px-4 py-3 font-medium">Cuándo</th>
+              <th class="px-4 py-3 font-medium">Quién</th>
+              <th class="px-4 py-3 font-medium">Qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for registro in historial %}
+              <tr class="border-b border-line last:border-b-0">
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">
+                  {{ registro.ocurrido_en|date:"d/m/Y H:i" }}
+                </td>
+                <td class="px-4 py-3 text-static">
+                  {{ registro.actor|default:registro.actor_email|default:"—" }}
+                </td>
+                <td class="px-4 py-3">
+                  {{ registro.get_accion_display }}
+                  {% if registro.detalle %}
+                    <span class="block font-mono text-[0.65rem] text-static">
+                      {{ registro.detalle }}
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="mt-3 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
+        Sin movimientos registrados sobre este producto.
+      </p>
+    {% endif %}
+  </section>
+{% endif %}
 {% endblock %}

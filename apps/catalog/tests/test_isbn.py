@@ -12,7 +12,7 @@ from django.db import IntegrityError
 from django.urls import reverse
 
 from apps.catalog import isbn as isbn_util
-from apps.catalog.models import Producto
+from apps.catalog.models import ProductoEditorial
 from apps.catalog.services import buscar_duplicado
 from apps.catalog.tests.factories import (
     EditorialFactory,
@@ -120,7 +120,7 @@ def test_muchos_productos_pueden_no_tener_isbn():
     ProductoFactory(isbn="")
     ProductoFactory(isbn="")
 
-    assert Producto.objects.filter(isbn="").count() == 2
+    assert ProductoEditorial.objects.filter(isbn="").count() == 2
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ def test_el_alta_guarda_el_isbn_normalizado(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1, isbn="978-987-827-158-3")], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().isbn == BERSERK
+    assert ProductoEditorial.objects.get().isbn == BERSERK
 
 
 @pytest.mark.django_db
@@ -201,7 +201,7 @@ def test_un_isbn_invalido_frena_el_item(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert respuesta.context["formset"].errors[0]["isbn"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 @pytest.mark.django_db
@@ -211,7 +211,7 @@ def test_el_isbn_es_opcional(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1)], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().isbn == ""
+    assert ProductoEditorial.objects.get().isbn == ""
 
 
 @pytest.mark.django_db
@@ -227,8 +227,8 @@ def test_un_item_con_isbn_ya_cargado_se_excluye_del_lote(client_admin, referenci
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.filter(lote__isnull=False).count() == 1
-    assert Producto.objects.get(lote__isnull=False).isbn == BLUE_PERIOD
+    assert ProductoEditorial.objects.filter(lote__isnull=False).count() == 1
+    assert ProductoEditorial.objects.get(lote__isnull=False).isbn == BLUE_PERIOD
 
 
 @pytest.mark.django_db
@@ -282,5 +282,5 @@ def test_dos_ediciones_del_mismo_tomo_tienen_isbn_distinto(client_admin):
         precio=Decimal("28000"),
     )
 
-    assert Producto.objects.count() == 2
+    assert ProductoEditorial.objects.count() == 2
     assert otra_edicion.isbn != BERSERK

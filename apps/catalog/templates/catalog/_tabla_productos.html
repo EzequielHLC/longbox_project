@@ -22,7 +22,7 @@ gusto estético.
                    tracking-[0.15em] text-static">
           <th class="px-4 py-3 font-medium">Título</th>
           <th class="px-4 py-3 font-medium">Vol.</th>
-          <th class="px-4 py-3 font-medium">Editorial</th>
+          <th class="px-4 py-3 font-medium">Editorial / Marca</th>
           <th class="px-4 py-3 font-medium">Tipo</th>
           <th class="px-4 py-3 font-medium">Formato</th>
           <th class="px-4 py-3 font-medium">Estado</th>
@@ -38,15 +38,15 @@ gusto estético.
                  class="block max-w-[22rem] truncate hover:text-azure"
                  title="{{ producto.titulo }}">{{ producto.titulo }}</a>
             </td>
-            <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen }}</td>
+            <td class="px-4 py-3 font-mono text-xs">{{ producto.especifico.volumen|default:"—" }}</td>
             <td class="px-4 py-3">
-              <span class="block max-w-[12rem] truncate">{{ producto.editorial }}</span>
+              <span class="block max-w-[12rem] truncate">{% if producto.es_editorial %}{{ producto.especifico.editorial }}{% else %}{{ producto.especifico.marca|default:"sin marca" }}{% endif %}</span>
             </td>
             <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
               {{ producto.tipo }}
             </td>
             <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-              {{ producto.formato|default:"—" }}
+              {{ producto.especifico.formato|default:"—" }}
             </td>
             <td class="whitespace-nowrap px-4 py-3">
               {% comment %}
@@ -91,8 +91,16 @@ gusto estético.
     </div>
   {% endif %}
 {% else %}
+  {% comment %}
+  Dos mensajes distintos porque son dos problemas distintos, y la condición
+  pregunta por el catálogo entero y no por los filtros. Antes enumeraba las
+  variables de filtro, y eso se rompió el día que el estado pasó a tener un valor
+  por defecto (CU-11 paso 2: la vista abre en "Activos"): con un filtro siempre
+  puesto, un catálogo vacío se anunciaba como "ningún resultado", que manda a
+  buscar un problema donde no lo hay.
+  {% endcomment %}
   <p class="border border-line bg-panel px-4 py-6 text-sm text-static">
-    {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
+    {% if resumen.total %}
       Ningún producto coincide con los criterios de búsqueda.
     {% else %}
       No hay productos cargados en el catálogo.

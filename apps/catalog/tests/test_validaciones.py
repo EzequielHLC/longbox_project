@@ -19,7 +19,7 @@ from apps.catalog.forms import (
     STOCK_MAXIMO,
     VOLUMEN_MAXIMO,
 )
-from apps.catalog.models import LoteAlta, Producto
+from apps.catalog.models import LoteAlta, Producto, ProductoEditorial
 from apps.catalog.tests.factories import (
     EditorialFactory,
     FormatoFactory,
@@ -73,7 +73,7 @@ def test_un_valor_negativo_en_el_item_es_rechazado(client_admin, referencia, cam
 
     assert respuesta.status_code == 200
     assert errores(respuesta, campo)
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_volumen_negativo_es_rechazado(client_admin, referencia):
@@ -83,7 +83,7 @@ def test_un_volumen_negativo_es_rechazado(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert errores(respuesta, "volumen")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_costo_en_origen_negativo_es_rechazado(client_admin):
@@ -94,7 +94,7 @@ def test_un_costo_en_origen_negativo_es_rechazado(client_admin):
 
     assert respuesta.status_code == 200
     assert errores(respuesta, "costo_origen")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 @pytest.mark.parametrize("campo", ["costo_envio_total", "valor_compra_total"])
@@ -163,7 +163,7 @@ def test_un_envio_en_cero_es_valido(client_admin):
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert producto.precio_base == Decimal("1000.00")
     assert LoteAlta.objects.get().cre == Decimal("0")
 
@@ -172,7 +172,7 @@ def test_un_stock_en_cero_es_valido(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1, stock="0")], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().stock == 0
+    assert ProductoEditorial.objects.get().stock == 0
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +220,7 @@ def test_un_precio_que_no_es_un_numero_es_rechazado(client_admin, referencia, ba
 
     assert respuesta.status_code == 200
     assert errores(respuesta, "precio")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 @pytest.mark.parametrize("basura", ["uno", "1.5", "0x10"])
@@ -259,7 +259,7 @@ def test_los_espacios_de_mas_del_titulo_se_normalizan(client_admin, referencia):
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get().titulo == "Akira Edición Deluxe"
+    assert ProductoEditorial.objects.get().titulo == "Akira Edición Deluxe"
 
 
 def test_un_estado_inventado_es_rechazado(client_admin, referencia):
@@ -271,7 +271,7 @@ def test_un_estado_inventado_es_rechazado(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert errores(respuesta, "estado")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_formato_inexistente_es_rechazado(client_admin):
@@ -344,7 +344,7 @@ def test_una_fecha_de_llegada_pasada_es_rechazada_en_el_item(client_admin, refer
 
     assert respuesta.status_code == 200
     assert MENSAJE_FECHA_PASADA in errores(respuesta, "fecha_llegada")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_una_fecha_de_llegada_pasada_es_rechazada_en_la_cabecera(client_admin, referencia):
@@ -361,7 +361,7 @@ def test_la_fecha_de_hoy_se_acepta(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1)], referencia, fecha_llegada=timezone.localdate())
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().estado == Producto.PRE_VENTA
+    assert ProductoEditorial.objects.get().estado == Producto.PRE_VENTA
 
 
 def test_una_fecha_invalida_es_rechazada(client_admin, referencia):
@@ -406,7 +406,7 @@ def test_dos_items_identicos_en_el_mismo_lote_se_marcan(client_admin, referencia
 
     assert respuesta.status_code == 200
     assert MENSAJE_REPETIDO_EN_LOTE in errores(respuesta, "titulo", indice=1)
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_el_repetido_se_detecta_sin_distinguir_mayusculas(client_admin, referencia):
@@ -432,7 +432,7 @@ def test_dos_volumenes_distintos_no_son_repetidos(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1), item("Akira", 2)], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.count() == 2
+    assert ProductoEditorial.objects.count() == 2
 
 
 # ---------------------------------------------------------------------------
@@ -452,14 +452,14 @@ def test_un_contador_de_items_manipulado_no_rompe_la_pantalla(client_admin, refe
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 200
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_envio_sin_formulario_de_gestion_no_rompe_la_pantalla(client_admin, referencia):
     respuesta = client_admin.post(URL_NACIONAL, {"editorial": referencia.editorial.pk})
 
     assert respuesta.status_code == 200
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_los_items_vacios_se_descartan_sin_dar_error(client_admin, referencia):
@@ -468,7 +468,7 @@ def test_los_items_vacios_se_descartan_sin_dar_error(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1), item("", ""), item("", "")], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.count() == 1
+    assert ProductoEditorial.objects.count() == 1
 
 
 # ---------------------------------------------------------------------------
@@ -488,4 +488,4 @@ def test_un_archivo_que_no_es_imagen_es_rechazado(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert errores(respuesta, "portada")
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()

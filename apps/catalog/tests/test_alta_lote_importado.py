@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from apps.catalog.forms import ADVERTENCIA_PRECIO_MANUAL, MENSAJE_COTIZACION_EN_PESOS
-from apps.catalog.models import LoteAlta, Producto
+from apps.catalog.models import LoteAlta, Producto, ProductoEditorial
 from apps.catalog.tests.factories import EditorialFactory, ProductoFactory, TipoFactory
 from apps.catalog.tests.helpers_lote import URL_IMPORTADO, item, payload
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
@@ -80,11 +80,11 @@ def test_el_precio_final_sale_de_la_formula_de_rf_10(client_admin, editorial):
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert producto.costo_origen == Decimal("1000")
     assert producto.precio_base == Decimal("1100.00")
     assert producto.precio == Decimal("1540.00")
-    assert producto.origen == Producto.IMPORTADO
+    assert producto.origen == ProductoEditorial.IMPORTADO
 
 
 def test_el_cre_del_lote_se_aplica_a_todos_los_items(client_admin, editorial):
@@ -98,8 +98,8 @@ def test_el_cre_del_lote_se_aplica_a_todos_los_items(client_admin, editorial):
 
     client_admin.post(URL_IMPORTADO, datos)
 
-    assert Producto.objects.get(volumen=1).precio == Decimal("1540.00")
-    assert Producto.objects.get(volumen=2).precio == Decimal("3080.00")
+    assert ProductoEditorial.objects.get(volumen=1).precio == Decimal("1540.00")
+    assert ProductoEditorial.objects.get(volumen=2).precio == Decimal("3080.00")
 
 
 def test_el_costo_en_origen_es_obligatorio(client_admin, editorial):
@@ -109,7 +109,7 @@ def test_el_costo_en_origen_es_obligatorio(client_admin, editorial):
 
     assert respuesta.status_code == 200
     assert respuesta.context["formset"].errors[0]["costo_origen"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_la_calculadora_de_envio_es_obligatoria(client_admin, editorial, tipo):
@@ -120,7 +120,7 @@ def test_la_calculadora_de_envio_es_obligatoria(client_admin, editorial, tipo):
 
     assert respuesta.status_code == 200
     assert respuesta.context["cabecera"].errors["costo_envio_total"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +138,7 @@ def test_editar_el_precio_final_sin_confirmar_muestra_la_advertencia(client_admi
 
     assert respuesta.status_code == 200
     assert ADVERTENCIA_PRECIO_MANUAL in respuesta.context["formset"].errors[0]["precio"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_editar_el_precio_final_confirmado_marca_precio_manual(client_admin, editorial):
@@ -158,7 +158,7 @@ def test_editar_el_precio_final_confirmado_marca_precio_manual(client_admin, edi
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert producto.precio == Decimal("2000")
     assert producto.precio_manual is True
 
@@ -184,7 +184,7 @@ def test_el_precio_base_no_cambia_al_editar_el_precio_final(client_admin, editor
 
     client_admin.post(URL_IMPORTADO, datos)
 
-    assert Producto.objects.get().precio_base == Decimal("1100.00")
+    assert ProductoEditorial.objects.get().precio_base == Decimal("1100.00")
 
 
 def test_confirmar_el_precio_calculado_no_lo_marca_como_manual(client_admin, editorial):
@@ -194,7 +194,7 @@ def test_confirmar_el_precio_calculado_no_lo_marca_como_manual(client_admin, edi
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.get().precio_manual is False
+    assert ProductoEditorial.objects.get().precio_manual is False
 
 
 def test_un_lote_sin_ediciones_deja_todos_los_productos_alcanzables_por_la_propagacion(
@@ -211,7 +211,7 @@ def test_un_lote_sin_ediciones_deja_todos_los_productos_alcanzables_por_la_propa
 
     client_admin.post(URL_IMPORTADO, datos)
 
-    assert Producto.objects.filter(precio_manual=True).count() == 0
+    assert ProductoEditorial.objects.filter(precio_manual=True).count() == 0
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +230,7 @@ def test_la_cotizacion_convierte_el_costo_en_origen_a_pesos(client_admin, editor
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     # 10 USD → $10.000 → base $11.000 → final $15.400
     assert producto.precio_base == Decimal("11000.00")
     assert producto.precio == Decimal("15400.00")
@@ -269,7 +269,7 @@ def test_una_moneda_fuera_del_catalogo_es_rechazada(client_admin, editorial, mon
 
     assert respuesta.status_code == 200
     assert respuesta.context["cabecera"].errors["moneda_origen"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_una_moneda_extranjera_sin_cotizacion_es_rechazada(client_admin, editorial):
@@ -279,7 +279,7 @@ def test_una_moneda_extranjera_sin_cotizacion_es_rechazada(client_admin, editori
 
     assert respuesta.status_code == 200
     assert respuesta.context["cabecera"].errors["cotizacion"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_una_cotizacion_sobre_un_lote_en_pesos_es_rechazada(client_admin, editorial):
@@ -292,7 +292,7 @@ def test_una_cotizacion_sobre_un_lote_en_pesos_es_rechazada(client_admin, editor
 
     assert respuesta.status_code == 200
     assert MENSAJE_COTIZACION_EN_PESOS in respuesta.context["cabecera"].errors["cotizacion"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_la_pantalla_ofrece_la_cotizacion_de_referencia(client_admin, editorial):
@@ -317,7 +317,7 @@ def test_el_estado_sigue_la_misma_logica_que_cu_01(client_admin, editorial):
 
     client_admin.post(URL_IMPORTADO, datos)
 
-    assert Producto.objects.get().estado == Producto.PRE_VENTA
+    assert ProductoEditorial.objects.get().estado == Producto.PRE_VENTA
 
 
 def test_un_duplicado_se_excluye_y_el_resto_se_registra(client_admin, editorial, tipo):
@@ -336,7 +336,7 @@ def test_un_duplicado_se_excluye_y_el_resto_se_registra(client_admin, editorial,
     respuesta = client_admin.post(URL_IMPORTADO, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.filter(origen=Producto.IMPORTADO).count() == 1
+    assert ProductoEditorial.objects.filter(origen=ProductoEditorial.IMPORTADO).count() == 1
     assert len(LoteAlta.objects.get().rechazados) == 1
 
 
@@ -348,7 +348,7 @@ def test_dos_importados_sin_formato_del_mismo_tomo_chocan_entre_si(client_admin,
 
     client_admin.post(URL_IMPORTADO, datos)
 
-    assert Producto.objects.count() == 1
+    assert ProductoEditorial.objects.count() == 1
     assert len(LoteAlta.objects.get().rechazados) == 1
 
 

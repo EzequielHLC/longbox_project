@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.formats import localize
 
 from apps.accounts.tests.factories import UsuarioFactory
-from apps.catalog.models import Producto
+from apps.catalog.models import Producto, ProductoEditorial
 from apps.catalog.tests.factories import (
     EditorialFactory,
     EtiquetaFactory,
@@ -159,7 +159,7 @@ def test_la_ficha_de_un_importado_muestra_la_composicion_del_precio(client_admin
         origen="importado", cre=Decimal("0.100000"), margen_aplicado=Decimal("0.4")
     )
     producto = ProductoFactory(
-        origen=Producto.IMPORTADO,
+        origen=ProductoEditorial.IMPORTADO,
         costo_origen=Decimal("1000"),
         precio_base=Decimal("1100.00"),
         precio=Decimal("1540.00"),
@@ -209,11 +209,16 @@ def test_con_editoriales_cargadas_no_aparece_el_aviso(client_admin):
     assert "Todavía no hay" not in respuesta.content.decode()
 
 
-@pytest.mark.parametrize("rol_sin_permiso", ["cliente", "cajero"])
-def test_el_inventario_no_filtra_datos_a_otros_roles(client, rol_sin_permiso):
-    """403 sin datos parciales, igual que la tabla de usuarios."""
+def test_el_inventario_no_filtra_datos_al_cliente(client):
+    """403 sin datos parciales, igual que la tabla de usuarios.
+
+    **El Cajero sí entra**, y este test dejó de incluirlo en agosto 2026: es
+    actor declarado de CU-11 y recibía un 403 porque estas pantallas nacieron
+    dentro de Alta Editorial, que es exclusivo del Administrador. Era un defecto
+    heredado, no una decisión.
+    """
     ProductoFactory(titulo="Akira")
-    client.force_login(UsuarioFactory(rol=rol_sin_permiso))
+    client.force_login(UsuarioFactory(rol="cliente"))
 
     respuesta = client.get(URL_INVENTARIO)
 
@@ -221,9 +226,28 @@ def test_el_inventario_no_filtra_datos_a_otros_roles(client, rol_sin_permiso):
     assert "Akira" not in respuesta.content.decode()
 
 
-def test_la_ficha_tampoco_se_abre_con_otro_rol(client, cajero):
+def test_el_cajero_puede_consultar_el_inventario(client, cajero):
+    """CU-11 lo declara actor: verifica disponibilidad para responder consultas
+    de mostrador."""
+    ProductoFactory(titulo="Akira")
+    client.force_login(cajero)
+
+    respuesta = client.get(URL_INVENTARIO)
+
+    assert respuesta.status_code == 200
+    assert "Akira" in respuesta.content.decode()
+
+
+def test_el_cajero_puede_abrir_la_ficha(client, cajero):
     producto = ProductoFactory(titulo="Akira")
     client.force_login(cajero)
+
+    assert client.get(url_ficha(producto)).status_code == 200
+
+
+def test_la_ficha_no_se_abre_para_un_cliente(client):
+    producto = ProductoFactory(titulo="Akira")
+    client.force_login(UsuarioFactory(rol="cliente"))
 
     assert client.get(url_ficha(producto)).status_code == 403
 
@@ -329,3 +353,270 @@ def test_la_restriccion_tambien_alcanza_a_los_productos_sin_formato(client_admin
 
     with pytest.raises(IntegrityError):
         ProductoFactory(titulo="Berserk", volumen=1, **comun)
+
+
+# ---------------------------------------------------------------------------
+# El indicador de demora (CU-07)
+#
+# El caso de uso está bloqueado por Pedidos, pero el indicador se declara ahora
+# por el mismo criterio que `precio_manual` y `proveedor`: agregarlo después
+# obligaría a una migración retroactiva sobre productos de los que ya no se
+# sabría el valor. Lo que se prueba acá es que la regla de lectura sea correcta
+# desde el principio, no que la pantalla de CU-07 exista.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_un_producto_nuevo_no_nace_demorado():
+    producto = ProductoFactory()
+
+    assert producto.demorado is False
+    assert producto.esta_demorado is False
+    assert producto.fecha_estimada is None
+
+
+@pytest.mark.django_db
+def test_el_indicador_convive_con_pre_venta_y_no_la_reemplaza():
+    """ "Demorado" no es un estado: como estado habría que elegir entre perder el
+    "Pre-venta" o inventar un "Pre-venta demorado"."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    producto = ProductoFactory(
+        estado=Producto.PRE_VENTA,
+        fecha_llegada=timezone.localdate() + timedelta(days=10),
+        demorado=True,
+    )
+
+    assert producto.estado == Producto.PRE_VENTA
+    assert producto.esta_en_pre_venta
+    assert producto.esta_demorado
+
+
+@pytest.mark.django_db
+def test_un_producto_activo_no_figura_demorado_aunque_quede_la_bandera():
+    """Leer la bandera sola mostraría "Demorado" en el catálogo sobre algo que
+    ya está en la góndola."""
+    producto = ProductoFactory(estado=Producto.ACTIVO, demorado=True)
+
+    assert producto.demorado is True
+    assert producto.esta_demorado is False
+
+
+@pytest.mark.django_db
+def test_la_fecha_estimada_pisa_a_la_programada():
+    """Para que la ficha y las notificaciones digan lo mismo sin que cada una
+    elija por su cuenta cuál de las dos mostrar."""
+    from datetime import date
+
+    producto = ProductoFactory(
+        estado=Producto.PRE_VENTA,
+        fecha_llegada=date(2026, 10, 1),
+        fecha_estimada=date(2026, 11, 15),
+        demorado=True,
+    )
+
+    assert producto.llegada_vigente == date(2026, 11, 15)
+
+
+@pytest.mark.django_db
+def test_sin_fecha_estimada_vale_la_programada():
+    """Demorado sin fecha nueva es el flujo A1 del CU y un caso normal: el
+    proveedor muchas veces avisa que se atrasa sin saber para cuándo."""
+    from datetime import date
+
+    producto = ProductoFactory(
+        estado=Producto.PRE_VENTA, fecha_llegada=date(2026, 10, 1), demorado=True
+    )
+
+    assert producto.fecha_estimada is None
+    assert producto.llegada_vigente == date(2026, 10, 1)
+
+
+def titulos_de(respuesta):
+    """Los títulos que la tabla devolvió, en orden.
+
+    Se lee del contexto y no buscando posiciones en el HTML: un título que
+    coincida con una palabra de la interfaz —"Agotado" es también el nombre de
+    un estado, y aparece en el desplegable— haría pasar o fallar el test por
+    un motivo que no tiene nada que ver con lo que prueba.
+    """
+    return [producto.titulo for producto in respuesta.context["productos"]]
+
+
+# ---------------------------------------------------------------------------
+# CU-11 — Consultar Inventario
+#
+# El listado nació como contraparte de lectura del alta en lote (A7 de
+# `alta_editorial.md`), antes de que el Módulo 02 se abordara, y heredaba dos
+# cosas que su propio CU contradice: estaba restringido al Administrador y
+# ordenaba por fecha de alta. Acá se fija el comportamiento que el CU pide.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_la_vista_por_defecto_muestra_solo_los_activos(client_admin):
+    """Paso 2: "todos los productos en estado Activo". Un inventario que abre
+    mostrando también lo descatalogado obliga a filtrar antes de poder leerlo."""
+    ProductoFactory(titulo="Vigente", estado=Producto.ACTIVO)
+    ProductoFactory(titulo="Retirado", volumen=2, estado=Producto.DESCATALOGADO)
+
+    contenido = client_admin.get(URL_INVENTARIO).content.decode()
+
+    assert "Vigente" in contenido
+    assert "Retirado" not in contenido
+
+
+@pytest.mark.django_db
+def test_un_estado_vacio_explicito_muestra_todos(client_admin):
+    """No es lo mismo que no mandar el parámetro: sin él se aplica el valor por
+    defecto. Es la única forma de ver lo descatalogado."""
+    ProductoFactory(titulo="Vigente", estado=Producto.ACTIVO)
+    ProductoFactory(titulo="Retirado", volumen=2, estado=Producto.DESCATALOGADO)
+
+    contenido = client_admin.get(URL_INVENTARIO, {"estado": ""}).content.decode()
+
+    assert "Vigente" in contenido
+    assert "Retirado" in contenido
+
+
+@pytest.mark.django_db
+def test_los_descatalogados_llevan_su_etiqueta(client_admin):
+    """Paso 4: se presentan con una etiqueta visual diferenciada."""
+    ProductoFactory(titulo="Retirado", estado=Producto.DESCATALOGADO)
+
+    contenido = client_admin.get(URL_INVENTARIO, {"estado": ""}).content.decode()
+
+    assert "Descatalogado" in contenido
+
+
+@pytest.mark.django_db
+def test_el_orden_por_defecto_es_alfabetico(client_admin):
+    """Lo pide el paso 2. Antes ordenaba por fecha de alta descendente, que es
+    lo que sirve después de cargar un lote y no lo que pide el CU."""
+    ProductoFactory(titulo="Zeta")
+    ProductoFactory(titulo="Alfa", volumen=2)
+
+    respuesta = client_admin.get(URL_INVENTARIO)
+
+    assert titulos_de(respuesta) == ["Alfa", "Zeta"]
+
+
+@pytest.mark.django_db
+def test_el_orden_por_lo_ultimo_cargado_sigue_disponible(client_admin):
+    """Cambiar el orden por defecto no puede romper el uso que le da Alta
+    Editorial: después de cargar un lote se quiere ver lo recién cargado."""
+    ProductoFactory(titulo="Alfa")
+    ProductoFactory(titulo="Zeta", volumen=2)
+
+    respuesta = client_admin.get(URL_INVENTARIO, {"orden": "recientes"})
+
+    assert titulos_de(respuesta) == ["Zeta", "Alfa"]
+
+
+@pytest.mark.django_db
+def test_un_orden_inventado_cae_en_el_por_defecto(client_admin):
+    """Un valor de la query string no puede romper la pantalla."""
+    ProductoFactory(titulo="Zeta")
+    ProductoFactory(titulo="Alfa", volumen=2)
+
+    respuesta = client_admin.get(URL_INVENTARIO, {"orden": "cualquiera"})
+
+    assert titulos_de(respuesta) == ["Alfa", "Zeta"]
+
+
+@pytest.mark.django_db
+def test_el_filtro_de_stock_separa_lo_que_hay_de_lo_que_no(client_admin):
+    """Es el filtro que más usa el Cajero: la pregunta del mostrador es "¿lo
+    tenés?", no "¿en qué estado está?"."""
+    ProductoFactory(titulo="Quedan tres", stock=3)
+    ProductoFactory(titulo="No queda ninguno", volumen=2, stock=0)
+
+    con = client_admin.get(URL_INVENTARIO, {"stock": "con"})
+    sin = client_admin.get(URL_INVENTARIO, {"stock": "sin"})
+
+    assert titulos_de(con) == ["Quedan tres"]
+    assert titulos_de(sin) == ["No queda ninguno"]
+
+
+@pytest.mark.django_db
+def test_sin_filtro_de_stock_se_ven_los_dos(client_admin):
+    ProductoFactory(titulo="Quedan tres", stock=3)
+    ProductoFactory(titulo="No queda ninguno", volumen=2, stock=0)
+
+    respuesta = client_admin.get(URL_INVENTARIO)
+
+    assert sorted(titulos_de(respuesta)) == ["No queda ninguno", "Quedan tres"]
+
+
+@pytest.mark.django_db
+def test_el_catalogo_vacio_se_distingue_del_filtro_sin_resultados(client_admin):
+    """Se rompió al darle un valor por defecto al estado: con un filtro siempre
+    puesto, un catálogo vacío se anunciaba como "ningún resultado", que manda a
+    buscar un problema donde no lo hay."""
+    vacio = client_admin.get(URL_INVENTARIO).content.decode()
+    assert "No hay productos cargados en el catálogo." in vacio
+
+    ProductoFactory(titulo="Akira")
+    sin_coincidencias = client_admin.get(URL_INVENTARIO, {"q": "nada"}).content.decode()
+    assert "Ningún producto coincide" in sin_coincidencias
+
+
+# ---------------------------------------------------------------------------
+# La ficha diferenciada por rol (CU-11 paso 6)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_el_administrador_ve_el_historial_de_modificaciones(client_admin):
+    producto = ProductoFactory(titulo="Akira")
+
+    contenido = client_admin.get(url_ficha(producto)).content.decode()
+
+    assert "Historial de modificaciones" in contenido
+
+
+@pytest.mark.django_db
+def test_el_cajero_no_ve_la_informacion_interna(client, cajero):
+    """No se esconde con CSS: no se dibuja. Es lo único que cuenta cuando lo que
+    se protege es información y no una acción."""
+    producto = ProductoFactory(titulo="Akira")
+    client.force_login(cajero)
+
+    contenido = client.get(url_ficha(producto)).content.decode()
+
+    assert "Historial de modificaciones" not in contenido
+    assert "Stock reservado en pedidos" not in contenido
+    # Pero sí ve lo suyo: nombre, estado, stock y precio.
+    assert "Akira" in contenido
+
+
+@pytest.mark.django_db
+def test_la_ficha_no_inventa_las_cifras_que_no_puede_calcular(client_admin):
+    """Un cero acá se leería como "nadie lo tiene reservado", que es la
+    conclusión equivocada para decidir una baja."""
+    producto = ProductoFactory(titulo="Akira")
+
+    contenido = client_admin.get(url_ficha(producto)).content.decode()
+
+    assert "No disponible todavía" in contenido
+
+
+@pytest.mark.django_db
+def test_el_historial_sale_del_log_de_auditoria(client_admin, administrador):
+    """Sale del log genérico, que desde A8 tiene un índice sobre
+    `(objetivo_tipo, objetivo_pk)` puesto exactamente para esta consulta."""
+    from apps.core.models import RegistroAuditoria
+
+    producto = ProductoFactory(titulo="Akira")
+    RegistroAuditoria.registrar(
+        RegistroAuditoria.BORRADOR_CONFIRMADO,
+        actor=administrador,
+        objetivo=producto,
+        detalle="desde el borrador #7",
+    )
+
+    contenido = client_admin.get(url_ficha(producto)).content.decode()
+
+    assert "desde el borrador #7" in contenido

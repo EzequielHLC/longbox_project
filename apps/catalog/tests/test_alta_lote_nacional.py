@@ -8,7 +8,7 @@ import pytest
 
 from apps.accounts.tests.factories import UsuarioFactory
 from apps.catalog.forms import MENSAJE_LOTE_VACIO
-from apps.catalog.models import LoteAlta, Producto
+from apps.catalog.models import LoteAlta, Producto, ProductoEditorial
 from apps.catalog.tests.factories import (
     PVP_DE_PRUEBA,
     EditorialFactory,
@@ -41,14 +41,14 @@ def test_los_items_heredan_la_clasificacion_y_el_precio_de_la_cabecera(client_ad
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    productos = Producto.objects.order_by("volumen")
+    productos = ProductoEditorial.objects.order_by("volumen")
     assert productos.count() == 2
     for producto in productos:
         assert producto.editorial == referencia.editorial
         assert producto.tipo == referencia.tipo
         assert producto.formato == referencia.formato
         assert producto.precio == PVP_DE_PRUEBA
-        assert producto.origen == Producto.NACIONAL
+        assert producto.origen == ProductoEditorial.NACIONAL
 
 
 def test_con_la_cabecera_puesta_manda_la_cabecera_aunque_el_item_declare_otra_cosa(
@@ -65,7 +65,7 @@ def test_con_la_cabecera_puesta_manda_la_cabecera_aunque_el_item_declare_otra_co
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get().editorial == referencia.editorial
+    assert ProductoEditorial.objects.get().editorial == referencia.editorial
 
 
 def test_un_item_desbloqueado_declara_su_propia_clasificacion(client_admin, referencia):
@@ -89,8 +89,8 @@ def test_un_item_desbloqueado_declara_su_propia_clasificacion(client_admin, refe
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.get(titulo="Akira").editorial == referencia.editorial
-    assert Producto.objects.get(titulo="Dune").editorial == otra
+    assert ProductoEditorial.objects.get(titulo="Akira").editorial == referencia.editorial
+    assert ProductoEditorial.objects.get(titulo="Dune").editorial == otra
 
 
 def test_desbloquear_un_item_convierte_el_lote_en_mixto(client_admin, referencia):
@@ -130,8 +130,8 @@ def test_un_item_puede_sobrescribir_el_precio_sin_desbloquear_nada(client_admin,
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get(volumen=1).precio == PVP_DE_PRUEBA
-    assert Producto.objects.get(volumen=2).precio == Decimal("9900")
+    assert ProductoEditorial.objects.get(volumen=1).precio == PVP_DE_PRUEBA
+    assert ProductoEditorial.objects.get(volumen=2).precio == Decimal("9900")
 
 
 def test_el_precio_editado_a_mano_queda_excluido_de_la_propagacion(client_admin, referencia):
@@ -141,8 +141,8 @@ def test_el_precio_editado_a_mano_queda_excluido_de_la_propagacion(client_admin,
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get(volumen=1).precio_manual is False
-    assert Producto.objects.get(volumen=2).precio_manual is True
+    assert ProductoEditorial.objects.get(volumen=1).precio_manual is False
+    assert ProductoEditorial.objects.get(volumen=2).precio_manual is True
 
 
 def test_el_producto_queda_vinculado_a_su_combinacion_de_la_tabla(client_admin, referencia):
@@ -151,7 +151,7 @@ def test_el_producto_queda_vinculado_a_su_combinacion_de_la_tabla(client_admin, 
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get().precio_referencia == referencia
+    assert ProductoEditorial.objects.get().precio_referencia == referencia
 
 
 def test_en_un_lote_mixto_cada_item_declara_sus_propios_datos(client_admin):
@@ -175,8 +175,8 @@ def test_en_un_lote_mixto_cada_item_declara_sus_propios_datos(client_admin):
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.get(titulo="Akira").editorial == una.editorial
-    assert Producto.objects.get(titulo="Dune").precio == Decimal("12000")
+    assert ProductoEditorial.objects.get(titulo="Akira").editorial == una.editorial
+    assert ProductoEditorial.objects.get(titulo="Dune").precio == Decimal("12000")
     assert LoteAlta.objects.get().es_mixto is True
 
 
@@ -188,7 +188,7 @@ def test_en_un_lote_mixto_falta_la_editorial_del_item(client_admin):
 
     assert respuesta.status_code == 200
     assert respuesta.context["formset"].errors[0]["editorial"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_en_un_lote_mixto_falta_el_tipo_del_item(client_admin):
@@ -216,7 +216,7 @@ def test_sin_precio_de_referencia_el_alta_pide_el_precio_a_mano(client_admin):
 
     datos = payload([item("Akira", 1, precio="7000")], **base)
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().precio == Decimal("7000")
+    assert ProductoEditorial.objects.get().precio == Decimal("7000")
 
 
 # ---------------------------------------------------------------------------
@@ -253,7 +253,7 @@ def test_un_tipo_que_no_usa_formato_no_lo_pide_ni_lo_guarda(client_admin):
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.get().formato is None
+    assert ProductoEditorial.objects.get().formato is None
 
 
 def test_un_comic_se_da_de_alta_sin_declarar_ninguna_etiqueta(client_admin):
@@ -266,7 +266,7 @@ def test_un_comic_se_da_de_alta_sin_declarar_ninguna_etiqueta(client_admin):
     datos = payload([item("Batman", 1)], editorial=editorial.pk, tipo=tipo.pk, formato=formato.pk)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert not producto.etiquetas.exists()
     assert producto.precio == Decimal("8000")
 
@@ -280,8 +280,8 @@ def test_las_etiquetas_de_la_cabecera_las_heredan_todos_los_items(client_admin, 
     )
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.count() == 2
-    for producto in Producto.objects.all():
+    assert ProductoEditorial.objects.count() == 2
+    for producto in ProductoEditorial.objects.all():
         assert list(producto.etiquetas.all()) == [marvel]
 
 
@@ -308,8 +308,8 @@ def test_un_item_puede_sumar_etiquetas_propias(client_admin, referencia):
     )
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    primero = Producto.objects.get(volumen=1)
-    segundo = Producto.objects.get(volumen=2)
+    primero = ProductoEditorial.objects.get(volumen=1)
+    segundo = ProductoEditorial.objects.get(volumen=2)
     assert set(primero.etiquetas.all()) == {marvel, limitada}
     assert set(segundo.etiquetas.all()) == {marvel}
 
@@ -321,7 +321,7 @@ def test_declarar_la_misma_etiqueta_arriba_y_abajo_no_la_duplica(client_admin, r
     )
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().etiquetas.count() == 1
+    assert ProductoEditorial.objects.get().etiquetas.count() == 1
 
 
 def test_una_etiqueta_desactivada_no_se_puede_elegir(client_admin, referencia):
@@ -332,7 +332,7 @@ def test_una_etiqueta_desactivada_no_se_puede_elegir(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert respuesta.context["formset"].errors[0]["etiquetas"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_item_se_puede_marcar_como_solo_para_adultos(client_admin, referencia):
@@ -341,14 +341,14 @@ def test_un_item_se_puede_marcar_como_solo_para_adultos(client_admin, referencia
     datos = lote_nacional([item("Akira", 1, solo_adultos="on")], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().solo_adultos is True
+    assert ProductoEditorial.objects.get().solo_adultos is True
 
 
 def test_por_defecto_un_producto_no_es_solo_para_adultos(client_admin, referencia):
     datos = lote_nacional([item("Akira", 1)], referencia)
 
     assert client_admin.post(URL_NACIONAL, datos).status_code == 302
-    assert Producto.objects.get().solo_adultos is False
+    assert ProductoEditorial.objects.get().solo_adultos is False
 
 
 def test_el_precio_depende_de_los_tres_campos(client_admin):
@@ -365,7 +365,7 @@ def test_el_precio_depende_de_los_tres_campos(client_admin):
             [item("Berserk", 1)], editorial=editorial.pk, tipo=tipo.pk, formato=formato.pk
         )
         client_admin.post(URL_NACIONAL, datos)
-        assert Producto.objects.get(formato=formato).precio == Decimal(esperado)
+        assert ProductoEditorial.objects.get(formato=formato).precio == Decimal(esperado)
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +378,7 @@ def test_con_fecha_de_llegada_el_producto_nace_en_pre_venta(client_admin, refere
 
     client_admin.post(URL_NACIONAL, datos)
 
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert producto.estado == Producto.PRE_VENTA
     assert producto.fecha_llegada == date(2026, 12, 1)
 
@@ -388,7 +388,7 @@ def test_sin_fecha_de_llegada_el_producto_nace_activo(client_admin, referencia):
 
     client_admin.post(URL_NACIONAL, datos)
 
-    producto = Producto.objects.get()
+    producto = ProductoEditorial.objects.get()
     assert producto.estado == Producto.ACTIVO
     assert producto.fecha_llegada is None
 
@@ -402,8 +402,8 @@ def test_el_item_puede_sobrescribir_el_estado_de_la_cabecera(client_admin, refer
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.get(volumen=1).estado == Producto.PRE_VENTA
-    assert Producto.objects.get(volumen=2).estado == Producto.ACTIVO
+    assert ProductoEditorial.objects.get(volumen=1).estado == Producto.PRE_VENTA
+    assert ProductoEditorial.objects.get(volumen=2).estado == Producto.ACTIVO
 
 
 # ---------------------------------------------------------------------------
@@ -425,8 +425,8 @@ def test_un_item_duplicado_se_excluye_y_los_demas_se_crean(client_admin, referen
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 302
-    assert Producto.objects.count() == 3  # el que ya existía más los dos nuevos
-    assert set(Producto.objects.values_list("volumen", flat=True)) == {1, 2, 3}
+    assert ProductoEditorial.objects.count() == 3  # el que ya existía más los dos nuevos
+    assert set(ProductoEditorial.objects.values_list("volumen", flat=True)) == {1, 2, 3}
     assert len(LoteAlta.objects.get().rechazados) == 1
 
 
@@ -442,7 +442,7 @@ def test_el_duplicado_se_detecta_sin_distinguir_mayusculas(client_admin, referen
 
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.count() == 1
+    assert ProductoEditorial.objects.count() == 1
 
 
 def test_el_mismo_tomo_en_otro_formato_no_es_duplicado(client_admin):
@@ -458,7 +458,7 @@ def test_el_mismo_tomo_en_otro_formato_no_es_duplicado(client_admin):
     datos = payload([item("Berserk", 1)], editorial=editorial.pk, tipo=tipo.pk, formato=deluxe.pk)
     client_admin.post(URL_NACIONAL, datos)
 
-    assert Producto.objects.count() == 2
+    assert ProductoEditorial.objects.count() == 2
 
 
 def test_una_editorial_distinta_no_es_duplicado(client_admin):
@@ -470,7 +470,7 @@ def test_una_editorial_distinta_no_es_duplicado(client_admin):
 
     client_admin.post(URL_NACIONAL, lote_nacional([item("Akira", 1)], otra))
 
-    assert Producto.objects.count() == 2
+    assert ProductoEditorial.objects.count() == 2
 
 
 def test_el_resumen_informa_la_colision_con_enlace_a_la_ficha(client_admin, referencia):
@@ -528,7 +528,7 @@ def test_un_fallo_tecnico_no_deja_productos_a_medio_crear(client_admin, referenc
         with pytest.raises(RuntimeError):
             client_admin.post(URL_NACIONAL, datos)
 
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
     assert not LoteAlta.objects.exists()
 
 
@@ -541,19 +541,19 @@ def test_un_item_sin_stock_declarado_nace_en_cero(client_admin, referencia):
     """El sistema no inventa unidades que nadie contó."""
     client_admin.post(URL_NACIONAL, lote_nacional([item("Akira", 1)], referencia))
 
-    assert Producto.objects.get().stock == 0
+    assert ProductoEditorial.objects.get().stock == 0
 
 
 def test_el_stock_declarado_se_respeta(client_admin, referencia):
     client_admin.post(URL_NACIONAL, lote_nacional([item("Akira", 1, stock="12")], referencia))
 
-    assert Producto.objects.get().stock == 12
+    assert ProductoEditorial.objects.get().stock == 12
 
 
 def test_sin_portada_el_producto_queda_marcado_como_imagen_pendiente(client_admin, referencia):
     client_admin.post(URL_NACIONAL, lote_nacional([item("Akira", 1)], referencia))
 
-    assert Producto.objects.get().portada_pendiente is True
+    assert ProductoEditorial.objects.get().portada_pendiente is True
 
 
 def test_un_item_sin_titulo_no_se_registra(client_admin, referencia):
@@ -563,7 +563,7 @@ def test_un_item_sin_titulo_no_se_registra(client_admin, referencia):
 
     assert respuesta.status_code == 200
     assert respuesta.context["formset"].errors[0]["titulo"]
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_un_lote_sin_ningun_item_no_se_guarda(client_admin, referencia):
@@ -579,7 +579,7 @@ def test_un_lote_de_un_solo_item_es_valido(client_admin, referencia):
         client_admin.post(URL_NACIONAL, lote_nacional([item("Akira", 1)], referencia)).status_code
         == 302
     )
-    assert Producto.objects.count() == 1
+    assert ProductoEditorial.objects.count() == 1
 
 
 # ---------------------------------------------------------------------------
@@ -594,7 +594,7 @@ def test_solo_el_administrador_da_de_alta_lotes(client, rol_sin_permiso, referen
 
     assert client.get(URL_NACIONAL).status_code == 403
     assert client.post(URL_NACIONAL, datos).status_code == 403
-    assert not Producto.objects.exists()
+    assert not ProductoEditorial.objects.exists()
 
 
 def test_sin_sesion_el_alta_redirige_al_login(client):

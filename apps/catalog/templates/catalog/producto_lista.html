@@ -27,6 +27,14 @@
         Nuevo lote importado
       </a>
     </div>
+    {% comment %}
+    El alta no editorial va como botón secundario y no como un tercer primario:
+    el límite del sistema visual son dos por pantalla, y además pesa distinto —
+    es el rubro secundario del negocio y se carga de a uno, no por lote.
+    {% endcomment %}
+    <a href="{% url 'catalog:producto_no_editorial_alta' %}" class="boton-menor">
+      <span>Nuevo producto no editorial</span>
+    </a>
   </div>
 </div>
 
@@ -99,6 +107,45 @@ acá que pide una acción.
   </div>
 
   {% comment %}
+  Disponibilidad de stock: lo pide el paso 3 del CU, y es el filtro que más usa
+  el Cajero — la pregunta del mostrador es "¿lo tenés?", no "¿en qué estado
+  está?".
+  {% endcomment %}
+  <div>
+    <label for="stock" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Stock
+    </label>
+    <select id="stock" name="stock" class="w-36">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in disponibilidades %}
+        <option value="{{ valor }}" {% if disponibilidad_elegida == valor %}selected{% endif %}>
+          {{ etiqueta }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% comment %}
+  El orden es un parámetro y no una constante porque las dos pantallas que usan
+  esta tabla quieren cosas distintas: CU-11 pide alfabético, y quien viene de
+  cargar un lote quiere ver lo último cargado. Con el desplegable, las dos se
+  atienden sin que ninguna gane.
+  {% endcomment %}
+  <div>
+    <label for="orden" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
+      Orden
+    </label>
+    <select id="orden" name="orden" class="w-44">
+      <option value="alfabetico" {% if orden_elegido == "alfabetico" %}selected{% endif %}>
+        Alfabético
+      </option>
+      <option value="recientes" {% if orden_elegido == "recientes" %}selected{% endif %}>
+        Cargados último
+      </option>
+    </select>
+  </div>
+
+  {% comment %}
   El filtro por etiqueta solo aparece si hay alguna con productos: es el único
   eje que puede no aplicarle a ningún producto —ninguna es obligatoria— y un
   desplegable vacío ocuparía lugar sin filtrar nada.
@@ -147,12 +194,15 @@ acá que pide una acción.
     <span>Buscar</span>
   </button>
 
-  {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
-    <a href="{% url 'catalog:producto_lista' %}"
-       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
-      Limpiar filtros
-    </a>
-  {% endif %}
+  {% comment %}
+  `?estado=` explícito y vacío significa "todos", que no es lo mismo que no
+  mandar el parámetro: sin él la vista aplica su valor por defecto y muestra solo
+  los Activos (paso 2 del CU). Es la única forma de ver lo descatalogado.
+  {% endcomment %}
+  <a href="{% url 'catalog:producto_lista' %}?estado="
+     class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
+    Ver todos
+  </a>
 </form>
 
 <div class="relative">
