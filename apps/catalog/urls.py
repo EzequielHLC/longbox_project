@@ -9,6 +9,30 @@ urlpatterns = [
     # pertenece al módulo de Catálogo, todavía no implementado.
     path("productos/", views.ProductoListaView.as_view(), name="producto_lista"),
     path("productos/<int:pk>/", views.ProductoDetalleView.as_view(), name="producto_detalle"),
+    # CU-05 — revisión de los borradores que genera el pipeline de novedades.
+    path("borradores/", views.BorradorListaView.as_view(), name="borrador_lista"),
+    path("borradores/<int:pk>/", views.BorradorDetalleView.as_view(), name="borrador_detalle"),
+    path(
+        "borradores/confirmar-en-lote/",
+        views.ConfirmarEnLoteView.as_view(),
+        name="borrador_confirmar_lote",
+    ),
+    path(
+        "borradores/cerrar-sesion/",
+        views.CerrarSesionRevisionView.as_view(),
+        name="cerrar_sesion_revision",
+    ),
+    # CU-08 — alta de producto no editorial. De a uno, no por lote.
+    path(
+        "productos/no-editorial/nuevo/",
+        views.ProductoNoEditorialAltaView.as_view(),
+        name="producto_no_editorial_alta",
+    ),
+    path(
+        "productos/no-editorial/duplicados/",
+        views.DuplicadosNoEditorialesView.as_view(),
+        name="duplicados_no_editoriales",
+    ),
     # Alta de lotes.
     path("lotes/nacional/", views.AltaLoteNacionalView.as_view(), name="lote_nacional"),
     path("lotes/importado/", views.AltaLoteImportadoView.as_view(), name="lote_importado"),

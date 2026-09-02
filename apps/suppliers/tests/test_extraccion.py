@@ -13,16 +13,24 @@ algo con la forma correcta y el contenido equivocado.
 """
 
 import json
+from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 
-from apps.core import llm
+from apps.core import integraciones, llm
 from apps.suppliers import extraccion, services
 from apps.suppliers.models import CorreoProveedor
 from apps.suppliers.tests import correos_de_ejemplo as ejemplo
 from apps.suppliers.tests.factories import ProveedorFactory
+
+# **Todo el módulo necesita la base**, y es la consecuencia honesta de mover la
+# configuración del modelo a `ConfiguracionSistema` (A16): la extracción ya no
+# lee `settings` sino la fila de parámetros, así que ni siquiera armar el pedido
+# se puede hacer sin base. Antes estos tests corrían sin ella; se pagó a
+# propósito, para que cambiar de proveedor no exija reiniciar el servidor.
+pytestmark = pytest.mark.django_db
 
 BERSERK = "9789878271583"
 BLUE_PERIOD = "9789878274652"
@@ -33,6 +41,7 @@ CONFIANZA_ALTA = {
     "volumen": "alta",
     "formato": "alta",
     "precio": "alta",
+    "fecha": "alta",
 }
 
 
@@ -44,6 +53,8 @@ def producto(**cambios):
         "volumen": "5",
         "formato": "Tapa dura",
         "precio": "24900",
+        # Vacía es el caso normal: la fecha la anuncia el correo, no la fila.
+        "fecha": "",
         "imagen": "tapa001@ivrea.test",
         "confianza": dict(CONFIANZA_ALTA),
     }
@@ -51,15 +62,36 @@ def producto(**cambios):
     return base
 
 
-def respuesta(intencion=extraccion.NOVEDADES, productos=None):
+def respuesta(intencion=extraccion.NOVEDADES, productos=None, periodo=""):
     """La forma exacta en que contesta un servidor compatible con OpenAI."""
-    contenido = {"intencion": intencion, "productos": productos or []}
+    contenido = {
+        "intencion": intencion,
+        "periodo": periodo,
+        "productos": productos or [],
+    }
     return {"choices": [{"message": {"content": json.dumps(contenido)}}]}
+
+
+def _como_respuesta(valor):
+    """Envuelve lo que el servidor devolvería en el tipo que usa la puerta HTTP.
+
+    Desde que `integraciones.pedir` distingue los modos de falla, devuelve una
+    `Respuesta` y no un diccionario pelado. Los tests siguen escribiendo el JSON
+    del servidor, que es lo legible, y esto lo lleva al contrato real — un test
+    que parchea con la forma vieja probaría un camino que ya no existe.
+
+    `None` se traduce a un fallo de conexión, que es lo que significaba antes.
+    """
+    if valor is None:
+        return integraciones.Respuesta(motivo=integraciones.SIN_CONEXION)
+    if isinstance(valor, integraciones.Respuesta):
+        return valor
+    return integraciones.Respuesta(datos=valor)
 
 
 def contestando(valor):
     """Parchea la puerta HTTP para que el modelo devuelva `valor`."""
-    return patch("apps.core.integraciones.pedir", return_value=valor)
+    return patch("apps.core.integraciones.pedir", return_value=_como_respuesta(valor))
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +133,7 @@ def test_el_esquema_le_exige_al_servidor_la_forma_de_la_respuesta():
 
     cuerpo = pedir.call_args.kwargs["cuerpo"]
     esquema = cuerpo["response_format"]["json_schema"]["schema"]
-    assert esquema["required"] == ["intencion", "productos"]
+    assert esquema["required"] == ["intencion", "periodo", "productos"]
     assert cuerpo["temperature"] == 0.0
 
 
@@ -362,10 +394,23 @@ def test_si_vienen_los_dos_campos_manda_el_principal():
     assert resultado.intencion == extraccion.NOVEDADES
 
 
-def test_una_respuesta_sin_opciones_no_rompe():
-    """La respuesta viene de afuera: un servidor que conteste distinto no puede
-    tumbar el ciclo con un `KeyError`."""
+def test_un_error_en_el_cuerpo_se_reporta_como_rechazo():
+    """Antes salía como "respuesta ilegible" y mandaba a revisar el prompt, que
+    estaba bien. Un cuerpo con `error` **es** un rechazo del proveedor: pasa con
+    los modelos gratuitos hospedados, donde la pasarela contesta con código 200
+    y el fallo es del modelo de arriba."""
     with contestando({"error": "modelo no cargado"}):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert not resultado
+    assert resultado.error == llm.RECHAZADO
+
+
+def test_una_respuesta_sin_forma_no_rompe():
+    """La respuesta viene de afuera: un servidor que conteste distinto no puede
+    tumbar el ciclo con un `KeyError`. Sin `choices` y sin `error` no hay nada
+    que interpretar, y eso sí es una respuesta ilegible."""
+    with contestando({"algo": "inesperado"}):
         resultado = extraccion.extraer("| contenido |")
 
     assert not resultado
@@ -481,3 +526,121 @@ def test_la_ficha_muestra_lo_que_entendio_el_modelo(client_admin, correo):
     assert BERSERK in contenido
     # Y el reparo, que es lo que avisa que algo se descartó.
     assert "Portada inexistente" in contenido
+
+
+# ---------------------------------------------------------------------------
+# El período y las fechas
+#
+# Es lo que decide si un borrador nace en Pre-venta o Activo (CU-04 paso 6). Sin
+# fecha todos nacerían Activos, y un producto que no llegó figurando disponible
+# no da ningún síntoma hasta que alguien lo compra.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("escrito", "esperado"),
+    [
+        ("2026-03-15", date(2026, 3, 15)),
+        ("15/04/2026", date(2026, 4, 15)),
+        ("04/2026", date(2026, 4, 1)),
+        ("marzo 2026", date(2026, 3, 1)),
+        ("Novedades de marzo 2026", date(2026, 3, 1)),
+        ("NOVEDADES DE SETIEMBRE 2026", date(2026, 9, 1)),
+        ("Lanzamientos: 15/04/2026", date(2026, 4, 15)),
+    ],
+)
+def test_la_fecha_se_lee_venga_como_venga(escrito, esperado):
+    assert extraccion.interpretar_fecha(escrito) == esperado
+
+
+@pytest.mark.parametrize(
+    "escrito",
+    [
+        "",
+        "   ",
+        "proximamente",
+        # Sin año no se adivina: podría ser de este año o del que viene, y
+        # completarlo sería inventar un dato, que es justo lo que no se hace.
+        "marzo",
+        "novedades de diciembre",
+        # Un 31 de febrero es un dato malo, no un fallo: devuelve None.
+        "2026-02-31",
+        "31/02/2026",
+    ],
+)
+def test_una_fecha_que_no_se_entiende_devuelve_nada(escrito):
+    assert extraccion.interpretar_fecha(escrito) is None
+
+
+def test_el_periodo_del_correo_se_interpreta():
+    """El correo anuncia el período en la prosa de alrededor de la tabla, no en
+    cada fila: es de ahí que los borradores heredan la fecha."""
+    with contestando(respuesta(productos=[producto()], periodo="Novedades de marzo 2026")):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert resultado.periodo == date(2026, 3, 1)
+    assert resultado.periodo_texto == "Novedades de marzo 2026"
+    assert resultado.reparos == []
+
+
+def test_un_correo_sin_periodo_no_deja_reparo():
+    """No anunciar fecha es el caso normal, no un problema: esos borradores
+    nacen Activos, que es exactamente lo que pide CU-04 paso 6."""
+    with contestando(respuesta(productos=[producto()])):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert resultado.periodo is None
+    assert resultado.reparos == []
+
+
+def test_un_periodo_ilegible_deja_su_reparo():
+    """Sin esto, todos los borradores del correo nacerían Activos y no habría
+    forma de saber por qué."""
+    with contestando(respuesta(productos=[producto()], periodo="cuando salga")):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert resultado.periodo is None
+    assert resultado.periodo_texto == "cuando salga"
+    assert len(resultado.reparos) == 1
+    assert "Período ilegible" in resultado.reparos[0]
+
+
+def test_la_fecha_propia_de_una_fila_pisa_al_periodo():
+    with contestando(respuesta(productos=[producto(fecha="2026-05-20")], periodo="marzo 2026")):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert resultado.periodo == date(2026, 3, 1)
+    assert resultado.productos[0].fecha == date(2026, 5, 20)
+
+
+def test_una_fecha_de_fila_ilegible_deja_reparo_en_ese_producto():
+    with contestando(respuesta(productos=[producto(fecha="el mes que viene")])):
+        resultado = extraccion.extraer("| contenido |")
+
+    extraido = resultado.productos[0]
+    assert extraido.fecha is None
+    assert any("Fecha ilegible" in reparo for reparo in extraido.reparos)
+    # Y no invalida el resto del producto.
+    assert extraido.esta_completo
+
+
+def test_el_periodo_de_un_correo_que_no_es_de_novedades_se_ignora():
+    """Mezclar las dos cosas es el error que la clasificación viene a evitar."""
+    with contestando(respuesta(intencion=extraccion.OTRO, periodo="marzo 2026")):
+        resultado = extraccion.extraer("| contenido |")
+
+    assert resultado.periodo is None
+    assert resultado.reparos == []
+
+
+def test_el_periodo_y_las_fechas_quedan_en_lo_que_se_guarda():
+    """La ficha las muestra, y el generador de borradores las lee de acá."""
+    with contestando(
+        respuesta(productos=[producto(fecha="2026-05-20")], periodo="Novedades de marzo 2026")
+    ):
+        resultado = extraccion.extraer("| contenido |")
+
+    guardado = resultado.como_json()
+    assert guardado["periodo"] == "2026-03-01"
+    assert guardado["periodo_texto"] == "Novedades de marzo 2026"
+    assert guardado["productos"][0]["fecha"] == "2026-05-20"

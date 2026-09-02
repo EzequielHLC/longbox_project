@@ -16,6 +16,7 @@ from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.catalog import borradores as borradores_de_producto
 from apps.core import llm
 from apps.suppliers import correos
 from apps.suppliers import extraccion as extraccion_de_novedades
@@ -207,13 +208,57 @@ def _nombre_de_archivo(message_id):
     return f"{limpio.strip('-')[:80] or 'correo'}.eml"
 
 
-def extraer_novedades(correo):
-    """Le pasa el correo al modelo y guarda lo que entendió.
+@dataclass
+class ResultadoDeProcesamiento:
+    """Lo que dejó procesar un correo: lo que el modelo entendió y lo que se armó.
 
-    **No crea borradores.** Deja el resultado escrito en el correo para que se
-    pueda mirar antes de convertirlo en productos, que es la misma idea con la
-    que la ficha muestra el contenido extraído: cada paso del pipeline se puede
-    revisar antes de que el siguiente gaste algo.
+    Son dos cosas distintas y las dos hacen falta arriba. El comando de consola
+    las reporta por separado —"entendió cinco productos, generó tres, omitió dos
+    por duplicado"—, y esa diferencia es justamente la que dice si el pipeline
+    está funcionando o si el catálogo ya tenía todo.
+
+    Se comporta como verdadero o falso según **la extracción**, que es la parte
+    que puede fallar: una generación que no produjo nada porque estaba todo
+    duplicado no es un error.
+    """
+
+    extraccion: object
+    generacion: object = None
+
+    def __bool__(self):
+        return bool(self.extraccion)
+
+
+def portadas_de(correo):
+    """Las imágenes embebidas del correo, por identificador.
+
+    Sale de releer el `.eml` archivado y no de la tabla: `CorreoProveedor.imagenes`
+    guarda a propósito el resumen —identificador, tipo, tamaño— y no los bytes,
+    porque duplicarlos engordaría la tabla sin agregar nada. El original está
+    guardado justamente para esto.
+
+    Devuelve un diccionario vacío si el archivo no está o no se puede leer. Que
+    falte una portada no interrumpe el procesamiento del correo (CU-04): los
+    borradores quedan con la portada pendiente y se adjunta a mano después.
+    """
+    if not correo.archivo:
+        return {}
+    try:
+        with correo.archivo.open("rb") as archivo:
+            leido = correos.leer(archivo.read())
+    except (OSError, ValueError):
+        return {}
+    return {imagen.cid: imagen for imagen in leido.imagenes if imagen.cid}
+
+
+def extraer_novedades(correo, *, actor=None, ip=None):
+    """Le pasa el correo al modelo, guarda lo que entendió y arma los borradores.
+
+    **Sigue sin crear productos**, que es lo que importa: un borrador es una
+    propuesta que espera la confirmación de una persona en CU-05. Lo que el
+    modelo devolvió queda igual guardado en el correo, y la ficha lo muestra —
+    así, cuando un borrador salga raro, se puede ver contra qué texto se armó
+    sin tener que volver a gastar una corrida del modelo.
 
     El estado del correo cambia según cómo salga:
 
@@ -237,7 +282,16 @@ def extraer_novedades(correo):
         correo.estado = CorreoProveedor.FALLIDO
         correo.motivo = _motivo_del_fallo(resultado)
     correo.save(update_fields=["extraccion", "version_prompt", "estado", "motivo"])
-    return resultado
+
+    # Los borradores se arman solo si hubo algo que entender. Un correo fallido
+    # o que resultó no ser de novedades no genera nada, y eso no es un error:
+    # es la respuesta correcta, y es lo que justifica que la cola exista.
+    generacion = None
+    if resultado and resultado.intencion == extraccion_de_novedades.NOVEDADES:
+        generacion = borradores_de_producto.generar(
+            correo, portadas=portadas_de(correo), actor=actor, ip=ip
+        )
+    return ResultadoDeProcesamiento(extraccion=resultado, generacion=generacion)
 
 
 def _motivo_del_fallo(resultado):

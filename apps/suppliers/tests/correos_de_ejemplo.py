@@ -74,7 +74,7 @@ def _fila(producto):
     )
 
 
-def cuerpo_html(productos, con_logo=True):
+def cuerpo_html(productos, con_logo=True, periodo="marzo 2026"):
     """El HTML del correo, con las trampas de un correo real.
 
     La tabla de productos va **envuelta en otra tabla de maquetado**, que es como
@@ -89,7 +89,7 @@ def cuerpo_html(productos, con_logo=True):
         '<table class="maqueta">'
         f"{logo}"
         "<tr><td>"
-        "<p>Novedades de marzo 2026</p>"
+        f"<p>Novedades de {periodo}</p>"
         "<table>"
         "<tr><th>ISBN</th><th>Tapa</th><th>Título</th>"
         "<th>Vol.</th><th>Formato</th><th>PVP</th></tr>"
@@ -110,12 +110,19 @@ def correo_de_novedades(
     message_id="<marzo-2026@ivrea.test>",
     con_imagenes=True,
     con_logo=True,
+    periodo="marzo 2026",
 ):
     """Los bytes de un correo de novedades listo para `services.ingerir`.
 
     El remitente lleva nombre de fantasía a propósito: el encabezado real llega
     como `"Novedades Ivrea" <novedades@ivrea.test>` y el matcheo tiene que
     encontrar al proveedor igual.
+
+    `periodo` es lo que el correo anuncia en la prosa de alrededor de la tabla,
+    y es de donde los borradores sacan la fecha. Se puede cambiar porque de él
+    depende si nacen en Pre-venta o Activos, que es la rama con consecuencias:
+    un producto que todavía no llegó figurando disponible no da ningún síntoma
+    hasta que alguien lo compra.
     """
     productos = NOVEDADES if productos is None else productos
 
@@ -128,7 +135,9 @@ def correo_de_novedades(
         mensaje["Message-ID"] = message_id
 
     mensaje.set_content("Este correo requiere un lector con soporte HTML.")
-    mensaje.add_alternative(cuerpo_html(productos, con_logo=con_logo), subtype="html")
+    mensaje.add_alternative(
+        cuerpo_html(productos, con_logo=con_logo, periodo=periodo), subtype="html"
+    )
 
     if con_imagenes:
         # Las portadas se adjuntan a la parte HTML, que es la que las referencia.

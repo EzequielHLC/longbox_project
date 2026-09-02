@@ -8,10 +8,12 @@ usara la misma función, un test así solo probaría que coincide consigo misma 
 pasaría igual con las ponderaciones al revés.
 """
 
+from datetime import date
+
 import pytest
 
 from apps.catalog import isbn as isbn_util
-from apps.suppliers import muestras
+from apps.suppliers import extraccion, muestras
 
 # No toca la base: son cadenas entrando y saliendo.
 
@@ -84,7 +86,7 @@ def test_la_muestra_tiene_la_forma_de_un_correo_extraido():
     # El encabezado más los tres productos.
     assert len(filas) == 4
     # Y la prosa de alrededor, que es de donde sale el período del envío.
-    assert "Novedades de marzo 2026" in muestra.contenido
+    assert f"Novedades de {muestra.periodo_texto}" in muestra.contenido
     assert "Los pedidos se reciben" in muestra.contenido
 
 
@@ -152,3 +154,48 @@ def test_se_puede_pedir_la_cantidad_de_productos(cantidad):
     filas = [f for f in muestra.contenido.splitlines() if f.startswith("| 978")]
 
     assert len(filas) == cantidad
+
+
+# ---------------------------------------------------------------------------
+# El período
+# ---------------------------------------------------------------------------
+
+
+def test_el_periodo_anunciado_es_futuro():
+    """Con una fecha ya pasada, todos los borradores nacen Activos y el banco de
+    pruebas nunca ejercita la rama de Pre-venta — que es la que tiene
+    consecuencias: un producto que no llegó figurando disponible no da ningún
+    síntoma hasta que alguien lo compra."""
+    for semilla in range(30):
+        muestra = muestras.armar(semilla=semilla)
+        assert muestra.periodo > date.today()
+
+
+def test_el_periodo_se_declara_y_coincide_con_el_texto():
+    """La muestra dice qué debería salir de ella, para que verificarlo no
+    obligue a volver a interpretar el texto acá — eso compararía la muestra
+    consigo misma."""
+    muestra = muestras.armar(semilla=3)
+
+    assert extraccion.interpretar_fecha(muestra.periodo_texto) == muestra.periodo
+
+
+def test_el_periodo_varia_entre_muestras():
+    """Mismo motivo que los títulos y los ISBN: un valor fijo deja la duda de si
+    el modelo lo lee o lo reconoce de verlo siempre igual."""
+    periodos = {muestras.armar(semilla=semilla).periodo for semilla in range(30)}
+
+    assert len(periodos) > 1
+
+
+def test_el_vencimiento_de_pedidos_es_un_señuelo_sin_año():
+    """Es una segunda fecha en la misma prosa, y el modelo tiene que copiar el
+    período y no el vencimiento. Va sin año a propósito: si el modelo la
+    eligiera igual, el intérprete la descarta y el reparo lo dice en pantalla en
+    vez de quedar en silencio."""
+    muestra = muestras.armar(semilla=5)
+
+    vencimiento = next(
+        linea for linea in muestra.contenido.splitlines() if "Los pedidos se reciben" in linea
+    )
+    assert extraccion.interpretar_fecha(vencimiento) is None

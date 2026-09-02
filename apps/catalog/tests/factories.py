@@ -9,6 +9,8 @@ from apps.catalog.models import (
     GrupoEtiqueta,
     LoteAlta,
     Producto,
+    ProductoEditorial,
+    ProductoNoEditorial,
     TablaPrecioReferencia,
     Tipo,
 )
@@ -97,14 +99,47 @@ class LoteAltaFactory(factory.django.DjangoModelFactory):
 
 
 class ProductoFactory(factory.django.DjangoModelFactory):
+    """Un producto **editorial**, que es el caso por defecto del catálogo.
+
+    Conserva el nombre viejo a propósito: es el que usan más de doscientos tests
+    que no tienen nada que decir sobre el rubro, y renombrarlos en masa habría
+    escondido los pocos cambios que sí importan detrás de un diff enorme. Para el
+    otro rubro está `ProductoNoEditorialFactory`.
+    """
+
     class Meta:
-        model = Producto
+        model = ProductoEditorial
 
     titulo = factory.Sequence(lambda n: f"Título {n}")
     volumen = 1
     editorial = factory.SubFactory(EditorialFactory)
     tipo = factory.SubFactory(TipoFactory)
     formato = factory.SubFactory(FormatoFactory)
-    origen = Producto.NACIONAL
+    origen = ProductoEditorial.NACIONAL
+    estado = Producto.ACTIVO
+    precio = PVP_DE_PRUEBA
+    precio_base = PVP_DE_PRUEBA
+
+
+class TipoNoEditorialFactory(factory.django.DjangoModelFactory):
+    """Una categoría del otro rubro: TCG, figura, merchandising o insumo."""
+
+    class Meta:
+        model = Tipo
+        django_get_or_create = BUSCAR_POR_NOMBRE
+
+    nombre = factory.Sequence(lambda n: f"Categoría {n}")
+    clase = Producto.NO_EDITORIAL
+    usa_formato = False
+
+
+class ProductoNoEditorialFactory(factory.django.DjangoModelFactory):
+    """Una figura, un mazo o un insumo. Sin editorial, sin volumen, sin ISBN."""
+
+    class Meta:
+        model = ProductoNoEditorial
+
+    titulo = factory.Sequence(lambda n: f"Artículo {n}")
+    tipo = factory.SubFactory(TipoNoEditorialFactory)
     estado = Producto.ACTIVO
     precio = PVP_DE_PRUEBA

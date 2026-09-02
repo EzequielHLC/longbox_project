@@ -21,20 +21,24 @@ pestaña de herramientas del desarrollador abierta.
 from decimal import Decimal
 
 from django import forms
-from django.core.validators import MinLengthValidator
+from django.core.validators import MaxValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
 
 from apps.catalog import isbn as isbn_util
-from apps.catalog import precios
+from apps.catalog import precios, services
 from apps.catalog.models import (
+    NO_EDITORIAL,
+    BorradorProducto,
     Editorial,
     Etiqueta,
     Formato,
     GrupoEtiqueta,
     LoteAlta,
     Producto,
+    ProductoEditorial,
+    ProductoNoEditorial,
     TablaPrecioReferencia,
     Tipo,
 )
@@ -651,7 +655,11 @@ class ItemLoteForm(forms.Form):
             # Sin declarar, cero: el sistema no inventa unidades que nadie contó.
             "stock": self.cleaned_data.get("stock") or 0,
             "autor": self.cleaned_data.get("autor", ""),
-            "sinopsis": self.cleaned_data.get("sinopsis", ""),
+            # El campo del producto se llama `descripcion` desde la jerarquía:
+            # en un tomo es la sinopsis y en una figura la descripción del
+            # artículo. El formulario del alta editorial lo sigue etiquetando
+            # "sinopsis", que es como lo llama quien lo carga.
+            "descripcion": self.cleaned_data.get("sinopsis", ""),
             # Sin portada el ítem se registra igual y queda marcado como
             # "Imagen pendiente" (lo deriva `Producto.portada_pendiente`).
             "portada": self.cleaned_data.get("portada"),
@@ -697,9 +705,16 @@ class ItemLoteNacionalForm(ItemLoteForm):
 
     def datos_del_producto(self):
         datos = super().datos_del_producto()
+        precio = self.cleaned_data["precio_final"]
         datos.update(
-            origen=Producto.NACIONAL,
-            precio=self.cleaned_data["precio_final"],
+            origen=ProductoEditorial.NACIONAL,
+            precio=precio,
+            # En un nacional el precio **es** su base: no hay cadena de cálculo
+            # que redondear, porque el PVP viene dado por la tabla de referencia
+            # o escrito a mano. Se guarda igual para que valga en los dos rubros
+            # la misma invariante —`precio` es el base redondeado— y para que
+            # CU-13 no tenga que preguntar de qué origen es antes de leerlo.
+            precio_base=precio,
             precio_manual=self.cleaned_data.get("precio_manual", False),
             precio_referencia=self.cleaned_data.get("referencia"),
         )
@@ -756,7 +771,7 @@ class ItemLoteImportadoForm(ItemLoteForm):
     def datos_del_producto(self):
         datos = super().datos_del_producto()
         datos.update(
-            origen=Producto.IMPORTADO,
+            origen=ProductoEditorial.IMPORTADO,
             costo_origen=self.cleaned_data["costo_origen"],
             # Se almacena siempre, incluso con el precio final editado a mano:
             # es lo que permite recalcular ante un cambio de margen sin volver a
@@ -833,6 +848,121 @@ def formset_de_items(origen):
     """La clase de formset que corresponde al origen del lote."""
     formulario = ItemLoteImportadoForm if origen == LoteAlta.IMPORTADO else ItemLoteNacionalForm
     return forms.formset_factory(formulario, formset=BaseItemFormSet, extra=3)
+
+
+# El texto de la advertencia de duplicado. Va como constante porque lo usan el
+# formulario y su test, y una advertencia que el test copia a mano deja de
+# probar que el usuario ve lo que creemos que ve.
+ADVERTENCIA_DUPLICADO = (
+    "Ya existe «{producto}» con esta misma categoría. Si es un producto distinto "
+    "—otra medida, otro proveedor, otra edición— confirmelo para continuar."
+)
+
+
+class ProductoNoEditorialForm(forms.ModelForm):
+    """Alta de TCG, figura, merchandising o insumo (CU-08).
+
+    **Es de a uno, no por lote**, a diferencia del alta editorial. No es una
+    simplificación: el CU describe un alta singular, y tiene sentido — un lote
+    editorial son veinte tomos de la misma serie que comparten editorial, tipo y
+    precio, mientras que cinco artículos no editoriales no comparten nada.
+
+    **El estado no se ofrece.** CU-08 lo dice en sus comentarios: el sistema
+    asigna exclusivamente Activo. La restricción vive en el modelo, que rechaza
+    Pre-venta para este rubro; acá simplemente no hay campo que mandar.
+    """
+
+    # La mitad **de control** de la advertencia de duplicado. La consulta en vivo
+    # de la pantalla es la mitad cómoda: avisa antes de que alguien escriba el
+    # formulario entero. Pero el que decide es este campo, y lo exige el
+    # servidor — es el mismo criterio de RNF-03 con el que se validan la
+    # confirmación del precio manual y la del cambio de correo del proveedor: un
+    # aviso de JavaScript esquivado no debería poder meter un duplicado.
+    confirma_duplicado = forms.BooleanField(
+        label="Es un producto distinto del que ya existe",
+        required=False,
+        help_text="Solo si el nombre y la categoría coinciden con un producto cargado.",
+    )
+
+    class Meta:
+        model = ProductoNoEditorial
+        fields = [
+            "titulo",
+            "tipo",
+            "precio",
+            "stock",
+            "portada",
+            "marca",
+            "codigo",
+            "codigo_barras",
+            "descripcion",
+            "etiquetas",
+        ]
+        labels = {  # noqa: RUF012
+            "titulo": "Nombre del producto",
+            "tipo": "Categoría",
+            "precio": "Precio de venta al público",
+            "stock": "Stock inicial",
+            "portada": "Imagen referencial",
+            "codigo": "Código de producto interno",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Solo categorías del rubro, y solo activas. El recorte del desplegable
+        # es comodidad; la validación de verdad la hace el modelo en su `clean`,
+        # con el mismo criterio de A20 — un valor enviado a mano no es más
+        # confiable por venir de esta pantalla.
+        self.fields["tipo"].queryset = Tipo.objects.filter(
+            activo=True, clase=NO_EDITORIAL
+        ).order_by("orden", "nombre")
+        self.fields["tipo"].empty_label = "Elegir categoría"
+
+        self.fields["etiquetas"].queryset = etiquetas_activas()
+        self.fields["etiquetas"].widget = forms.CheckboxSelectMultiple()
+
+        # Los cuatro obligatorios de CU-08 paso 2, menos la imagen: no bloquea el
+        # alta en ninguno de los dos rubros (A5 de `alta_editorial.md`, unificado
+        # en la decisión 3 de este módulo).
+        for nombre in ("titulo", "tipo", "precio", "stock"):
+            self.fields[nombre].required = True
+        self.fields["portada"].required = False
+
+        self.fields["titulo"].validators.append(MinLengthValidator(TITULO_MINIMO))
+        self.fields["stock"].validators.append(MaxValueValidator(STOCK_MAXIMO))
+        self.fields["codigo"].help_text = (
+            "Opcional: si se deja vacío, el sistema genera uno y no se repite nunca."
+        )
+
+    def clean_titulo(self):
+        # Sin normalizar, "Llavero  Naruto" y "Llavero Naruto" serían dos
+        # productos distintos para cualquiera que compare sin hacerlo — y la
+        # búsqueda de duplicados es una de esas.
+        return " ".join((self.cleaned_data.get("titulo") or "").split())
+
+    def clean_precio(self):
+        precio = self.cleaned_data.get("precio")
+        if precio is not None and precio > IMPORTE_MAXIMO:
+            raise forms.ValidationError(f"El máximo es ${IMPORTE_MAXIMO}.")
+        return precio
+
+    def clean(self):
+        datos = super().clean()
+
+        # El duplicado **no bloquea**: pide una confirmación explícita
+        # (corrección 21). Con el choque a la vista y la casilla marcada, el alta
+        # sigue — porque dos artículos con el mismo nombre y la misma categoría
+        # pueden ser dos productos de verdad.
+        self.duplicado = services.buscar_duplicado_no_editorial(
+            datos.get("titulo", ""), datos.get("tipo")
+        )
+        if self.duplicado and not datos.get("confirma_duplicado"):
+            self.add_error(
+                "titulo",
+                ADVERTENCIA_DUPLICADO.format(producto=self.duplicado),
+            )
+        return datos
 
 
 class PrecioReferenciaForm(forms.ModelForm):
@@ -994,6 +1124,96 @@ class FormatoForm(forms.ModelForm):
         self.fields["tipos"].required = False
 
 
+class ModeloDeLenguajeForm(forms.ModelForm):
+    """A qué modelo de lenguaje le habla el sistema (CU-04, A16).
+
+    Está separado de `ConfiguracionForm` y no es solo prolijidad de pantalla:
+    son dos cosas que se tocan por motivos distintos. El margen y el stock los
+    cambia el negocio; esto lo cambia quien despliega, y una de sus dos mitades
+    es una **credencial**.
+
+    **La clave se escribe pero no se lee.** El campo llega siempre vacío y solo
+    reemplaza a la guardada cuando se escribe algo: así la pantalla deja de ser
+    un lugar del que copiar el secreto, y dejarla en blanco al editar cualquier
+    otro parámetro no la borra sin querer.
+    """
+
+    api_key = forms.CharField(
+        label="Clave de la API",
+        required=False,
+        widget=forms.PasswordInput(render_value=False, attrs={"autocomplete": "off"}),
+        help_text="No se vuelve a mostrar una vez guardada.",
+    )
+
+    class Meta:
+        model = ConfiguracionSistema
+        fields = ["llm_modo", "llm_url", "llm_modelo", "llm_timeout", "llm_temperatura"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["llm_timeout"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "5", "max": "900"}
+        )
+        self.fields["llm_temperatura"].widget.attrs.update(
+            {"step": "0.1", "inputmode": "decimal", "min": "0", "max": "2"}
+        )
+        if self.instance and self.instance.llm_api_key:
+            self.fields["api_key"].help_text = (
+                f"Hay una clave guardada ({self.instance.clave_enmascarada}). "
+                "Escriba una nueva solo si quiere reemplazarla."
+            )
+
+    def clean_llm_url(self):
+        """La dirección tiene que ser la de **chat**, no la base del servidor.
+
+        Pegar `http://127.0.0.1:1234` o `https://proveedor/api` es el error más
+        natural que hay acá, y el formulario lo aceptaba: quedaba una
+        configuración que no puede funcionar y el diagnóstico decía "no parece
+        una API compatible con la de OpenAI", que es verdad pero no dice qué
+        corregir. Se avisa donde se puede arreglar.
+
+        Se exige `/v1/` porque es la parte de la convención que los dos modos
+        comparten, y es de donde se deduce la dirección del catálogo de modelos.
+        """
+        url = (self.cleaned_data.get("llm_url") or "").strip().rstrip("/")
+        if "/v1/" not in f"{url}/":
+            raise forms.ValidationError(
+                "Falta la ruta de la API. Tiene que terminar en algo como "
+                "«/v1/chat/completions», no ser solo la dirección del servidor."
+            )
+        return url
+
+    def clean(self):
+        datos = super().clean()
+
+        # Un proveedor remoto sin clave no va a contestar nunca, y el fallo
+        # aparecería recién en la pantalla de diagnóstico como un rechazo. Se
+        # avisa acá, que es donde se puede arreglar.
+        sin_clave = not (datos.get("api_key") or self.instance.llm_api_key)
+        if datos.get("llm_modo") == ConfiguracionSistema.REMOTO and sin_clave:
+            self.add_error("api_key", "Un proveedor remoto necesita una clave de API.")
+
+        # El modelo tampoco es opcional en remoto: los proveedores hospedan
+        # cientos y sin nombrarlo devuelven un error que cuesta interpretar.
+        if datos.get("llm_modo") == ConfiguracionSistema.REMOTO and not datos.get("llm_modelo"):
+            self.add_error("llm_modelo", "Un proveedor remoto necesita que se nombre el modelo.")
+
+        temperatura = datos.get("llm_temperatura")
+        if temperatura is not None and temperatura > 2:
+            self.add_error("llm_temperatura", "El máximo razonable es 2.")
+        return datos
+
+    def save(self, commit=True):
+        configuracion = super().save(commit=False)
+        # Solo se pisa si se escribió una nueva: el campo llega vacío siempre.
+        nueva = self.cleaned_data.get("api_key")
+        if nueva:
+            configuracion.llm_api_key = nueva
+        if commit:
+            configuracion.save()
+        return configuracion
+
+
 class ConfiguracionForm(forms.ModelForm):
     """Margen global y stock por defecto."""
 
@@ -1025,3 +1245,127 @@ class ConfiguracionForm(forms.ModelForm):
         if stock > STOCK_MAXIMO:
             raise forms.ValidationError(f"El máximo es {STOCK_MAXIMO}.")
         return stock
+
+
+class BorradorForm(forms.ModelForm):
+    """Edición de un borrador antes de confirmarlo (CU-05 paso 2).
+
+    Es un `ModelForm` y no el `ItemLoteForm` del alta manual aunque los campos se
+    parezcan, y la diferencia de fondo es cuál es el estado válido de cada uno:
+    un ítem de lote **tiene que estar completo para poder guardarse**, y un
+    borrador existe justamente para poder guardarse a medias mientras alguien lo
+    termina. Compartir el formulario obligaría a que uno de los dos afloje sus
+    reglas, y el que aflojaría sería el del alta.
+
+    Los topes sí se comparten, porque son los mismos filtros de tipeo: un volumen
+    de cinco cifras es un cero de más lo escriba quien lo escriba.
+    """
+
+    class Meta:
+        model = BorradorProducto
+        fields = [
+            "titulo",
+            "volumen",
+            "isbn",
+            "editorial",
+            "tipo",
+            "formato",
+            "precio",
+            "fecha_llegada",
+            "estado_sugerido",
+            "stock_inicial",
+            "solo_adultos",
+            "autor",
+            "sinopsis",
+            "portada",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Solo catálogos activos, igual que en el alta: ofrecer una editorial
+        # dada de baja dejaría el producto apuntando a algo que no aparece en
+        # ningún otro desplegable.
+        self.fields["editorial"].queryset = editoriales_activas()
+        self.fields["tipo"].queryset = tipos_activos()
+        self.fields["formato"].queryset = formatos_activos()
+
+        self.fields["volumen"].validators.append(MaxValueValidator(VOLUMEN_MAXIMO))
+        self.fields["stock_inicial"].validators.append(MaxValueValidator(STOCK_MAXIMO))
+        self.fields["stock_inicial"].help_text = (
+            "Las unidades que se le van a pedir al proveedor al cerrar la revisión."
+        )
+        self.fields["isbn"].required = False
+        self.fields["fecha_llegada"].widget = forms.DateInput(
+            attrs={"type": "date"}, format="%Y-%m-%d"
+        )
+
+    def clean_titulo(self):
+        # Mismo criterio que el alta: sin normalizar, "Akira  vol" y "Akira vol"
+        # serían dos productos distintos para cualquiera que compare sin hacerlo.
+        return " ".join((self.cleaned_data.get("titulo") or "").split())
+
+    def clean_isbn(self):
+        """Se normaliza y **se verifica el dígito de control** (A19).
+
+        El pipeline ya lo verifica al extraer, pero acá el ISBN lo puede escribir
+        una persona: es exactamente el momento en que se comete el error de
+        transcripción que el verificador existe para atrapar.
+        """
+        valor = isbn_util.normalizar(self.cleaned_data.get("isbn") or "")
+        if not valor:
+            return ""
+        motivo = isbn_util.motivo_de_rechazo(valor)
+        if motivo:
+            raise forms.ValidationError(motivo)
+        return valor
+
+    def clean(self):
+        datos = super().clean()
+
+        # A20: el formato tiene que estar ofrecido para ese tipo. Se valida en el
+        # servidor y no solo recortando el desplegable, por el mismo motivo que
+        # en el alta — un valor enviado a mano no es más confiable por venir de
+        # esta pantalla.
+        tipo, formato = datos.get("tipo"), datos.get("formato")
+        if formato and tipo and not formato.aplica_a(tipo):
+            self.add_error("formato", f"«{formato}» no se ofrece para {tipo}.")
+        if formato and tipo and not tipo.usa_formato:
+            self.add_error("formato", f"{tipo} no usa formato.")
+
+        # A10: una pre-venta necesita fecha, y no puede ser pasada. La misma
+        # regla que en el alta manual, por el mismo motivo: sin fecha el producto
+        # queda en pre-venta para siempre, invisible para el ciclo que debería
+        # sacarlo de ahí.
+        estado, fecha = datos.get("estado_sugerido"), datos.get("fecha_llegada")
+        if estado == Producto.PRE_VENTA and not fecha:
+            self.add_error("fecha_llegada", "Una pre-venta necesita fecha de llegada.")
+        if fecha:
+            _validar_fecha_no_pasada(fecha)
+
+        precio = datos.get("precio")
+        if precio is not None and precio > IMPORTE_MAXIMO:
+            self.add_error("precio", f"El máximo es ${IMPORTE_MAXIMO}.")
+
+        return datos
+
+
+class RechazoDeBorradorForm(forms.Form):
+    """El motivo, que es obligatorio (CU-05).
+
+    Mismo criterio que el descarte de un correo: una cola llena de rechazos sin
+    explicación no sirve para entender nada después.
+    """
+
+    motivo = forms.CharField(
+        label="Motivo del rechazo",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        max_length=500,
+        help_text="Queda registrado. Ej.: «ya lo trae otra editorial».",
+    )
+
+    def clean_motivo(self):
+        motivo = " ".join((self.cleaned_data.get("motivo") or "").split())
+        if not motivo:
+            raise forms.ValidationError("Indique por qué se descarta el borrador.")
+        return motivo

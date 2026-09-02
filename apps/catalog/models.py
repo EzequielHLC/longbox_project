@@ -32,9 +32,10 @@ Está anotado en el `# Agregados` del módulo para corregirlo en la fuente.
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
-from django.db.models.functions import Coalesce, Lower
+from django.db import models, transaction
+from django.db.models.functions import Lower
 
 from apps.core import cotizaciones
 
@@ -47,6 +48,28 @@ POSITIVO = MinValueValidator(Decimal("0.01"))
 # Marcador de las excepciones A2/A3: un producto se puede dar de alta sin
 # portada, y la portada se adjunta después desde la edición de producto.
 IMAGEN_PENDIENTE = "Imagen pendiente"
+
+# Los dos rubros del catálogo. Están acá arriba y no dentro de una clase porque
+# los usan tres: `Tipo` para decir a qué rubro pertenece cada categoría,
+# `Producto` como discriminador de la jerarquía, y las condiciones de las
+# restricciones de `Meta`, que no ven las constantes de su propia clase.
+EDITORIAL = "editorial"
+NO_EDITORIAL = "no_editorial"
+
+CLASE_CHOICES = [
+    (EDITORIAL, "Editorial"),
+    (NO_EDITORIAL, "No editorial"),
+]
+
+
+class ProductoAbstractoError(Exception):
+    """Se intentó guardar un `Producto` que no es de ningún rubro.
+
+    `Producto` es **abstracto en el sentido del modelo de dominio**: no hay
+    productos sueltos, todos son editoriales o no editoriales. No lo es en el
+    sentido de Django —tiene tabla propia, y la necesita— así que nada impedía
+    instanciarlo salvo la buena voluntad. Esto lo convierte en una regla.
+    """
 
 
 class Editorial(models.Model):
@@ -132,7 +155,13 @@ class Etiqueta(models.Model):
 
 
 class Tipo(models.Model):
-    """Qué clase de material editorial es: manga, cómic, artbook, novela ligera.
+    """Qué clase de cosa es un producto. **Clasifica los dos rubros, no uno.**
+
+    De un lado manga, cómic, artbook, novela ligera y libro —lo que RF-04 llama
+    mal "formato" (A12)—; del otro TCG, figura, merchandising e insumo, que es lo
+    que CU-08 llama "categoría". **La fuente nunca dice que son el mismo eje**
+    (corrección 23), y lo son: las dos preguntas responden "¿qué clase de cosa
+    es esto?" y el inventario de CU-11 las filtra con un solo control.
 
     Es una tabla y no una lista fija en el código, y `usa_formato` es el motivo:
     **qué campos pide un producto es un dato, no un `if`**. Agregar "Fanzine" el
@@ -147,6 +176,24 @@ class Tipo(models.Model):
     """
 
     nombre = models.CharField("nombre", max_length=60, unique=True)
+
+    # De qué rubro es este tipo. Hace falta porque **cuatro de los cinco
+    # consumidores de esta tabla son solo editoriales**: la tabla de precios de
+    # referencia, los formatos de A20, `usa_formato` y la cabecera de borradores
+    # del proveedor (A7). Sin el discriminador nada impide cargar una fila
+    # "Ivrea + Figura + B6" en la tabla de precios, o ponerle "Figura" como tipo
+    # habitual a un proveedor editorial y que el pipeline genere borradores con
+    # un tipo que no le corresponde.
+    #
+    # **`usa_formato` no puede hacer este trabajo**, aunque lo parezca: Artbook,
+    # Novela ligera y Libro son editoriales y ya lo tienen en falso. Son dos
+    # preguntas distintas — "¿de qué rubro es?" y "¿el tamaño le fija el precio?".
+    clase = models.CharField(
+        "rubro",
+        max_length=15,
+        choices=CLASE_CHOICES,
+        default=EDITORIAL,
+    )
 
     # Si el tipo se mide por tamaño. Un manga se cobra distinto en B6 que en
     # Tankōbon; un artbook no tiene una grilla de tamaños que fije su precio.
@@ -169,6 +216,10 @@ class Tipo(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def es_editorial(self):
+        return self.clase == EDITORIAL
 
 
 class Formato(models.Model):
@@ -406,28 +457,38 @@ class LoteAlta(models.Model):
 
 
 class Producto(models.Model):
-    """Un artículo del catálogo.
+    """Lo que todo artículo del catálogo tiene, sea del rubro que sea.
 
-    Por ahora solo cubre lo editorial (CU-01/CU-02). El material no editorial
-    (CU-08, Módulo 02) entra sobre esta misma tabla cuando corresponda: por eso
-    `tipo` ya contempla el valor, aunque este módulo no lo dé de alta.
+    **Es la clase padre de una jerarquía de dos**, y la herencia es de las de
+    Django con tabla propia por hijo (*multi-table inheritance*): esta tabla
+    guarda lo común y cada hija agrega la suya con lo que solo le corresponde a
+    ella. Las dos especializaciones son `ProductoEditorial` y
+    `ProductoNoEditorial`.
+
+    **Por qué así y no con campos nulos.** Un mazo de cartas no tiene editorial,
+    ni volumen, ni ISBN, ni formato; un tomo no tiene marca ni código interno.
+    Con una sola tabla, la mitad de las columnas de cada fila serían nulas y lo
+    que las hace obligatorias o no viviría en validaciones sueltas, lejos del
+    modelo. Acá la base misma dice qué campos existen para qué cosa.
+
+    **Por qué tabla propia y no clases abstractas.** CU-11 pide un inventario
+    **único**: un listado con los mismos filtros, ordenado y paginado sobre los
+    dos rubros a la vez. Con clases abstractas cada hija tendría su tabla suelta
+    y no habría forma de hacer esa consulta, ni de conservar las claves foráneas
+    que ya apuntan acá (`BorradorProducto.producto`, la auditoría, y las que
+    traigan Pedidos y Ventas). Con tabla propia, `Producto.objects.all()` sigue
+    devolviendo todo.
+
+    **Qué queda acá y qué baja.** Queda lo que el inventario necesita poder
+    consultar sobre los dos a la vez —título, tipo, estado, stock, precio— y lo
+    que de verdad comparten. Baja lo que solo tiene sentido en uno.
     """
 
-    # De dónde viene el producto y, sobre todo, **cómo se forma su precio**:
-    # nacional lo toma de la tabla de referencia, importado lo calcula desde el
-    # costo de origen con el CRE y el margen, y no editorial se carga a mano.
-    # Se llama `origen` y no `tipo` porque `tipo` es la clase de material
-    # (manga, cómic): son dos clasificaciones distintas y confundirlas en un
-    # solo nombre fue el primer error de este modelo.
-    NACIONAL = "nacional"
-    IMPORTADO = "importado"
-    NO_EDITORIAL = "no_editorial"
-
-    ORIGEN_CHOICES = [  # noqa: RUF012
-        (NACIONAL, "Editorial nacional"),
-        (IMPORTADO, "Editorial importado"),
-        (NO_EDITORIAL, "No editorial"),
-    ]
+    # Se reexponen como atributos de clase para que el resto del código pueda
+    # escribir `Producto.EDITORIAL` sin importar la constante suelta.
+    EDITORIAL = EDITORIAL
+    NO_EDITORIAL = NO_EDITORIAL
+    CLASE_CHOICES = CLASE_CHOICES  # noqa: RUF012
 
     ACTIVO = "activo"
     PRE_VENTA = "pre_venta"
@@ -448,125 +509,111 @@ class Producto(models.Model):
     # la baja de catálogo de CU-10, que sí conserva el producto en inventario.
     ESTADOS_TERMINALES = (CANCELADO_EDITORIAL,)
 
-    titulo = models.CharField("título", max_length=200)
-    volumen = models.PositiveIntegerField("volumen")
-
-    # El identificador global de la edición. Opcional porque no todo producto
-    # tiene uno —el material no editorial de RF-05 no responde a estándares
-    # editoriales— pero **único cuando está**: dos productos con el mismo ISBN
-    # son el mismo producto cargado dos veces.
+    # De qué especialización es esta fila. Django ya sabe llegar a la hija, pero
+    # **hace falta como columna** por dos motivos concretos: permite filtrar y
+    # contar por rubro sin salir de esta tabla —el inventario lo hace en cada
+    # carga— y permite condicionar restricciones de unicidad a un solo rubro,
+    # que es lo que hace posible la clave de CU-08 (ver `Meta`).
     #
-    # Se guarda normalizado, sin guiones (ver `apps/catalog/isbn.py`). La
-    # unicidad va como restricción parcial y no como `unique=True` a secas
-    # porque el "sin ISBN" se representa con la cadena vacía —lo idiomático en
-    # Django para un `CharField`— y un `unique` común haría chocar entre sí a
-    # todos los productos que no lo tienen.
-    isbn = models.CharField(
-        "ISBN",
-        max_length=13,
-        blank=True,
-        help_text="Sin guiones. Es el criterio más confiable para detectar un duplicado.",
+    # Lo escribe `save()`, no el que crea el objeto: un discriminador que haya
+    # que acordarse de completar es un discriminador que en algún momento va a
+    # estar mal.
+    clase = models.CharField(
+        "rubro", max_length=15, choices=CLASE_CHOICES, editable=False, default=""
     )
-    editorial = models.ForeignKey(Editorial, on_delete=models.PROTECT, related_name="productos")
+
+    # **La identidad de la fila.** Único, siempre presente, y no cambia nunca.
+    # Es lo que va en la etiqueta de góndola y lo que el Cajero tipea o escanea
+    # en el mostrador.
+    #
+    # **Identidad no es lo mismo que detección de duplicados**, y confundirlas
+    # fue el error del que salió este campo. La identidad tiene que existir
+    # siempre y no puede depender de datos descriptivos: en cuanto la marca o el
+    # nombre entran en la clave, todo producto que no los tenga —el merch
+    # genérico, lo no oficial— se vuelve inmodelable. El ISBN, el código de
+    # barras y las tuplas descriptivas siguen existiendo, pero para **detectar
+    # duplicados**, que es otra cosa y puede fallar sin romper nada.
+    #
+    # **Híbrido a propósito:** se puede escribir a mano, porque la comiquería ya
+    # tiene una nomenclatura en sus planillas, y si se deja vacío lo genera el
+    # sistema. Nunca falta y nunca choca.
+    #
+    # Que lo generemos nosotros **no contradice** la regla de que el código que
+    # verifica un identificador no lo fabrica: esa regla es para el ISBN y el
+    # código de barras, que se refieren a algo del mundo y que inventados dan un
+    # número válido que no identifica nada. Este se refiere a nuestra propia
+    # fila, y generarlo es la única forma de que exista.
+    codigo = models.CharField(
+        "código",
+        max_length=30,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Se genera solo si se deja vacío. No cambia una vez asignado.",
+    )
+
+    # El número que trae el envase. **Va acá y no en un rubro**, y eso no es
+    # simetría por prolijidad: un ISBN-13 **es** un EAN-13. Los prefijos 978 y
+    # 979 son "Bookland", el país ficticio que GS1 reservó para libros dentro
+    # del sistema EAN, y el dígito verificador se calcula con los mismos pesos
+    # alternados — está en `apps/catalog/isbn.py`. Decir que solo el material no
+    # editorial tiene código de barras era, literalmente, falso.
+    #
+    # Opcional en los dos rubros: el merch genérico no lo trae, y el material
+    # editorial de fondo puede tener un ISBN-10, que **no** es un EAN válido.
+    #
+    # **Hoy no lo escribe nada y es a propósito.** No hay lector de códigos en el
+    # proyecto, así que el mostrador se maneja por `codigo`. Se declara porque es
+    # un dato del producto, no una funcionalidad; cuando haya lector, el campo ya
+    # está y no hace falta migrar nada.
+    codigo_barras = models.CharField(
+        "código de barras",
+        max_length=20,
+        blank=True,
+        help_text="EAN o UPC del envase, si el producto lo trae.",
+    )
+
+    titulo = models.CharField("título", max_length=200)
+
+    # El eje que clasifica a los dos rubros: manga, cómic y artbook de un lado;
+    # TCG, figura, merchandising e insumo del otro. Está en el padre y no en
+    # cada hija porque el inventario de CU-11 filtra por él **sobre los dos a la
+    # vez** — el paso 3 lo llama "categoría".
     tipo = models.ForeignKey(Tipo, on_delete=models.PROTECT, related_name="productos")
 
-    # El tamaño del tomo. Opcional porque no todos los tipos lo usan y porque un
-    # lote importado no lo declara: ahí el precio sale del costo de origen y no
-    # de ninguna tabla.
-    formato = models.ForeignKey(
-        Formato, on_delete=models.PROTECT, null=True, blank=True, related_name="productos"
-    )
-
-    # Todo lo que describe al producto sin identificarlo ni fijar su precio:
-    # franquicia, género, colección. Son varias y son opcionales — un producto
-    # sin ninguna etiqueta es un producto completo, solo más difícil de
-    # encontrar.
+    # Descriptivas y opcionales, sin efecto sobre identidad ni precio. En un tomo
+    # son género y franquicia; en una figura, franquicia y escala. Sirven igual a
+    # los dos, así que viven en el padre.
     etiquetas = models.ManyToManyField(
         Etiqueta, blank=True, related_name="productos", verbose_name="etiquetas"
     )
 
-    # **No es una etiqueta, y la diferencia es la que ordena todo el modelo.**
-    # Una etiqueta describe; esto *decide*: saca el producto del catálogo
-    # público. Como etiqueta, la tienda tendría que preguntar
-    # `etiquetas.filter(nombre="NSFW")` —una comparación contra una cadena
-    # escrita a mano— y renombrarla rompería la tienda en silencio.
+    # Cambia lo que el sistema hace —excluye del catálogo público—, así que es un
+    # campo y no una etiqueta (A18). Aplica a los dos rubros: hay manga para
+    # adultos y hay figuras para adultos.
     solo_adultos = models.BooleanField(
         "solo para adultos",
         default=False,
-        help_text="Se excluye del catálogo público.",
+        help_text="Se excluye del catálogo público de la tienda.",
     )
 
-    origen = models.CharField("origen", max_length=15, choices=ORIGEN_CHOICES)
     estado = models.CharField("estado", max_length=25, choices=ESTADO_CHOICES, default=ACTIVO)
-
-    sinopsis = models.TextField("sinopsis", blank=True)
-    autor = models.CharField("autor", max_length=200, blank=True)
-    portada = models.ImageField("portada", upload_to="portadas/", blank=True)
-
-    fecha_llegada = models.DateField("fecha de llegada", null=True, blank=True)
     stock = models.PositiveIntegerField("stock", default=0)
 
-    # ------------------------------------------------------------------
-    # Precios
-    # ------------------------------------------------------------------
+    # El precio que se cobra, redondeado al peso (A1). Está en el padre porque el
+    # inventario lo muestra y lo va a ordenar por él; **cómo se forma** es cosa de
+    # cada hija, y por eso el precio base y el costo de origen bajan.
+    precio = models.DecimalField("precio", max_digits=12, decimal_places=2, validators=[POSITIVO])
 
-    precio = models.DecimalField(
-        "precio de venta", max_digits=12, decimal_places=2, validators=[POSITIVO]
-    )
+    portada = models.ImageField("imagen", upload_to="portadas/", blank=True)
 
-    # Solo importados (RF-10): `precio × (1 + CRE)`, **antes** del margen. Se
-    # almacena para poder recalcular el precio final ante un cambio de margen
-    # (CU-13) sin volver a pedir los datos del lote. La relación es en un solo
-    # sentido: el precio base nunca se deriva del final.
-    precio_base = models.DecimalField(
-        "precio base",
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=[POSITIVO],
-    )
-    costo_origen = models.DecimalField(
-        "costo base en origen",
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=[POSITIVO],
-    )
+    # En un tomo es la sinopsis y en una figura la descripción del artículo. Es
+    # el mismo campo y se llama por el nombre que sirve para los dos; cada
+    # formulario le pone la etiqueta de su rubro.
+    descripcion = models.TextField("descripción", blank=True)
 
-    # El precio lo fijó una persona a mano, así que ninguna propagación
-    # automática lo pisa (CU-13). Vale para los dos orígenes: en importados lo
-    # pide RF-10, y en nacionales es la misma decisión —si el Administrador
-    # escribió un precio, sobrescribírselo le borra una decisión deliberada.
-    precio_manual = models.BooleanField("precio fijado a mano", default=False)
-
-    # El precio de un nacional no es una foto sino un vínculo (RF-11): al
-    # cambiar el PVP de la combinación, CU-12 propaga a todos los productos
-    # activos vinculados. Sin esta clave foránea no habría a quién propagarle.
-    precio_referencia = models.ForeignKey(
-        TablaPrecioReferencia,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="productos",
-    )
-
-    lote = models.ForeignKey(
-        LoteAlta, on_delete=models.SET_NULL, null=True, blank=True, related_name="productos"
-    )
-
-    # De quién vino el material. Nulo en las altas manuales de CU-01/CU-02, que
-    # no lo piden: lo completa la confirmación de borradores de CU-05, donde el
-    # producto sí nace atado al proveedor que lo anunció.
-    #
-    # Se declara desde ahora aunque todavía nadie lo escriba, por el mismo
-    # motivo que `precio_manual`: CU-20 exige que los productos conserven la
-    # referencia al proveedor dado de baja y CU-21 muestra cuántos tiene cada
-    # uno, así que sin esta columna esos dos casos de uso no se pueden cumplir.
-    # `PROTECT` porque un proveedor con productos no se borra —se da de baja
-    # lógica (CU-20)— y perder de quién vino un tomo rompería el historial que
-    # esa misma baja promete conservar.
+    # A4 de proveedores: de quién vino. Nula en las altas manuales, la completa
+    # la confirmación de borradores de CU-05.
     proveedor = models.ForeignKey(
         "suppliers.Proveedor",
         on_delete=models.PROTECT,
@@ -583,51 +630,774 @@ class Producto(models.Model):
         verbose_name = "producto"
         verbose_name_plural = "productos"
         ordering = ["-creado_en"]
+        # **Sin restricción de nombre + categoría, y es deliberado.** CU-08 E2 la
+        # trata como bloqueo: si ya existe un producto con ese nombre y esa
+        # categoría, el alta no se registra. El catálogo no editorial real no lo
+        # tolera — hay merch genérico, sin marca y no oficial, y dos llaveros de
+        # Naruto de proveedores distintos son dos productos. Con la clave dura,
+        # el Administrador termina inventándole un nombre al segundo, y ahí el
+        # nombre pasó a cargar información de identidad, que es justo lo que no
+        # tiene que hacer.
+        #
+        # La identidad de la fila es `codigo`, que ya es único. El choque de
+        # nombre + categoría se informa como **advertencia** con enlace a la
+        # ficha existente, y el Administrador decide. Ver la corrección 21.
         constraints = [  # noqa: RUF012
-            # La combinación que define un duplicado. Va también como
-            # restricción de base y no solo como validación de formulario: dos
-            # altas simultáneas del mismo título pasarían las dos validaciones y
-            # crearían el duplicado igual.
-            #
-            # `Lower` sobre el título porque "Batman" y "batman" son el mismo
-            # tomo, y una restricción sensible a mayúsculas no atajaría nada.
-            #
-            # `Coalesce` sobre el formato porque en SQL dos NULL no son iguales:
-            # sin él, dos importados sin formato —que es lo normal— no chocarían
-            # nunca entre sí y el mismo tomo entraría dos veces. El cero hace de
-            # "sin formato" y es un identificador que ninguna fila real usa.
+            # Único cuando está, igual que el ISBN y por el mismo motivo: dos
+            # productos con el mismo código de barras son el mismo producto. La
+            # condición lo limita a los que lo declaran, así que los que no lo
+            # tienen no chocan entre sí por compartir la cadena vacía.
             models.UniqueConstraint(
-                Lower("titulo"),
-                "volumen",
-                "tipo",
-                Coalesce("formato", models.Value(0)),
-                "editorial",
-                name="producto_unico_por_titulo_volumen_tipo_formato_editorial",
+                fields=["codigo_barras"],
+                condition=~models.Q(codigo_barras=""),
+                name="producto_unico_por_codigo_de_barras",
             ),
-            # La otra clave de unicidad, y la más confiable de las dos cuando
-            # está: un ISBN identifica una edición y nada más. La condición la
-            # limita a los productos que lo declaran, así que los que no lo
-            # tienen —que se identifican por la restricción de arriba— no
-            # chocan entre sí por compartir la cadena vacía.
+        ]
+        indexes = [  # noqa: RUF012
+            # El inventario abre filtrando por estado y ordenando por título
+            # (CU-11 paso 2), y lo hace en cada carga.
+            models.Index(fields=["estado", "titulo"]),
+        ]
+
+    def __str__(self):
+        return self.titulo
+
+    # El prefijo del código generado. Es seguro que sea semántico porque **el
+    # rubro de una fila no cambia nunca**: una fila no salta de una tabla hija a
+    # la otra. Un prefijo derivado del tipo, en cambio, mentiría en cuanto
+    # alguien recategorizara el producto.
+    PREFIJO_CODIGO = "P"
+
+    def save(self, *args, **kwargs):
+        """Escribe el discriminador y, si hace falta, genera el código.
+
+        El discriminador lo pone la clase real y no quien crea el objeto: sería
+        pedirle que repita algo que el propio tipo ya dice, y alcanzaría con un
+        olvido para tener una fila editorial contándose como no editorial en el
+        inventario.
+
+        **El código se deriva de la clave primaria**, y por eso se asigna en un
+        segundo guardado. No es una torpeza: la clave primaria ya la garantiza
+        única la base, así que un código derivado de ella no puede chocar ni
+        necesita una tabla de secuencias ni un bloqueo. La alternativa —buscar el
+        máximo y sumarle uno— sí tiene carrera.
+        """
+        if not self.CLASE_PROPIA:
+            raise ProductoAbstractoError(
+                "Un producto siempre es de un rubro: use ProductoEditorial o "
+                "ProductoNoEditorial. `Producto` agrupa lo común y no se instancia."
+            )
+        if not self.clase:
+            self.clase = self.CLASE_PROPIA
+
+        generar = not self.codigo
+        # **Las dos escrituras van juntas o no van.** El código se deriva de la
+        # clave primaria, así que hay que insertar para poder calcularlo; sin la
+        # transacción, entre el insert y la actualización hay un instante en el
+        # que otra conexión ve una fila sin código. Envueltas, ese estado
+        # intermedio no existe para nadie de afuera, y el `null` de la columna
+        # deja de ser una debilidad para ser un detalle de cómo se asigna.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if generar:
+                self.codigo = f"{self.PREFIJO_CODIGO}-{self.pk:06d}"
+                # Se escribe por la tabla del padre y no con otro `save()`: el
+                # campo vive acá, y un `save()` completo desde una hija volvería
+                # a tocar las dos tablas para actualizar una sola columna.
+                Producto.objects.filter(pk=self.pk).update(codigo=self.codigo)
+
+    # Qué rubro es cada clase de la jerarquía. El padre no declara ninguno: un
+    # `Producto` suelto no existe en el negocio, siempre es de un rubro o del
+    # otro.
+    CLASE_PROPIA = ""
+
+    @property
+    def es_editorial(self):
+        return self.clase == self.EDITORIAL
+
+    @property
+    def portada_pendiente(self):
+        """A2: se dio de alta sin imagen y hay que adjuntarla desde CU-09."""
+        return not self.portada
+
+    @property
+    def esta_en_pre_venta(self):
+        return self.estado == self.PRE_VENTA
+
+    @property
+    def especifico(self):
+        """La instancia de la hija que corresponde, o `self` si ya lo es.
+
+        El listado del inventario trabaja con instancias del padre —es lo que
+        hace posible la consulta única de CU-11— y la ficha necesita los campos
+        propios del rubro. Esto es el puente, en un solo lugar: repartido por las
+        plantillas, cada una elegiría su forma de bajar y una se olvidaría del
+        caso que no conoce.
+
+        **Quien lo use sobre una lista tiene que traer las hijas con
+        `select_related`.** La herencia con tabla por hija no baja sola, así que
+        sin eso cada fila dispara su propia consulta: es el N+1 clásico de esta
+        forma de herencia, y con veinticinco filas por página se nota.
+        """
+        if type(self) is not Producto:
+            return self
+        try:
+            return self.productoeditorial if self.es_editorial else self.productonoeditorial
+        except (ProductoEditorial.DoesNotExist, ProductoNoEditorial.DoesNotExist):
+            # Una fila del padre sin su hija no debería existir. Si existe, es
+            # mejor devolverla que reventar una pantalla de consulta.
+            return self
+
+    def clave_de_duplicado(self):
+        """Qué hace único a este producto. **Cada rubro la define distinta.**
+
+        Es el método que justifica la jerarquía: un tomo se identifica por su
+        ISBN o por título + volumen + tipo + formato + editorial, y una figura
+        por nombre + categoría. Con un solo modelo, esa diferencia vivía en un
+        `if` dentro de la función de búsqueda de duplicados.
+        """
+        raise NotImplementedError
+
+
+class ProductoEditorial(Producto):
+    """Un tomo: manga, cómic, artbook, novela ligera o libro (CU-01, CU-02).
+
+    Suma a `Producto` todo lo que hace a una **edición**: el volumen dentro de
+    su serie, el ISBN que la identifica en el mundo, la editorial que la publica,
+    el tamaño físico que fija su precio, y la maquinaria de precio y llegada que
+    el material no editorial no tiene.
+    """
+
+    NACIONAL = "nacional"
+    IMPORTADO = "importado"
+
+    # Cómo se forma el precio, que es lo único que esta distinción decide:
+    # nacional lo toma de la tabla de referencia, importado lo calcula desde el
+    # costo de origen con el CRE y el margen. **Ya no incluye "no editorial"**:
+    # eso dejó de ser un valor de un campo y pasó a ser una clase.
+    ORIGEN_CHOICES = [  # noqa: RUF012
+        (NACIONAL, "Editorial nacional"),
+        (IMPORTADO, "Editorial importado"),
+    ]
+
+    CLASE_PROPIA = Producto.EDITORIAL
+    PREFIJO_CODIGO = "E"
+
+    volumen = models.PositiveIntegerField("volumen")
+
+    # El identificador global de la edición. Opcional —el material de fondo viejo
+    # no siempre lo trae— pero **único cuando está**: dos productos con el mismo
+    # ISBN son el mismo producto cargado dos veces.
+    #
+    # Se guarda normalizado, sin guiones (ver `apps/catalog/isbn.py`).
+    isbn = models.CharField(
+        "ISBN",
+        max_length=13,
+        blank=True,
+        help_text="Con guiones o sin ellos: se guarda normalizado.",
+    )
+    editorial = models.ForeignKey(Editorial, on_delete=models.PROTECT, related_name="productos")
+
+    # El tamaño físico. Nulo en los importados —ahí el precio sale del costo de
+    # origen y no de ninguna tabla— y en los tipos que no lo usan (A12).
+    formato = models.ForeignKey(
+        Formato,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="productos",
+    )
+
+    origen = models.CharField("origen", max_length=15, choices=ORIGEN_CHOICES)
+    autor = models.CharField("autor", max_length=200, blank=True)
+
+    fecha_llegada = models.DateField("fecha de llegada", null=True, blank=True)
+
+    # CU-07. **"Demorado" no es un estado, es un indicador** (A29): un producto
+    # demorado sigue en Pre-venta, se sigue pudiendo reservar, y lo único que
+    # cambió es que se sabe que no llega cuando decía. Solo aplica acá: el
+    # material no editorial no admite Pre-venta (CU-08), así que no puede
+    # demorarse.
+    demorado = models.BooleanField(
+        "demorado",
+        default=False,
+        help_text="El proveedor avisó que no llega en la fecha programada.",
+    )
+    fecha_estimada = models.DateField("nueva fecha estimada", null=True, blank=True)
+    nota_demora = models.TextField("nota interna de la demora", blank=True)
+
+    # El precio antes del redondeo, que se persiste **siempre** para poder
+    # recalcular ante un cambio de margen sin volver a pedir los datos del lote.
+    precio_base = models.DecimalField(
+        "precio base", max_digits=12, decimal_places=2, validators=[NO_NEGATIVO]
+    )
+    # Lo que costó en origen, en la moneda del lote (A2). Solo en importados.
+    costo_origen = models.DecimalField(
+        "costo en origen",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[NO_NEGATIVO],
+    )
+    precio_manual = models.BooleanField("precio fijado a mano", default=False)
+    precio_referencia = models.ForeignKey(
+        TablaPrecioReferencia,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="productos",
+        verbose_name="precio de referencia",
+    )
+
+    lote = models.ForeignKey(
+        LoteAlta,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="productos",
+    )
+
+    # La tupla de A13 —título, volumen, tipo, formato y editorial— guardada como
+    # una sola cadena, para poder exigirla en la base.
+    #
+    # **Existe porque la herencia partió la tupla en dos tablas:** `titulo` y
+    # `tipo` viven en el padre y el resto acá, y una restricción de unicidad no
+    # abarca dos tablas. Esto copia los dos campos del padre a una columna de la
+    # hija y la restricción vuelve a caber. Es la misma denormalización que la
+    # auditoría hace con `actor_email` y `objetivo_email`, y por el mismo motivo:
+    # una garantía que se pierde si el dato no está donde hace falta.
+    #
+    # El `or 0` del formato es el `Coalesce` de A13 escrito en Python: en SQL dos
+    # nulos no son iguales, así que sin él dos importados sin formato —que es lo
+    # normal— no chocarían nunca entre sí.
+    #
+    # **Condición de uso:** un producto editorial se edita **siempre** por esta
+    # clase, nunca por `Producto`. Guardar por el padre no recalcula esta clave,
+    # porque el `save()` del padre no toca la tabla de la hija.
+    clave_edicion = models.CharField(max_length=320, editable=False, default="")
+
+    class Meta:
+        verbose_name = "producto editorial"
+        verbose_name_plural = "productos editoriales"
+        constraints = [  # noqa: RUF012
+            # La clave más confiable, y **la única de este rubro que puede vivir
+            # en la base**: un ISBN identifica una edición y nada más. La
+            # condición la limita a los que lo declaran, así que los que no lo
+            # tienen no chocan entre sí por compartir la cadena vacía.
+            #
+            # La otra clave —título + volumen + tipo + formato + editorial—
+            # **no puede ser restricción de base con esta jerarquía**: título y
+            # tipo viven en la tabla del padre y el resto acá, y una restricción
+            # no abarca dos tablas. Queda en `services.buscar_duplicado`, que la
+            # aplica antes de cada alta y antes de cada confirmación. Ver el
+            # agregado A30 de `alta_editorial.md`, que explica qué se pierde y
+            # por qué se aceptó.
             models.UniqueConstraint(
                 fields=["isbn"],
                 condition=~models.Q(isbn=""),
-                name="producto_unico_por_isbn",
+                name="producto_editorial_unico_por_isbn",
+            ),
+            # La tupla de A13, recuperada como garantía de base. Es el respaldo
+            # del ISBN: el material de fondo viejo no siempre lo trae, y sin esto
+            # dos altas simultáneas del mismo tomo sin ISBN entrarían las dos.
+            models.UniqueConstraint(
+                fields=["clave_edicion"],
+                name="producto_editorial_unico_por_clave",
             ),
         ]
 
     def __str__(self):
         return f"{self.titulo} #{self.volumen}"
 
-    @property
-    def portada_pendiente(self):
-        """A2: se dio de alta sin portada y hay que adjuntarla desde CU-09."""
-        return not self.portada
+    def save(self, *args, **kwargs):
+        self.clave_edicion = self.calcular_clave_edicion()
+        return super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        # El tipo tiene que ser del mismo rubro. Sin esto nada impide un tomo
+        # cargado con categoría "Figura", que además entraría en la tabla de
+        # precios de referencia por una combinación que no existe.
+        if self.tipo_id and not self.tipo.es_editorial:
+            raise ValidationError({"tipo": f"«{self.tipo}» no es un tipo de material editorial."})
+
+    def calcular_clave_edicion(self):
+        """La tupla de A13 en una cadena, normalizada igual que la comparación.
+
+        El título va en minúsculas y con los espacios internos colapsados, que es
+        lo mismo que hacía el `Lower()` de la restricción vieja: quien carga
+        "Batman " un martes y "batman" el jueves está cargando el mismo tomo.
+        """
+        titulo = " ".join((self.titulo or "").split()).lower()
+        return f"{titulo}|{self.volumen}|{self.tipo_id}|{self.formato_id or 0}|{self.editorial_id}"
 
     @property
     def es_importado(self):
         return self.origen == self.IMPORTADO
 
     @property
-    def esta_en_pre_venta(self):
-        return self.estado == self.PRE_VENTA
+    def esta_demorado(self):
+        """El indicador de CU-07, que **solo tiene sentido en Pre-venta**.
+
+        Se pregunta por las dos cosas y no solo por la bandera: un producto que
+        ya llegó y pasó a Activo no está demorado aunque la bandera hubiera
+        quedado puesta, y leerla sola mostraría "Demorado" en el catálogo sobre
+        algo que está en la góndola.
+        """
+        return self.demorado and self.esta_en_pre_venta
+
+    @property
+    def llegada_vigente(self):
+        """La fecha en la que hoy se espera el producto.
+
+        La estimada pisa a la programada cuando existe, que es lo que hace que la
+        ficha y las notificaciones digan lo mismo sin que cada una elija por su
+        cuenta cuál de las dos mostrar.
+        """
+        return self.fecha_estimada or self.fecha_llegada
+
+    def clave_de_duplicado(self):
+        """ISBN si lo tiene; si no, la tupla de A13.
+
+        El orden importa y no es simétrico: si el ISBN encuentra algo, no hace
+        falta mirar la tupla. Al revés no vale, porque un producto viejo cargado
+        sin ISBN puede ser el mismo tomo que uno nuevo que sí lo trae.
+        """
+        if self.isbn:
+            return ("isbn", self.isbn)
+        return (
+            "tupla",
+            " ".join(self.titulo.split()).lower(),
+            self.volumen,
+            self.tipo_id,
+            self.formato_id,
+            self.editorial_id,
+        )
+
+
+class ProductoNoEditorial(Producto):
+    """TCG, figura, merchandising o insumo (CU-08).
+
+    Suma poco y quita bastante, que es justamente el punto: no tiene editorial,
+    ni volumen, ni ISBN, ni formato, ni nada de la maquinaria de precio de los
+    importados. Su precio se carga a mano y listo.
+
+    **No admite Pre-venta.** Lo dice CU-08 en sus comentarios: el sistema asigna
+    exclusivamente Activo al momento del alta. Se valida en `clean()` y no solo
+    escondiendo la opción en la pantalla.
+    """
+
+    CLASE_PROPIA = Producto.NO_EDITORIAL
+    PREFIJO_CODIGO = "N"
+
+    ESTADOS_PERMITIDOS = (
+        Producto.ACTIVO,
+        Producto.AGOTADO,
+        Producto.DESCATALOGADO,
+    )
+
+    # Quien lo fabrica. **No es una editorial y no se guarda como tal**: son dos
+    # conjuntos que no se solapan, y meter "Bandai" en la tabla de editoriales lo
+    # haría aparecer en el desplegable del alta de lotes y mezclaría figuras con
+    # tomos en el filtro del catálogo. Es el mismo error que A17 desarmó con la
+    # franquicia, y por eso acá es texto y no una clave foránea: la fuente lo
+    # pide como campo opcional, no como catálogo administrado.
+    marca = models.CharField("marca o fabricante", max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "producto no editorial"
+        verbose_name_plural = "productos no editoriales"
+
+    def clean(self):
+        super().clean()
+        if self.estado not in self.ESTADOS_PERMITIDOS:
+            raise ValidationError(
+                {"estado": "El material no editorial no admite Pre-venta ni cancelación editorial."}
+            )
+        if self.tipo_id and self.tipo.es_editorial:
+            raise ValidationError({"tipo": f"«{self.tipo}» es un tipo de material editorial."})
+
+    def clave_de_duplicado(self):
+        """Nombre + categoría (CU-08 paso 6). Nada más y nada menos."""
+        return ("nombre", " ".join(self.titulo.split()).lower(), self.tipo_id)
+
+
+class BorradorProductoQuerySet(models.QuerySet):
+    def pendientes(self):
+        """Los que esperan una decisión del Administrador (CU-05 paso 1)."""
+        return self.filter(estado__in=BorradorProducto.ESTADOS_ABIERTOS)
+
+
+class BorradorProducto(models.Model):
+    """Un producto propuesto por el pipeline de novedades. Todavía no es catálogo.
+
+    Es la pieza que separa lo que el modelo de lenguaje **propone** de lo que el
+    sistema **aplica**: nada de lo que sale de una extracción entra al catálogo
+    sin que una persona lo confirme en CU-05. Por eso es una tabla propia y no
+    un `Producto` con una bandera de "sin revisar" — un producto a medias en la
+    misma tabla se filtra tarde o temprano en una consulta que se olvide de
+    excluirlo, y para cuando se note ya estuvo a la venta.
+
+    Vive en `catalog` y no en `suppliers` aunque nazca de un correo: tiene los
+    mismos campos que `Producto`, se valida contra los mismos catálogos y al
+    confirmarse crea uno. Del lado de proveedores solo están su origen —el
+    correo y el proveedor— y la cabecera que hereda de la ficha de ese proveedor.
+
+    **Lo que no tiene, y es a propósito:** etiquetas. El correo no las trae y el
+    proveedor no las declara, así que sería una relación que nada llena. Cuando
+    la revisión quiera ofrecerlas, agregarlas es una migración aditiva sin datos
+    que trasladar — a diferencia de `precio_manual`, que se declaró antes de
+    tiempo justamente porque después habría hecho falta adivinarles el valor a
+    los productos ya cargados.
+    """
+
+    # Los cuatro que declaran CU-04 paso 6 y CU-05. Se declaran completos desde
+    # el principio con el mismo criterio que los estados de `Producto` y los de
+    # `CorreoProveedor`: la alternativa es migrar la tabla tres veces.
+    PENDIENTE = "pendiente"
+    INCOMPLETO = "incompleto"
+    CONFIRMADO = "confirmado"
+    RECHAZADO = "rechazado"
+
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (PENDIENTE, "Pendiente de revisión"),
+        (INCOMPLETO, "Extracción incompleta"),
+        (CONFIRMADO, "Confirmado"),
+        (RECHAZADO, "Rechazado"),
+    ]
+
+    # Los dos sobre los que todavía se puede decidir algo. Un borrador
+    # confirmado ya es un producto y uno rechazado ya se descartó.
+    ESTADOS_ABIERTOS = (PENDIENTE, INCOMPLETO)
+
+    # ------------------------------------------------------------------
+    # De dónde salió
+    # ------------------------------------------------------------------
+
+    # `PROTECT` en los dos: un borrador sin origen no se puede auditar, y saber
+    # de qué correo salió es lo que permite volver a mirarlo cuando algo
+    # extraído resulte raro. Los correos no se borran; si alguna vez se
+    # borraran, esto lo diría en voz alta en vez de llevarse los borradores.
+    correo = models.ForeignKey(
+        "suppliers.CorreoProveedor",
+        on_delete=models.PROTECT,
+        related_name="borradores",
+        verbose_name="correo de origen",
+    )
+    proveedor = models.ForeignKey(
+        "suppliers.Proveedor",
+        on_delete=models.PROTECT,
+        related_name="borradores",
+        verbose_name="proveedor",
+    )
+
+    # ------------------------------------------------------------------
+    # Los mismos campos que un producto
+    # ------------------------------------------------------------------
+
+    titulo = models.CharField("título", max_length=200, blank=True)
+    volumen = models.PositiveIntegerField("volumen", null=True, blank=True)
+    isbn = models.CharField("ISBN", max_length=13, blank=True)
+
+    # Que los tres puedan quedar nulos es la diferencia de fondo con `Producto`:
+    # un borrador existe justamente para poder guardar algo incompleto y que una
+    # persona lo termine.
+    #
+    # `editorial` y `tipo` los hereda de la ficha del proveedor (A7 de
+    # proveedores) y no salen del correo. Vacíos significan que el proveedor es
+    # una distribuidora que trae varias editoriales, y ahí sí hay que elegirlos
+    # a mano en la revisión.
+    editorial = models.ForeignKey(
+        Editorial,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="borradores",
+    )
+    tipo = models.ForeignKey(
+        Tipo,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="borradores",
+    )
+    formato = models.ForeignKey(
+        Formato,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="borradores",
+    )
+
+    precio = models.DecimalField("precio", max_digits=12, decimal_places=2, null=True, blank=True)
+    fecha_llegada = models.DateField("fecha de llegada", null=True, blank=True)
+    portada = models.ImageField("portada", upload_to="borradores/", blank=True)
+    sinopsis = models.TextField("sinopsis", blank=True)
+    autor = models.CharField("autor", max_length=200, blank=True)
+    solo_adultos = models.BooleanField("solo para adultos", default=False)
+
+    # Pre-completado con el valor de `ConfiguracionSistema` y editable en la
+    # revisión (CU-05 paso 2). Es el único stock del sistema que nace con un
+    # número que nadie contó, y por eso el de las altas manuales es cero y este
+    # no (A3): acá el Administrador mira el número antes de confirmarlo.
+    stock_inicial = models.PositiveIntegerField("stock inicial", default=0)
+
+    # El estado con el que nacería el producto, derivado de la fecha
+    # (CU-04 paso 6). Se guarda en vez de derivarse al vuelo porque la revisión
+    # lo deja editar, y una vez editado ya no es lo que la fecha diría.
+    estado_sugerido = models.CharField(
+        "estado sugerido",
+        max_length=25,
+        choices=[
+            (Producto.ACTIVO, "Activo"),
+            (Producto.PRE_VENTA, "Pre-venta"),
+        ],
+        default=Producto.ACTIVO,
+    )
+
+    # ------------------------------------------------------------------
+    # Lo que solo tiene un borrador
+    # ------------------------------------------------------------------
+
+    estado = models.CharField("estado", max_length=15, choices=ESTADO_CHOICES, default=PENDIENTE)
+    motivo_rechazo = models.TextField("motivo del rechazo", blank=True)
+
+    # Lo que el sistema le corrigió o le descartó al modelo. **No es lo mismo
+    # que una confianza baja:** la confianza la declara el modelo ("esto lo leí
+    # dudando") y el reparo lo detectamos nosotros ("esto lo descarté porque no
+    # verifica"). La pantalla los muestra distinto, y por eso viven separados.
+    reparos = models.JSONField("reparos", default=list, blank=True)
+
+    # El identificador de la portada dentro del correo. Se conserva aunque la
+    # imagen ya se haya extraído: es lo que permite volver a sacarla del archivo
+    # original si algo sale mal, sin tener que adivinar cuál era.
+    cid_portada = models.CharField("identificador de la portada", max_length=200, blank=True)
+
+    # En qué se convirtió al confirmarse (CU-05). Se declara ahora aunque
+    # todavía nada lo escriba, por el mismo criterio con el que `Producto`
+    # declaró `precio_manual` antes de que existiera la propagación: agregarlo
+    # después obligaría a una migración retroactiva sobre borradores de los que
+    # ya no se sabría qué produjeron.
+    # Apunta a la hija editorial y **no al padre**, y no es prolijidad: es un
+    # límite declarado del sistema. `contexto_alcance_y_limitaciones.md` dice que
+    # la carga de artículos no editoriales "requerirá carga manual campo por
+    # campo", y OBJ-02 acota la automatización a las altas de productos
+    # **editoriales**. Apuntando al padre, nada impediría vincular un borrador a
+    # una figura; el modelo tiene que impedirlo, no confiar en que nadie lo haga.
+    producto = models.ForeignKey(
+        ProductoEditorial,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="borrador_de_origen",
+    )
+
+    # La tanda de revisión en la que se confirmó o se rechazó (CU-05). Nulo
+    # mientras está pendiente. Es lo que permite armar el pedido consolidado
+    # **de esa sesión**: dos revisiones el mismo día tienen que producir dos
+    # correos separados al mismo proveedor, no uno con todo mezclado.
+    sesion = models.ForeignKey(
+        "catalog.SesionRevision",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="borradores",
+    )
+
+    creado_en = models.DateTimeField("generado el", auto_now_add=True)
+    resuelto_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="borradores_resueltos",
+    )
+    resuelto_en = models.DateTimeField("resuelto el", null=True, blank=True)
+
+    objects = BorradorProductoQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = "borrador de producto"
+        verbose_name_plural = "borradores de producto"
+        # Lo más viejo primero: la cola de revisión se atiende en orden de
+        # llegada, al revés que la de correos, donde lo que importa es lo nuevo.
+        ordering = ["creado_en", "pk"]
+        indexes = [  # noqa: RUF012
+            # "Qué tengo pendiente de revisar" es la consulta de CU-05, y se
+            # hace en cada carga de la pantalla.
+            models.Index(fields=["estado", "creado_en"]),
+        ]
+
+    def __str__(self):
+        titulo = self.titulo or "(sin título)"
+        return f"{titulo} #{self.volumen}" if self.volumen else titulo
+
+    @property
+    def esta_abierto(self):
+        return self.estado in self.ESTADOS_ABIERTOS
+
+    @property
+    def portada_pendiente(self):
+        """Sin portada: se adjunta en la revisión o después, desde CU-09."""
+        return not self.portada
+
+    @property
+    def nace_en_pre_venta(self):
+        return self.estado_sugerido == Producto.PRE_VENTA
+
+    @property
+    def campos_bloqueantes_vacios(self):
+        """Lo que CU-05 paso 3 exige para poder confirmar y todavía falta.
+
+        Son los cuatro que el CU enumera —título, editorial, formato y precio—
+        con **dos apartamientos del texto, los dos deliberados**:
+
+        - Donde el CU dice "formato" hay que leer `tipo`, que es lo que la
+          fuente llama así (A12). El tamaño físico no puede ser bloqueante: los
+          tipos que no lo usan no tienen ninguno, y exigirlo trabaría todos los
+          artbooks y libros para siempre.
+        - La fecha se suma **solo si el borrador nacería en Pre-venta**. Es el
+          bloqueante condicional del propio CU, y coincide con A10: una
+          pre-venta sin fecha se quedaría en pre-venta para siempre, invisible
+          para el ciclo que debería sacarla de ahí.
+        """
+        faltantes = []
+        if not self.titulo:
+            faltantes.append("titulo")
+        if not self.editorial_id:
+            faltantes.append("editorial")
+        if not self.tipo_id:
+            faltantes.append("tipo")
+        if self.precio is None:
+            faltantes.append("precio")
+        if self.nace_en_pre_venta and not self.fecha_llegada:
+            faltantes.append("fecha_llegada")
+        return faltantes
+
+    @property
+    def confianzas_bajas_sin_revisar(self):
+        """Los campos que el modelo declaró dudosos y nadie miró todavía.
+
+        CU-05 los usa para dos cosas distintas: bloquear la confirmación
+        individual hasta que se los revise uno por uno, y **excluir el borrador
+        entero** de una confirmación en lote.
+        """
+        return [confianza for confianza in self.confianzas.all() if confianza.exige_revision]
+
+
+class SesionRevision(models.Model):
+    """Una tanda de revisión de borradores (CU-05).
+
+    **El caso de uso no la declara como entidad, y la necesita igual.** El flujo
+    habla de "al finalizar la sesión", audita su cierre con confirmados,
+    rechazados y pendientes, y arma un pedido consolidado por proveedor *de esa
+    sesión*. Sin algo que agrupe la tanda no hay forma de decir cuáles son "los
+    productos de esta sesión", y dos revisiones el mismo día generarían un solo
+    correo mezclado en vez de dos.
+
+    **Se crea con la primera acción, no al abrir la pantalla.** Mirar la cola no
+    es revisar: crear la sesión al entrar llenaría la tabla de sesiones vacías
+    cada vez que alguien pasa a ver qué hay. La primera confirmación o el primer
+    rechazo la abren.
+    """
+
+    ABIERTA = "abierta"
+    CERRADA = "cerrada"
+
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (ABIERTA, "Abierta"),
+        (CERRADA, "Cerrada"),
+    ]
+
+    revisor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sesiones_de_revision",
+    )
+    estado = models.CharField("estado", max_length=10, choices=ESTADO_CHOICES, default=ABIERTA)
+    abierta_en = models.DateTimeField("abierta el", auto_now_add=True)
+    cerrada_en = models.DateTimeField("cerrada el", null=True, blank=True)
+
+    # Qué pasó con los correos de pedido al cerrar (CU-05 paso 5). Se guarda el
+    # detalle por proveedor —enviado, o falló con su motivo— porque el CU pide
+    # notificar al Administrador indicando **cuál** proveedor falló, y porque un
+    # pedido que no salió es algo que alguien va a tener que mandar a mano.
+    envios = models.JSONField("correos de pedido", default=list, blank=True)
+
+    class Meta:
+        verbose_name = "sesión de revisión"
+        verbose_name_plural = "sesiones de revisión"
+        ordering = ["-abierta_en"]
+
+    def __str__(self):
+        return f"Revisión #{self.pk} · {self.abierta_en:%d/%m/%Y %H:%M}"
+
+    @property
+    def esta_abierta(self):
+        return self.estado == self.ABIERTA
+
+    @property
+    def confirmados(self):
+        return self.borradores.filter(estado=BorradorProducto.CONFIRMADO)
+
+    @property
+    def rechazados(self):
+        return self.borradores.filter(estado=BorradorProducto.RECHAZADO)
+
+    @property
+    def envios_fallidos(self):
+        return [envio for envio in (self.envios or []) if not envio.get("enviado")]
+
+
+class ConfianzaCampo(models.Model):
+    """Cuánto dijo el modelo que confiaba en un campo de un borrador.
+
+    Es un modelo aparte y no un JSON dentro del borrador porque CU-05 paso 3 no
+    pide solo *leer* la confianza: exige que el Administrador haga una acción
+    afirmativa **sobre cada campo de confianza baja** antes de poder confirmar.
+    Eso es un dato que se escribe, por campo — y meterlo en un JSON que además
+    guarda otra cosa lo volvería un blob adentro de otro blob, imposible de
+    consultar y fácil de pisar entero al escribir una sola casilla.
+    """
+
+    ALTA = "alta"
+    MEDIA = "media"
+    BAJA = "baja"
+
+    NIVEL_CHOICES = [  # noqa: RUF012
+        (ALTA, "Alta"),
+        (MEDIA, "Media"),
+        (BAJA, "Baja"),
+    ]
+
+    borrador = models.ForeignKey(
+        BorradorProducto, on_delete=models.CASCADE, related_name="confianzas"
+    )
+    campo = models.CharField("campo", max_length=30)
+    nivel = models.CharField("nivel", max_length=5, choices=NIVEL_CHOICES, default=BAJA)
+
+    # La acción afirmativa de CU-05 paso 3. Solo tiene sentido sobre los de
+    # confianza baja; en los demás queda en falso y nadie lo mira.
+    revisado = models.BooleanField("revisado por el Administrador", default=False)
+
+    class Meta:
+        verbose_name = "confianza por campo"
+        verbose_name_plural = "confianzas por campo"
+        ordering = ["borrador", "campo"]
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(
+                fields=["borrador", "campo"],
+                name="confianza_unica_por_campo_del_borrador",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.campo}: {self.nivel}"
+
+    @property
+    def exige_revision(self):
+        """Baja, y todavía sin la acción afirmativa del Administrador."""
+        return self.nivel == self.BAJA and not self.revisado

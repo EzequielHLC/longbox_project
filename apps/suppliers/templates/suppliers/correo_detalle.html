@@ -212,7 +212,6 @@ correo no está listo para procesarse.
         </div>
         <p class="mt-2 font-mono text-[0.65rem] text-static">
           Todavía no son productos del catálogo: la confirmación es un paso aparte.
-          La editorial y el tipo los aporta la ficha del proveedor, no el correo.
         </p>
       {% else %}
         <p class="mt-4 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
@@ -227,12 +226,136 @@ correo no está listo para procesarse.
     </section>
   {% endif %}
 
+  {% comment %}
+  Los borradores que produjo la extracción. Van junto al contenido del que
+  salieron y no en una pantalla aparte, porque es la única forma de ver si el
+  modelo entendió la tabla: un borrador con el precio del tomo siguiente solo se
+  nota teniendo las dos cosas a la vista.
+
+  Acciones no hay ninguna todavía —confirmar y rechazar son CU-05—, así que esta
+  sección solo muestra.
+  {% endcomment %}
+  {% if borradores %}
+    <section class="mt-8">
+      <h2 class="font-display text-lg font-semibold tracking-wide">Borradores generados</h2>
+      <p class="mt-1 text-sm text-static">
+        Esperan la revisión del Administrador. Todavía no son productos del catálogo:
+        confirmarlos es un paso aparte.
+      </p>
+
+      <div class="mt-4 space-y-3">
+        {% for borrador in borradores %}
+          <article class="border border-line bg-ash">
+            <div class="flex gap-4 p-4">
+              <div class="w-16 shrink-0">
+                {% if borrador.portada %}
+                  <img src="{{ borrador.portada.url }}" alt="Portada de {{ borrador.titulo }}"
+                       class="w-full border border-line">
+                {% else %}
+                  <div class="flex aspect-[2/3] w-full items-center justify-center
+                              border border-dashed border-line text-center font-mono
+                              text-[0.55rem] leading-tight text-static">
+                    Imagen<br>pendiente
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h3 class="font-display text-base font-semibold tracking-wide">
+                    {{ borrador.titulo|default:"(sin título)" }}
+                    {% if borrador.volumen %}
+                      <span class="font-mono text-sm text-static">#{{ borrador.volumen }}</span>
+                    {% endif %}
+                  </h3>
+                  {% if borrador.estado == "incompleto" %}
+                    <span class="border border-signal px-2 py-0.5 font-mono text-[0.6rem]
+                                 uppercase tracking-wider text-signal">
+                      Extracción incompleta
+                    </span>
+                  {% endif %}
+                </div>
+
+                <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+                  <div>
+                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                      ISBN
+                    </dt>
+                    <dd class="mt-0.5 font-mono text-xs
+                               {% if not borrador.isbn %}text-static{% endif %}">
+                      {{ borrador.isbn|default:"—" }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                      Precio
+                    </dt>
+                    <dd class="mt-0.5 font-mono text-xs
+                               {% if borrador.precio == None %}text-signal{% endif %}">
+                      {% if borrador.precio != None %}${{ borrador.precio }}{% else %}falta{% endif %}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                      Formato
+                    </dt>
+                    <dd class="mt-0.5 text-xs text-static">{{ borrador.formato|default:"—" }}</dd>
+                  </div>
+                  <div>
+                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
+                      Nace como
+                    </dt>
+                    {% comment %}
+                    En `azure` porque el estado no lo eligió nadie: lo derivó el
+                    sistema de la fecha anunciada, que es exactamente para lo que
+                    el sistema visual reserva ese acento.
+                    {% endcomment %}
+                    <dd class="mt-0.5 font-mono text-xs text-azure">
+                      {{ borrador.get_estado_sugerido_display }}
+                      {% if borrador.fecha_llegada %}
+                        · {{ borrador.fecha_llegada|date:"d/m/Y" }}
+                      {% endif %}
+                    </dd>
+                  </div>
+                </dl>
+
+                {% comment %}
+                Las dos cosas que la revisión de CU-05 tiene que mirar, y que son
+                distintas: la confianza baja la declara el modelo ("esto lo leí
+                dudando") y el reparo lo detectamos nosotros ("esto lo descarté
+                porque no verifica").
+                {% endcomment %}
+                {% if borrador.confianzas_bajas_sin_revisar %}
+                  <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
+                    Confianza baja:
+                    {% for confianza in borrador.confianzas_bajas_sin_revisar %}
+                      <span class="text-screen">{{ confianza.campo }}</span>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                  </p>
+                {% endif %}
+
+                {% for reparo in borrador.reparos %}
+                  <p class="mt-2 border-l-2 border-signal pl-3 font-mono text-[0.65rem]
+                            leading-relaxed text-signal">{{ reparo }}</p>
+                {% endfor %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      <p class="mt-3 font-mono text-[0.65rem] text-static">
+        La editorial y el rubro salen de la ficha del proveedor. El stock inicial se
+        ajusta al confirmar.
+      </p>
+    </section>
+  {% endif %}
+
   <section class="mt-8">
     <h2 class="font-display text-lg font-semibold tracking-wide">Contenido extraído</h2>
     <p class="mt-1 text-sm text-static">
-      Es exactamente lo que se le va a entregar al modelo. Las líneas marcadas en azul
-      son filas de una tabla de datos; si no hay ninguna, la extracción no reconoció la
-      estructura y conviene revisar el original antes de procesarlo.
+      Es lo que se le entrega al modelo. Las líneas en azul son filas de una tabla; si no
+      hay ninguna, conviene revisar el original antes de procesarlo.
     </p>
 
     {% if lineas %}
@@ -251,16 +374,21 @@ correo no está listo para procesarse.
   </section>
 
   {% comment %}
-  La decisión. Por ahora la única acción es descartar: aprobar tiene sentido
-  recién cuando exista el extractor que consume esta cola, y ofrecer un botón
-  que no hace nada sería peor que no ofrecerlo.
+  La decisión. La única acción de pantalla es descartar, y que no haya un botón
+  de "procesar" **no es porque falte el extractor**: el extractor existe, y hoy
+  se dispara con `python manage.py extraer_novedades --correo <id>`.
+
+  Falta el botón por RNF-02. El llamado al modelo local tarda minutos, y
+  dispararlo dentro del ciclo de request/response dejaría la pantalla colgada
+  hasta el timeout —y si el navegador corta antes, sin forma de saber si el
+  correo se procesó—. Es la pieza que necesita el ejecutor en segundo plano.
   {% endcomment %}
   <section class="mt-8 border-t border-line pt-6">
     {% if correo.esta_abierto %}
       <h2 class="font-display text-lg font-semibold tracking-wide">Qué hacer con este correo</h2>
       <p class="mt-1 text-sm text-static">
-        Descartarlo lo saca de la cola sin procesarlo. El procesamiento automático se
-        habilita cuando esté el extractor conectado.
+        Descartarlo lo saca de la cola sin procesarlo. Para procesarlo, ejecute
+        <span class="font-mono text-xs text-screen">manage.py extraer_novedades --correo {{ correo.pk }}</span>.
       </p>
 
       <form method="post" novalidate class="mt-4 max-w-xl">

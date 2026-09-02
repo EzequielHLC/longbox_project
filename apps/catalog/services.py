@@ -10,7 +10,12 @@ from dataclasses import dataclass, field
 from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 
-from apps.catalog.models import LoteAlta, Producto, TablaPrecioReferencia
+from apps.catalog.models import (
+    LoteAlta,
+    ProductoEditorial,
+    ProductoNoEditorial,
+    TablaPrecioReferencia,
+)
 from apps.core.models import RegistroAuditoria
 
 
@@ -52,12 +57,12 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn=""):
     "batman" el jueves está cargando el mismo tomo dos veces.
     """
     if isbn:
-        por_isbn = Producto.objects.filter(isbn=isbn).first()
+        por_isbn = ProductoEditorial.objects.filter(isbn=isbn).first()
         if por_isbn:
             return por_isbn
 
     return (
-        Producto.objects.annotate(titulo_normalizado=Lower("titulo"))
+        ProductoEditorial.objects.annotate(titulo_normalizado=Lower("titulo"))
         .filter(
             titulo_normalizado=titulo.strip().lower(),
             volumen=volumen,
@@ -67,6 +72,52 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn=""):
         )
         .first()
     )
+
+
+def buscar_duplicado_no_editorial(titulo, tipo):
+    """El artículo que ya ocupa ese nombre en esa categoría, o `None`.
+
+    Es la clave que CU-08 paso 6 declara. **Pero no bloquea el alta**, a
+    diferencia de la del material editorial: el catálogo no editorial real tiene
+    merch genérico, sin marca y no oficial, y dos llaveros de Naruto de
+    proveedores distintos son dos productos. Ver la corrección 21 y el agregado
+    A4. Lo que hace este resultado es alimentar una advertencia que el
+    Administrador confirma.
+
+    Compara sin distinguir mayúsculas y con los espacios internos colapsados,
+    igual que el resto de los catálogos que se identifican por su nombre.
+    """
+    if not tipo:
+        return None
+    return (
+        ProductoNoEditorial.objects.annotate(titulo_normalizado=Lower("titulo"))
+        .filter(titulo_normalizado=" ".join((titulo or "").split()).lower(), tipo=tipo)
+        .first()
+    )
+
+
+def buscar_parecidos_no_editoriales(titulo, tipo=None, tope=5):
+    """Artículos con un nombre parecido, para avisar **antes** de guardar.
+
+    No es una segunda validación: es la mitad cómoda de la advertencia. Sin
+    esto, el Administrador se entera de que estaba cargando algo repetido recién
+    al apretar guardar, con el formulario entero escrito — que es exactamente el
+    problema que la consulta de precio de referencia ya resuelve del otro lado
+    del módulo.
+
+    Busca en **todas** las categorías a propósito: que "Llavero Naruto" exista
+    en Merchandising es información útil aunque se lo esté cargando en TCG, y
+    puede ser justamente el aviso de que la categoría elegida es la equivocada.
+    """
+    titulo = " ".join((titulo or "").split())
+    if len(titulo) < 2:
+        return ProductoNoEditorial.objects.none()
+
+    parecidos = ProductoNoEditorial.objects.filter(titulo__icontains=titulo)
+    if tipo:
+        # El choque exacto se informa aparte y con otro peso; acá van los demás.
+        parecidos = parecidos.exclude(titulo__iexact=titulo, tipo=tipo)
+    return parecidos.select_related("tipo")[:tope]
 
 
 def precio_de_referencia(editorial, tipo, formato):
@@ -169,26 +220,32 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
                 # sigue viva. Sin esto, un `IntegrityError` deja la transacción
                 # entera en estado de error y no se puede continuar.
                 with transaction.atomic():
-                    producto = Producto.objects.create(lote=lote, **datos)
+                    producto = ProductoEditorial.objects.create(lote=lote, **datos)
                     if etiquetas:
                         producto.etiquetas.set(etiquetas)
             except IntegrityError:
                 # Carrera: entre la consulta de arriba y este insert, otra alta
                 # creó el mismo producto. La restricción de la base es la que
                 # realmente garantiza que no haya duplicados.
-                resultado.rechazados.append(
-                    _colision(
-                        datos,
-                        buscar_duplicado(
-                            datos["titulo"],
-                            datos["volumen"],
-                            datos["tipo"],
-                            datos.get("formato"),
-                            datos["editorial"],
-                            datos.get("isbn", ""),
-                        ),
-                    )
+                #
+                # **Pero solo se trata como duplicado si de verdad hay uno.**
+                # Antes se asumía que todo `IntegrityError` era una colisión, y
+                # eso escondió un fallo real: cuando un campo obligatorio nuevo
+                # dejó de completarse, el alta empezó a informar "duplicado" en
+                # vez de romper, y los productos dejaron de crearse en silencio.
+                # Un error de integridad que no es una colisión es un defecto
+                # nuestro y tiene que salir a la superficie.
+                choque = buscar_duplicado(
+                    datos["titulo"],
+                    datos["volumen"],
+                    datos["tipo"],
+                    datos.get("formato"),
+                    datos["editorial"],
+                    datos.get("isbn", ""),
                 )
+                if choque is None:
+                    raise
+                resultado.rechazados.append(_colision(datos, choque))
                 continue
 
             resultado.creados.append(producto)

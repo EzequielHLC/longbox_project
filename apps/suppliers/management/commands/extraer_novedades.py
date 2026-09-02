@@ -52,7 +52,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"  {FLECHA} {ascii_seguro(correo.motivo)}"))
                 continue
 
-            resumen = resultado.resumen
+            extraccion = resultado.extraccion
+            resumen = extraccion.resumen
             self.stdout.write(
                 self.style.SUCCESS(
                     f"  {FLECHA} intencion: {resumen['intencion']}, "
@@ -62,10 +63,40 @@ class Command(BaseCommand):
                     f"{resumen['con_reparos']} con reparos)"
                 )
             )
-            for producto in resultado.productos:
+            for producto in extraccion.productos:
                 for reparo in producto.reparos:
                     titulo = ascii_seguro(producto.titulo) or "sin titulo"
                     self.stdout.write(f"     ! {titulo}: {ascii_seguro(reparo)}")
+
+            self._informar_borradores(resultado.generacion)
+
+    def _informar_borradores(self, generacion):
+        """La otra mitad del reporte: qué llegó a la cola de revisión y qué no.
+
+        La diferencia entre "entendió cinco" y "generó tres" es la que dice si
+        el pipeline está funcionando o si el catálogo ya tenía todo, y por eso
+        se informa aparte en vez de sumarse a las cifras de la extracción.
+
+        Lo que se **imprime** va sin tildes a propósito: la consola de Windows
+        corre en cp1252 y reventaría con el trabajo ya hecho. Los motivos que
+        vienen del modelo pasan por `ascii_seguro` por el mismo motivo.
+        """
+        if generacion is None:
+            self.stdout.write("     (no era un correo de novedades: sin borradores)")
+            return
+
+        cuenta = generacion.resumen
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  {FLECHA} {cuenta['generados']} borrador(es) "
+                f"({cuenta['incompletos']} incompletos), "
+                f"{cuenta['omitidos']} omitido(s) "
+                f"({cuenta['duplicados']} ya en el catalogo)"
+            )
+        )
+        for omitido in generacion.omitidos:
+            titulo = ascii_seguro(omitido.titulo) or "sin titulo"
+            self.stdout.write(f"     - {titulo}: {ascii_seguro(omitido.motivo_legible)}")
 
     def _elegir(self, opciones):
         if opciones.get("correo"):

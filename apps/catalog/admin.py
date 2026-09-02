@@ -16,6 +16,8 @@ from apps.catalog.models import (
     GrupoEtiqueta,
     LoteAlta,
     Producto,
+    ProductoEditorial,
+    ProductoNoEditorial,
     TablaPrecioReferencia,
     Tipo,
 )
@@ -73,17 +75,33 @@ class LoteAltaAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = (
-        "titulo",
-        "volumen",
-        "editorial",
-        "tipo",
-        "formato",
-        "origen",
-        "estado",
-        "precio",
-    )
-    list_filter = ("origen", "estado", "tipo", "formato", "solo_adultos", "precio_manual")
+    """El padre de la jerarquía: solo lo común a los dos rubros.
+
+    Los campos propios de cada especialización se ven en su propio admin —
+    `ProductoEditorialAdmin` y `ProductoNoEditorialAdmin`—, que es lo que la
+    herencia con tabla por hijo permite y una tabla única con columnas nulas no.
+    """
+
+    list_display = ("titulo", "clase", "tipo", "estado", "stock", "precio")
+    list_filter = ("clase", "estado", "tipo", "solo_adultos")
+    search_fields = ("titulo",)
+    filter_horizontal = ("etiquetas",)
+    readonly_fields = ("clase", "creado_en", "actualizado_en")
+
+
+@admin.register(ProductoEditorial)
+class ProductoEditorialAdmin(admin.ModelAdmin):
+    list_display = ("titulo", "volumen", "editorial", "tipo", "formato", "origen", "precio")
+    list_filter = ("origen", "estado", "tipo", "formato", "precio_manual", "demorado")
     search_fields = ("titulo", "autor", "isbn")
     filter_horizontal = ("etiquetas",)
-    readonly_fields = ("creado_en", "actualizado_en")
+    readonly_fields = ("clase", "creado_en", "actualizado_en")
+
+
+@admin.register(ProductoNoEditorial)
+class ProductoNoEditorialAdmin(admin.ModelAdmin):
+    list_display = ("titulo", "tipo", "marca", "estado", "stock", "precio")
+    list_filter = ("estado", "tipo", "solo_adultos")
+    search_fields = ("titulo", "marca", "codigo_interno")
+    filter_horizontal = ("etiquetas",)
+    readonly_fields = ("clase", "creado_en", "actualizado_en")

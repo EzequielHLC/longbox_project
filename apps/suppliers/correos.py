@@ -44,14 +44,23 @@ MARCADOR_IMAGEN = "[imagen:{cid}]"
 
 @dataclass
 class ImagenEmbebida:
-    """Una parte MIME de imagen, identificada por su `Content-ID`."""
+    """Una parte MIME de imagen, identificada por su `Content-ID`.
+
+    Lleva **el contenido y su tamaño por separado**, y no es redundancia: lo que
+    se guarda en `CorreoProveedor.imagenes` es el resumen —cuántos bytes pesa—,
+    mientras que el contenido solo se necesita en el momento de adjuntarle la
+    portada a un borrador. Copiar los bytes a la tabla engordaría cada fila con
+    algo que ya está en el `.eml` archivado.
+    """
 
     cid: str
     tipo: str
     bytes_: int
     nombre: str = ""
+    contenido: bytes = b""
 
     def resumen(self):
+        """Lo que se persiste. Sin el contenido, a propósito."""
         return {"cid": self.cid, "tipo": self.tipo, "bytes": self.bytes_, "nombre": self.nombre}
 
 
@@ -285,6 +294,7 @@ def _imagen(parte, tipo):
         tipo=tipo,
         bytes_=len(contenido),
         nombre=parte.get_filename() or "",
+        contenido=contenido,
     )
 
 

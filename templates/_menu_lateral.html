@@ -97,6 +97,18 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
           {% include "_iconos.html" with icono="importado" %}
           <span>Nuevo lote importado</span>
         </a>
+        {% comment %}
+        La revisión de borradores va dentro de Catálogo y no de Proveedores: lo
+        que se decide acá es qué entra al catálogo, y el correo del que salieron
+        ya quedó atrás. El enlace a su correo está en cada ficha, que es donde
+        hace falta.
+        {% endcomment %}
+        <a href="{% url 'catalog:borrador_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if actual == 'catalog:borrador_lista' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="borradores" %}
+          <span>Revisar borradores</span>
+        </a>
       </details>
 
       {% comment %}

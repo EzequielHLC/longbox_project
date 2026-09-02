@@ -6,7 +6,12 @@ ajusta cuando un proveedor manda algo raro, el cliente solo si se cambia de
 servidor.
 
 **Qué se le pide y qué no.** El correo trae ISBN, portada, título, volumen,
-formato y PVP. **No trae editorial ni rubro**, y no por descuido: la
+formato y PVP, más el **período** que anuncia —"Novedades de marzo 2026"—, que
+vive en la prosa de alrededor de la tabla y no dentro de ella. De ese período
+sacan la fecha los borradores, y de la fecha sale si nacen en Pre-venta o
+Activos (CU-04 paso 6): sin pedirlo, todos nacerían Activos, y un producto que
+todavía no llegó figurando disponible no da ningún síntoma hasta que alguien lo
+compra. **No trae editorial ni rubro**, y no por descuido: la
 comunicación es directa de la editorial a la comiquería, así que nadie escribe
 su propio nombre en su propio newsletter. Esos dos los aporta la ficha del
 proveedor (A7 de `/docs/modulos/proveedores.md`). Pedírselos al modelo sería
@@ -25,7 +30,9 @@ referenciada exista de verdad entre las partes del correo.
 """
 
 import logging
+import re
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from apps.catalog import isbn as isbn_util
@@ -35,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 # Se guarda junto a cada extracción. Subirla cuando cambie el prompt o el
 # esquema de forma que el resultado deje de ser comparable con el anterior.
-VERSION_PROMPT = "1"
+VERSION_PROMPT = "2"
 
 # Las tres que reconoce el pipeline. `otro` no es un cajón de sastre: es la
 # respuesta correcta para una factura o un saludo, y es lo que justifica que la
@@ -49,6 +56,93 @@ INTENCIONES = (NOVEDADES, DEMORA, OTRO)
 # CU-04 paso 4, y CU-05 los usa para decidir qué se puede confirmar en lote.
 CONFIANZAS = ("alta", "media", "baja")
 
+# De qué campos se le pide al modelo que declare cuánto confía. Está en una
+# constante y no escrita dos veces adentro del esquema porque la lista de
+# propiedades y la de obligatorias tienen que decir lo mismo: si se separan,
+# el servidor deja de exigir la confianza de un campo y nadie se entera.
+CAMPOS_CON_CONFIANZA = ("isbn", "titulo", "volumen", "formato", "precio", "fecha")
+
+# Los meses escritos como los escribe un proveedor. "setiembre" convive con
+# "septiembre" porque las dos formas son correctas en castellano y en un correo
+# aparecen las dos.
+MESES = {
+    "enero": 1,
+    "febrero": 2,
+    "marzo": 3,
+    "abril": 4,
+    "mayo": 5,
+    "junio": 6,
+    "julio": 7,
+    "agosto": 8,
+    "septiembre": 9,
+    "setiembre": 9,
+    "octubre": 10,
+    "noviembre": 11,
+    "diciembre": 12,
+}
+
+_ISO = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
+_DIA_MES_ANIO = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+_MES_ANIO_EN_NUMEROS = re.compile(r"(?<!\d)(\d{1,2})/(\d{4})")
+_MES_ANIO_EN_LETRAS = re.compile(r"([a-záéíóú]+)\s+(?:de\s+)?(\d{4})")
+
+
+def interpretar_fecha(texto):
+    """Convierte a `date` una fecha escrita como la escribe un proveedor.
+
+    Devuelve `None` si no se entiende, y eso **no es lo mismo que un error**:
+    un correo que no anuncia ninguna fecha es el caso normal, y sus borradores
+    nacen Activos (CU-04 paso 6).
+
+    Reconoce las cuatro formas que aparecen en los correos reales: `2026-03-15`,
+    `15/04/2026`, `04/2026` y `marzo 2026` (con o sin "de" en el medio).
+
+    **Un mes sin año no se interpreta.** "Novedades de marzo" podría ser de este
+    año o del que viene, y elegir uno sería exactamente lo que el resto de este
+    archivo se cuida de no hacer: completar un dato que no está. Sin año, el
+    borrador nace Activo y el Administrador le pone la fecha en la revisión.
+
+    **Un mes sin día se toma como el día 1.** Es el extremo conservador del
+    rango: adelanta la vigilancia de la pre-venta en vez de atrasarla, y un
+    producto vigilado de más se corrige mirándolo, mientras que uno vigilado de
+    menos no se descubre hasta que un cliente pregunta dónde está su reserva.
+    """
+    limpio = " ".join(str(texto or "").split()).lower()
+    if not limpio:
+        return None
+
+    encontrado = _ISO.search(limpio)
+    if encontrado:
+        anio, mes, dia = (int(parte) for parte in encontrado.groups())
+        return _fecha_valida(anio, mes, dia)
+
+    encontrado = _DIA_MES_ANIO.search(limpio)
+    if encontrado:
+        dia, mes, anio = (int(parte) for parte in encontrado.groups())
+        return _fecha_valida(anio, mes, dia)
+
+    encontrado = _MES_ANIO_EN_NUMEROS.search(limpio)
+    if encontrado:
+        mes, anio = (int(parte) for parte in encontrado.groups())
+        return _fecha_valida(anio, mes, 1)
+
+    encontrado = _MES_ANIO_EN_LETRAS.search(limpio)
+    if encontrado:
+        nombre, anio = encontrado.groups()
+        if nombre in MESES:
+            return _fecha_valida(int(anio), MESES[nombre], 1)
+
+    return None
+
+
+def _fecha_valida(anio, mes, dia):
+    """`None` en vez de reventar: un 31 de febrero es un dato malo, no un fallo."""
+    try:
+        return date(anio, mes, dia)
+    except ValueError:
+        return None
+
+
 SISTEMA = """Sos un asistente que extrae datos de correos de novedades que las \
 editoriales argentinas de historieta y manga le mandan a una comiquería.
 
@@ -60,14 +154,18 @@ con este formato:
 y las portadas embebidas aparecen dentro de su fila como un marcador \
 [imagen:identificador].
 
-Tu trabajo tiene dos partes.
+Tu trabajo tiene tres partes.
 
 1. Clasificar el correo en una de tres intenciones:
    - "novedades": anuncia productos que la editorial va a publicar o publicó.
    - "demora": avisa que algo se atrasa o se reprograma.
    - "otro": cualquier otra cosa (facturas, promociones, saludos).
 
-2. Si es "novedades", extraer un objeto por cada producto anunciado.
+2. Si es "novedades", copiar el período que el correo anuncia, tal como está escrito y en una \
+sola línea. Suele estar en el texto de alrededor de la tabla, no dentro de ella: "Novedades de \
+marzo 2026", "Lanzamientos: 15/04/2026". Si el correo no anuncia ningún período, dejalo vacío.
+
+3. Si es "novedades", extraer un objeto por cada producto anunciado.
 
 Reglas que no podés romper:
 
@@ -82,6 +180,9 @@ de peso ni separadores de miles.
 [imagen:...] de la fila de ese producto. Si la fila no tiene ninguno, dejalo \
 vacío. Nunca uses el de otra fila.
 - Las filas de encabezado de una tabla no son productos.
+- La fecha de un producto se copia **solo si la fila la trae**. La del período general no se \
+repite en cada producto: para eso está el campo de arriba. Si la fila no dice ninguna fecha, \
+dejala vacía.
 - La confianza es "alta" si el dato está escrito claro en la fila, "media" si \
 tuviste que interpretarlo, y "baja" si está ausente o dudoso."""
 
@@ -93,6 +194,7 @@ ESQUEMA = {
     "type": "object",
     "properties": {
         "intencion": {"type": "string", "enum": list(INTENCIONES)},
+        "periodo": {"type": "string"},
         "productos": {
             "type": "array",
             "items": {
@@ -103,14 +205,15 @@ ESQUEMA = {
                     "volumen": {"type": "string"},
                     "formato": {"type": "string"},
                     "precio": {"type": "string"},
+                    "fecha": {"type": "string"},
                     "imagen": {"type": "string"},
                     "confianza": {
                         "type": "object",
                         "properties": {
                             campo: {"type": "string", "enum": list(CONFIANZAS)}
-                            for campo in ("isbn", "titulo", "volumen", "formato", "precio")
+                            for campo in CAMPOS_CON_CONFIANZA
                         },
-                        "required": ["isbn", "titulo", "volumen", "formato", "precio"],
+                        "required": list(CAMPOS_CON_CONFIANZA),
                     },
                 },
                 "required": [
@@ -119,13 +222,14 @@ ESQUEMA = {
                     "volumen",
                     "formato",
                     "precio",
+                    "fecha",
                     "imagen",
                     "confianza",
                 ],
             },
         },
     },
-    "required": ["intencion", "productos"],
+    "required": ["intencion", "periodo", "productos"],
 }
 
 
@@ -138,6 +242,9 @@ class ProductoExtraido:
     isbn: str = ""
     formato: str = ""
     precio: Decimal | None = None
+    # La fecha que trae **esta fila**. Casi siempre vacía: el período lo
+    # anuncia el correo entero y vive en `Extraccion.periodo`.
+    fecha: date | None = None
     imagen: str = ""
     confianza: dict = field(default_factory=dict)
     # Lo que el sistema le corrigió o le descartó al modelo. No es lo mismo que
@@ -156,6 +263,17 @@ class Extraccion:
 
     intencion: str = OTRO
     productos: list = field(default_factory=list)
+    # El período que el correo anuncia ("Novedades de marzo 2026"), que es de
+    # donde los borradores heredan la fecha cuando la fila no trae una propia.
+    # Se guardan las dos cosas: lo que el modelo copió y lo que se pudo
+    # interpretar. Sin el texto, un período que no se entendió sería
+    # indistinguible de un correo que no anunciaba ninguno.
+    periodo_texto: str = ""
+    periodo: date | None = None
+    # Reparos del correo entero, no de un producto. Hoy solo uno: el período
+    # ilegible, que si no quedara anotado dejaría a todos sus borradores
+    # naciendo Activos sin que nadie sepa por qué.
+    reparos: list = field(default_factory=list)
     error: str = ""
     version_prompt: str = VERSION_PROMPT
     crudo: str = ""
@@ -197,6 +315,9 @@ class Extraccion:
             "intencion": self.intencion,
             "error": self.error,
             "milisegundos": self.milisegundos,
+            "periodo_texto": self.periodo_texto,
+            "periodo": self.periodo.isoformat() if self.periodo else "",
+            "reparos": self.reparos,
             "productos": [
                 {
                     "titulo": producto.titulo,
@@ -204,6 +325,7 @@ class Extraccion:
                     "isbn": producto.isbn,
                     "formato": producto.formato,
                     "precio": str(producto.precio) if producto.precio is not None else "",
+                    "fecha": producto.fecha.isoformat() if producto.fecha else "",
                     "imagen": producto.imagen,
                     "confianza": producto.confianza,
                     "reparos": producto.reparos,
@@ -248,9 +370,21 @@ def extraer(contenido, *, cids=()):
             if isinstance(crudo, dict)
         ]
 
+    periodo_texto = " ".join(str(datos.get("periodo", "")).split())
+    periodo = interpretar_fecha(periodo_texto) if intencion == NOVEDADES else None
+    reparos = []
+    if intencion == NOVEDADES and periodo_texto and periodo is None:
+        # Que no se entienda no invalida el correo, pero tiene que quedar
+        # anotado: sin la fecha, todos sus borradores nacen Activos, y esa es
+        # exactamente la clase de cosa que no da ningún síntoma.
+        reparos.append(f"Período ilegible: «{periodo_texto}». Los borradores nacen sin fecha.")
+
     return Extraccion(
         intencion=intencion,
         productos=productos,
+        periodo_texto=periodo_texto,
+        periodo=periodo,
+        reparos=reparos,
         version_prompt=VERSION_PROMPT,
         crudo=respuesta.crudo,
         milisegundos=respuesta.milisegundos,
@@ -267,6 +401,7 @@ def _producto(crudo, cids):
     producto.volumen = _volumen(crudo.get("volumen"), producto)
     producto.isbn = _isbn(crudo.get("isbn"), producto)
     producto.precio = _precio(crudo.get("precio"), producto)
+    producto.fecha = _fecha_de_fila(crudo.get("fecha"), producto)
     producto.imagen = _imagen(crudo.get("imagen"), cids, producto)
 
     if not producto.titulo:
@@ -334,6 +469,22 @@ def _precio(crudo, producto):
         producto.reparos.append(f"Precio fuera de rango: «{texto}».")
         return None
     return precio
+
+
+def _fecha_de_fila(crudo, producto):
+    """La fecha propia de un producto, cuando la fila la trae.
+
+    Que venga vacía es el caso normal y **no deja reparo**: la fecha la anuncia
+    el correo entero, no cada fila. Solo se anota cuando el modelo copió algo
+    que después no se pudo interpretar, que es cuando hay algo que mirar.
+    """
+    texto = str(crudo or "").strip()
+    if not texto:
+        return None
+    fecha = interpretar_fecha(texto)
+    if fecha is None:
+        producto.reparos.append(f"Fecha ilegible: «{texto}».")
+    return fecha
 
 
 def _imagen(crudo, cids, producto):
