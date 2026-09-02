@@ -15,11 +15,19 @@ Dos piezas que no son decorativas:
 {% block seccion %}Proveedores{% endblock %}
 
 {% block contenido %}
+{% comment %}
+El destino de salida se resuelve una vez y se reusa arriba y abajo: editando se
+vuelve a la ficha del proveedor, y dando de alta —donde todavía no hay ficha— al
+listado.
+{% endcomment %}
+{% if proveedor %}
+  {% url 'suppliers:proveedor_detalle' proveedor.pk as volver %}
+{% else %}
+  {% url 'suppliers:proveedor_lista' as volver %}
+{% endif %}
+
 <div class="mx-auto max-w-2xl">
-  <a href="{% if proveedor %}{% url 'suppliers:proveedor_detalle' proveedor.pk %}{% else %}{% url 'suppliers:proveedor_lista' %}{% endif %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver
-  </a>
+  {% include "_boton_texto.html" with url=volver texto="Volver" atras=1 %}
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
   {% if descripcion %}
@@ -135,10 +143,7 @@ Dos piezas que no son decorativas:
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Guardar</button>
       </div>
-      <a href="{% if proveedor %}{% url 'suppliers:proveedor_detalle' proveedor.pk %}{% else %}{% url 'suppliers:proveedor_lista' %}{% endif %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Cancelar
-      </a>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
     </div>
   </form>
 </div>

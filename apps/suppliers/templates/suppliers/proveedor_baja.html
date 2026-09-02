@@ -15,10 +15,8 @@ usos que el sistema visual le reserva en modo operativo.
 
 {% block contenido %}
 <div class="mx-auto max-w-2xl">
-  <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a la ficha
-  </a>
+  {% url 'suppliers:proveedor_detalle' proveedor.pk as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Dar de baja proveedor</h1>
   <p class="mt-2 text-sm text-static">
@@ -83,10 +81,8 @@ usos que el sistema visual le reserva en modo operativo.
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Confirmar baja</button>
       </div>
-      <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Cancelar
-      </a>
+      {% url 'suppliers:proveedor_detalle' proveedor.pk as cancelar %}
+      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
     </form>
   {% endif %}
 </div>

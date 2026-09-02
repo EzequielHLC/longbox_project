@@ -267,10 +267,8 @@ por la mitad.
         </span>
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
-          {# Tenue: es una acción de salida, no compite con las de la pantalla. #}
-          <button type="submit" class="boton-menor boton-menor--tenue">
-            <span>Cerrar sesión</span>
-          </button>
+          {# Prioridad 4: salir es navegación, no una acción de la pantalla. #}
+          {% include "_boton_texto.html" with texto="Cerrar sesión" submit=1 %}
         </form>
       </div>
     {% endif %}

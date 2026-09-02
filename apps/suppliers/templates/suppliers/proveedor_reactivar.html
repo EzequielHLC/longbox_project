@@ -13,10 +13,8 @@ detiene acá — un proveedor no tiene credenciales que renovar.
 
 {% block contenido %}
 <div class="mx-auto max-w-2xl">
-  <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a la ficha
-  </a>
+  {% url 'suppliers:proveedor_detalle' proveedor.pk as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Reactivar proveedor</h1>
   <p class="mt-2 text-sm text-static">
@@ -50,14 +48,10 @@ detiene acá — un proveedor no tiene credenciales que renovar.
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Confirmar reactivación</button>
       </div>
-      <a href="{% url 'suppliers:proveedor_edicion' proveedor.pk %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Editar antes de reactivar
-      </a>
-      <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Cancelar
-      </a>
+      {% url 'suppliers:proveedor_edicion' proveedor.pk as editar_antes %}
+      {% include "_boton_texto.html" with url=editar_antes texto="Editar antes de reactivar" %}
+      {% url 'suppliers:proveedor_detalle' proveedor.pk as cancelar %}
+      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
     </form>
   {% endif %}
 </div>

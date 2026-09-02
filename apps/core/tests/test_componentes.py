@@ -161,3 +161,79 @@ def test_el_desplegable_propio_no_toca_los_multiples(client_admin):
     hoja = (Path(settings.BASE_DIR) / "templates" / "_desplegable.html").read_text(encoding="utf-8")
 
     assert "not([multiple])" in hoja
+
+
+# ---------------------------------------------------------------------------
+# La jerarquia de botones
+#
+# Antes habia dos niveles y todo lo que no era la accion principal caia en el
+# segundo: la pantalla de parametros llego a tener once paralelogramos. Con dos
+# niveles el diseno no puede decir que importa mas.
+#
+# Lo que se prueba aca es la regla que evita que vuelva a pasar, y son dos
+# limites, no un gusto: **el primario es uno por pantalla** y **el paralelogramo
+# vive solo en filas de tabla**.
+# ---------------------------------------------------------------------------
+
+
+RUTA_BOTONES = Path(settings.BASE_DIR) / "templates" / "_botones.html"
+
+# Las plantillas que dibujan filas: son las unicas donde el paralelogramo se lee
+# como "esta fila tiene acciones" y no como ruido.
+CON_FILAS = {
+    "_tabla_usuarios.html",
+    "_tabla_proveedores.html",
+    "_tabla_borradores.html",
+    "parametros.html",
+    "lote_formulario.html",
+    "lote_resumen.html",
+}
+
+
+def plantillas_operativas():
+    """Las del backoffice, sin los parciales que definen los componentes."""
+    raiz = Path(settings.BASE_DIR)
+    rutas = list(raiz.glob("apps/*/templates/*/*.html")) + list(raiz.glob("templates/*.html"))
+    return [ruta for ruta in rutas if ruta.name not in {"_botones.html", "base_publico.html"}]
+
+
+def test_los_cuatro_niveles_estan_definidos():
+    hoja = RUTA_BOTONES.read_text(encoding="utf-8")
+
+    for clase in (".boton-primario", ".boton-seccion", ".boton-menor", ".boton-texto"):
+        assert clase in hoja, clase
+
+
+def test_el_paralelogramo_vive_solo_donde_hay_filas():
+    """Es el nivel 3 y su presencia comunica algo concreto. Repartido por toda
+    la pantalla deja de comunicarlo y solo carga el diseno."""
+    fuera_de_lugar = [
+        ruta.name
+        for ruta in plantillas_operativas()
+        if "boton-menor" in ruta.read_text(encoding="utf-8") and ruta.name not in CON_FILAS
+    ]
+
+    assert fuera_de_lugar == []
+
+
+def test_ninguna_pantalla_repite_el_boton_principal():
+    """Uno por pantalla. La excepcion son los dos caminos de igual peso, y ahi
+    el segundo va en la variante fria, que se cuenta aparte."""
+    repetidas = {}
+    for ruta in plantillas_operativas():
+        contenido = ruta.read_text(encoding="utf-8")
+        calientes = contenido.count("boton-primario") - contenido.count("boton-primario--frio") * 2
+        if calientes > 1:
+            repetidas[ruta.name] = calientes
+
+    assert repetidas == {}
+
+
+def test_el_boton_de_texto_lleva_su_copia_para_el_barrido():
+    """El color entra con una copia recortada encima del texto. Si `data-texto`
+    no coincide con la etiqueta, al pasar el mouse aparece otra palabra."""
+    parcial = (Path(settings.BASE_DIR) / "templates" / "_boton_texto.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'data-texto="{{ texto }}">{{ texto }}' in parcial

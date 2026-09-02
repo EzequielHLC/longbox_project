@@ -33,8 +33,7 @@ un párrafo.
     <div class="marco-boton">
       <a href="{% url 'catalog:etiqueta_crear' %}" class="boton-primario">Nueva etiqueta</a>
     </div>
-    <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="boton-menor">
-      <span>Nuevo grupo</span>
+    <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="boton-seccion">Nuevo grupo
     </a>
   </div>
 </div>
@@ -51,7 +50,7 @@ un párrafo.
       class="mb-6 flex flex-wrap items-center gap-4 border border-line bg-ash px-4 py-3">
   <input type="text" name="q" value="{{ busqueda }}" placeholder="Buscar etiqueta…"
          class="min-w-[14rem] flex-1" aria-label="Buscar etiqueta">
-  <button type="submit" class="boton-menor boton-menor--tenue"><span>Buscar</span></button>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar</button>
   <span class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
     {{ total }} en total
   </span>

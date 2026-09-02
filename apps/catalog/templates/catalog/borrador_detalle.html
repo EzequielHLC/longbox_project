@@ -159,8 +159,7 @@ campo corresponde cada marca.
           Confirmar y agregar al catálogo
         </button>
       </div>
-      <button type="submit" name="guardar" value="1" class="boton-menor">
-        <span>Guardar sin confirmar</span>
+      <button type="submit" name="guardar" value="1" class="boton-seccion">Guardar sin confirmar
       </button>
     </div>
   </form>
@@ -179,8 +178,7 @@ campo corresponde cada marca.
       {% csrf_token %}
       {% include "_campo.html" with campo=form_rechazo.motivo %}
       <div class="mt-5">
-        <button type="submit" name="rechazar" value="1" class="boton-menor boton-menor--critico">
-          <span>Rechazar borrador</span>
+        <button type="submit" name="rechazar" value="1" class="boton-seccion boton-seccion--critico">Rechazar borrador
         </button>
       </div>
     </form>

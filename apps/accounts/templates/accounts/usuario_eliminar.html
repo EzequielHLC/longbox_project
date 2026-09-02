@@ -54,10 +54,8 @@ sistema, así que `signal` se usa acá con intención.
         </div>
       </form>
     {% endif %}
-    <a href="{% url 'accounts:usuario_lista' %}"
-       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-      Cancelar
-    </a>
+    {% url 'accounts:usuario_lista' as cancelar %}
+    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>
 </div>
 {% endblock %}

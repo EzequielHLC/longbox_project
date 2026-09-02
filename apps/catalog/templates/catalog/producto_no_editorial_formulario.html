@@ -109,10 +109,8 @@ propio campo al guardar, que es lo que el servidor exige. Ver `A7`.
     <div class="marco-boton">
       <button type="submit" class="boton-primario">Guardar producto</button>
     </div>
-    <a href="{% url 'catalog:producto_lista' %}"
-       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-      Cancelar
-    </a>
+    {% url 'catalog:producto_lista' as cancelar %}
+    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>
 </form>
 

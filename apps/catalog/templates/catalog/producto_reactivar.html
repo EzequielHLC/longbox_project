@@ -12,10 +12,8 @@ pantalla de baja, igual que en proveedores.
 
 {% block contenido %}
 <div class="mx-auto max-w-2xl">
-  <a href="{% url 'catalog:producto_detalle' producto.pk %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a la ficha
-  </a>
+  {% url 'catalog:producto_detalle' producto.pk as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Reactivar producto</h1>
   <p class="mt-2 text-sm text-static">
@@ -52,14 +50,10 @@ pantalla de baja, igual que en proveedores.
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Confirmar reactivación</button>
       </div>
-      <a href="{% url 'catalog:producto_editar' producto.pk %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Editar antes de reactivar
-      </a>
-      <a href="{% url 'catalog:producto_detalle' producto.pk %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Cancelar
-      </a>
+      {% url 'catalog:producto_editar' producto.pk as editar_antes %}
+      {% include "_boton_texto.html" with url=editar_antes texto="Editar antes de reactivar" %}
+      {% url 'catalog:producto_detalle' producto.pk as cancelar %}
+      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
     </form>
   {% endif %}
 </div>

@@ -12,10 +12,8 @@ en esta pantalla y no repartidas por el listado.
 
 {% block contenido %}
 <div class="mx-auto max-w-4xl">
-  <a href="{% url 'suppliers:proveedor_lista' %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a proveedores
-  </a>
+  {% url 'suppliers:proveedor_lista' as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a proveedores" atras=1 %}
 
   <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
     <div>
@@ -34,15 +32,13 @@ en esta pantalla y no repartidas por el listado.
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
-      <a href="{% url 'suppliers:proveedor_edicion' proveedor.pk %}" class="boton-menor">
-        <span>Editar</span>
+      <a href="{% url 'suppliers:proveedor_edicion' proveedor.pk %}" class="boton-seccion">Editar
       </a>
       {% if proveedor.esta_activo %}
         <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}"
-           class="boton-menor boton-menor--critico"><span>Dar de baja</span></a>
+           class="boton-seccion boton-seccion--critico">Dar de baja</a>
       {% else %}
-        <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-menor">
-          <span>Reactivar</span>
+        <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-seccion">Reactivar
         </a>
       {% endif %}
     </div>

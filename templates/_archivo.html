@@ -31,8 +31,8 @@ adjuntarla cuesta una línea de `URL.createObjectURL` y evita ese viaje.
 
       const boton = document.createElement("button");
       boton.type = "button";
-      boton.className = "boton-menor boton-menor--tenue";
-      boton.innerHTML = "<span>Elegir imagen</span>";
+      boton.className = "boton-seccion boton-seccion--tenue";
+      boton.textContent = "Elegir imagen";
       boton.addEventListener("click", () => input.click());
       caja.append(boton);
 

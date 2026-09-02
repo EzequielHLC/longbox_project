@@ -5,10 +5,8 @@
 
 {% block contenido %}
 <div class="mx-auto max-w-2xl">
-  <a href="{% url 'accounts:usuario_lista' %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a usuarios
-  </a>
+  {% url 'accounts:usuario_lista' as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a usuarios" atras=1 %}
 
   <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
 
@@ -36,10 +34,8 @@
       <div class="marco-boton">
         <button type="submit" class="boton-primario">Guardar</button>
       </div>
-      <a href="{% url 'accounts:usuario_lista' %}"
-         class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-        Cancelar
-      </a>
+      {% url 'accounts:usuario_lista' as cancelar %}
+      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
     </div>
   </form>
 
@@ -54,16 +50,14 @@
         <form method="post"
               action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
           {% csrf_token %}
-          <button type="submit" class="boton-menor boton-menor--tenue">
-            <span>Regenerar enlace</span>
+          <button type="submit" class="boton-seccion boton-seccion--tenue">Regenerar enlace
           </button>
         </form>
 
         {% if usuario_objetivo.se_puede_eliminar %}
           {# Salida para el correo cargado con un error de tipeo. #}
           <a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}"
-             class="boton-menor boton-menor--critico">
-            <span>Eliminar cuenta</span>
+             class="boton-seccion boton-seccion--critico">Eliminar cuenta
           </a>
         {% endif %}
       </div>

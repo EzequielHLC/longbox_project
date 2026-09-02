@@ -17,10 +17,8 @@ El cuerpo de la pantalla de etiquetas. Va aparte porque el buscador lo pide con
                            uppercase tracking-wider text-static">Inactivo</span>
             {% endif %}
           </div>
-          <a href="{% url 'catalog:grupo_etiqueta_editar' grupo.pk %}"
-             class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-            Editar grupo
-          </a>
+          {% url 'catalog:grupo_etiqueta_editar' grupo.pk as editar_grupo %}
+          {% include "_boton_texto.html" with url=editar_grupo texto="Editar grupo" %}
         </div>
 
         {% if grupo.etiquetas_visibles %}

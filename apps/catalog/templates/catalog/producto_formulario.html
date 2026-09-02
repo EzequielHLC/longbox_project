@@ -154,10 +154,8 @@ leer un informe de impacto.
     <div class="marco-boton">
       <button type="submit" class="boton-primario">Guardar cambios</button>
     </div>
-    <a href="{% url 'catalog:producto_detalle' producto.pk %}"
-       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-      Cancelar
-    </a>
+    {% url 'catalog:producto_detalle' producto.pk as cancelar %}
+    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>
 </form>
 {% endblock %}

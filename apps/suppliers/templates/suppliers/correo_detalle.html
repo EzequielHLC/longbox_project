@@ -28,10 +28,8 @@ correo no está listo para procesarse.
 
 {% block contenido %}
 <div class="mx-auto max-w-4xl">
-  <a href="{% url 'suppliers:correo_lista' %}"
-     class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-    ← Volver a la cola
-  </a>
+  {% url 'suppliers:correo_lista' as volver %}
+  {% include "_boton_texto.html" with url=volver texto="Volver a la cola" atras=1 %}
 
   <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
     <div class="min-w-0">
@@ -53,7 +51,7 @@ correo no está listo para procesarse.
     </div>
 
     {% if correo.archivo %}
-      <a href="{{ correo.archivo.url }}" class="boton-menor"><span>Ver original</span></a>
+      {% include "_boton_texto.html" with url=correo.archivo.url texto="Ver original" %}
     {% endif %}
   </div>
 
@@ -398,10 +396,8 @@ correo no está listo para procesarse.
           <div class="marco-boton">
             <button type="submit" class="boton-primario">Descartar correo</button>
           </div>
-          <a href="{% url 'suppliers:correo_lista' %}"
-             class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-            Dejarlo pendiente
-          </a>
+          {% url 'suppliers:correo_lista' as dejarlo_pendiente %}
+          {% include "_boton_texto.html" with url=dejarlo_pendiente texto="Dejarlo pendiente" %}
         </div>
       </form>
     {% else %}

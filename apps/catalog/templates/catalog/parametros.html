@@ -106,12 +106,16 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       caracteres, que es lo justo para reconocer cuál está puesta. Mostrarla
       entera convertiría esta pantalla en un lugar del que copiar el secreto.
       {% endcomment %}
+      {% comment %}
+      Prioridad 2 y no la principal: el modelo de lenguaje es un bloque de esta
+      pantalla, no su decisión. La acción principal es guardar los parámetros
+      del negocio, arriba — dos botones principales compitiendo en la misma
+      pantalla es exactamente lo que la jerarquía vino a resolver.
+      {% endcomment %}
       <div class="mt-6">
-        <div class="marco-boton">
-          <button type="submit" name="guardar_modelo" value="1" class="boton-primario">
-            Guardar configuración del modelo
-          </button>
-        </div>
+        <button type="submit" name="guardar_modelo" value="1" class="boton-seccion">
+          Guardar configuración del modelo
+        </button>
       </div>
     </form>
   </section>
@@ -126,7 +130,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           del tomo al darlo de alta.
         </p>
       </div>
-      <a href="{% url 'catalog:tipo_crear' %}" class="boton-menor"><span>Nuevo tipo</span></a>
+      <a href="{% url 'catalog:tipo_crear' %}" class="boton-seccion">Nuevo tipo</a>
     </div>
 
     <div class="mt-4 overflow-x-auto border border-line">
@@ -186,7 +190,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           formato se ofrece para todos.
         </p>
       </div>
-      <a href="{% url 'catalog:formato_crear' %}" class="boton-menor"><span>Nuevo formato</span></a>
+      <a href="{% url 'catalog:formato_crear' %}" class="boton-seccion">Nuevo formato</a>
     </div>
 
     <div class="mt-4 overflow-x-auto border border-line">
@@ -251,8 +255,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           Quién publica el material editorial. También se agregan desde la carga de un lote.
         </p>
       </div>
-      <a href="{% url 'catalog:editorial_crear' %}" class="boton-menor">
-        <span>Nueva editorial</span>
+      <a href="{% url 'catalog:editorial_crear' %}" class="boton-seccion">Nueva editorial
       </a>
     </div>
 
@@ -320,8 +323,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           Un producto puede tener varias y ninguna es obligatoria.
         </p>
       </div>
-      <a href="{% url 'catalog:etiquetas' %}" class="boton-menor">
-        <span>Administrar etiquetas</span>
+      <a href="{% url 'catalog:etiquetas' %}" class="boton-seccion">Administrar etiquetas
       </a>
     </div>
 
@@ -356,7 +358,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           cargar un lote nacional.
         </p>
       </div>
-      <a href="{% url 'catalog:precio_crear' %}" class="boton-menor"><span>Nuevo precio</span></a>
+      <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">Nuevo precio</a>
     </div>
 
     <form method="get" class="mt-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
@@ -375,7 +377,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           {% endfor %}
         </select>
       </div>
-      <button type="submit" class="boton-menor boton-menor--tenue"><span>Filtrar</span></button>
+      <button type="submit" class="boton-seccion boton-seccion--tenue">Filtrar</button>
       {% if editorial_elegida %}
         <a href="{% url 'catalog:parametros' %}"
            class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static

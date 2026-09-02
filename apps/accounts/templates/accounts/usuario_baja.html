@@ -48,10 +48,8 @@ Django no lo interpreta como comentario y lo imprime en pantalla.
         <button type="submit" class="boton-primario">Confirmar baja</button>
       </div>
     </form>
-    <a href="{% url 'accounts:usuario_lista' %}"
-       class="font-mono text-xs uppercase tracking-wider text-static hover:text-screen">
-      Cancelar
-    </a>
+    {% url 'accounts:usuario_lista' as cancelar %}
+    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>
 </div>
 {% endblock %}
