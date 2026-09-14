@@ -2,7 +2,7 @@
 
 Sistema de gestión integral para comiquerías: catálogo, ventas presenciales y online, pricing de importaciones, proveedores, restock, devoluciones, fidelización por puntos, caja, reportes, auditoría y administración de usuarios por rol.
 
-![image](https://tenor.com/es-AR/view/smug-cat-smug-cat-smirk-smirking-cat-gif-12852186842938363616.gif)
+![image](https://cdn.pixabay.com/photo/2023/05/17/15/29/gold-seal-8000479_1280.png)
 
 ---
 
