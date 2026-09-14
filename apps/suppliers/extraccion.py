@@ -9,7 +9,7 @@ servidor.
 formato y PVP, más el **período** que anuncia —"Novedades de marzo 2026"—, que
 vive en la prosa de alrededor de la tabla y no dentro de ella. De ese período
 sacan la fecha los borradores, y de la fecha sale si nacen en Pre-venta o
-Activos (CU-04 paso 6): sin pedirlo, todos nacerían Activos, y un producto que
+Activos (CU-ALT-NOV paso 6): sin pedirlo, todos nacerían Activos, y un producto que
 todavía no llegó figurando disponible no da ningún síntoma hasta que alguien lo
 compra. **No trae editorial ni rubro**, y no por descuido: la
 comunicación es directa de la editorial a la comiquería, así que nadie escribe
@@ -53,7 +53,7 @@ OTRO = "otro"
 INTENCIONES = (NOVEDADES, DEMORA, OTRO)
 
 # Cómo de seguro está el modelo de cada campo. Los tres valores son los que pide
-# CU-04 paso 4, y CU-05 los usa para decidir qué se puede confirmar en lote.
+# CU-ALT-NOV paso 4, y CU-ALT-REV los usa para decidir qué se puede confirmar en lote.
 CONFIANZAS = ("alta", "media", "baja")
 
 # De qué campos se le pide al modelo que declare cuánto confía. Está en una
@@ -92,7 +92,7 @@ def interpretar_fecha(texto):
 
     Devuelve `None` si no se entiende, y eso **no es lo mismo que un error**:
     un correo que no anuncia ninguna fecha es el caso normal, y sus borradores
-    nacen Activos (CU-04 paso 6).
+    nacen Activos (CU-ALT-NOV paso 6).
 
     Reconoce las cuatro formas que aparecen en los correos reales: `2026-03-15`,
     `15/04/2026`, `04/2026` y `marzo 2026` (con o sin "de" en el medio).
@@ -344,7 +344,7 @@ def extraer(contenido, *, cids=()):
     el fallo aparecería recién al intentar adjuntarla.
 
     Nunca levanta. Un correo raro no puede tumbar la lectura de la casilla
-    entera, que es lo que piden E2 y E3 de CU-04.
+    entera, que es lo que piden E2 y E3 de CU-ALT-NOV.
     """
     respuesta = llm.pedir_json(SISTEMA, contenido, formato=ESQUEMA)
     if not respuesta:

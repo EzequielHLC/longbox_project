@@ -1,14 +1,14 @@
-"""Pantallas de proveedores editoriales (CU-18 a CU-21).
+"""Pantallas de proveedores editoriales (CU-PRV-ALT a CU-PRV-CON).
 
 Todas son de backoffice y exclusivas del Administrador, validado del lado del
 servidor (RNF-03). Sistema visual: **modo operativo**; ninguna es pública.
 
 El orden en que conviene leerlas es el del ciclo de vida de un proveedor:
-listado (CU-21) → alta (CU-18) → ficha (CU-21 paso 4) → edición (CU-19) → baja
-(CU-20) y su vuelta.
+listado (CU-PRV-CON) → alta (CU-PRV-ALT) → ficha (CU-PRV-CON paso 4) → edición (CU-PRV-EDI) → baja
+(CU-PRV-BAJ) y su vuelta.
 
 Al final va la **cola de correos**, que no es de ningún CU: es la antesala del
-pipeline de CU-04, donde cada correo espera una decisión antes de que se gaste
+pipeline de CU-ALT-NOV, donde cada correo espera una decisión antes de que se gaste
 un solo ciclo en procesarlo.
 """
 
@@ -46,7 +46,7 @@ class ProveedoresMixin(RolRequeridoMixin):
 def _conflicto_de(formulario):
     """El proveedor con el que chocó un alta o una edición, si hubo choque.
 
-    E2 de CU-18 pide informar el conflicto **con enlace a la ficha del proveedor
+    E2 de CU-PRV-ALT pide informar el conflicto **con enlace a la ficha del proveedor
     existente**: no alcanza con saber que hay choque, hace falta contra quién.
     El formulario lo encontró al validar y lo deja anotado; acá se elige cuál
     mostrar cuando chocan los dos campos a la vez.
@@ -57,7 +57,7 @@ def _conflicto_de(formulario):
 
 
 class ProveedorListaView(ProveedoresMixin, ListView):
-    """CU-21 — Consultar Proveedores.
+    """CU-PRV-CON — Consultar Proveedores.
 
     Es el punto de entrada del módulo: desde acá se llega al alta, a la ficha y,
     por la ficha, a la edición y a la baja. Solo lectura, y el CU es explícito en
@@ -76,7 +76,7 @@ class ProveedorListaView(ProveedoresMixin, ListView):
         return ["suppliers/proveedor_lista.html"]
 
     def get_queryset(self):
-        # CU-21 paso 2 pide mostrar la cantidad de productos vinculados en cada
+        # CU-PRV-CON paso 2 pide mostrar la cantidad de productos vinculados en cada
         # fila. Se anota en la consulta y no se cuenta por fila: con veinte
         # proveedores serían veinte consultas más.
         proveedores = Proveedor.objects.select_related("editorial", "tipo_por_defecto").annotate(
@@ -126,10 +126,10 @@ class ProveedorListaView(ProveedoresMixin, ListView):
 
 
 class ProveedorDetalleView(ProveedoresMixin, DetailView):
-    """CU-21 paso 4 — la ficha completa.
+    """CU-PRV-CON paso 4 — la ficha completa.
 
-    Es también el destino del enlace que E2 del CU-18 exige al informar un
-    conflicto de alta, y desde donde arrancan CU-19 y CU-20.
+    Es también el destino del enlace que E2 del CU-PRV-ALT exige al informar un
+    conflicto de alta, y desde donde arrancan CU-PRV-EDI y CU-PRV-BAJ.
     """
 
     model = Proveedor
@@ -151,7 +151,7 @@ class ProveedorDetalleView(ProveedoresMixin, DetailView):
 
 
 class ProveedorAltaView(ProveedoresMixin, CreateView):
-    """CU-18 — Registrar Proveedor Editorial."""
+    """CU-PRV-ALT — Registrar Proveedor Editorial."""
 
     model = Proveedor
     form_class = ProveedorForm
@@ -185,12 +185,12 @@ class ProveedorAltaView(ProveedoresMixin, CreateView):
             f"Se registró «{proveedor.razon_social}». Su correo comercial ya está "
             "habilitado como remitente válido.",
         )
-        # CU-18 paso 6: el alta termina mostrando la ficha del proveedor creado.
+        # CU-PRV-ALT paso 6: el alta termina mostrando la ficha del proveedor creado.
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
 
 
 class ProveedorEdicionView(ProveedoresMixin, UpdateView):
-    """CU-19 — Editar Proveedor Editorial.
+    """CU-PRV-EDI — Editar Proveedor Editorial.
 
     A diferencia de la edición de un usuario del sistema, un proveedor
     **inactivo sí se puede editar**: la precondición del CU dice "cualquier
@@ -247,7 +247,7 @@ class ProveedorEdicionView(ProveedoresMixin, UpdateView):
 
 
 class ProveedorBajaView(ProveedoresMixin, DetailView):
-    """CU-20 — Dar de Baja Proveedor Editorial.
+    """CU-PRV-BAJ — Dar de Baja Proveedor Editorial.
 
     El GET **no** es un trámite de confirmación: es el paso 3 del CU, el informe
     de impacto que el Administrador tiene que leer antes de decidir. Por eso la
@@ -297,18 +297,18 @@ class ProveedorBajaView(ProveedoresMixin, DetailView):
 
 
 class ProveedorReactivarView(ProveedoresMixin, DetailView):
-    """La vuelta de la baja de CU-20. **Ningún CU la describe.**
+    """La vuelta de la baja de CU-PRV-BAJ. **Ningún CU la describe.**
 
     Se agrega porque sin ella la baja es una trampa: la razón social y el correo
     son únicos a nivel de base *en cualquier estado*, así que un proveedor
     inactivo bloquea sus propios datos para siempre y retomar la relación
     comercial obligaría a inventarle una razón social distinta. Y el motivo que
-    el propio CU-20 le da a la baja —"cambio de distribuidor o cese de relación
+    el propio CU-PRV-BAJ le da a la baja —"cambio de distribuidor o cese de relación
     comercial"— describe justamente situaciones que se revierten.
 
     A diferencia de la reactivación de una cuenta de personal, acá no hay
     credencial que renovar: un proveedor no inicia sesión. Vuelve directo a
-    Activo, y con eso su correo vuelve al filtro de remitentes de CU-04.
+    Activo, y con eso su correo vuelve al filtro de remitentes de CU-ALT-NOV.
     """
 
     model = Proveedor
@@ -342,7 +342,7 @@ class ProveedorReactivarView(ProveedoresMixin, DetailView):
 
 
 # ---------------------------------------------------------------------------
-# Cola de correos — la antesala del pipeline de CU-04
+# Cola de correos — la antesala del pipeline de CU-ALT-NOV
 # ---------------------------------------------------------------------------
 
 
@@ -474,7 +474,7 @@ class DiagnosticoLLMView(ProveedoresMixin, TemplateView):
     """Si el modelo está vivo, y qué entiende cuando se le manda algo.
 
     No es de ningún caso de uso: es una herramienta de operación. Existe porque
-    el pipeline de CU-04 depende de un servicio que corre **afuera de Django** y
+    el pipeline de CU-ALT-NOV depende de un servicio que corre **afuera de Django** y
     que se apaga sin avisar, y sin esta pantalla la única forma de descubrirlo
     es que un correo quede en estado fallido con un mensaje genérico.
 

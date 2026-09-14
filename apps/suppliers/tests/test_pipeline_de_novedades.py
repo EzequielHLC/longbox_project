@@ -1,4 +1,4 @@
-"""Lo que el proveedor le aporta al procesamiento automático de CU-04.
+"""Lo que el proveedor le aporta al procesamiento automático de CU-ALT-NOV.
 
 Son tres campos y dos responsabilidades distintas:
 
@@ -7,7 +7,7 @@ Son tres campos y dos responsabilidades distintas:
   procesamiento apagado igual.
 - `editorial` y `tipo_por_defecto` son la **cabecera de sus borradores**. Los
   correos de novedades no traen esos dos datos —quien los manda los da por
-  obvios— y los dos son campos bloqueantes en la revisión de CU-05, así que sin
+  obvios— y los dos son campos bloqueantes en la revisión de CU-ALT-REV, así que sin
   esto todos los borradores nacerían trabados.
 """
 
@@ -64,7 +64,7 @@ def test_con_novedades_habilitadas_pide_las_dos_condiciones():
 
 
 def test_el_alta_lo_deja_habilitado_por_defecto(client_admin):
-    """Postcondición de CU-18: el correo queda habilitado como remitente válido.
+    """Postcondición de CU-PRV-ALT: el correo queda habilitado como remitente válido.
     Nadie tiene que acordarse de prenderlo."""
     respuesta = client_admin.get(URL_ALTA)
 

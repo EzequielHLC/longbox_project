@@ -1,7 +1,7 @@
 """Qué cambió entre dos versiones de algo, para el registro de auditoría.
 
-Estaba escrito dos veces —una en `accounts` para CU-51 y otra en `suppliers` para
-CU-19— y la edición de producto de CU-09 iba a ser la tercera. Las tres necesitan
+Estaba escrito dos veces —una en `accounts` para CU-USR-MOD y otra en `suppliers` para
+CU-PRV-EDI— y la edición de producto de CU-CAT-EDI iba a ser la tercera. Las tres necesitan
 exactamente lo mismo: comparar campo por campo y dejar el par anterior→nuevo en
 el log.
 

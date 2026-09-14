@@ -119,7 +119,7 @@ def test_la_cache_de_localidades_es_por_provincia():
 
 
 def test_el_endpoint_de_localidades_es_publico(client):
-    """El registro es público (CU-43): pedir localidades no puede exigir sesión."""
+    """El registro es público (CU-CLI-ALT): pedir localidades no puede exigir sesión."""
     with api_responde(RESPUESTA_LOCALIDADES):
         respuesta = client.get(reverse("core:localidades"), {"provincia": "Misiones"})
 

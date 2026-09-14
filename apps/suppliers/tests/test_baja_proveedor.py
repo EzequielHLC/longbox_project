@@ -1,4 +1,4 @@
-"""CU-20 — Dar de Baja Proveedor Editorial, y la reactivación que lo revierte.
+"""CU-PRV-BAJ — Dar de Baja Proveedor Editorial, y la reactivación que lo revierte.
 
 La baja tiene dos mitades que conviene no confundir: el **informe de impacto**
 (pasos 2 y 3, lo que el Administrador lee antes de decidir) y el **efecto**
@@ -90,7 +90,7 @@ def test_la_baja_deja_el_proveedor_inactivo(client_admin):
 
 
 def test_la_baja_saca_el_correo_del_filtro_de_remitentes(client_admin):
-    """Es la postcondición que le da sentido a la baja: el pipeline de CU-04
+    """Es la postcondición que le da sentido a la baja: el pipeline de CU-ALT-NOV
     deja de procesar sus mensajes."""
     proveedor = ProveedorFactory(correo_comercial="novedades@ivrea.test")
 

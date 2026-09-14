@@ -1,11 +1,11 @@
-"""Siembra las cuatro categorías no editoriales de CU-08.
+"""Siembra las cuatro categorías no editoriales de CU-CAT-ALT.
 
-`Tipo` pasó a clasificar los dos rubros (corrección 23: la "categoría" de CU-08
+`Tipo` pasó a clasificar los dos rubros (corrección 23: la "categoría" de CU-CAT-ALT
 y el "formato" de RF-04 son el mismo eje, y la fuente nunca lo dice). Los tipos
 que ya existían son todos editoriales y el valor por defecto del campo los deja
 bien; lo que faltaba era el otro lado del catálogo.
 
-Son exactamente los cuatro que CU-08 paso 2 enumera. **Ninguno usa formato**: el
+Son exactamente los cuatro que CU-CAT-ALT paso 2 enumera. **Ninguno usa formato**: el
 tamaño físico fija el precio de un tomo, no el de una figura — y una escala 1/7
 es una etiqueta descriptiva, no una grilla de precios.
 """

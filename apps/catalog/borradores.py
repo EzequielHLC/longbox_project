@@ -1,8 +1,8 @@
-"""Cómo una extracción se convierte en borradores (CU-04 pasos 5, 6, 7 y 9).
+"""Cómo una extracción se convierte en borradores (CU-ALT-NOV pasos 5, 6, 7 y 9).
 
 Es el punto donde lo que el modelo **propuso** se cruza contra lo que el sistema
 **sabe**: el catálogo real, la cabecera del proveedor y los topes del negocio.
-Nada de acá crea un producto — eso lo hace CU-05, con una persona confirmando.
+Nada de acá crea un producto — eso lo hace CU-ALT-REV, con una persona confirmando.
 
 **Trabaja sobre la extracción ya guardada, no sobre el modelo.** Regenerar los
 borradores de un correo no vuelve a llamar al modelo de lenguaje: lee
@@ -66,7 +66,7 @@ class Omitido:
 
 @dataclass
 class ResultadoGeneracion:
-    """Lo que CU-04 paso 9 pide registrar y el paso 10 pide notificar."""
+    """Lo que CU-ALT-NOV paso 9 pide registrar y el paso 10 pide notificar."""
 
     creados: list = field(default_factory=list)
     omitidos: list = field(default_factory=list)
@@ -102,7 +102,7 @@ def generar(correo, *, portadas=None, actor=None, ip=None):
     proponerlos sería reabrir una decisión que alguien ya tomó.
 
     Nunca levanta por un producto malo: uno que no se pueda armar se omite con
-    su motivo y el resto sigue. Es la misma distinción de CU-01 entre una
+    su motivo y el resto sigue. Es la misma distinción de CU-ALT-NAC entre una
     exclusión esperada y un fallo transaccional.
     """
     extraccion = correo.extraccion or {}
@@ -189,7 +189,7 @@ def _omitir(crudo, tipo, editorial, isbn_vistos, claves_vistas):
     if (isbn and isbn in isbn_vistos) or clave in claves_vistas:
         return Omitido(titulo=titulo, volumen=volumen, isbn=isbn, motivo=REPETIDO_EN_EL_CORREO)
 
-    # El duplicado contra lo ya cargado (CU-04 paso 5). Reusa la misma función
+    # El duplicado contra lo ya cargado (CU-ALT-NOV paso 5). Reusa la misma función
     # que el alta manual: si hubiera dos definiciones de "el mismo producto",
     # tarde o temprano dirían cosas distintas.
     formato = _resolver_formato(crudo.get("formato"), tipo)
@@ -256,7 +256,7 @@ def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock
     estado_sugerido, fecha_llegada = _estado_por_fecha(fecha)
 
     reparos = list(crudo.get("reparos") or [])
-    # Los del correo entero se copian a cada borrador: la cola de CU-05 se mira
+    # Los del correo entero se copian a cada borrador: la cola de CU-ALT-REV se mira
     # de a un borrador por vez, y un reparo que solo viva en el correo no lo
     # vería nadie desde ahí.
     reparos.extend(reparos_del_correo)
@@ -279,7 +279,7 @@ def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock
         cid_portada=(crudo.get("imagen") or "").strip(),
     )
     # `incompleto` no es un estado peor: es el indicador "Extracción incompleta"
-    # que CU-04 pide para los productos que el modelo identificó pero no pudo
+    # que CU-ALT-NOV pide para los productos que el modelo identificó pero no pudo
     # completar. Van a la **misma** cola que los demás.
     borrador.estado = (
         BorradorProducto.INCOMPLETO
@@ -290,13 +290,13 @@ def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock
 
 
 def _estado_por_fecha(fecha):
-    """Con qué estado nace el borrador, y con qué fecha (CU-04 paso 6).
+    """Con qué estado nace el borrador, y con qué fecha (CU-ALT-NOV paso 6).
 
     La regla del CU es "futura → Pre-venta; semana en curso o ausente → Activo",
     y A10 le agrega la condición que la hace consistente: **una fecha pasada no
     se conserva**. Si el material ya llegó, el producto va Activo y sin fecha;
     arrastrarla dejaría un producto activo con fecha de llegada del mes pasado,
-    que no significa nada y ensucia la vigilancia de pre-ventas de CU-03.
+    que no significa nada y ensucia la vigilancia de pre-ventas de CU-ALT-TRA.
     """
     if fecha and fecha > timezone.localdate():
         return Producto.PRE_VENTA, fecha
@@ -353,7 +353,7 @@ def _guardar_confianzas(borrador, declaradas, *, fecha_propia=False):
     contesta "baja" —correctamente, según el prompt— sobre un campo que el
     borrador después hereda del período, igual que hereda la editorial.
 
-    Guardarla así rompería CU-05 entero: la confirmación en lote excluye a
+    Guardarla así rompería CU-ALT-REV entero: la confirmación en lote excluye a
     todo borrador con algún campo de confianza baja, así que **ningún
     borrador sería nunca confirmable en lote**, que es exactamente el trabajo
     que el pipeline venía a eliminar. Es el mismo modo de falla que A7 de
@@ -398,7 +398,7 @@ def _adjuntar_portada(borrador, portadas):
     portada es revisar la mitad, y la portada equivocada es justamente uno de
     los errores que la revisión existe para atrapar.
 
-    Que falte no interrumpe nada (CU-04): el borrador queda con la portada
+    Que falte no interrumpe nada (CU-ALT-NOV): el borrador queda con la portada
     pendiente y se adjunta a mano después.
     """
     imagen = portadas.get(borrador.cid_portada) if borrador.cid_portada else None
@@ -423,7 +423,7 @@ def _adjuntar_portada(borrador, portadas):
 def _auditar(correo, resultado, *, actor, ip):
     """Una entrada consolidada por correo, no una por borrador.
 
-    Es el mismo criterio que la del alta en lote de CU-01: lo que se quiere
+    Es el mismo criterio que la del alta en lote de CU-ALT-NAC: lo que se quiere
     poder reconstruir después es *qué produjo este correo*, y treinta filas
     sueltas esconderían justamente eso.
     """

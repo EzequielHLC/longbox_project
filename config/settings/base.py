@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = "accounts.Usuario"
 
-# El login del sistema es por correo electrónico, no por username (CU-46).
+# El login del sistema es por correo electrónico, no por username (CU-AUT-INI).
 AUTHENTICATION_BACKENDS = ["apps.accounts.backends.EmailBackend"]
 
 MIDDLEWARE = [
@@ -147,7 +147,7 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 
-# Autenticación y sesiones (Módulo 12 — CU-46, CU-47, CU-48)
+# Autenticación y sesiones (Módulo 12 — CU-AUT-INI, CU-AUT-FIN, CU-AUT-REC)
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:tienda"  # fallback; el destino real depende del rol
@@ -165,37 +165,37 @@ SESSION_SAVE_EVERY_REQUEST = True
 # `PASSWORD_RESET_TIMEOUT` queda como *tope máximo* —el que verifica Django
 # junto con la firma— y la vigencia real de cada enlace la fija su propio
 # generador en `apps/accounts/tokens.py`.
-VIGENCIA_ENLACE_RECUPERACION = 30 * 60  # CU-48
-VIGENCIA_ENLACE_ACTIVACION = 48 * 60 * 60  # CU-50
+VIGENCIA_ENLACE_RECUPERACION = 30 * 60  # CU-AUT-REC
+VIGENCIA_ENLACE_ACTIVACION = 48 * 60 * 60  # CU-USR-ALT
 PASSWORD_RESET_TIMEOUT = VIGENCIA_ENLACE_ACTIVACION
 
-# CU-46, excepción de intentos fallidos. Queda como constante hasta que el
-# CU-56 (Configuración del Sistema) lo haga parametrizable desde un panel.
+# CU-AUT-INI, excepción de intentos fallidos. Queda como constante hasta que el
+# CU-CFG-PAR (Configuración del Sistema) lo haga parametrizable desde un panel.
 LOGIN_INTENTOS_MAXIMOS = 5
 LOGIN_BLOQUEO_MINUTOS = 15
 
 DEFAULT_FROM_EMAIL = "no-responder@longbox.local"
 
 
-# Alta Editorial (Módulo 01 — CU-01, CU-02)
+# Alta Editorial (Módulo 01 — CU-ALT-NAC, CU-ALT-IMP)
 #
 # Los dos valores son parámetros de negocio, no constantes técnicas: el panel de
-# Configuración del Sistema (CU-56, Módulo 17) los va a exponer para que el
+# Configuración del Sistema (CU-CFG-PAR, Módulo 17) los va a exponer para que el
 # Administrador los edite sin tocar código. Hasta entonces viven acá, y salen
 # del `.env` para poder cambiarlos sin editar el repositorio.
 
-# Precondición de CU-02: el margen de ganancia global está configurado. Se
+# Precondición de CU-ALT-IMP: el margen de ganancia global está configurado. Se
 # expresa como proporción, no como porcentaje: 0.40 es un 40%.
 MARGEN_GANANCIA_GLOBAL = config("MARGEN_GANANCIA_GLOBAL", default="0.40", cast=Decimal)
 
-# Stock con el que nace un borrador automatizado que no lo declara (CU-05).
-# El alta manual de CU-01/CU-02 **no** usa este valor: si el Administrador no
+# Stock con el que nace un borrador automatizado que no lo declara (CU-ALT-REV).
+# El alta manual de CU-ALT-NAC/CU-ALT-IMP **no** usa este valor: si el Administrador no
 # contó unidades, el producto nace en cero. Inventarle stock a un sistema de
 # stock es la clase de error que después se paga vendiendo lo que no hay.
 STOCK_INICIAL_POR_DEFECTO = config("STOCK_INICIAL_POR_DEFECTO", default=1, cast=int)
 
 
-# Modelo de lenguaje (CU-04): extracción de novedades desde el correo del
+# Modelo de lenguaje (CU-ALT-NOV): extracción de novedades desde el correo del
 # proveedor.
 #
 # **Corre local**, en LM Studio, que expone una API compatible con la de OpenAI.

@@ -1,8 +1,8 @@
-"""CU-18 — Registrar Proveedor Editorial.
+"""CU-PRV-ALT — Registrar Proveedor Editorial.
 
 Lo que se prueba acá no es un CRUD: es que el alta deje bien puesta la única
 cosa que este módulo le aporta al resto del sistema, que es el filtro de
-remitentes válidos del procesamiento automático de CU-04.
+remitentes válidos del procesamiento automático de CU-ALT-NOV.
 """
 
 import pytest
@@ -19,7 +19,7 @@ URL_ALTA = reverse("suppliers:proveedor_alta")
 
 
 def datos(**cambios):
-    """El POST del alta. Solo los dos primeros son obligatorios (CU-18 paso 2).
+    """El POST del alta. Solo los dos primeros son obligatorios (CU-PRV-ALT paso 2).
 
     `procesa_novedades` viaja marcado porque así se dibuja el formulario: el
     campo nace en `True` para que se cumpla literal la postcondición del CU
@@ -167,7 +167,7 @@ def test_la_razon_social_se_normaliza(client_admin):
 
 
 def test_el_correo_se_guarda_en_minuscula(client_admin):
-    """Es la clave con la que CU-04 reconoce un remitente: normalizarlo al
+    """Es la clave con la que CU-ALT-NOV reconoce un remitente: normalizarlo al
     guardar hace que la búsqueda del pipeline y la pantalla digan lo mismo."""
     client_admin.post(URL_ALTA, datos(correo_comercial="  Novedades@Ivrea.TEST  "))
 

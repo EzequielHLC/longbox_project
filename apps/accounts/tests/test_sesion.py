@@ -1,4 +1,4 @@
-"""CU-46, comportamiento adicional: expiración por inactividad y renovación."""
+"""CU-AUT-INI, comportamiento adicional: expiración por inactividad y renovación."""
 
 import pytest
 from django.urls import reverse

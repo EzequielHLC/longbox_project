@@ -2,7 +2,7 @@
 
 Agregado al CU, documentado en `/docs/modulos/gestion_usuarios.md`: sin esto,
 una cuenta cargada con el correo equivocado queda pendiente para siempre y ese
-correo bloqueado, porque el CU-52 exige estado Activo para dar de baja.
+correo bloqueado, porque el CU-USR-BAJ exige estado Activo para dar de baja.
 """
 
 import pytest

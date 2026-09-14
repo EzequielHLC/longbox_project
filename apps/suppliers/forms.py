@@ -1,4 +1,4 @@
-"""Formularios del alta y la edición de proveedores (CU-18, CU-19).
+"""Formularios del alta y la edición de proveedores (CU-PRV-ALT, CU-PRV-EDI).
 
 Los dos usan el mismo formulario porque piden exactamente los mismos campos: la
 diferencia entre el alta y la edición no está en qué se carga sino en qué pasa
@@ -14,9 +14,9 @@ from apps.catalog.forms import editoriales_activas, tipos_activos
 from apps.suppliers import muestras
 from apps.suppliers.models import Proveedor
 
-# CU-19 A1, textual: el CU la cita como el mensaje que el sistema debe mostrar
+# CU-PRV-EDI A1, textual: el CU la cita como el mensaje que el sistema debe mostrar
 # antes de dejar cambiar el correo. Se conserva tal cual, con el mismo criterio
-# que la advertencia del precio manual de CU-02.
+# que la advertencia del precio manual de CU-ALT-IMP.
 ADVERTENCIA_CAMBIO_DE_CORREO = (
     "El correo anterior dejará de ser reconocido como remitente válido. Los mensajes del "
     "proveedor deben enviarse al correo nuevo a partir de este cambio."
@@ -29,11 +29,11 @@ class ProveedorForm(forms.ModelForm):
     """Alta y edición de un proveedor editorial.
 
     El campo de confirmación no es un dato del proveedor: es la respuesta a la
-    advertencia de CU-19 A1, y **la exige el servidor**. El cartel del navegador
+    advertencia de CU-PRV-EDI A1, y **la exige el servidor**. El cartel del navegador
     ayuda a no cambiar el correo sin querer, pero el que decide es este archivo:
     si la confirmación viviera solo en el JavaScript, una pestaña de
     herramientas abierta alcanzaría para sacar del filtro de remitentes el
-    correo por el que entra todo el pipeline de CU-04.
+    correo por el que entra todo el pipeline de CU-ALT-NOV.
     """
 
     confirma_cambio_de_correo = forms.BooleanField(
@@ -113,7 +113,7 @@ class ProveedorForm(forms.ModelForm):
     def clean_correo_comercial(self):
         """El correo se guarda en minúscula, no solo se compara así.
 
-        Es la clave con la que CU-04 reconoce un remitente. Normalizarlo al
+        Es la clave con la que CU-ALT-NOV reconoce un remitente. Normalizarlo al
         guardar —y no únicamente al comparar— hace que la búsqueda del pipeline
         y lo que muestra la pantalla digan siempre lo mismo.
         """
@@ -129,7 +129,7 @@ class ProveedorForm(forms.ModelForm):
     def _existente(self, campo, valor):
         """El proveedor que ya ocupa ese valor, sin distinguir mayúsculas.
 
-        E2 de CU-18 pide informar el conflicto **con enlace a la ficha del
+        E2 de CU-PRV-ALT pide informar el conflicto **con enlace a la ficha del
         proveedor existente**, así que no alcanza con saber que hay choque: hace
         falta contra quién. Por eso devuelve el objeto y no un booleano.
         """
@@ -140,7 +140,7 @@ class ProveedorForm(forms.ModelForm):
             .first()
         )
 
-    # -- la advertencia de CU-19 A1 ------------------------------------------
+    # -- la advertencia de CU-PRV-EDI A1 ------------------------------------------
 
     @property
     def cambia_el_correo(self):
@@ -160,7 +160,7 @@ MOTIVO_MINIMO = 4
 class DescarteDeCorreoForm(forms.Form):
     """El motivo por el que un correo sale de la cola sin procesarse.
 
-    Es obligatorio, con el mismo criterio con el que CU-05 lo exige al rechazar
+    Es obligatorio, con el mismo criterio con el que CU-ALT-REV lo exige al rechazar
     un borrador: una cola llena de correos descartados sin explicación no sirve
     para entender nada dentro de tres meses, y menos para decidir a qué
     proveedores conviene dejarles el procesamiento prendido.

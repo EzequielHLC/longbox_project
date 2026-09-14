@@ -5,7 +5,7 @@
 
 {% block contenido %}
 {% comment %}
-CU-52 paso 2: confirmación explícita. Es la pantalla donde `signal` se usa
+CU-USR-BAJ paso 2: confirmación explícita. Es la pantalla donde `signal` se usa
 con intención — acción destructiva —, no como decoración.
 
 Ojo: `{# ... #}` solo sirve para comentarios de una línea; si ocupa más de una,
@@ -33,7 +33,7 @@ Django no lo interpreta como comentario y lo imprime en pantalla.
     <dd>{{ usuario_objetivo.get_estado_display }}</dd>
   </dl>
 
-  {# CU-52 paso 2: la confirmación tiene que informar el cierre de sesiones. #}
+  {# CU-USR-BAJ paso 2: la confirmación tiene que informar el cierre de sesiones. #}
   <div class="border-t border-line px-6 py-5 text-sm">
     <p>
       Se cerrarán de inmediato todas las sesiones abiertas de la cuenta, en cualquier

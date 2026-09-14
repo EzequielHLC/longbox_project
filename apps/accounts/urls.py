@@ -6,7 +6,7 @@ app_name = "accounts"
 
 urlpatterns = [
     path("login/", views.LoginUsuarioView.as_view(), name="login"),
-    # Módulo 11 — alta pública de cuenta de Cliente (CU-43).
+    # Módulo 11 — alta pública de cuenta de Cliente (CU-CLI-ALT).
     path("registro/", views.RegistroClienteView.as_view(), name="registro_cliente"),
     path("logout/", views.LogoutUsuarioView.as_view(), name="logout"),
     path("sesion/renovar/", views.renovar_sesion, name="renovar_sesion"),

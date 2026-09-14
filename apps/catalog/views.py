@@ -63,7 +63,7 @@ MENSAJE_CONFIANZA_SIN_REVISAR = (
 
 
 class InventarioMixin(RolRequeridoMixin):
-    """CU-11 — Consultar Inventario, el primer CU del proyecto con **dos actores**.
+    """CU-CAT-INV — Consultar Inventario, el primer CU del proyecto con **dos actores**.
 
     El Administrador toma decisiones operativas y el Cajero responde consultas de
     mostrador; los dos necesitan ver el stock, y por eso la consulta no es
@@ -246,7 +246,7 @@ class PrecioDeReferenciaView(CatalogoAdminMixin, View):
 
 
 class ProductoNoEditorialAltaView(CatalogoAdminMixin, CreateView):
-    """CU-08 — Registrar Alta de Producto No Editorial.
+    """CU-CAT-ALT — Registrar Alta de Producto No Editorial.
 
     Es de a uno y no por lote, a diferencia del alta editorial: cinco artículos
     no editoriales no comparten nada entre sí, mientras que veinte tomos de una
@@ -292,7 +292,7 @@ class ProductoNoEditorialAltaView(CatalogoAdminMixin, CreateView):
 
 
 class DuplicadosNoEditorialesView(CatalogoAdminMixin, View):
-    """Lo que ya existe con un nombre parecido, mientras se escribe (CU-08 E2).
+    """Lo que ya existe con un nombre parecido, mientras se escribe (CU-CAT-ALT E2).
 
     Es la mitad cómoda de la advertencia de duplicado. Sin esto, el Administrador
     se entera de que estaba cargando algo repetido recién al apretar guardar, con
@@ -756,7 +756,7 @@ class PrecioEliminarView(CatalogoAdminMixin, DetailView):
 
 
 class LoteResumenView(CatalogoAdminMixin, DetailView):
-    """El resumen del alta (CU-01 paso 9, CU-02 paso 11).
+    """El resumen del alta (CU-ALT-NAC paso 9, CU-ALT-IMP paso 11).
 
     Es una pantalla propia y no un mensaje flash porque tiene que poder
     enumerar cada colisión con enlace a la ficha del producto existente (E1), y
@@ -793,7 +793,7 @@ class LoteResumenView(CatalogoAdminMixin, DetailView):
 
 
 class ProductoListaView(InventarioMixin, ListView):
-    """CU-11 — Consultar Inventario.
+    """CU-CAT-INV — Consultar Inventario.
 
     Nació como contraparte de lectura del alta en lote (A7 de
     `alta_editorial.md`), antes de que el Módulo 02 se abordara, y por eso
@@ -806,7 +806,7 @@ class ProductoListaView(InventarioMixin, ListView):
     con alfabético por defecto, así que quien viene de cargar un lote pide
     `?orden=recientes` y ve lo suyo.
 
-    Editar y dar de baja son CU-09 y CU-10, todavía sin implementar.
+    Editar y dar de baja son CU-CAT-EDI y CU-CAT-BAJ, todavía sin implementar.
     """
 
     # El paso 3 del CU: "disponibilidad de stock (Con stock / Sin stock /
@@ -951,9 +951,9 @@ class ProductoListaView(InventarioMixin, ListView):
 
 
 class ProductoDetalleView(InventarioMixin, DetailView):
-    """CU-11 paso 6 — la ficha, con **campos distintos según quién mire**.
+    """CU-CAT-INV paso 6 — la ficha, con **campos distintos según quién mire**.
 
-    Es el destino del enlace que CU-01 E1 exige al informar un duplicado, y
+    Es el destino del enlace que CU-ALT-NAC E1 exige al informar un duplicado, y
     ahora también el paso 6 del CU de consulta. Lo que cambia por rol:
 
     - El **Administrador** ve todo, incluido el historial de modificaciones.
@@ -1021,7 +1021,7 @@ class ProductoDetalleView(InventarioMixin, DetailView):
 
 
 class BorradorListaView(CatalogoAdminMixin, ListView):
-    """CU-05 paso 1 — la cola de borradores pendientes.
+    """CU-ALT-REV paso 1 — la cola de borradores pendientes.
 
     Muestra los dos grupos que el CU pide diferenciar visualmente: los
     **incompletos** (les falta un campo bloqueante) y los de **confianza baja**
@@ -1081,7 +1081,7 @@ class BorradorListaView(CatalogoAdminMixin, ListView):
 
 
 class BorradorDetalleView(CatalogoAdminMixin, View):
-    """CU-05 pasos 2 y 3 — revisar un borrador, editarlo y resolverlo.
+    """CU-ALT-REV pasos 2 y 3 — revisar un borrador, editarlo y resolverlo.
 
     Las tres acciones (guardar, confirmar, rechazar) llegan al mismo `POST` y se
     distinguen por el botón que se apretó. Están juntas a propósito: las tres se
@@ -1137,7 +1137,7 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
             # que anunciaban los mismos tomos: los borradores del segundo
             # quedaban en la cola sin ninguna marca, y la única forma de
             # enterarse era apretar el botón y recibir el rechazo. Es la misma
-            # cortesía que CU-01 E1 le da a los duplicados del alta en lote,
+            # cortesía que CU-ALT-NAC E1 le da a los duplicados del alta en lote,
             # enlace a la ficha existente incluido.
             "duplicado": self._duplicado_de(borrador),
         }
@@ -1222,11 +1222,11 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
 
 
 class ConfirmarEnLoteView(CatalogoAdminMixin, View):
-    """CU-05 paso 4 — confirmar una selección con una sola acción.
+    """CU-ALT-REV paso 4 — confirmar una selección con una sola acción.
 
     **Excluye, no bloquea.** Un borrador con confianza baja o con un bloqueante
     vacío se saltea informando por qué y queda en cola para revisión individual;
-    los demás se confirman igual. Es la misma distinción de CU-01 entre una
+    los demás se confirman igual. Es la misma distinción de CU-ALT-NAC entre una
     exclusión esperada y un fallo transaccional.
     """
 
@@ -1257,7 +1257,7 @@ class ConfirmarEnLoteView(CatalogoAdminMixin, View):
 
 
 class CerrarSesionRevisionView(CatalogoAdminMixin, View):
-    """CU-05 pasos 5 y 6 — cerrar la tanda y mandar los pedidos.
+    """CU-ALT-REV pasos 5 y 6 — cerrar la tanda y mandar los pedidos.
 
     Un correo por proveedor con los productos **de esta sesión**. El cierre no se
     hace solo al salir de la pantalla: es una decisión explícita, porque es la
@@ -1293,12 +1293,12 @@ class CerrarSesionRevisionView(CatalogoAdminMixin, View):
 
 
 # ---------------------------------------------------------------------------
-# CU-09 y CU-10 — editar, dar de baja y reactivar un producto
+# CU-CAT-EDI y CU-CAT-BAJ — editar, dar de baja y reactivar un producto
 # ---------------------------------------------------------------------------
 
 
 class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
-    """CU-09 — Editar Producto, de los dos rubros.
+    """CU-CAT-EDI — Editar Producto, de los dos rubros.
 
     **Una vista y dos formularios**, elegidos por el rubro del producto. La
     alternativa era un formulario que supiera de los dos, y sería peor: los
@@ -1401,12 +1401,12 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
 
 
 class ProductoBajaView(CatalogoAdminMixin, DetailView):
-    """CU-10 — Dar de Baja Producto.
+    """CU-CAT-BAJ — Dar de Baja Producto.
 
     El GET **no** es un trámite de confirmación: es el informe de impacto que el
     Administrador tiene que leer antes de decidir, y por eso la baja es una
     pantalla propia y no un botón con un cartel del navegador. Es el mismo
-    criterio con el que se construyó la baja de proveedor de CU-20.
+    criterio con el que se construyó la baja de proveedor de CU-PRV-BAJ.
 
     **La baja es lógica, nunca un `DELETE`.** Lo pide la postcondición del CU:
     el producto se conserva en el inventario interno y en el historial de ventas.
@@ -1470,9 +1470,9 @@ class ProductoBajaView(CatalogoAdminMixin, DetailView):
 
 
 class ProductoReactivarView(CatalogoAdminMixin, DetailView):
-    """La vuelta de la baja de CU-10. **Ningún CU la describe.**
+    """La vuelta de la baja de CU-CAT-BAJ. **Ningún CU la describe.**
 
-    Se agrega porque sin ella la baja es un camino de ida, y el propio CU-09
+    Se agrega porque sin ella la baja es un camino de ida, y el propio CU-CAT-EDI
     quedaría sin sentido en su parte más explícita: su precondición dice que un
     producto se edita estando de baja, y mantener al día los datos de algo que no
     puede volver no sirve para nada.

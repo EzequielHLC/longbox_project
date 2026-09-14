@@ -714,7 +714,7 @@ class ItemLoteNacionalForm(ItemLoteForm):
             # que redondear, porque el PVP viene dado por la tabla de referencia
             # o escrito a mano. Se guarda igual para que valga en los dos rubros
             # la misma invariante —`precio` es el base redondeado— y para que
-            # CU-13 no tenga que preguntar de qué origen es antes de leerlo.
+            # CU-PVP-MAR no tenga que preguntar de qué origen es antes de leerlo.
             precio_base=precio,
             precio_manual=self.cleaned_data.get("precio_manual", False),
             precio_referencia=self.cleaned_data.get("referencia"),
@@ -870,14 +870,14 @@ CHOQUE_DE_EDICION = (
 
 
 class ProductoNoEditorialForm(forms.ModelForm):
-    """Alta de TCG, figura, merchandising o insumo (CU-08).
+    """Alta de TCG, figura, merchandising o insumo (CU-CAT-ALT).
 
     **Es de a uno, no por lote**, a diferencia del alta editorial. No es una
     simplificación: el CU describe un alta singular, y tiene sentido — un lote
     editorial son veinte tomos de la misma serie que comparten editorial, tipo y
     precio, mientras que cinco artículos no editoriales no comparten nada.
 
-    **El estado no se ofrece.** CU-08 lo dice en sus comentarios: el sistema
+    **El estado no se ofrece.** CU-CAT-ALT lo dice en sus comentarios: el sistema
     asigna exclusivamente Activo. La restricción vive en el modelo, que rechaza
     Pre-venta para este rubro; acá simplemente no hay campo que mandar.
     """
@@ -936,7 +936,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
         self.fields["etiquetas"].queryset = etiquetas_activas()
         self.fields["etiquetas"].widget = forms.SelectMultiple()
 
-        # Los cuatro obligatorios de CU-08 paso 2, menos la imagen: no bloquea el
+        # Los cuatro obligatorios de CU-CAT-ALT paso 2, menos la imagen: no bloquea el
         # alta en ninguno de los dos rubros (A5 de `alta_editorial.md`, unificado
         # en la decisión 3 de este módulo).
         for nombre in ("titulo", "tipo", "precio", "stock"):
@@ -949,7 +949,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
             "Opcional: si se deja vacío, el sistema genera uno y no se repite nunca."
         )
 
-        # Editando (CU-09) el código no se ofrece. Es la identidad del producto y
+        # Editando (CU-CAT-EDI) el código no se ofrece. Es la identidad del producto y
         # el modelo la declara inmutable; un campo editable que el `save()` va a
         # ignorar es peor que no tenerlo, porque promete un cambio que no ocurre.
         #
@@ -990,7 +990,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
 
 
 class ProductoEditorialForm(forms.ModelForm):
-    """Edición de un tomo ya cargado (CU-09).
+    """Edición de un tomo ya cargado (CU-CAT-EDI).
 
     **No existe un alta editorial de a uno**: el material editorial entra por
     lote, porque veinte tomos de una serie comparten editorial, tipo y formato.
@@ -1003,12 +1003,12 @@ class ProductoEditorialForm(forms.ModelForm):
     - `codigo` — es la identidad y el modelo la declara inmutable.
     - `estado` — el ciclo de vida lo gobiernan los CU que lo mueven. Ofrecerlo
       acá permitiría descatalogar un producto sin pasar por el informe de
-      impacto de CU-10, que es justamente para lo que ese informe existe.
+      impacto de CU-CAT-BAJ, que es justamente para lo que ese informe existe.
     - `origen`, `lote`, `precio_base`, `costo_origen` — describen de dónde vino
       el producto y con qué aritmética se le fijó el precio. Son la historia del
       lote, no datos del tomo: cambiarlos acá haría que el resumen del lote
       dejara de coincidir con sus propios productos.
-    - `demorado`, `fecha_estimada`, `nota_demora` — son de CU-06, que está
+    - `demorado`, `fecha_estimada`, `nota_demora` — son de CU-ALT-CAN, que está
       bloqueado por Pedidos.
     """
 
@@ -1119,7 +1119,7 @@ class ProductoEditorialForm(forms.ModelForm):
         return datos
 
     def _revisar_precio(self, datos):
-        """A1 de CU-09 — editar el precio a mano rompe el vínculo automático.
+        """A1 de CU-CAT-EDI — editar el precio a mano rompe el vínculo automático.
 
         La regla se expresa sobre el estado del producto y no sobre de dónde
         vino el precio, que es lo que la vuelve una sola regla para los dos
@@ -1321,7 +1321,7 @@ class FormatoForm(CatalogoNombradoForm):
 
 
 class ModeloDeLenguajeForm(forms.ModelForm):
-    """A qué modelo de lenguaje le habla el sistema (CU-04, A16).
+    """A qué modelo de lenguaje le habla el sistema (CU-ALT-NOV, A16).
 
     Está separado de `ConfiguracionForm` y no es solo prolijidad de pantalla:
     son dos cosas que se tocan por motivos distintos. El margen y el stock los
@@ -1444,7 +1444,7 @@ class ConfiguracionForm(forms.ModelForm):
 
 
 class BorradorForm(forms.ModelForm):
-    """Edición de un borrador antes de confirmarlo (CU-05 paso 2).
+    """Edición de un borrador antes de confirmarlo (CU-ALT-REV paso 2).
 
     Es un `ModelForm` y no el `ItemLoteForm` del alta manual aunque los campos se
     parezcan, y la diferencia de fondo es cuál es el estado válido de cada uno:
@@ -1547,7 +1547,7 @@ class BorradorForm(forms.ModelForm):
 
 
 class RechazoDeBorradorForm(forms.Form):
-    """El motivo, que es obligatorio (CU-05).
+    """El motivo, que es obligatorio (CU-ALT-REV).
 
     Mismo criterio que el descarte de un correo: una cola llena de rechazos sin
     explicación no sirve para entender nada después.

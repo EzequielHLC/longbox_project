@@ -1,7 +1,7 @@
-"""La generación de borradores desde una extracción (CU-04 pasos 5, 6, 7 y 9).
+"""La generación de borradores desde una extracción (CU-ALT-NOV pasos 5, 6, 7 y 9).
 
 Es el punto del pipeline donde lo que el modelo propuso se cruza contra el
-catálogo real, y donde se decide qué llega a la cola de revisión de CU-05 y qué
+catálogo real, y donde se decide qué llega a la cola de revisión de CU-ALT-REV y qué
 se descarta antes. **Ninguno de estos tests llama al modelo:** se trabaja sobre
 la extracción ya guardada, que es exactamente como funciona en producción —
 regenerar los borradores de un correo no vuelve a gastar una corrida de GPU.
@@ -212,7 +212,7 @@ def test_el_duplicado_se_detecta_por_la_tupla_cuando_no_hay_isbn(correo, editori
 @pytest.mark.django_db
 def test_un_duplicado_no_frena_a_los_demas_productos_del_correo(correo, editorial, tipo):
     """Una exclusión esperada no es un fallo transaccional: es la misma regla
-    con la que un duplicado no aborta el alta en lote de CU-01."""
+    con la que un duplicado no aborta el alta en lote de CU-ALT-NAC."""
     ProductoFactory(isbn=BERSERK, editorial=editorial, tipo=tipo)
 
     resultado = generar(
@@ -321,7 +321,7 @@ def test_sin_fecha_el_borrador_nace_activo(correo):
 def test_una_fecha_ya_pasada_no_se_conserva(correo):
     """Si el material ya llegó, el producto va Activo y sin fecha (A10).
     Arrastrarla dejaría un activo con fecha de llegada del mes pasado, que no
-    significa nada y ensucia la vigilancia de pre-ventas de CU-03."""
+    significa nada y ensucia la vigilancia de pre-ventas de CU-ALT-TRA."""
     pasada = timezone.localdate() - timedelta(days=30)
 
     borrador = generar(correo, extraccion(periodo=pasada.isoformat())).creados[0]
@@ -414,7 +414,7 @@ def test_en_un_tipo_que_no_usa_formato_no_se_busca_ninguno(correo, proveedor):
 
 @pytest.mark.django_db
 def test_un_producto_sin_precio_genera_un_borrador_incompleto(correo):
-    """CU-04: los que el modelo identificó pero no pudo completar generan
+    """CU-ALT-NOV: los que el modelo identificó pero no pudo completar generan
     borradores incompletos, y van a la **misma** cola que los demás."""
     resultado = generar(correo, extraccion([extraido(precio="")]))
 
@@ -461,7 +461,7 @@ def test_un_proveedor_sin_editorial_deja_los_borradores_bloqueados(correo, prove
 
 @pytest.mark.django_db
 def test_la_confianza_se_guarda_campo_por_campo(correo):
-    """CU-05 depende de esa granularidad para decidir qué es confirmable en
+    """CU-ALT-REV depende de esa granularidad para decidir qué es confirmable en
     lote: un único nivel global no alcanzaría."""
     confianza = dict(CONFIANZA_ALTA, precio="baja", volumen="media")
 
@@ -475,7 +475,7 @@ def test_la_confianza_se_guarda_campo_por_campo(correo):
 
 @pytest.mark.django_db
 def test_una_confianza_baja_nace_sin_revisar(correo):
-    """Es la acción afirmativa que CU-05 paso 3 exige antes de confirmar."""
+    """Es la acción afirmativa que CU-ALT-REV paso 3 exige antes de confirmar."""
     confianza = dict(CONFIANZA_ALTA, precio="baja")
 
     borrador = generar(correo, extraccion([extraido(confianza=confianza)])).creados[0]
@@ -519,7 +519,7 @@ def test_los_reparos_del_producto_viajan_al_borrador(correo):
 
 @pytest.mark.django_db
 def test_un_reparo_del_correo_entero_se_copia_a_cada_borrador(correo):
-    """La cola de CU-05 se mira de a un borrador por vez: un reparo que solo
+    """La cola de CU-ALT-REV se mira de a un borrador por vez: un reparo que solo
     viviera en el correo no lo vería nadie desde ahí."""
     reparo = "Período ilegible: «cuando salga». Los borradores nacen sin fecha."
 
@@ -613,7 +613,7 @@ def test_la_fecha_heredada_del_periodo_no_lleva_confianza(correo):
 
     Una fila de novedades casi nunca trae fecha propia —el período lo anuncia el
     correo entero—, así que el modelo declara "baja" correctamente sobre esa
-    celda vacía. Si esa confianza se guardara, la confirmación en lote de CU-05
+    celda vacía. Si esa confianza se guardara, la confirmación en lote de CU-ALT-REV
     —que excluye a todo borrador con algún campo de confianza baja— dejaría
     **ningún borrador confirmable en lote nunca**, que es justo el trabajo que el
     pipeline venía a eliminar.

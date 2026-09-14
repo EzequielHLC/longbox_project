@@ -1,6 +1,6 @@
 """La cola de aprobación: ingesta, pantallas y descarte.
 
-Es la pieza que **no está en la fuente**. CU-04 describe un ciclo que parsea
+Es la pieza que **no está en la fuente**. CU-ALT-NOV describe un ciclo que parsea
 todo lo que encuentre de un remitente registrado; acá el correo llega, se
 archiva y espera una decisión. Ver la corrección 11 de
 `docs/correcciones-fuente.md`.
@@ -54,7 +54,7 @@ def test_un_correo_de_un_proveedor_habilitado_entra_a_la_cola(ivrea):
 
 
 def test_el_correo_queda_archivado_entero(ivrea):
-    """CU-04 pide archivar el original como respaldo. Además es lo que permite
+    """CU-ALT-NOV pide archivar el original como respaldo. Además es lo que permite
     volver a extraer el contenido si la extracción mejora, sin depender de que
     el correo siga en la casilla."""
     correo = services.ingerir(ejemplo.correo_de_novedades()).correo
@@ -80,7 +80,7 @@ def test_se_guarda_el_contenido_extraido_y_el_resumen_de_las_portadas(ivrea):
 
 
 def test_un_remitente_no_registrado_no_genera_nada():
-    """E1 de CU-04: se loguea y el ciclo sigue con el mensaje siguiente. No
+    """E1 de CU-ALT-NOV: se loguea y el ciclo sigue con el mensaje siguiente. No
     levanta: un correo raro no puede tumbar la lectura de la casilla entera."""
     resultado = services.ingerir(ejemplo.correo_de_novedades(remitente="spam@cualquiera.test"))
 
@@ -171,7 +171,7 @@ def test_la_cola_cuenta_los_pendientes(client_admin, ivrea):
 
 
 def test_la_cola_vacia_no_es_un_error(client_admin):
-    """Es el resultado normal de un ciclo sin novedades, que el propio CU-04
+    """Es el resultado normal de un ciclo sin novedades, que el propio CU-ALT-NOV
     contempla en E6."""
     contenido = client_admin.get(URL_COLA).content.decode()
 
@@ -237,7 +237,7 @@ def test_descartar_lo_saca_de_la_cola(client_admin, ivrea, administrador):
 
 
 def test_el_motivo_del_descarte_es_obligatorio(client_admin, ivrea):
-    """Mismo criterio que el rechazo de un borrador en CU-05: una cola llena de
+    """Mismo criterio que el rechazo de un borrador en CU-ALT-REV: una cola llena de
     descartes sin explicación no sirve para entender nada después."""
     correo = services.ingerir(ejemplo.correo_de_novedades()).correo
 

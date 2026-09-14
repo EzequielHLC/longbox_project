@@ -7,7 +7,7 @@ from apps.core.utils import obtener_ip
 
 @receiver(user_logged_in)
 def auditar_inicio_de_sesion(sender, request, user, **kwargs):
-    """CU-46 paso 3: todo inicio de sesión queda en el log de auditoría.
+    """CU-AUT-INI paso 3: todo inicio de sesión queda en el log de auditoría.
 
     Se engancha a la signal y no a la vista para que también quede registrado
     lo que entre por otra puerta (el admin de Django, por ejemplo).
@@ -22,7 +22,7 @@ def auditar_inicio_de_sesion(sender, request, user, **kwargs):
 
 @receiver(user_logged_out)
 def auditar_cierre_de_sesion(sender, request, user, **kwargs):
-    """CU-47 paso 3."""
+    """CU-AUT-FIN paso 3."""
     if user is None:  # logout sin sesión activa
         return
     RegistroAuditoria.registrar(

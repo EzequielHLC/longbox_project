@@ -277,7 +277,7 @@ def test_la_marca_es_opcional():
 
 
 def test_dos_articulos_del_mismo_nombre_y_categoria_pueden_convivir():
-    """CU-08 E2 lo trata como bloqueo y el catálogo real no lo tolera: dos
+    """CU-CAT-ALT E2 lo trata como bloqueo y el catálogo real no lo tolera: dos
     llaveros de Naruto de proveedores distintos son dos productos. Se informa
     como advertencia, no se impide (corrección 21)."""
     categoria = TipoNoEditorialFactory(nombre="Merchandising")
@@ -313,7 +313,7 @@ def test_un_articulo_no_acepta_un_tipo_editorial():
 
 
 def test_el_material_no_editorial_no_admite_pre_venta():
-    """CU-08 lo dice en sus comentarios, y se valida en el modelo y no
+    """CU-CAT-ALT lo dice en sus comentarios, y se valida en el modelo y no
     escondiendo la opción en la pantalla."""
     articulo = ProductoNoEditorialFactory.build(
         tipo=TipoNoEditorialFactory(), estado=Producto.PRE_VENTA
@@ -358,7 +358,7 @@ def test_especifico_sobre_una_hija_se_devuelve_a_si_misma():
 
 def test_el_inventario_devuelve_los_dos_rubros_en_una_sola_consulta():
     """Es lo que la herencia con tabla propia hace posible y las clases
-    abstractas no: CU-11 pide un listado único sobre los dos rubros."""
+    abstractas no: CU-CAT-INV pide un listado único sobre los dos rubros."""
     ProductoFactory(titulo="Un tomo")
     ProductoNoEditorialFactory(titulo="Una figura")
 

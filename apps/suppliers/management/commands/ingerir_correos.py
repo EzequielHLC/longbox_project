@@ -36,7 +36,7 @@ class Command(BaseCommand):
         archivos = sorted(carpeta.glob("*.eml"))
         if not archivos:
             # No es un error: es el resultado normal de un ciclo sin novedades
-            # (E6 de CU-04). Se informa y se termina sin generar nada.
+            # (E6 de CU-ALT-NOV). Se informa y se termina sin generar nada.
             self.stdout.write("No hay archivos .eml en la carpeta. Nada que ingerir.")
             return
 

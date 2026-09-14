@@ -1,4 +1,4 @@
-"""CU-50 — Dar de Alta Usuario del Sistema."""
+"""CU-USR-ALT — Dar de Alta Usuario del Sistema."""
 
 import pytest
 from django.core import mail

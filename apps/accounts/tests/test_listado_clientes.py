@@ -49,7 +49,7 @@ def test_la_pantalla_lista_solo_cuentas_de_cliente(client_admin, clientela):
 
 
 def test_la_tabla_no_ofrece_acciones_sobre_las_cuentas(client_admin, clientela):
-    """Es de consulta: dar de baja un Cliente es el CU-49, todavía sin documentar.
+    """Es de consulta: dar de baja un Cliente es el CU-CLI-BAJ, todavía sin documentar.
 
     Se mira el fragmento de la tabla y no la pantalla entera: la cáscara del
     backoffice trae las clases de los botones definidas en su CSS, así que

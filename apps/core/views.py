@@ -19,7 +19,7 @@ def localidades(request):
     golpee la API pública por su cuenta, y si el servicio se cae el problema se
     resuelve en un solo lugar.
 
-    Sin sesión, porque el registro es público (CU-43). No expone nada: son
+    Sin sesión, porque el registro es público (CU-CLI-ALT). No expone nada: son
     datos abiertos del INDEC.
     """
     provincia = request.GET.get("provincia", "").strip()
@@ -30,14 +30,14 @@ class TerminosView(TemplateView):
     """Términos y condiciones / política de privacidad.
 
     Pública y sin sesión: la enlaza el checkbox de consentimiento del registro
-    (CU-43), y de nada serviría un consentimiento "informado" si para leer lo
+    (CU-CLI-ALT), y de nada serviría un consentimiento "informado" si para leer lo
     que se acepta hubiera que tener cuenta antes.
     """
 
     template_name = "core/terminos.html"
 
 
-# Vistas placeholder: son el destino de la redirección por rol del CU-46.
+# Vistas placeholder: son el destino de la redirección por rol del CU-AUT-INI.
 # Cada una se va a reemplazar por el módulo real (Tienda Online, Ventas
 # Presenciales, panel de administración) cuando se aborde ese CU. Lo que sí
 # es definitivo es el control de acceso por rol.

@@ -1,4 +1,4 @@
-"""CU-46, excepción: 5 intentos fallidos consecutivos bloquean el acceso."""
+"""CU-AUT-INI, excepción: 5 intentos fallidos consecutivos bloquean el acceso."""
 
 from datetime import timedelta
 

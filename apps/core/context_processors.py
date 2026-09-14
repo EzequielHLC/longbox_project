@@ -1,6 +1,6 @@
 from django.conf import settings
 
-# Cuánto antes del vencimiento se le avisa al usuario (CU-46, comportamiento
+# Cuánto antes del vencimiento se le avisa al usuario (CU-AUT-INI, comportamiento
 # adicional: "cuando falten 5 minutos para que la sesión expire").
 AVISO_PREVIO_SEGUNDOS = 5 * 60
 

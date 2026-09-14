@@ -1,5 +1,5 @@
 {% comment %}
-Fragmento de la tabla de proveedores (CU-21 paso 2). Se renderiza de dos
+Fragmento de la tabla de proveedores (CU-PRV-CON paso 2). Se renderiza de dos
 maneras:
 
 - incrustado en `proveedor_lista.html`, en la carga normal de la pantalla;
@@ -81,7 +81,7 @@ estado y cantidad de productos vinculados.
               {% comment %}
               Las acciones dependen del estado y son excluyentes: un proveedor
               activo se da de baja, uno inactivo se reactiva. Editar está
-              disponible siempre —la precondición de CU-19 dice "cualquier
+              disponible siempre —la precondición de CU-PRV-EDI dice "cualquier
               estado"— pero vive en la ficha, que es de donde el CU la arranca.
               {% endcomment %}
               <div class="flex justify-end gap-3">
@@ -119,7 +119,7 @@ estado y cantidad de productos vinculados.
   {% endif %}
 {% else %}
   {% comment %}
-  Los dos estados vacíos del CU-21: E1 (el filtro no devolvió nada, se ofrece
+  Los dos estados vacíos del CU-PRV-CON: E1 (el filtro no devolvió nada, se ofrece
   limpiarlo) y E2 (no hay ningún proveedor todavía, se ofrece el acceso directo
   al alta). Son mensajes distintos porque son problemas distintos.
   {% endcomment %}

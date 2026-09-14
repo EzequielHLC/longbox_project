@@ -117,7 +117,7 @@ def test_un_correo_de_prosa_se_lee_como_prosa():
 
 
 def test_las_portadas_vienen_dentro_del_correo():
-    """Es la corrección 16: CU-04 supone una descarga por URL, y acá no hay nada
+    """Es la corrección 16: CU-ALT-NOV supone una descarga por URL, y acá no hay nada
     que descargar."""
     imagenes = leer_novedades().imagenes
 

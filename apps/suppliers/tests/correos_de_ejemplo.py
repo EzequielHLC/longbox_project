@@ -10,7 +10,7 @@ en vez de manteniendo ocho archivos casi iguales.
 tabla por producto, con ISBN, portada, nombre, volumen, formato y PVP en celdas,
 y las portadas **embebidas** como partes `image/webp` referenciadas con `cid:`
 desde el HTML. Ese último punto no es un detalle de implementación: es lo que
-hace que CU-04 paso 7 —"descarga las imágenes referenciadas por URL"— no aplique
+hace que CU-ALT-NOV paso 7 —"descarga las imágenes referenciadas por URL"— no aplique
 (ver la corrección 16 de `docs/correcciones-fuente.md`).
 
 Vienen con las trampas puestas a propósito, porque probar contra un correo ideal

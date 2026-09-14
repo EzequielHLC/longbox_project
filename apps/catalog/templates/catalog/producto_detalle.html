@@ -4,7 +4,7 @@
 Ficha del producto. La abren el listado del inventario y el enlace de una
 colisión por duplicado.
 
-Es también el punto de entrada de CU-09 y CU-10: las acciones se agregan acá en
+Es también el punto de entrada de CU-CAT-EDI y CU-CAT-BAJ: las acciones se agregan acá en
 vez de repartirse en pantallas propias, porque las tres se deciden mirando estos
 mismos datos.
 
@@ -199,14 +199,14 @@ y el bloque **no se dibuja** en lugar de esconderse con CSS.
 </div>
 
 {% comment %}
-CU-11 paso 6: los campos que el Administrador ve y el Cajero no. La ficha no
+CU-CAT-INV paso 6: los campos que el Administrador ve y el Cajero no. La ficha no
 esconde el bloque con CSS — no se dibuja, que es lo único que cuenta cuando lo
 que se protege es información y no una acción.
 
 De los tres que el CU le reserva al Administrador, dos dependen de módulos que no
 existen: el stock reservado en pedidos y los suscriptores de reposición activos.
 Se dice que no se pueden determinar en vez de mostrar un cero, con el mismo
-criterio con el que la baja de proveedor de CU-20 no inventa la cifra de
+criterio con el que la baja de proveedor de CU-PRV-BAJ no inventa la cifra de
 propuestas de restock. Un cero acá se leería como "nadie lo tiene reservado", que
 es exactamente la conclusión equivocada para decidir una baja.
 {% endcomment %}

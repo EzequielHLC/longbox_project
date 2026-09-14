@@ -1,4 +1,4 @@
-"""CU-47 — Cerrar Sesión."""
+"""CU-AUT-FIN — Cerrar Sesión."""
 
 import pytest
 from django.test import Client

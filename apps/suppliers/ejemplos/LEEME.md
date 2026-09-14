@@ -9,7 +9,7 @@ embebidas en formato WebP.
 |---|---|
 | `novedades-marzo.eml` | El caso normal: tres productos con ISBN, portada, volumen, formato y PVP. Trae además un logo embebido que **no** es una portada y una tabla de maquetado envolviendo la de datos. |
 | `demora-berserk.eml` | Un aviso de demora. Entra a la cola igual: es la razón por la que la cola existe. |
-| `remitente-desconocido.eml` | No entra (E1 de CU-04). |
+| `remitente-desconocido.eml` | No entra (E1 de CU-ALT-NOV). |
 
 Para cargarlos, con un proveedor activo cuyo correo comercial sea
 `novedades@ivrea.test` y con el procesamiento de novedades habilitado:

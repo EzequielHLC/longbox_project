@@ -1,13 +1,13 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-CU-18 (alta) y CU-19 (edición). Comparten plantilla porque piden los mismos
+CU-PRV-ALT (alta) y CU-PRV-EDI (edición). Comparten plantilla porque piden los mismos
 campos: lo que cambia es qué pasa al confirmar, y eso vive en la vista.
 
 Dos piezas que no son decorativas:
 
-- El aviso de conflicto (E2 de CU-18) enlaza a la ficha del proveedor con el que
+- El aviso de conflicto (E2 de CU-PRV-ALT) enlaza a la ficha del proveedor con el que
   se chocó. Sin ese enlace el mensaje obligaría a salir a buscarlo a mano.
-- La confirmación del cambio de correo (A1 de CU-19) es una casilla, no un
+- La confirmación del cambio de correo (A1 de CU-PRV-EDI) es una casilla, no un
   cartel del navegador: el servidor la vuelve a exigir.
 {% endcomment %}
 
@@ -35,7 +35,7 @@ listado.
   {% endif %}
 
   {% comment %}
-  E2 de CU-18: el conflicto se informa con enlace a la ficha del existente. El
+  E2 de CU-PRV-ALT: el conflicto se informa con enlace a la ficha del existente. El
   rojo acá está bien usado —es un bloqueo, no una decoración— y el enlace es lo
   que convierte el aviso en algo accionable.
   {% endcomment %}
@@ -67,7 +67,7 @@ listado.
     {% include "_campo.html" with campo=form.correo_comercial %}
 
     {% comment %}
-    A1 de CU-19. Solo aparece en la edición —en un alta no hay correo anterior
+    A1 de CU-PRV-EDI. Solo aparece en la edición —en un alta no hay correo anterior
     que invalidar— y el texto es el que cita la fuente, palabra por palabra.
     {% endcomment %}
     {% if form.confirma_cambio_de_correo %}

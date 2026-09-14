@@ -1,6 +1,6 @@
 """Reglas de proveedores que no son de una pantalla en particular.
 
-Están acá y no en las vistas porque el informe de impacto de CU-20 tiene que
+Están acá y no en las vistas porque el informe de impacto de CU-PRV-BAJ tiene que
 poder calcularse sin levantar un request —lo van a necesitar los reportes y, más
 adelante, el ciclo de restock— y porque describir los cambios para la auditoría
 es la misma operación en el alta, la edición y la baja.
@@ -22,7 +22,7 @@ from apps.suppliers import correos
 from apps.suppliers import extraccion as extraccion_de_novedades
 from apps.suppliers.models import CorreoProveedor, Proveedor
 
-# Qué campos se auditan con su par anterior → nuevo (CU-19 postcondición). Las
+# Qué campos se auditan con su par anterior → nuevo (CU-PRV-EDI postcondición). Las
 # notas internas entran: son el lugar donde queda escrito por qué se dejó de
 # trabajar con alguien, y un cambio ahí importa tanto como uno del teléfono.
 #
@@ -46,7 +46,7 @@ CAMPOS_AUDITADOS = {  # noqa: RUF012
 
 @dataclass
 class ImpactoDeBaja:
-    """Lo que CU-20 paso 3 le tiene que mostrar al Administrador antes de bajar.
+    """Lo que CU-PRV-BAJ paso 3 le tiene que mostrar al Administrador antes de bajar.
 
     El CU pide dos cifras: las propuestas de restock afectadas y los productos
     del catálogo vinculados. La segunda se puede calcular; la primera no, porque
@@ -65,7 +65,7 @@ class ImpactoDeBaja:
 
 
 def calcular_impacto_de_baja(proveedor):
-    """CU-20 paso 2 — el mapeo de impacto previo a la confirmación."""
+    """CU-PRV-BAJ paso 2 — el mapeo de impacto previo a la confirmación."""
     return ImpactoDeBaja(productos_vinculados=proveedor.productos.count())
 
 
@@ -80,7 +80,7 @@ def describir_cambios(lo_que_cambio):
 
 
 # ---------------------------------------------------------------------------
-# Ingesta de correos (CU-04 pasos 1 a 3, con la aprobación humana de por medio)
+# Ingesta de correos (CU-ALT-NOV pasos 1 a 3, con la aprobación humana de por medio)
 # ---------------------------------------------------------------------------
 
 
@@ -96,7 +96,7 @@ class MotivoDeDescarte:
 class ResultadoDeIngesta:
     """Qué pasó con un correo. Nunca es una excepción: siempre hay que seguir.
 
-    E1 del CU-04 es taxativo en esto —un remitente no registrado se loguea y el
+    E1 del CU-ALT-NOV es taxativo en esto —un remitente no registrado se loguea y el
     ciclo continúa con el siguiente mensaje— y lo mismo vale para el resto: un
     correo raro no puede tumbar la lectura de la casilla entera.
     """
@@ -175,7 +175,7 @@ def descartar(correo, actor, motivo):
     """Saca un correo de la cola sin procesarlo.
 
     Es la respuesta a "esto no es un anuncio de novedades": una factura, una
-    promoción, un saludo. Exige un motivo por el mismo criterio con el que CU-05
+    promoción, un saludo. Exige un motivo por el mismo criterio con el que CU-ALT-REV
     lo exige al rechazar un borrador — sin él, la cola resuelta no explica nada
     dentro de tres meses.
     """
@@ -232,7 +232,7 @@ def portadas_de(correo):
     guardado justamente para esto.
 
     Devuelve un diccionario vacío si el archivo no está o no se puede leer. Que
-    falte una portada no interrumpe el procesamiento del correo (CU-04): los
+    falte una portada no interrumpe el procesamiento del correo (CU-ALT-NOV): los
     borradores quedan con la portada pendiente y se adjunta a mano después.
     """
     if not correo.archivo:
@@ -249,7 +249,7 @@ def extraer_novedades(correo, *, actor=None, ip=None):
     """Le pasa el correo al modelo, guarda lo que entendió y arma los borradores.
 
     **Sigue sin crear productos**, que es lo que importa: un borrador es una
-    propuesta que espera la confirmación de una persona en CU-05. Lo que el
+    propuesta que espera la confirmación de una persona en CU-ALT-REV. Lo que el
     modelo devolvió queda igual guardado en el correo, y la ficha lo muestra —
     así, cuando un borrador salga raro, se puede ver contra qué texto se armó
     sin tener que volver a gastar una corrida del modelo.

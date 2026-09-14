@@ -1,4 +1,4 @@
-"""CU-09 — Editar Producto (Editorial o No Editorial).
+"""CU-CAT-EDI — Editar Producto (Editorial o No Editorial).
 
 La fuente da solo la descripción resumida de este CU: no hay flujo numerado ni
 excepciones. Lo que se prueba acá sale de ahí y de las decisiones que documenta
@@ -16,7 +16,7 @@ romper en silencio:
   exige la confirmación es el servidor.
 - **Lo que no se ofrece.** El código es la identidad y no cambia; el estado lo
   gobiernan los CU que lo mueven, y ofrecerlo acá permitiría descatalogar sin
-  pasar por el informe de impacto de CU-10.
+  pasar por el informe de impacto de CU-CAT-BAJ.
 """
 
 from decimal import Decimal
@@ -146,7 +146,7 @@ def test_el_codigo_no_se_puede_cambiar(client_admin):
 
 
 def test_el_estado_no_se_puede_cambiar_desde_la_edicion(client_admin):
-    """Descatalogar tiene que pasar por el informe de impacto de CU-10. Un
+    """Descatalogar tiene que pasar por el informe de impacto de CU-CAT-BAJ. Un
     `select` que no se dibuja no impide mandar el valor a mano, así que lo que
     cuenta es que el servidor lo ignore."""
     producto = ProductoFactory(estado=Producto.ACTIVO)
@@ -393,7 +393,7 @@ def test_la_pantalla_avisa_que_esta_fuera_del_catalogo(client_admin):
 
 
 def test_el_cajero_no_edita(client):
-    """CU-11 le abre la consulta al Cajero; editar sigue siendo del Administrador."""
+    """CU-CAT-INV le abre la consulta al Cajero; editar sigue siendo del Administrador."""
     client.force_login(UsuarioFactory(rol="cajero"))
 
     assert client.get(url(ProductoFactory())).status_code == 403

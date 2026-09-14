@@ -7,7 +7,7 @@ servicio guarda.
 
 Dos decisiones que no son obvias:
 
-**No se aplana a texto plano.** CU-04 paso 3 pide "extraer el contenido a texto
+**No se aplana a texto plano.** CU-ALT-NOV paso 3 pide "extraer el contenido a texto
 plano", y para estos correos eso está mal: son HTML con una tabla por producto
 —ISBN, foto, nombre, volumen, formato y PVP en celdas— y aplanarla destruye la
 asociación fila-columna. A partir de ahí el modelo empieza a atribuirle a un
@@ -16,7 +16,7 @@ tres meses después mirando un precio raro. Acá la tabla se conserva como filas
 de celdas separadas por barras. Ver la corrección 15 de
 `docs/correcciones-fuente.md`.
 
-**Las portadas no se descargan: ya vinieron.** CU-04 paso 7 supone que la imagen
+**Las portadas no se descargan: ya vinieron.** CU-ALT-NOV paso 7 supone que la imagen
 está referenciada por URL, pero los proveedores nacionales las mandan embebidas
 como partes MIME con un `Content-ID`. Cada `<img>` se reemplaza por un marcador
 `[imagen:identificador]` dentro de su fila, de modo que el modelo lo devuelve

@@ -46,7 +46,7 @@
       </p>
 
       <div class="mt-4 flex flex-wrap items-center gap-4">
-        {# CU-51, flujo alternativo: regenerar el enlace de activación. #}
+        {# CU-USR-MOD, flujo alternativo: regenerar el enlace de activación. #}
         <form method="post"
               action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
           {% csrf_token %}

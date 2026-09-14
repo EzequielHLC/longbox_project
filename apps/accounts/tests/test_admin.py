@@ -1,4 +1,4 @@
-"""El rol se administra desde el admin de Django hasta que exista el CU-51."""
+"""El rol se administra desde el admin de Django hasta que exista el CU-USR-MOD."""
 
 import pytest
 from django.urls import reverse

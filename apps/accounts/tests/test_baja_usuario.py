@@ -1,4 +1,4 @@
-"""CU-52 — Dar de Baja Usuario del Sistema."""
+"""CU-USR-BAJ — Dar de Baja Usuario del Sistema."""
 
 import pytest
 from django.test import Client

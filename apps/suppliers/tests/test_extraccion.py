@@ -324,7 +324,7 @@ def test_se_declara_el_modelo_cuando_esta_configurado(settings):
 
 def test_una_confianza_inventada_se_toma_como_baja():
     """Al alza sería peor: un valor raro leído como "alta" haría que un dato
-    dudoso se confirme en lote sin que nadie lo mire (CU-05)."""
+    dudoso se confirme en lote sin que nadie lo mire (CU-ALT-REV)."""
     confianza = {**CONFIANZA_ALTA, "precio": "altisima"}
     with contestando(respuesta(productos=[producto(confianza=confianza)])):
         resultado = extraccion.extraer("| contenido |")
@@ -340,7 +340,7 @@ def test_sin_confianza_declarada_no_rompe():
 
 
 # ---------------------------------------------------------------------------
-# Fallos del servicio — E3 de CU-04
+# Fallos del servicio — E3 de CU-ALT-NOV
 # ---------------------------------------------------------------------------
 
 
@@ -531,7 +531,7 @@ def test_la_ficha_muestra_lo_que_entendio_el_modelo(client_admin, correo):
 # ---------------------------------------------------------------------------
 # El período y las fechas
 #
-# Es lo que decide si un borrador nace en Pre-venta o Activo (CU-04 paso 6). Sin
+# Es lo que decide si un borrador nace en Pre-venta o Activo (CU-ALT-NOV paso 6). Sin
 # fecha todos nacerían Activos, y un producto que no llegó figurando disponible
 # no da ningún síntoma hasta que alguien lo compra.
 # ---------------------------------------------------------------------------
@@ -585,7 +585,7 @@ def test_el_periodo_del_correo_se_interpreta():
 
 def test_un_correo_sin_periodo_no_deja_reparo():
     """No anunciar fecha es el caso normal, no un problema: esos borradores
-    nacen Activos, que es exactamente lo que pide CU-04 paso 6."""
+    nacen Activos, que es exactamente lo que pide CU-ALT-NOV paso 6."""
     with contestando(respuesta(productos=[producto()])):
         resultado = extraccion.extraer("| contenido |")
 

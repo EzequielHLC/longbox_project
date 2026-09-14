@@ -2,7 +2,7 @@
 
 No son un CU: existen porque E1 exige enlazar a la ficha del producto con el que
 se chocó, y porque después de cargar un lote hay que poder ver que quedó
-cargado. Editar y dar de baja son CU-09 y CU-10 (Módulo 02).
+cargado. Editar y dar de baja son CU-CAT-EDI y CU-CAT-BAJ (Módulo 02).
 """
 
 from decimal import Decimal
@@ -213,7 +213,7 @@ def test_el_inventario_no_filtra_datos_al_cliente(client):
     """403 sin datos parciales, igual que la tabla de usuarios.
 
     **El Cajero sí entra**, y este test dejó de incluirlo en agosto 2026: es
-    actor declarado de CU-11 y recibía un 403 porque estas pantallas nacieron
+    actor declarado de CU-CAT-INV y recibía un 403 porque estas pantallas nacieron
     dentro de Alta Editorial, que es exclusivo del Administrador. Era un defecto
     heredado, no una decisión.
     """
@@ -227,7 +227,7 @@ def test_el_inventario_no_filtra_datos_al_cliente(client):
 
 
 def test_el_cajero_puede_consultar_el_inventario(client, cajero):
-    """CU-11 lo declara actor: verifica disponibilidad para responder consultas
+    """CU-CAT-INV lo declara actor: verifica disponibilidad para responder consultas
     de mostrador."""
     ProductoFactory(titulo="Akira")
     client.force_login(cajero)
@@ -356,13 +356,13 @@ def test_la_restriccion_tambien_alcanza_a_los_productos_sin_formato(client_admin
 
 
 # ---------------------------------------------------------------------------
-# El indicador de demora (CU-07)
+# El indicador de demora (CU-ALT-DEM)
 #
 # El caso de uso está bloqueado por Pedidos, pero el indicador se declara ahora
 # por el mismo criterio que `precio_manual` y `proveedor`: agregarlo después
 # obligaría a una migración retroactiva sobre productos de los que ya no se
 # sabría el valor. Lo que se prueba acá es que la regla de lectura sea correcta
-# desde el principio, no que la pantalla de CU-07 exista.
+# desde el principio, no que la pantalla de CU-ALT-DEM exista.
 # ---------------------------------------------------------------------------
 
 
@@ -446,7 +446,7 @@ def titulos_de(respuesta):
 
 
 # ---------------------------------------------------------------------------
-# CU-11 — Consultar Inventario
+# CU-CAT-INV — Consultar Inventario
 #
 # El listado nació como contraparte de lectura del alta en lote (A7 de
 # `alta_editorial.md`), antes de que el Módulo 02 se abordara, y heredaba dos
@@ -564,7 +564,7 @@ def test_el_catalogo_vacio_se_distingue_del_filtro_sin_resultados(client_admin):
 
 
 # ---------------------------------------------------------------------------
-# La ficha diferenciada por rol (CU-11 paso 6)
+# La ficha diferenciada por rol (CU-CAT-INV paso 6)
 # ---------------------------------------------------------------------------
 
 

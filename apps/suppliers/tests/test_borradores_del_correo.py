@@ -5,7 +5,7 @@ extracción escrita a mano. Estos prueban lo otro: que el correo real —con su
 tabla de maquetado, su logo embebido y sus portadas con `Content-ID`— llegue
 hasta el borrador sin perder nada en el camino.
 
-Es el paso 7 de CU-04 y es donde más fácil se rompe algo en silencio: si el
+Es el paso 7 de CU-ALT-NOV y es donde más fácil se rompe algo en silencio: si el
 identificador de una portada no se normaliza igual de los dos lados, el borrador
 queda con la imagen pendiente y nadie entiende por qué.
 
@@ -181,7 +181,7 @@ def test_una_portada_inventada_deja_el_borrador_sin_imagen_y_con_su_reparo(corre
 
 @pytest.mark.django_db
 def test_un_producto_sin_portada_no_interrumpe_al_resto(correo):
-    """CU-04: la portada que falta no corta el procesamiento del correo."""
+    """CU-ALT-NOV: la portada que falta no corta el procesamiento del correo."""
     with contestando(
         respuesta(
             productos=[

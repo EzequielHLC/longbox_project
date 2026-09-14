@@ -1,4 +1,4 @@
-"""CU-10 — Dar de Baja Producto (Editorial o No Editorial), y la reactivación.
+"""CU-CAT-BAJ — Dar de Baja Producto (Editorial o No Editorial), y la reactivación.
 
 La fuente da solo la descripción resumida. De ella salen las tres reglas que
 concentran estos tests:
@@ -17,7 +17,7 @@ Tienda, que no existen. Se declaran igual y en `None`: un cero se leería como
 "no afecta a nadie", que es la conclusión equivocada para decidir una baja.
 
 La reactivación no la describe ningún CU. Existe porque sin ella la baja es un
-camino de ida y la precondición de CU-09 —un producto de baja se edita— no
+camino de ida y la precondición de CU-CAT-EDI —un producto de baja se edita— no
 serviría para nada.
 """
 
@@ -286,7 +286,7 @@ def test_la_ficha_de_un_descatalogado_ofrece_reactivar_y_no_dar_de_baja(client_a
 
 
 def test_la_ficha_del_cajero_no_ofrece_ninguna_accion(client):
-    """CU-11 paso 6 se la reserva al Administrador. No se esconde con CSS: no se
+    """CU-CAT-INV paso 6 se la reserva al Administrador. No se esconde con CSS: no se
     dibuja, que es lo único que cuenta."""
     client.force_login(UsuarioFactory(rol="cajero"))
     producto = ProductoFactory()

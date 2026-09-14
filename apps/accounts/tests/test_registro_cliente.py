@@ -1,4 +1,4 @@
-"""CU-43 — Registrar Cuenta de Cliente."""
+"""CU-CLI-ALT — Registrar Cuenta de Cliente."""
 
 import pytest
 from django.core import mail
@@ -62,7 +62,7 @@ def test_el_registro_crea_una_cuenta_de_cliente_activa(client):
     usuario = Usuario.objects.get(email="lucia@correo.test")
     assert usuario.rol == Usuario.CLIENTE
     assert usuario.estado == Usuario.ACTIVO
-    # A diferencia del alta de personal (CU-50), la cuenta puede entrar ya.
+    # A diferencia del alta de personal (CU-USR-ALT), la cuenta puede entrar ya.
     assert usuario.is_active is True
     assert usuario.get_full_name() == "Lucía Gómez"
 
@@ -105,7 +105,7 @@ def test_el_registro_queda_en_el_log_de_auditoria(client):
 
 
 def test_el_inicio_de_sesion_automatico_tambien_se_audita(client):
-    """El `login()` de la vista pasa por la misma signal que el CU-46."""
+    """El `login()` de la vista pasa por la misma signal que el CU-AUT-INI."""
     registrar(client)
 
     assert RegistroAuditoria.objects.filter(accion=RegistroAuditoria.INICIO_SESION).count() == 1
@@ -169,7 +169,7 @@ def test_un_correo_ya_registrado_es_rechazado_y_ofrece_recuperar_la_contrasena(c
     assert respuesta.status_code == 200
     contenido = respuesta.content.decode()
     assert MENSAJE_CORREO_YA_REGISTRADO in contenido
-    # Excepción 1 del CU: el rechazo viene con enlace a recuperación (CU-48).
+    # Excepción 1 del CU: el rechazo viene con enlace a recuperación (CU-AUT-REC).
     assert URL_RECUPERACION in contenido
     # Y no se crea un duplicado.
     assert Usuario.objects.filter(email="lucia@correo.test").count() == 1

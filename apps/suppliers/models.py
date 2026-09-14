@@ -1,20 +1,20 @@
-"""Proveedores editoriales (CU-18 a CU-21) y la cola de sus correos.
+"""Proveedores editoriales (CU-PRV-ALT a CU-PRV-CON) y la cola de sus correos.
 
 El modelo existe por dos motivos distintos y conviene no confundirlos:
 
 1. **Es una agenda de contactos comerciales.** Razón social, correo, teléfono:
    lo que hace falta para llamar a alguien y pedirle material.
-2. **Es el filtro de remitentes válidos del pipeline automatizado de CU-04.**
+2. **Es el filtro de remitentes válidos del pipeline automatizado de CU-ALT-NOV.**
    Un correo de novedades solo se procesa si su remitente coincide con un
    proveedor **activo y con el procesamiento habilitado**. Eso convierte a
    `correo_comercial` en algo más que un dato de contacto: es una credencial de
-   confianza, y por eso la baja de CU-20 no es cosmética —saca el correo del
+   confianza, y por eso la baja de CU-PRV-BAJ no es cosmética —saca el correo del
    filtro— y por eso el correo es único.
 3. **Es la cabecera de los borradores que genere ese pipeline.** La editorial y
    el rubro no vienen en el correo, porque la comunicación es directa de la
    editorial a la comiquería y nadie escribe su propio nombre en su newsletter.
    Los aporta el proveedor y los heredan sus borradores, con el mismo patrón de
-   cabecera/ítem del alta en lote de CU-01.
+   cabecera/ítem del alta en lote de CU-ALT-NAC.
 
 La segunda y la tercera son las que fijan casi todas las reglas de este archivo.
 
@@ -42,7 +42,7 @@ class ProveedorQuerySet(models.QuerySet):
     def remitente_valido(self, correo):
         """El proveedor habilitado dueño de ese correo, o `None`.
 
-        Es el punto por el que CU-04 decide si procesa un mensaje o lo saltea, y
+        Es el punto por el que CU-ALT-NOV decide si procesa un mensaje o lo saltea, y
         está acá y no en la tarea de fondo para que la regla viva junto al dato
         que la define: quien cambie el estado, el correo o la habilitación de un
         proveedor cambia el filtro de remitentes por el mismo acto, sin tocar el
@@ -62,7 +62,7 @@ class ProveedorQuerySet(models.QuerySet):
 
 
 class Proveedor(models.Model):
-    """Un proveedor editorial nacional o distribuidora (CU-18)."""
+    """Un proveedor editorial nacional o distribuidora (CU-PRV-ALT)."""
 
     ACTIVO = "activo"
     INACTIVO = "inactivo"
@@ -72,7 +72,7 @@ class Proveedor(models.Model):
         (INACTIVO, "Inactivo"),
     ]
 
-    # Los dos obligatorios de CU-18 paso 2.
+    # Los dos obligatorios de CU-PRV-ALT paso 2.
     razon_social = models.CharField("razón social", max_length=200)
     correo_comercial = models.EmailField("correo comercial", max_length=254)
 
@@ -84,7 +84,7 @@ class Proveedor(models.Model):
     estado = models.CharField("estado", max_length=10, choices=ESTADO_CHOICES, default=ACTIVO)
 
     # ------------------------------------------------------------------
-    # Procesamiento automático de novedades (CU-04)
+    # Procesamiento automático de novedades (CU-ALT-NOV)
     # ------------------------------------------------------------------
 
     # Separado del estado a propósito: "la relación comercial está viva" y "sus
@@ -95,7 +95,7 @@ class Proveedor(models.Model):
     # que su casilla alimente el pipeline.
     #
     # Nace en `True` para que se siga cumpliendo literal la postcondición de
-    # CU-18: el correo del proveedor recién dado de alta queda habilitado como
+    # CU-PRV-ALT: el correo del proveedor recién dado de alta queda habilitado como
     # remitente válido sin que nadie tenga que acordarse de prenderlo.
     procesa_novedades = models.BooleanField(
         "procesa novedades automáticamente",
@@ -113,7 +113,7 @@ class Proveedor(models.Model):
     # la comunicación es directa de la editorial a la comiquería, así que la
     # editorial nunca escribe su propio nombre en su propio newsletter ni
     # aclara el rubro, porque publica siempre lo mismo. Y los dos son campos
-    # bloqueantes en la revisión de CU-05: sin esto, *todos* los borradores
+    # bloqueantes en la revisión de CU-ALT-REV: sin esto, *todos* los borradores
     # nacerían trabados y revisarlos sería elegirle a cada uno la misma
     # editorial a mano — el trabajo que el pipeline venía a eliminar.
     #
@@ -158,16 +158,16 @@ class Proveedor(models.Model):
     class Meta:
         verbose_name = "proveedor"
         verbose_name_plural = "proveedores"
-        # CU-21 paso 2: la vista por defecto es alfabética.
+        # CU-PRV-CON paso 2: la vista por defecto es alfabética.
         ordering = ["razon_social"]
         constraints = [  # noqa: RUF012
-            # Las dos unicidades que pide CU-18 paso 4, y las dos sin distinguir
+            # Las dos unicidades que pide CU-PRV-ALT paso 4, y las dos sin distinguir
             # mayúsculas. "Editorial Ivrea" y "EDITORIAL IVREA" son el mismo
             # proveedor escrito distinto, y con dos filas la pantalla mostraría
             # dos agendas para el mismo interlocutor.
             #
             # En el correo la razón es más dura todavía: es el filtro de
-            # remitentes de CU-04, y dos proveedores con el mismo correo en
+            # remitentes de CU-ALT-NOV, y dos proveedores con el mismo correo en
             # distinta caja harían que qué proveedor "es" un mensaje dependiera
             # del orden de la consulta.
             models.UniqueConstraint(Lower("razon_social"), name="proveedor_unico_por_razon_social"),
@@ -208,7 +208,7 @@ class CorreoProveedor(models.Model):
     """Un correo de un proveedor, archivado y esperando una decisión.
 
     **Este modelo no está en la fuente**, y es la pieza que hace posible la
-    aprobación humana. CU-04 describe un ciclo que lee la casilla y parsea todo
+    aprobación humana. CU-ALT-NOV describe un ciclo que lee la casilla y parsea todo
     lo que encuentre de un remitente registrado; en la práctica por esa misma
     dirección llegan facturas, promociones y avisos de demora, así que
     auto-parsear todo genera borradores basura que alguien tiene que rechazar
@@ -269,7 +269,7 @@ class CorreoProveedor(models.Model):
     # el orden de la cola lo da `recibido_en`, que es un hecho nuestro.
     fecha = models.DateTimeField("fecha del correo", null=True, blank=True)
 
-    # El original completo. CU-04 pide archivarlo como respaldo, y además es lo
+    # El original completo. CU-ALT-NOV pide archivarlo como respaldo, y además es lo
     # que permite volver a extraer el contenido si la extracción mejora, sin
     # depender de que el correo siga en la casilla.
     archivo = models.FileField("correo original", upload_to="correos/", blank=True)

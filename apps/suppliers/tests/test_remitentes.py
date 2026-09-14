@@ -1,8 +1,8 @@
-"""El filtro de remitentes válidos: lo que este módulo le aporta a CU-04.
+"""El filtro de remitentes válidos: lo que este módulo le aporta a CU-ALT-NOV.
 
 `Proveedor.objects.remitente_valido` es la única puerta por la que el pipeline
 de novedades decide si procesa un correo o lo saltea. Todavía no hay pipeline,
-pero la regla ya existe y se prueba sola: cuando CU-04 se implemente, va a
+pero la regla ya existe y se prueba sola: cuando CU-ALT-NOV se implemente, va a
 apoyarse en algo verificado en vez de inventarlo de nuevo dentro de una tarea de
 Celery, que es donde peor se prueba.
 """
@@ -22,7 +22,7 @@ def test_un_proveedor_activo_es_remitente_valido():
 
 
 def test_un_proveedor_inactivo_no_lo_es():
-    """Es el efecto de CU-20: la baja saca el correo del filtro."""
+    """Es el efecto de CU-PRV-BAJ: la baja saca el correo del filtro."""
     ProveedorFactory(correo_comercial="novedades@ivrea.test", estado=Proveedor.INACTIVO)
 
     assert Proveedor.objects.remitente_valido("novedades@ivrea.test") is None
@@ -36,7 +36,7 @@ def test_un_proveedor_con_el_procesamiento_apagado_tampoco():
 
 
 def test_un_correo_desconocido_no_devuelve_nada():
-    """E1 de CU-04: el remitente no registrado no se procesa."""
+    """E1 de CU-ALT-NOV: el remitente no registrado no se procesa."""
     ProveedorFactory(correo_comercial="novedades@ivrea.test")
 
     assert Proveedor.objects.remitente_valido("cualquiera@spam.test") is None

@@ -200,7 +200,7 @@ def test_confirmar_el_precio_calculado_no_lo_marca_como_manual(client_admin, edi
 def test_un_lote_sin_ediciones_deja_todos_los_productos_alcanzables_por_la_propagacion(
     client_admin, editorial
 ):
-    """Para que el recálculo de CU-13 los alcance a todos por defecto."""
+    """Para que el recálculo de CU-PVP-MAR los alcance a todos por defecto."""
     datos = lote_importado(
         [
             item("Berserk", 1, costo_origen="1000"),

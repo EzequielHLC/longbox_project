@@ -1,12 +1,12 @@
-"""El correo de pedido consolidado a un proveedor (CU-24).
+"""El correo de pedido consolidado a un proveedor (CU-RST-PED).
 
-**Es un CU compartido.** Lo invoca CU-05 al cerrar una sesión de revisión, y lo
+**Es un CU compartido.** Lo invoca CU-ALT-REV al cerrar una sesión de revisión, y lo
 va a invocar Restock (Módulo 05) cuando exista. Por eso vive acá y no dentro de
 la revisión de borradores, y por eso no sabe nada de borradores ni de sesiones:
 recibe un proveedor y una lista de líneas, y manda el correo. Quien arma esas
 líneas es asunto de quien lo llama.
 
-**Reintenta hasta tres veces.** Lo pide la excepción de CU-05, y el motivo es
+**Reintenta hasta tres veces.** Lo pide la excepción de CU-ALT-REV, y el motivo es
 que el fallo típico de un envío es transitorio —el servidor SMTP rechazando por
 carga, la red cortada un segundo—. Lo que **no** hace es revertir nada: el alta
 de los productos y el pedido al proveedor son operaciones separadas, y un correo
@@ -21,7 +21,7 @@ from apps.core.mail import enviar_correo
 
 logger = logging.getLogger(__name__)
 
-# Tres, como pide CU-05. No es un número mágico elegido por gusto: con un solo
+# Tres, como pide CU-ALT-REV. No es un número mágico elegido por gusto: con un solo
 # intento un corte de un segundo pierde el pedido, y con muchos más la pantalla
 # que espera el cierre de la sesión se queda colgada por un proveedor cuyo
 # servidor está caído de verdad.

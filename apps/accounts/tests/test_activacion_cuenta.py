@@ -1,4 +1,4 @@
-"""CU-50, del lado del usuario nuevo: activar la cuenta y elegir contraseña."""
+"""CU-USR-ALT, del lado del usuario nuevo: activar la cuenta y elegir contraseña."""
 
 from datetime import datetime, timedelta
 

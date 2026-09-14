@@ -1,4 +1,4 @@
-"""CU-48 — Recuperar Contraseña."""
+"""CU-AUT-REC — Recuperar Contraseña."""
 
 from datetime import datetime, timedelta
 

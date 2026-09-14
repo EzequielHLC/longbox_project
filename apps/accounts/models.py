@@ -94,7 +94,7 @@ class Usuario(AbstractUser):
     ]
 
     # Roles de personal: los únicos que se dan de alta desde el backoffice
-    # (CU-50). El alta de una cuenta de Cliente es el CU-43, otro flujo.
+    # (CU-USR-ALT). El alta de una cuenta de Cliente es el CU-CLI-ALT, otro flujo.
     ROLES_DE_PERSONAL = (CAJERO, ADMINISTRADOR)
 
     PENDIENTE_ACTIVACION = "pendiente_activacion"
@@ -109,21 +109,21 @@ class Usuario(AbstractUser):
 
     rol = models.CharField(max_length=20, choices=ROL_CHOICES, default=CLIENTE)
 
-    # Estado de negocio de la cuenta (CU-50/51/52). Es la única fuente de
+    # Estado de negocio de la cuenta (CU-USR-ALT, CU-USR-MOD y CU-USR-BAJ). Es la única fuente de
     # verdad: `is_active` —que es de Django y bloquea el login— se deriva de
     # acá en `save()`, así los dos campos no pueden quedar desincronizados.
     estado = models.CharField(max_length=25, choices=ESTADO_CHOICES, default=ACTIVO)
 
-    # El login del sistema es por correo (CU-46), así que el email tiene que
+    # El login del sistema es por correo (CU-AUT-INI), así que el email tiene que
     # ser único e identificar a una sola cuenta. `username` se conserva como
     # identificador interno heredado de AbstractUser.
     email = models.EmailField("correo electrónico", unique=True)
 
-    # Columna "última modificación" de la tabla de usuarios (CU-51).
+    # Columna "última modificación" de la tabla de usuarios (CU-USR-MOD).
     actualizado_en = models.DateTimeField("última modificación", auto_now=True)
 
     # ----------------------------------------------------------------------
-    # Datos opcionales del registro de Cliente (CU-43). Van acá y no en un
+    # Datos opcionales del registro de Cliente (CU-CLI-ALT). Van acá y no en un
     # modelo aparte porque son *un* dato por cuenta: la libreta de direcciones
     # múltiples, si alguna vez hace falta, es del módulo de Pedidos.
     # ----------------------------------------------------------------------
@@ -176,7 +176,7 @@ class Usuario(AbstractUser):
         self.email = self.email.strip().lower()
         # Solo una cuenta Activa puede iniciar sesión: mientras está pendiente
         # de activación todavía no eligió contraseña, y una cuenta dada de baja
-        # no debe poder volver a entrar (CU-52).
+        # no debe poder volver a entrar (CU-USR-BAJ).
         self.is_active = self.estado == self.ACTIVO
         return super().save(*args, **kwargs)
 

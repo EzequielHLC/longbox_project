@@ -17,7 +17,7 @@ from apps.core.utils import obtener_ip
 Usuario = get_user_model()
 
 # Mensaje único para credenciales inválidas: no distingue si falló el correo o
-# la contraseña, ni revela si la cuenta existe (CU-46, excepción 1).
+# la contraseña, ni revela si la cuenta existe (CU-AUT-INI, excepción 1).
 MENSAJE_CREDENCIALES = "Correo o contraseña incorrectos"
 MENSAJE_CUENTA_INACTIVA = "Esta cuenta no está disponible"
 MENSAJE_BLOQUEO = (
@@ -25,10 +25,10 @@ MENSAJE_BLOQUEO = (
     "temporalmente y se envió un aviso al correo registrado."
 )
 
-# CU-50 / CU-51: conflicto de correo.
+# CU-USR-ALT / CU-USR-MOD: conflicto de correo.
 MENSAJE_CORREO_EN_USO = "Ya existe una cuenta registrada con ese correo electrónico."
 
-# CU-51 / CU-52: no se puede dejar el sistema sin nadie que lo administre.
+# CU-USR-MOD / CU-USR-BAJ: no se puede dejar el sistema sin nadie que lo administre.
 MENSAJE_UNICO_ADMINISTRADOR = "Debe existir al menos un Administrador activo en el sistema."
 
 # Agregados al CU (ver /docs/modulos/gestion_usuarios.md).
@@ -41,8 +41,8 @@ MENSAJE_CUENTA_CON_HISTORIAL = (
     "del sistema debe darse de baja, conservando su historial."
 )
 
-# CU-43: registro de Cliente. El texto es el del CU, y va acompañado en la
-# pantalla por el enlace a recuperación de contraseña (CU-48).
+# CU-CLI-ALT: registro de Cliente. El texto es el del CU, y va acompañado en la
+# pantalla por el enlace a recuperación de contraseña (CU-AUT-REC).
 MENSAJE_CORREO_YA_REGISTRADO = "Este correo ya tiene una cuenta asociada"
 MENSAJE_POLITICA_OBLIGATORIA = "Debe aceptar la política de privacidad para poder crear la cuenta."
 
@@ -184,7 +184,7 @@ class FormularioRecuperarContrasena(PasswordResetForm):
 
 
 class FormularioUsuarioPersonal(forms.ModelForm):
-    """Alta (CU-50) y modificación (CU-51) de una cuenta de personal.
+    """Alta (CU-USR-ALT) y modificación (CU-USR-MOD) de una cuenta de personal.
 
     Es el mismo formulario para los dos CU porque los campos editables son los
     mismos: nombre completo, correo y rol. Lo que cambia entre alta y edición
@@ -200,7 +200,7 @@ class FormularioUsuarioPersonal(forms.ModelForm):
     )
 
     # El rol solo puede ser de personal. `Usuario.rol` acepta "cliente", pero
-    # esa alta es el CU-43 y esta pantalla no debe ofrecerla siquiera como
+    # esa alta es el CU-CLI-ALT y esta pantalla no debe ofrecerla siquiera como
     # opción: un POST con rol="cliente" también tiene que morir acá.
     rol = forms.ChoiceField(
         label="Rol",
@@ -222,7 +222,7 @@ class FormularioUsuarioPersonal(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # CU-51 paso 1: al editar se precargan los datos actuales.
+        # CU-USR-MOD paso 1: al editar se precargan los datos actuales.
         if self.instance.pk:
             self.fields["nombre_completo"].initial = self.instance.get_full_name()
 
@@ -258,7 +258,7 @@ class FormularioUsuarioPersonal(forms.ModelForm):
 
 
 class FormularioRegistroCliente(BaseUserCreationForm):
-    """CU-43 — Registrar Cuenta de Cliente.
+    """CU-CLI-ALT — Registrar Cuenta de Cliente.
 
     Hereda de `BaseUserCreationForm` (la clase que la documentación de Django
     señala para personalizar el alta) para no reescribir el par
@@ -266,7 +266,7 @@ class FormularioRegistroCliente(BaseUserCreationForm):
     el paso por `AUTH_PASSWORD_VALIDATORS`, que es lo que el CU llama
     "requisitos mínimos".
 
-    A diferencia del alta de personal (CU-50), acá el rol no se elige ni se
+    A diferencia del alta de personal (CU-USR-ALT), acá el rol no se elige ni se
     muestra: lo fija la vista en `cliente`. Un formulario que no tiene el campo
     no puede recibirlo por POST.
     """
@@ -519,7 +519,7 @@ class FormularioRegistroCliente(BaseUserCreationForm):
         """¿El rechazo fue por un correo que ya tiene cuenta?
 
         La pantalla lo usa para ofrecer el enlace a recuperación de contraseña
-        (CU-48) solo en ese caso; los demás errores del correo (formato
+        (CU-AUT-REC) solo en ese caso; los demás errores del correo (formato
         inválido, campo vacío) no tienen nada que ver con recuperar el acceso.
         """
         # `as_data()` devuelve los `ValidationError` con su `code`; `errors` a

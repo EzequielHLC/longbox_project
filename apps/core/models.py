@@ -45,7 +45,7 @@ class ConfiguracionSistema(models.Model):
     )
 
     # ------------------------------------------------------------------
-    # El modelo de lenguaje (CU-04)
+    # El modelo de lenguaje (CU-ALT-NOV)
     #
     # Vive acá y no en `settings` por el mismo motivo que el margen: es un
     # parámetro operativo que el negocio cambia sin tocar código. Pero además
@@ -193,7 +193,7 @@ class ConfiguracionSistema(models.Model):
 class RegistroAuditoria(models.Model):
     """Bitácora de operaciones sensibles del sistema.
 
-    Versión mínima para el Módulo 12 (autenticación). El CU-55 del módulo de
+    Versión mínima para el Módulo 12 (autenticación). El CU-AUD-CON del módulo de
     Auditoría la va a ampliar con más acciones y con la vista de consulta.
 
     El log es *inmutable*: ningún rol, ni siquiera Administrador, puede editar
@@ -295,7 +295,7 @@ class RegistroAuditoria(models.Model):
 
     accion = models.CharField(max_length=40, choices=ACCION_CHOICES)
     ip = models.GenericIPAddressField(null=True, blank=True)
-    # Texto libre: en las modificaciones (CU-51) guarda los valores anteriores
+    # Texto libre: en las modificaciones (CU-USR-MOD) guarda los valores anteriores
     # y los nuevos de cada campo, así que no entra en un largo fijo corto.
     detalle = models.TextField(blank=True)
     ocurrido_en = models.DateTimeField(auto_now_add=True)

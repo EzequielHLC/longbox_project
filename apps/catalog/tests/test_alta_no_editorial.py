@@ -1,11 +1,11 @@
-"""CU-08 — Registrar Alta de Producto No Editorial.
+"""CU-CAT-ALT — Registrar Alta de Producto No Editorial.
 
 Es el alta del rubro secundario del negocio: TCG, figuras, merchandising e
 insumos. De a uno y no por lote, a diferencia del alta editorial — cinco
 artículos no editoriales no comparten nada entre sí.
 
 Lo que más se prueba acá es el duplicado, porque es donde este CU se aparta de la
-fuente. CU-08 E2 lo trata como **bloqueo**: "el producto no es registrado". El
+fuente. CU-CAT-ALT E2 lo trata como **bloqueo**: "el producto no es registrado". El
 catálogo real no lo tolera —hay merch genérico, sin marca y no oficial— así que
 pasa a ser una advertencia que el Administrador confirma (corrección 21).
 
@@ -78,7 +78,7 @@ def test_el_alta_crea_el_producto(client_admin, categoria):
 
 
 def test_nace_activo_y_con_su_codigo(client_admin, categoria):
-    """CU-08 asigna exclusivamente Activo, y todo producto nace identificado."""
+    """CU-CAT-ALT asigna exclusivamente Activo, y todo producto nace identificado."""
     client_admin.post(URL_ALTA, datos(categoria))
 
     producto = ProductoNoEditorial.objects.get()
@@ -87,7 +87,7 @@ def test_nace_activo_y_con_su_codigo(client_admin, categoria):
 
 
 def test_el_codigo_escrito_a_mano_se_respeta(client_admin, categoria):
-    """CU-08 paso 3 lista el "código de producto interno" entre los opcionales.
+    """CU-CAT-ALT paso 3 lista el "código de producto interno" entre los opcionales.
     Nuestro campo es el mismo, híbrido: se escribe o se genera."""
     client_admin.post(URL_ALTA, datos(categoria, codigo="FIG-0007"))
 
@@ -121,7 +121,7 @@ def test_la_marca_es_opcional(client_admin, categoria):
 
 
 def test_la_imagen_no_bloquea_el_alta(client_admin, categoria):
-    """CU-08 paso 2 la lista entre los obligatorios; se unifica con A5 de
+    """CU-CAT-ALT paso 2 la lista entre los obligatorios; se unifica con A5 de
     `alta_editorial.md`, donde la portada tampoco bloquea. Es el mismo campo del
     mismo modelo y la misma pantalla de inventario."""
     client_admin.post(URL_ALTA, datos(categoria))
@@ -325,7 +325,7 @@ def test_el_alta_queda_auditada(client_admin, categoria, administrador):
 
 @pytest.mark.parametrize("rol", ["cliente", "cajero"])
 def test_el_alta_es_exclusiva_del_administrador(client, categoria, rol):
-    """El Cajero consulta el inventario (CU-11) pero no da de alta nada."""
+    """El Cajero consulta el inventario (CU-CAT-INV) pero no da de alta nada."""
     client.force_login(UsuarioFactory(rol=rol))
 
     assert client.get(URL_ALTA).status_code == 403
@@ -343,7 +343,7 @@ def test_el_inventario_enlaza_el_alta(client_admin):
 def test_sin_categorias_activas_la_pantalla_lo_dice(client_admin):
     """Sin ninguna, el desplegable aparecería vacío y sin explicar por qué.
 
-    Las cuatro categorías de CU-08 vienen sembradas por la migración, así que
+    Las cuatro categorías de CU-CAT-ALT vienen sembradas por la migración, así que
     para llegar a este caso hay que desactivarlas — que es exactamente lo que
     podría pasar en una instalación real.
     """

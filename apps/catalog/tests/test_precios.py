@@ -61,7 +61,7 @@ def test_casos_de_la_formula(costo, cre, margen, base_esperada, final_esperado):
 
 
 def test_el_precio_base_conserva_centavos():
-    """Es el valor que se persiste para recalcular en CU-13: redondearlo al peso
+    """Es el valor que se persiste para recalcular en CU-PVP-MAR: redondearlo al peso
     metería el error del redondeo dentro de cada recálculo futuro."""
     base = precios.calcular_precio_base(Decimal("1234.56"), Decimal("0.075"))
 

@@ -41,7 +41,7 @@ class RespuestaDelModelo:
 
     No es una excepción a propósito: quien llama está procesando un correo
     dentro de un ciclo y tiene que poder registrar el fallo y seguir con el
-    siguiente, que es lo que piden E2 y E3 de CU-04.
+    siguiente, que es lo que piden E2 y E3 de CU-ALT-NOV.
     """
 
     def __init__(self, datos=None, error="", crudo="", milisegundos=0):

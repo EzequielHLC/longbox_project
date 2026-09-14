@@ -1,4 +1,4 @@
-"""CU-51 — Modificar Usuario del Sistema."""
+"""CU-USR-MOD — Modificar Usuario del Sistema."""
 
 import pytest
 from django.core import mail

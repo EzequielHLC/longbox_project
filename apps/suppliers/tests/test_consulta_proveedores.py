@@ -1,4 +1,4 @@
-"""CU-21 — Consultar Proveedores: el listado y la ficha.
+"""CU-PRV-CON — Consultar Proveedores: el listado y la ficha.
 
 Es solo lectura y el CU es explícito en que **no genera entrada de auditoría**.
 Ese último punto también se prueba: consultar no es operar, y un log que
@@ -38,7 +38,7 @@ def test_el_listado_muestra_los_proveedores(client_admin):
 
 
 def test_el_listado_sale_ordenado_alfabeticamente(client_admin):
-    """CU-21 paso 2: la vista por defecto es alfabética."""
+    """CU-PRV-CON paso 2: la vista por defecto es alfabética."""
     ProveedorFactory(razon_social="Ovni Press")
     ProveedorFactory(razon_social="Editorial Ivrea")
     ProveedorFactory(razon_social="Panini")
@@ -105,7 +105,7 @@ def test_el_parcial_devuelve_solo_el_fragmento_de_la_tabla(client_admin):
 
 
 def test_sin_proveedores_ofrece_el_acceso_directo_al_alta(client_admin):
-    """E2 del CU: la vista vacía informa y ofrece el camino a CU-18."""
+    """E2 del CU: la vista vacía informa y ofrece el camino a CU-PRV-ALT."""
     contenido = client_admin.get(URL_LISTA).content.decode()
 
     assert "No hay proveedores registrados" in contenido
@@ -190,7 +190,7 @@ def test_la_ficha_dice_si_el_correo_se_reconoce_como_remitente(client_admin):
 
 
 def test_la_ficha_encadena_las_acciones_del_modulo(client_admin):
-    """CU-21 paso 5: desde la ficha se inician CU-19 y CU-20."""
+    """CU-PRV-CON paso 5: desde la ficha se inician CU-PRV-EDI y CU-PRV-BAJ."""
     proveedor = ProveedorFactory()
 
     contenido = client_admin.get(url_ficha(proveedor)).content.decode()

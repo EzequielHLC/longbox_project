@@ -11,7 +11,7 @@ resolvieron al implementar, ver `# Agregados` del módulo):
 - Todo el dinero es `Decimal`, nunca `float`. Un `float` no puede representar
   0,10 exactamente, y en un sistema que suma precios eso se acumula.
 - El **precio base** conserva centavos: es un valor intermedio que se almacena
-  para recalcular después (CU-13), así que redondearlo de más arrastraría el
+  para recalcular después (CU-PVP-MAR), así que redondearlo de más arrastraría el
   error a cada recálculo futuro.
 - El **precio final** se redondea al peso: es el número que se cobra, y en una
   comiquería nadie cobra centavos.
@@ -82,14 +82,14 @@ def calcular_precio_base(costo_origen, cre, cotizacion=SIN_CONVERSION):
 def calcular_precio_final(precio_base, margen):
     """Precio final = precio base × (1 + margen global) (RF-10, paso 3).
 
-    Es también la fórmula del recálculo de CU-13: dado un margen nuevo, el
+    Es también la fórmula del recálculo de CU-PVP-MAR: dado un margen nuevo, el
     precio final sale del precio base almacenado, sin los datos del lote.
     """
     return redondear_a_peso(Decimal(precio_base) * (Decimal("1") + Decimal(margen)))
 
 
 def desglose_importado(costo_origen, cre, margen, cotizacion=SIN_CONVERSION):
-    """Los tres valores que CU-02 paso 6 exige mostrar de forma explícita.
+    """Los tres valores que CU-ALT-IMP paso 6 exige mostrar de forma explícita.
 
     Devuelve `(costo_en_pesos, precio_base, precio_final)`. Se calculan juntos
     porque la pantalla los muestra juntos, y porque calcular el final por su

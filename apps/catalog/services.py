@@ -1,4 +1,4 @@
-"""Reglas de negocio del alta en lote (CU-01 y CU-02).
+"""Reglas de negocio del alta en lote (CU-ALT-NAC y CU-ALT-IMP).
 
 Están acá y no en las vistas porque las dos vistas —nacional e importado— hacen
 lo mismo con datos distintos, y porque el alta tiene que poder probarse sin
@@ -21,7 +21,7 @@ from apps.core.models import RegistroAuditoria
 
 @dataclass
 class ResultadoLote:
-    """Lo que el CU pide informar en el resumen final (CU-01 paso 9, CU-02 paso 11)."""
+    """Lo que el CU pide informar en el resumen final (CU-ALT-NAC paso 9, CU-ALT-IMP paso 11)."""
 
     lote: LoteAlta
     creados: list = field(default_factory=list)
@@ -56,7 +56,7 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn="", excluir
     igual que la restricción de la base: quien carga "Batman " un martes y
     "batman" el jueves está cargando el mismo tomo dos veces.
 
-    `excluir` es la clave del producto que se está editando (CU-09). Sin eso,
+    `excluir` es la clave del producto que se está editando (CU-CAT-EDI). Sin eso,
     guardar una ficha sin tocarle la identidad la haría chocar consigo misma y
     ningún producto se podría editar dos veces.
     """
@@ -85,7 +85,7 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn="", excluir
 def buscar_duplicado_no_editorial(titulo, tipo, excluir=None):
     """El artículo que ya ocupa ese nombre en esa categoría, o `None`.
 
-    Es la clave que CU-08 paso 6 declara. **Pero no bloquea el alta**, a
+    Es la clave que CU-CAT-ALT paso 6 declara. **Pero no bloquea el alta**, a
     diferencia de la del material editorial: el catálogo no editorial real tiene
     merch genérico, sin marca y no oficial, y dos llaveros de Naruto de
     proveedores distintos son dos productos. Ver la corrección 21 y el agregado
@@ -95,7 +95,7 @@ def buscar_duplicado_no_editorial(titulo, tipo, excluir=None):
     Compara sin distinguir mayúsculas y con los espacios internos colapsados,
     igual que el resto de los catálogos que se identifican por su nombre.
 
-    `excluir` es la clave del producto que se está editando (CU-09): sin eso, un
+    `excluir` es la clave del producto que se está editando (CU-CAT-EDI): sin eso, un
     artículo chocaría consigo mismo apenas se abra y se guarde su ficha.
     """
     if not tipo:
@@ -164,7 +164,7 @@ def _detalle_de_auditoria(lote, resultado):
     """El texto de la entrada consolidada del lote.
 
     En importados incluye el CRE y el margen aplicados, que es lo que pide la
-    postcondición de CU-02: el margen global cambia con el tiempo y sin esto no
+    postcondición de CU-ALT-IMP: el margen global cambia con el tiempo y sin esto no
     habría forma de reconstruir con qué números se fijaron estos precios.
     """
     partes = [
@@ -267,7 +267,7 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
         lote.rechazados = resultado.rechazados
         lote.save(update_fields=["rechazados"])
 
-        # **Una sola** entrada por lote, no una por ítem (CU-01 paso 8).
+        # **Una sola** entrada por lote, no una por ítem (CU-ALT-NAC paso 8).
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.ALTA_LOTE_EDITORIAL,
             actor=actor,
@@ -280,13 +280,13 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
 
 
 # ---------------------------------------------------------------------------
-# CU-10 — el informe de impacto previo a la baja
+# CU-CAT-BAJ — el informe de impacto previo a la baja
 # ---------------------------------------------------------------------------
 
 
 @dataclass
 class ImpactoDeBaja:
-    """Lo que CU-10 tiene que informar antes de pedir la confirmacion.
+    """Lo que CU-CAT-BAJ tiene que informar antes de pedir la confirmacion.
 
     El CU enumera cuatro categorias, y **hoy ninguna de las cuatro se puede
     calcular**: pedidos activos, suscripciones de reposicion, ofertas vigentes y
@@ -295,7 +295,7 @@ class ImpactoDeBaja:
 
     Las cuatro se declaran igual y en `None`, no en cero, por el mismo criterio
     con el que la baja de proveedor no inventa la cifra que no puede calcular
-    (CU-20). Cero significaria "revise: no afecta a nadie", que es una afirmacion
+    (CU-PRV-BAJ). Cero significaria "revise: no afecta a nadie", que es una afirmacion
     sobre datos que el propio CU considera parte de la decision.
 
     Dejar las cuatro declaradas tiene una consecuencia practica: cuando aparezca
@@ -335,5 +335,5 @@ class ImpactoDeBaja:
 
 
 def calcular_impacto_de_baja(producto):
-    """El mapeo de impacto que CU-10 exige antes de la confirmacion."""
+    """El mapeo de impacto que CU-CAT-BAJ exige antes de la confirmacion."""
     return ImpactoDeBaja(stock=producto.stock, estado=producto.get_estado_display())

@@ -37,7 +37,7 @@ from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import RegistroAuditoria
 from apps.core.utils import obtener_ip
 
-# CU-46 paso 4: cada rol aterriza en su propio módulo.
+# CU-AUT-INI paso 4: cada rol aterriza en su propio módulo.
 DESTINOS_POR_ROL = {
     "cliente": "core:tienda",
     "cajero": "core:mostrador",
@@ -48,7 +48,7 @@ MENSAJE_SESION_EXPIRADA = "Tu sesión expiró por inactividad."
 
 
 class LoginUsuarioView(LoginView):
-    """CU-46 — Iniciar Sesión."""
+    """CU-AUT-INI — Iniciar Sesión."""
 
     template_name = "accounts/login.html"
     form_class = FormularioLogin
@@ -72,7 +72,7 @@ class LoginUsuarioView(LoginView):
 
 
 class LogoutUsuarioView(LogoutView):
-    """CU-47 — Cerrar Sesión.
+    """CU-AUT-FIN — Cerrar Sesión.
 
     `LogoutView` invalida únicamente la sesión del dispositivo actual: las
     sesiones abiertas en otros dispositivos siguen vigentes, como pide el CU.
@@ -83,7 +83,7 @@ class LogoutUsuarioView(LogoutView):
 
 
 class RecuperarContrasenaView(PasswordResetView):
-    """CU-48 pasos 1 a 3 — pedir el enlace de recuperación."""
+    """CU-AUT-REC pasos 1 a 3 — pedir el enlace de recuperación."""
 
     template_name = "accounts/password_reset_form.html"
     email_template_name = "accounts/password_reset_email.txt"
@@ -102,7 +102,7 @@ class RecuperarContrasenaEnviadaView(PasswordResetDoneView):
 
 
 class RestablecerContrasenaView(PasswordResetConfirmView):
-    """CU-48 pasos 4 y 5 — validar el token y fijar la nueva contraseña.
+    """CU-AUT-REC pasos 4 y 5 — validar el token y fijar la nueva contraseña.
 
     El token es de un solo uso sin código extra: `PasswordResetTokenGenerator`
     lo deriva del hash de la contraseña actual, así que al cambiarla el enlace
@@ -142,12 +142,12 @@ def renovar_sesion(request):
 
 
 # ---------------------------------------------------------------------------
-# Módulo 11 — Cuenta de Cliente (CU-43)
+# Módulo 11 — Cuenta de Cliente (CU-CLI-ALT)
 # ---------------------------------------------------------------------------
 
 
 class RegistroClienteView(CreateView):
-    """CU-43 — Registrar Cuenta de Cliente.
+    """CU-CLI-ALT — Registrar Cuenta de Cliente.
 
     Es la única alta pública del sistema: no hereda de `RolRequeridoMixin`
     porque justamente la abre alguien que todavía no tiene cuenta. Lo que sí
@@ -178,7 +178,7 @@ class RegistroClienteView(CreateView):
             usuario = form.save(commit=False)
             usuario.username = services.username_disponible_para(usuario.email)
             # El rol y el estado no salen del formulario: los fija el sistema.
-            # A diferencia del alta de personal (CU-50), la cuenta nace Activa
+            # A diferencia del alta de personal (CU-USR-ALT), la cuenta nace Activa
             # porque el propio registro ya autentica al titular.
             usuario.rol = Usuario.CLIENTE
             usuario.estado = Usuario.ACTIVO
@@ -213,7 +213,7 @@ class RegistroClienteView(CreateView):
 
 
 # ---------------------------------------------------------------------------
-# Módulo 13 — Gestión de Usuarios (CU-50, CU-51, CU-52)
+# Módulo 13 — Gestión de Usuarios (CU-USR-ALT, CU-USR-MOD, CU-USR-BAJ)
 # ---------------------------------------------------------------------------
 
 
@@ -303,13 +303,13 @@ class UsuarioListaView(GestionDeUsuariosMixin, ListView):
 class ClienteListaView(GestionDeUsuariosMixin, ListView):
     """Cuentas de Cliente, **solo para consultar**.
 
-    No es un CU: es la contraparte de lectura del registro público (CU-43). El
+    No es un CU: es la contraparte de lectura del registro público (CU-CLI-ALT). El
     Administrador necesita poder responder "¿esta persona tiene cuenta?, ¿desde
     cuándo?, ¿qué teléfono dejó?, ¿aceptó la política?" para dar soporte, y
     nada de eso requiere poder modificar la cuenta.
 
     Por eso la pantalla no tiene ninguna acción: dar de baja una cuenta de
-    Cliente es el CU-49, que todavía no está documentado y probablemente tenga
+    Cliente es el CU-CLI-BAJ, que todavía no está documentado y probablemente tenga
     reglas propias (pedidos en curso, puntos acumulados, stock guardado en el
     local). Cuando se aborde, se le agregan las acciones a esta misma tabla.
     """
@@ -360,7 +360,7 @@ class ClienteListaView(GestionDeUsuariosMixin, ListView):
 
 
 class UsuarioAltaView(GestionDeUsuariosMixin, CreateView):
-    """CU-50 — Dar de Alta Usuario del Sistema."""
+    """CU-USR-ALT — Dar de Alta Usuario del Sistema."""
 
     model = Usuario
     form_class = FormularioUsuarioPersonal
@@ -400,7 +400,7 @@ class UsuarioAltaView(GestionDeUsuariosMixin, CreateView):
 
 
 class UsuarioEdicionView(GestionDeUsuariosMixin, UpdateView):
-    """CU-51 — Modificar Usuario del Sistema."""
+    """CU-USR-MOD — Modificar Usuario del Sistema."""
 
     model = Usuario
     form_class = FormularioUsuarioPersonal
@@ -482,7 +482,7 @@ class UsuarioEdicionView(GestionDeUsuariosMixin, UpdateView):
 
 
 class ReenviarActivacionView(GestionDeUsuariosMixin, View):
-    """CU-51, flujo alternativo — regenerar el enlace de activación."""
+    """CU-USR-MOD, flujo alternativo — regenerar el enlace de activación."""
 
     def post(self, request, pk):
         usuario = get_object_or_404(Usuario, pk=pk, rol__in=Usuario.ROLES_DE_PERSONAL)
@@ -517,7 +517,7 @@ class ReenviarActivacionView(GestionDeUsuariosMixin, View):
 
 
 class UsuarioBajaView(GestionDeUsuariosMixin, DetailView):
-    """CU-52 — Dar de Baja Usuario del Sistema.
+    """CU-USR-BAJ — Dar de Baja Usuario del Sistema.
 
     El GET es la confirmación explícita que pide el paso 2; la baja se aplica
     únicamente por POST. Es una baja lógica: el usuario nunca se borra, así el
@@ -572,7 +572,7 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
     """Devuelve al sistema una cuenta que había sido dada de baja.
 
     Agregado al CU (ver `/docs/modulos/gestion_usuarios.md`): sin esto, la baja
-    del CU-52 sería definitiva y alguien que vuelve al trabajo necesitaría una
+    del CU-USR-BAJ sería definitiva y alguien que vuelve al trabajo necesitaría una
     cuenta nueva, perdiendo la continuidad de su historial.
 
     La cuenta no vuelve directamente a Activa: vuelve a **Pendiente de
@@ -624,7 +624,7 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
 class UsuarioEliminarPendienteView(GestionDeUsuariosMixin, DetailView):
     """Elimina una cuenta que nunca llegó a activarse.
 
-    Agregado al CU (ver `/docs/modulos/gestion_usuarios.md`): el CU-52 pide
+    Agregado al CU (ver `/docs/modulos/gestion_usuarios.md`): el CU-USR-BAJ pide
     estado Activo para dar de baja, así que una cuenta cargada con el correo
     equivocado quedaría Pendiente para siempre, con ese correo bloqueado.
 
@@ -675,7 +675,7 @@ class UsuarioEliminarPendienteView(GestionDeUsuariosMixin, DetailView):
 
 
 class ActivarCuentaView(PasswordResetConfirmView):
-    """CU-50 paso 3, del lado del usuario nuevo: elegir su primera contraseña.
+    """CU-USR-ALT paso 3, del lado del usuario nuevo: elegir su primera contraseña.
 
     Reutiliza la vista de restablecimiento de Django porque el flujo es el
     mismo (validar el token, pedir contraseña y confirmación, guardarla

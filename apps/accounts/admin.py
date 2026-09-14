@@ -9,8 +9,8 @@ class UsuarioAdmin(UserAdmin):
     list_display = ("email", "username", "rol", "estado", "actualizado_en")
     # El rol y el estado se pueden cambiar desde la propia lista, sin entrar a
     # cada usuario. (El alta, la modificación y la baja formales de usuarios de
-    # personal son CU-50/51/52, con su propia pantalla de backoffice; esto es
-    # solo la herramienta de administración de Django.)
+    # personal son CU-USR-ALT, CU-USR-MOD y CU-USR-BAJ, con su propia pantalla
+    # de backoffice; esto es solo la herramienta de administración de Django.)
     list_editable = ("rol", "estado")
     list_display_links = ("email",)
     list_filter = ("rol", "estado")

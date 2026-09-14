@@ -1,4 +1,4 @@
-"""CU-46 — Iniciar Sesión."""
+"""CU-AUT-INI — Iniciar Sesión."""
 
 import pytest
 from django.urls import reverse

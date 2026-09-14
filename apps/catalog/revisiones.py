@@ -1,4 +1,4 @@
-"""Revisar y confirmar borradores (CU-05).
+"""Revisar y confirmar borradores (CU-ALT-REV).
 
 Es el paso donde una persona convierte una propuesta del modelo en catálogo. La
 línea que ordena todo el archivo:
@@ -18,7 +18,7 @@ Las reglas del CU que más fácil se implementan mal, y cómo quedaron:
   hay diferencia entre mirar un dato dudoso y decir que se miró.
 - **La confirmación en lote excluye, no bloquea.** Un borrador con confianza
   baja o con un bloqueante vacío se saltea informando por qué, y los demás se
-  confirman igual. Es la misma distinción de CU-01 entre una exclusión esperada
+  confirman igual. Es la misma distinción de CU-ALT-NAC entre una exclusión esperada
   y un fallo transaccional.
 """
 
@@ -71,7 +71,7 @@ class Confirmacion:
 
 @dataclass
 class ResultadoDeLote:
-    """Lo que dejó una confirmación en lote (CU-05 paso 4)."""
+    """Lo que dejó una confirmación en lote (CU-ALT-REV paso 4)."""
 
     confirmadas: list = field(default_factory=list)
     excluidas: list = field(default_factory=list)
@@ -111,7 +111,7 @@ def abrir_o_seguir(revisor):
 
 
 def confirmar(borrador, *, actor, ip=None, en_lote=False):
-    """Convierte un borrador en un producto del catálogo (CU-05 paso 3).
+    """Convierte un borrador en un producto del catálogo (CU-ALT-REV paso 3).
 
     `en_lote` cambia **una** cosa: en lote, un borrador con confianza baja sin
     revisar se excluye en vez de intentar confirmarse. Individualmente ese
@@ -208,7 +208,7 @@ def _crear_producto(borrador):
     precio = precios.redondear_a_peso(borrador.precio)
 
     # `precio_manual` sigue el criterio de A4: si el precio que se confirma no es
-    # el de la tabla, alguien lo decidió a propósito y la propagación de CU-13 no
+    # el de la tabla, alguien lo decidió a propósito y la propagación de CU-PVP-MAR no
     # debe pisárselo. Sin fila de referencia no hay de dónde propagar, así que la
     # marca no aplica.
     manual = referencia is not None and precios.redondear_a_peso(referencia.pvp) != precio
@@ -262,7 +262,7 @@ def confirmar_en_lote(borradores, *, actor, ip=None):
 
 
 def rechazar(borrador, *, actor, motivo, ip=None):
-    """Descarta un borrador. **El motivo es obligatorio** (CU-05).
+    """Descarta un borrador. **El motivo es obligatorio** (CU-ALT-REV).
 
     Es el mismo criterio con el que el descarte de un correo lo exige: una cola
     llena de rechazos sin explicación no sirve para entender nada después, ni
@@ -304,7 +304,7 @@ def rechazar(borrador, *, actor, motivo, ip=None):
 
 
 # ---------------------------------------------------------------------------
-# Cerrar la sesión (CU-05 pasos 5 y 6)
+# Cerrar la sesión (CU-ALT-REV pasos 5 y 6)
 # ---------------------------------------------------------------------------
 
 

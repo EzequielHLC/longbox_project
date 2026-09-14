@@ -162,9 +162,9 @@ class Tipo(models.Model):
 
     De un lado manga, cómic, artbook, novela ligera y libro —lo que RF-04 llama
     mal "formato" (A12)—; del otro TCG, figura, merchandising e insumo, que es lo
-    que CU-08 llama "categoría". **La fuente nunca dice que son el mismo eje**
+    que CU-CAT-ALT llama "categoría". **La fuente nunca dice que son el mismo eje**
     (corrección 23), y lo son: las dos preguntas responden "¿qué clase de cosa
-    es esto?" y el inventario de CU-11 las filtra con un solo control.
+    es esto?" y el inventario de CU-CAT-INV las filtra con un solo control.
 
     Es una tabla y no una lista fija en el código, y `usa_formato` es el motivo:
     **qué campos pide un producto es un dato, no un `if`**. Agregar "Fanzine" el
@@ -323,7 +323,7 @@ class TablaPrecioReferencia(models.Model):
 
 
 class LoteAlta(models.Model):
-    """Una carga en lote de CU-01 o CU-02.
+    """Una carga en lote de CU-ALT-NAC o CU-ALT-IMP.
 
     Existe por dos motivos que el CU pide explícitamente y que no se pueden
     resolver con productos sueltos: la entrada de auditoría es **una sola por
@@ -355,7 +355,7 @@ class LoteAlta(models.Model):
     fecha_llegada = models.DateField("fecha de llegada", null=True, blank=True)
 
     # ------------------------------------------------------------------
-    # Calculadora de envío (solo importados, CU-02).
+    # Calculadora de envío (solo importados, CU-ALT-IMP).
     # ------------------------------------------------------------------
     costo_envio_total = models.DecimalField(
         "costo total de envío internacional",
@@ -476,7 +476,7 @@ class Producto(models.Model):
     que las hace obligatorias o no viviría en validaciones sueltas, lejos del
     modelo. Acá la base misma dice qué campos existen para qué cosa.
 
-    **Por qué tabla propia y no clases abstractas.** CU-11 pide un inventario
+    **Por qué tabla propia y no clases abstractas.** CU-CAT-INV pide un inventario
     **único**: un listado con los mismos filtros, ordenado y paginado sobre los
     dos rubros a la vez. Con clases abstractas cada hija tendría su tabla suelta
     y no habría forma de hacer esa consulta, ni de conservar las claves foráneas
@@ -509,16 +509,16 @@ class Producto(models.Model):
         (DESCATALOGADO, "Descatalogado"),
     ]
 
-    # CU-06: estado terminal. Un título cancelado por la editorial no llega
+    # CU-ALT-CAN: estado terminal. Un título cancelado por la editorial no llega
     # nunca, y por eso se reembolsa el 100%; no se reactiva y no se confunde con
-    # la baja de catálogo de CU-10, que sí conserva el producto en inventario.
+    # la baja de catálogo de CU-CAT-BAJ, que sí conserva el producto en inventario.
     ESTADOS_TERMINALES = (CANCELADO_EDITORIAL,)
 
     # De qué especialización es esta fila. Django ya sabe llegar a la hija, pero
     # **hace falta como columna** por dos motivos concretos: permite filtrar y
     # contar por rubro sin salir de esta tabla —el inventario lo hace en cada
     # carga— y permite condicionar restricciones de unicidad a un solo rubro,
-    # que es lo que hace posible la clave de CU-08 (ver `Meta`).
+    # que es lo que hace posible la clave de CU-CAT-ALT (ver `Meta`).
     #
     # Lo escribe `save()`, no el que crea el objeto: un discriminador que haya
     # que acordarse de completar es un discriminador que en algún momento va a
@@ -582,7 +582,7 @@ class Producto(models.Model):
 
     # El eje que clasifica a los dos rubros: manga, cómic y artbook de un lado;
     # TCG, figura, merchandising e insumo del otro. Está en el padre y no en
-    # cada hija porque el inventario de CU-11 filtra por él **sobre los dos a la
+    # cada hija porque el inventario de CU-CAT-INV filtra por él **sobre los dos a la
     # vez** — el paso 3 lo llama "categoría".
     tipo = models.ForeignKey(Tipo, on_delete=models.PROTECT, related_name="productos")
 
@@ -618,7 +618,7 @@ class Producto(models.Model):
     descripcion = models.TextField("descripción", blank=True)
 
     # A4 de proveedores: de quién vino. Nula en las altas manuales, la completa
-    # la confirmación de borradores de CU-05.
+    # la confirmación de borradores de CU-ALT-REV.
     proveedor = models.ForeignKey(
         "suppliers.Proveedor",
         on_delete=models.PROTECT,
@@ -635,7 +635,7 @@ class Producto(models.Model):
         verbose_name = "producto"
         verbose_name_plural = "productos"
         ordering = ["-creado_en"]
-        # **Sin restricción de nombre + categoría, y es deliberado.** CU-08 E2 la
+        # **Sin restricción de nombre + categoría, y es deliberado.** CU-CAT-ALT E2 la
         # trata como bloqueo: si ya existe un producto con ese nombre y esa
         # categoría, el alta no se registra. El catálogo no editorial real no lo
         # tolera — hay merch genérico, sin marca y no oficial, y dos llaveros de
@@ -660,7 +660,7 @@ class Producto(models.Model):
         ]
         indexes = [  # noqa: RUF012
             # El inventario abre filtrando por estado y ordenando por título
-            # (CU-11 paso 2), y lo hace en cada carga.
+            # (CU-CAT-INV paso 2), y lo hace en cada carga.
             models.Index(fields=["estado", "titulo"]),
         ]
 
@@ -722,7 +722,7 @@ class Producto(models.Model):
 
     @property
     def portada_pendiente(self):
-        """A2: se dio de alta sin imagen y hay que adjuntarla desde CU-09."""
+        """A2: se dio de alta sin imagen y hay que adjuntarla desde CU-CAT-EDI."""
         return not self.portada
 
     @property
@@ -734,7 +734,7 @@ class Producto(models.Model):
         """La instancia de la hija que corresponde, o `self` si ya lo es.
 
         El listado del inventario trabaja con instancias del padre —es lo que
-        hace posible la consulta única de CU-11— y la ficha necesita los campos
+        hace posible la consulta única de CU-CAT-INV— y la ficha necesita los campos
         propios del rubro. Esto es el puente, en un solo lugar: repartido por las
         plantillas, cada una elegiría su forma de bajar y una se olvidaría del
         caso que no conoce.
@@ -765,7 +765,7 @@ class Producto(models.Model):
 
 
 class ProductoEditorial(Producto):
-    """Un tomo: manga, cómic, artbook, novela ligera o libro (CU-01, CU-02).
+    """Un tomo: manga, cómic, artbook, novela ligera o libro (CU-ALT-NAC, CU-ALT-IMP).
 
     Suma a `Producto` todo lo que hace a una **edición**: el volumen dentro de
     su serie, el ISBN que la identifica en el mundo, la editorial que la publica,
@@ -818,10 +818,10 @@ class ProductoEditorial(Producto):
 
     fecha_llegada = models.DateField("fecha de llegada", null=True, blank=True)
 
-    # CU-07. **"Demorado" no es un estado, es un indicador** (A29): un producto
+    # CU-ALT-DEM. **"Demorado" no es un estado, es un indicador** (A29): un producto
     # demorado sigue en Pre-venta, se sigue pudiendo reservar, y lo único que
     # cambió es que se sabe que no llega cuando decía. Solo aplica acá: el
-    # material no editorial no admite Pre-venta (CU-08), así que no puede
+    # material no editorial no admite Pre-venta (CU-CAT-ALT), así que no puede
     # demorarse.
     demorado = models.BooleanField(
         "demorado",
@@ -943,7 +943,7 @@ class ProductoEditorial(Producto):
 
     @property
     def esta_demorado(self):
-        """El indicador de CU-07, que **solo tiene sentido en Pre-venta**.
+        """El indicador de CU-ALT-DEM, que **solo tiene sentido en Pre-venta**.
 
         Se pregunta por las dos cosas y no solo por la bandera: un producto que
         ya llegó y pasó a Activo no está demorado aunque la bandera hubiera
@@ -982,13 +982,13 @@ class ProductoEditorial(Producto):
 
 
 class ProductoNoEditorial(Producto):
-    """TCG, figura, merchandising o insumo (CU-08).
+    """TCG, figura, merchandising o insumo (CU-CAT-ALT).
 
     Suma poco y quita bastante, que es justamente el punto: no tiene editorial,
     ni volumen, ni ISBN, ni formato, ni nada de la maquinaria de precio de los
     importados. Su precio se carga a mano y listo.
 
-    **No admite Pre-venta.** Lo dice CU-08 en sus comentarios: el sistema asigna
+    **No admite Pre-venta.** Lo dice CU-CAT-ALT en sus comentarios: el sistema asigna
     exclusivamente Activo al momento del alta. Se valida en `clean()` y no solo
     escondiendo la opción en la pantalla.
     """
@@ -1024,13 +1024,13 @@ class ProductoNoEditorial(Producto):
             raise ValidationError({"tipo": f"«{self.tipo}» es un tipo de material editorial."})
 
     def clave_de_duplicado(self):
-        """Nombre + categoría (CU-08 paso 6). Nada más y nada menos."""
+        """Nombre + categoría (CU-CAT-ALT paso 6). Nada más y nada menos."""
         return ("nombre", " ".join(self.titulo.split()).lower(), self.tipo_id)
 
 
 class BorradorProductoQuerySet(models.QuerySet):
     def pendientes(self):
-        """Los que esperan una decisión del Administrador (CU-05 paso 1)."""
+        """Los que esperan una decisión del Administrador (CU-ALT-REV paso 1)."""
         return self.filter(estado__in=BorradorProducto.ESTADOS_ABIERTOS)
 
 
@@ -1039,7 +1039,7 @@ class BorradorProducto(models.Model):
 
     Es la pieza que separa lo que el modelo de lenguaje **propone** de lo que el
     sistema **aplica**: nada de lo que sale de una extracción entra al catálogo
-    sin que una persona lo confirme en CU-05. Por eso es una tabla propia y no
+    sin que una persona lo confirme en CU-ALT-REV. Por eso es una tabla propia y no
     un `Producto` con una bandera de "sin revisar" — un producto a medias en la
     misma tabla se filtra tarde o temprano en una consulta que se olvide de
     excluirlo, y para cuando se note ya estuvo a la venta.
@@ -1057,7 +1057,7 @@ class BorradorProducto(models.Model):
     los productos ya cargados.
     """
 
-    # Los cuatro que declaran CU-04 paso 6 y CU-05. Se declaran completos desde
+    # Los cuatro que declaran CU-ALT-NOV paso 6 y CU-ALT-REV. Se declaran completos desde
     # el principio con el mismo criterio que los estados de `Producto` y los de
     # `CorreoProveedor`: la alternativa es migrar la tabla tres veces.
     PENDIENTE = "pendiente"
@@ -1143,13 +1143,13 @@ class BorradorProducto(models.Model):
     solo_adultos = models.BooleanField("solo para adultos", default=False)
 
     # Pre-completado con el valor de `ConfiguracionSistema` y editable en la
-    # revisión (CU-05 paso 2). Es el único stock del sistema que nace con un
+    # revisión (CU-ALT-REV paso 2). Es el único stock del sistema que nace con un
     # número que nadie contó, y por eso el de las altas manuales es cero y este
     # no (A3): acá el Administrador mira el número antes de confirmarlo.
     stock_inicial = models.PositiveIntegerField("stock inicial", default=0)
 
     # El estado con el que nacería el producto, derivado de la fecha
-    # (CU-04 paso 6). Se guarda en vez de derivarse al vuelo porque la revisión
+    # (CU-ALT-NOV paso 6). Se guarda en vez de derivarse al vuelo porque la revisión
     # lo deja editar, y una vez editado ya no es lo que la fecha diría.
     estado_sugerido = models.CharField(
         "estado sugerido",
@@ -1179,7 +1179,7 @@ class BorradorProducto(models.Model):
     # original si algo sale mal, sin tener que adivinar cuál era.
     cid_portada = models.CharField("identificador de la portada", max_length=200, blank=True)
 
-    # En qué se convirtió al confirmarse (CU-05). Se declara ahora aunque
+    # En qué se convirtió al confirmarse (CU-ALT-REV). Se declara ahora aunque
     # todavía nada lo escriba, por el mismo criterio con el que `Producto`
     # declaró `precio_manual` antes de que existiera la propagación: agregarlo
     # después obligaría a una migración retroactiva sobre borradores de los que
@@ -1198,7 +1198,7 @@ class BorradorProducto(models.Model):
         related_name="borrador_de_origen",
     )
 
-    # La tanda de revisión en la que se confirmó o se rechazó (CU-05). Nulo
+    # La tanda de revisión en la que se confirmó o se rechazó (CU-ALT-REV). Nulo
     # mientras está pendiente. Es lo que permite armar el pedido consolidado
     # **de esa sesión**: dos revisiones el mismo día tienen que producir dos
     # correos separados al mismo proveedor, no uno con todo mezclado.
@@ -1229,7 +1229,7 @@ class BorradorProducto(models.Model):
         # llegada, al revés que la de correos, donde lo que importa es lo nuevo.
         ordering = ["creado_en", "pk"]
         indexes = [  # noqa: RUF012
-            # "Qué tengo pendiente de revisar" es la consulta de CU-05, y se
+            # "Qué tengo pendiente de revisar" es la consulta de CU-ALT-REV, y se
             # hace en cada carga de la pantalla.
             models.Index(fields=["estado", "creado_en"]),
         ]
@@ -1244,7 +1244,7 @@ class BorradorProducto(models.Model):
 
     @property
     def portada_pendiente(self):
-        """Sin portada: se adjunta en la revisión o después, desde CU-09."""
+        """Sin portada: se adjunta en la revisión o después, desde CU-CAT-EDI."""
         return not self.portada
 
     @property
@@ -1253,7 +1253,7 @@ class BorradorProducto(models.Model):
 
     @property
     def campos_bloqueantes_vacios(self):
-        """Lo que CU-05 paso 3 exige para poder confirmar y todavía falta.
+        """Lo que CU-ALT-REV paso 3 exige para poder confirmar y todavía falta.
 
         Son los cuatro que el CU enumera —título, editorial, formato y precio—
         con **dos apartamientos del texto, los dos deliberados**:
@@ -1284,7 +1284,7 @@ class BorradorProducto(models.Model):
     def confianzas_bajas_sin_revisar(self):
         """Los campos que el modelo declaró dudosos y nadie miró todavía.
 
-        CU-05 los usa para dos cosas distintas: bloquear la confirmación
+        CU-ALT-REV los usa para dos cosas distintas: bloquear la confirmación
         individual hasta que se los revise uno por uno, y **excluir el borrador
         entero** de una confirmación en lote.
         """
@@ -1292,7 +1292,7 @@ class BorradorProducto(models.Model):
 
 
 class SesionRevision(models.Model):
-    """Una tanda de revisión de borradores (CU-05).
+    """Una tanda de revisión de borradores (CU-ALT-REV).
 
     **El caso de uso no la declara como entidad, y la necesita igual.** El flujo
     habla de "al finalizar la sesión", audita su cierre con confirmados,
@@ -1326,7 +1326,7 @@ class SesionRevision(models.Model):
     abierta_en = models.DateTimeField("abierta el", auto_now_add=True)
     cerrada_en = models.DateTimeField("cerrada el", null=True, blank=True)
 
-    # Qué pasó con los correos de pedido al cerrar (CU-05 paso 5). Se guarda el
+    # Qué pasó con los correos de pedido al cerrar (CU-ALT-REV paso 5). Se guarda el
     # detalle por proveedor —enviado, o falló con su motivo— porque el CU pide
     # notificar al Administrador indicando **cuál** proveedor falló, y porque un
     # pedido que no salió es algo que alguien va a tener que mandar a mano.
@@ -1360,7 +1360,7 @@ class SesionRevision(models.Model):
 class ConfianzaCampo(models.Model):
     """Cuánto dijo el modelo que confiaba en un campo de un borrador.
 
-    Es un modelo aparte y no un JSON dentro del borrador porque CU-05 paso 3 no
+    Es un modelo aparte y no un JSON dentro del borrador porque CU-ALT-REV paso 3 no
     pide solo *leer* la confianza: exige que el Administrador haga una acción
     afirmativa **sobre cada campo de confianza baja** antes de poder confirmar.
     Eso es un dato que se escribe, por campo — y meterlo en un JSON que además
@@ -1384,7 +1384,7 @@ class ConfianzaCampo(models.Model):
     campo = models.CharField("campo", max_length=30)
     nivel = models.CharField("nivel", max_length=5, choices=NIVEL_CHOICES, default=BAJA)
 
-    # La acción afirmativa de CU-05 paso 3. Solo tiene sentido sobre los de
+    # La acción afirmativa de CU-ALT-REV paso 3. Solo tiene sentido sobre los de
     # confianza baja; en los demás queda en falso y nadie lo mira.
     revisado = models.BooleanField("revisado por el Administrador", default=False)
 

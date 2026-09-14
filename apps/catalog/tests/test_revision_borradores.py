@@ -1,4 +1,4 @@
-"""Revisar y confirmar borradores (CU-05), del lado de las reglas.
+"""Revisar y confirmar borradores (CU-ALT-REV), del lado de las reglas.
 
 La pantalla se prueba aparte; acá está lo que tiene que valer aunque se la
 invoque desde un comando o desde una tarea de fondo.
@@ -164,7 +164,7 @@ def test_un_precio_que_coincide_con_la_tabla_no_queda_manual(
 @pytest.mark.django_db
 def test_un_precio_distinto_del_de_la_tabla_queda_manual(correo, administrador, editorial, tipo):
     """A4: si el precio confirmado no es el de la tabla, alguien lo decidió a
-    propósito y la propagación de CU-13 no debe pisárselo."""
+    propósito y la propagación de CU-PVP-MAR no debe pisárselo."""
     formato = FormatoFactory(nombre="Tapa dura")
     PrecioReferenciaFactory(editorial=editorial, tipo=tipo, formato=formato, pvp=Decimal("20000"))
     borrador = borrador_de(correo, formato=formato, precio=Decimal("24900"))
@@ -402,7 +402,7 @@ def test_dos_revisores_tienen_sesiones_distintas(correo, administrador):
 
 
 # ---------------------------------------------------------------------------
-# El cierre y el pedido consolidado (CU-24)
+# El cierre y el pedido consolidado (CU-RST-PED)
 # ---------------------------------------------------------------------------
 
 

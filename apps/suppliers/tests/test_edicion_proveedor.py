@@ -1,7 +1,7 @@
-"""CU-19 — Editar Proveedor Editorial.
+"""CU-PRV-EDI — Editar Proveedor Editorial.
 
 El punto delicado no es guardar campos: es que cambiar el correo comercial
-**redirige el pipeline de CU-04**, y que esa consecuencia se confirme del lado
+**redirige el pipeline de CU-ALT-NOV**, y que esa consecuencia se confirme del lado
 del servidor y no solo con un cartel del navegador.
 """
 
@@ -81,7 +81,7 @@ def test_cambiar_el_correo_sin_confirmar_es_rechazado(client_admin):
 
 
 def test_cambiar_el_correo_confirmado_redirige_el_pipeline(client_admin):
-    """Postcondición del CU: CU-04 empieza a procesar el nuevo y deja de
+    """Postcondición del CU: CU-ALT-NOV empieza a procesar el nuevo y deja de
     procesar el anterior a partir de la confirmación."""
     proveedor = ProveedorFactory(correo_comercial="viejo@ivrea.test")
 
@@ -141,7 +141,7 @@ def test_guardar_sin_cambiar_el_correo_propio_no_choca_consigo_mismo(client_admi
 
 
 def test_un_proveedor_inactivo_si_se_puede_editar(client_admin):
-    """La precondición de CU-19 dice "cualquier estado", y acá no hay nada que
+    """La precondición de CU-PRV-EDI dice "cualquier estado", y acá no hay nada que
     congelar: un proveedor de baja no habilita nada mientras lo esté, porque el
     filtro de remitentes mira el estado antes que el correo."""
     proveedor = ProveedorFactory(estado=Proveedor.INACTIVO)

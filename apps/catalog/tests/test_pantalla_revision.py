@@ -1,4 +1,4 @@
-"""Las pantallas de la revisión de borradores (CU-05).
+"""Las pantallas de la revisión de borradores (CU-ALT-REV).
 
 Las reglas se prueban en `test_revision_borradores.py`. Acá está lo que solo
 existe en la pantalla: que la cola diferencie visualmente lo que el CU pide
@@ -263,7 +263,7 @@ def test_la_ficha_de_un_borrador_resuelto_no_ofrece_acciones(client_admin, corre
 
 
 # ---------------------------------------------------------------------------
-# La acción afirmativa sobre la confianza baja (CU-05 paso 3)
+# La acción afirmativa sobre la confianza baja (CU-ALT-REV paso 3)
 # ---------------------------------------------------------------------------
 
 
@@ -445,7 +445,7 @@ def test_la_ficha_avisa_si_el_producto_ya_esta_en_el_catalogo(client_admin, corr
     """Salió de correr el pipeline sobre dos correos que anunciaban los mismos
     tomos: los borradores del segundo quedaban en la cola sin ninguna marca, y la
     única forma de enterarse era apretar «confirmar» y recibir el rechazo. Es la
-    misma cortesía que CU-01 E1 le da a los duplicados del alta en lote."""
+    misma cortesía que CU-ALT-NAC E1 le da a los duplicados del alta en lote."""
     from apps.catalog.tests.factories import ProductoFactory
 
     ya_cargado = ProductoFactory(

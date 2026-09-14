@@ -9,7 +9,8 @@ media/
 htmlcov/
 .coverage
 coverage.xml
-docs
-CLAUDE.md
+/CLAUDE.md
+/.contexto-ia/
 .claude
-respaldos/
+.scripts/
+/respaldos/

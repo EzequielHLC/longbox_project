@@ -1,8 +1,8 @@
 """Tokens de un solo uso para los enlaces que se mandan por correo.
 
 El proyecto necesita dos vigencias distintas sobre el *mismo* mecanismo:
-30 minutos para el enlace de recuperación de contraseña (CU-48) y 48 horas
-para el de activación de una cuenta nueva (CU-50). Django resuelve la vigencia
+30 minutos para el enlace de recuperación de contraseña (CU-AUT-REC) y 48 horas
+para el de activación de una cuenta nueva (CU-USR-ALT). Django resuelve la vigencia
 con un único setting global (`PASSWORD_RESET_TIMEOUT`), así que acá se lo deja
 como tope máximo y cada generador aplica encima su propia ventana, más corta.
 
@@ -37,8 +37,8 @@ class TokenConVigencia(PasswordResetTokenGenerator):
         return self._num_seconds(self._now()) - base36_to_int(marca_de_tiempo)
 
 
-# CU-48 — "Recuperá tu contraseña": 30 minutos.
+# CU-AUT-REC — "Recuperá tu contraseña": 30 minutos.
 token_de_recuperacion = TokenConVigencia(settings.VIGENCIA_ENLACE_RECUPERACION)
 
-# CU-50 — "Activá tu cuenta": 48 horas.
+# CU-USR-ALT — "Activá tu cuenta": 48 horas.
 token_de_activacion = TokenConVigencia(settings.VIGENCIA_ENLACE_ACTIVACION)

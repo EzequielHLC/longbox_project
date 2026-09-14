@@ -216,7 +216,7 @@ def test_el_isbn_es_opcional(client_admin, referencia):
 
 @pytest.mark.django_db
 def test_un_item_con_isbn_ya_cargado_se_excluye_del_lote(client_admin, referencia):
-    """E1 de CU-01 con el criterio nuevo: el duplicado se excluye e informa, y
+    """E1 de CU-ALT-NAC con el criterio nuevo: el duplicado se excluye e informa, y
     los demás ítems del lote se cargan igual."""
     ProductoFactory(titulo="Cualquier otra cosa", isbn=BERSERK)
     datos = lote_nacional(

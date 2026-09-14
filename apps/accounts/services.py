@@ -26,7 +26,7 @@ Usuario = get_user_model()
 
 
 # ---------------------------------------------------------------------------
-# CU-46 — bloqueo por intentos fallidos
+# CU-AUT-INI — bloqueo por intentos fallidos
 #
 # Se cuentan los rechazos del par (correo, IP) —"el mismo dispositivo" del CU—
 # dentro de una ventana de tiempo. Si en esa ventana hay
@@ -101,7 +101,7 @@ def _notificar_bloqueo(email, ip):
 
 
 # ---------------------------------------------------------------------------
-# Sesiones ajenas (CU-51, CU-52; también la necesitan CU-48 y CU-49)
+# Sesiones ajenas (CU-USR-MOD, CU-USR-BAJ; también la necesitan CU-AUT-REC y CU-CLI-BAJ)
 # ---------------------------------------------------------------------------
 
 
@@ -117,7 +117,7 @@ def invalidar_sesiones_de(usuario):
     Son pocas filas (solo las no vencidas) y la operación es puntual —un cambio
     de rol o una baja—, así que el recorrido no es un problema de rendimiento.
 
-    CU-48 no la usa: al cambiar la contraseña cambia el hash y, con él, el HMAC
+    CU-AUT-REC no la usa: al cambiar la contraseña cambia el hash y, con él, el HMAC
     de sesión, y Django invalida todo solo.
     """
     id_usuario = str(usuario.pk)
@@ -131,7 +131,7 @@ def invalidar_sesiones_de(usuario):
 
 
 # ---------------------------------------------------------------------------
-# CU-50 / CU-51 — alta y activación de cuentas de personal
+# CU-USR-ALT / CU-USR-MOD — alta y activación de cuentas de personal
 # ---------------------------------------------------------------------------
 
 
@@ -159,7 +159,7 @@ def preparar_para_activacion(usuario):
 
     `set_unusable_password()` guarda un hash aleatorio distinto en cada
     llamada. Como el token se deriva de ese hash, llamarla de nuevo invalida
-    cualquier enlace de activación emitido antes (CU-51, flujo alternativo:
+    cualquier enlace de activación emitido antes (CU-USR-MOD, flujo alternativo:
     "el enlace anterior queda invalidado"), sin necesidad de una tabla de
     tokens propia.
     """
@@ -186,12 +186,12 @@ def enviar_enlace_de_activacion(usuario, request):
 
 
 # ---------------------------------------------------------------------------
-# CU-43 — registro de Cliente
+# CU-CLI-ALT — registro de Cliente
 # ---------------------------------------------------------------------------
 
 
 def enviar_bienvenida(usuario, request):
-    """Correo de bienvenida del paso 5 del CU-43.
+    """Correo de bienvenida del paso 5 del CU-CLI-ALT.
 
     No lleva enlace de activación, a diferencia del alta de personal: la cuenta
     de Cliente nace Activa y el propio registro ya la autentica. Es un aviso de
@@ -212,7 +212,7 @@ def enviar_bienvenida(usuario, request):
 
 
 # ---------------------------------------------------------------------------
-# CU-51 / CU-52 — resguardo del último Administrador
+# CU-USR-MOD / CU-USR-BAJ — resguardo del último Administrador
 # ---------------------------------------------------------------------------
 
 
@@ -235,7 +235,7 @@ def es_el_unico_administrador_activo(usuario):
 
 
 # ---------------------------------------------------------------------------
-# CU-51 — auditoría con valores anteriores y nuevos
+# CU-USR-MOD — auditoría con valores anteriores y nuevos
 # ---------------------------------------------------------------------------
 
 CAMPOS_AUDITADOS = {  # noqa: RUF012

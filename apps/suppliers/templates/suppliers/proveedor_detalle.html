@@ -1,9 +1,9 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-CU-21 paso 4 — la ficha completa del proveedor.
+CU-PRV-CON paso 4 — la ficha completa del proveedor.
 
-Es el nudo del módulo: desde acá arrancan CU-19 (editar) y CU-20 (dar de baja),
-y acá llega el enlace del conflicto de E2 del CU-18. Por eso las acciones viven
+Es el nudo del módulo: desde acá arrancan CU-PRV-EDI (editar) y CU-PRV-BAJ (dar de baja),
+y acá llega el enlace del conflicto de E2 del CU-PRV-ALT. Por eso las acciones viven
 en esta pantalla y no repartidas por el listado.
 {% endcomment %}
 
@@ -190,7 +190,7 @@ en esta pantalla y no repartidas por el listado.
   </section>
 
   {% comment %}
-  CU-21 paso 4 pide además el historial de pedidos de restock despachados. El
+  CU-PRV-CON paso 4 pide además el historial de pedidos de restock despachados. El
   módulo de Restock no está implementado todavía, así que se dice que falta en
   vez de mostrar una tabla vacía que se leería como "nunca se le pidió nada".
   {% endcomment %}
