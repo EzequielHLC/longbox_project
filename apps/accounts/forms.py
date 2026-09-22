@@ -9,7 +9,11 @@ from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 
 from apps.accounts import services
-from apps.accounts.models import PAIS_TELEFONO_PREDETERMINADO, provincia_del_codigo_postal
+from apps.accounts.models import (
+    PAIS_TELEFONO_PREDETERMINADO,
+    TokenRecuperacion,
+    provincia_del_codigo_postal,
+)
 from apps.core import georef, paises
 from apps.core.mail import enviar_correo
 from apps.core.utils import obtener_ip
@@ -160,12 +164,28 @@ class FormularioLogin(AuthenticationForm):
 
 
 class FormularioRecuperarContrasena(PasswordResetForm):
-    """El de Django, pero enviando por `apps.core.mail`.
+    """El de Django, pero emitiendo el `TokenRecuperacion` y enviando por `apps.core.mail`.
 
-    Es el mismo contenido: lo único que cambia es que el correo sale sin cortes
-    de línea, porque el enlace de recuperación pasa los 78 caracteres y si no
-    viaja partido en dos (ver `apps/core/mail.py`).
+    Del de Django cambian dos cosas. El correo sale sin cortes de línea, porque
+    el enlace pasa los 78 caracteres y si no viaja partido en dos (ver
+    `apps/core/mail.py`). Y se emite la fila que `CO-117` declara.
     """
+
+    def save(self, *args, **kwargs):
+        """`CO-117` (a): «sólo si el correo corresponde a una cuenta Activa: se creó
+        tr : TokenRecuperacion […] y se formó tr → Usuario».
+
+        Se emite sobre la misma selección con la que Django decide a quién mandarle el
+        correo, `get_users()`, y no sobre una consulta propia: si las dos discreparan habría
+        correos sin fila o filas sin correo, y la postcondición dice que van juntos.
+
+        El correo que no corresponde a ninguna cuenta activa no produce ninguna fila. Es la
+        otra mitad de la postcondición, y la que sostiene que la respuesta sea indistinguible:
+        lo único que no hay que dejar es una diferencia observable desde afuera.
+        """
+        for usuario in self.get_users(self.cleaned_data["email"]):
+            TokenRecuperacion.emitir(usuario)
+        return super().save(*args, **kwargs)
 
     def send_mail(
         self,

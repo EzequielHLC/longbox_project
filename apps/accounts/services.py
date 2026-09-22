@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from apps.accounts.models import IntentoFallido
+from apps.accounts.models import EnlaceActivacion, IntentoFallido
 from apps.accounts.tokens import token_de_activacion
 from apps.core import cambios
 from apps.core.mail import enviar_correo
@@ -159,16 +159,26 @@ def preparar_para_activacion(usuario):
 
     `set_unusable_password()` guarda un hash aleatorio distinto en cada
     llamada. Como el token se deriva de ese hash, llamarla de nuevo invalida
-    cualquier enlace de activación emitido antes (CU-USR-MOD, flujo alternativo:
-    "el enlace anterior queda invalidado"), sin necesidad de una tabla de
-    tokens propia.
+    la credencial de cualquier enlace emitido antes. Que el `EnlaceActivacion`
+    anterior quede además en estado Vencido lo hace `EnlaceActivacion.emitir()`:
+    son las dos mitades de "el enlace anterior queda invalidado" —la llave deja
+    de abrir y la fila dice por qué—.
     """
     usuario.estado = Usuario.PENDIENTE_ACTIVACION
     usuario.set_unusable_password()
 
 
 def enviar_enlace_de_activacion(usuario, request):
-    """Manda el correo con el enlace para que el usuario elija su contraseña."""
+    """Emite el `EnlaceActivacion` y manda el correo para que elija su contraseña.
+
+    Emitir y enviar van juntos a propósito: un enlace emitido que no se envía es una fila
+    que promete un correo que nadie recibió, y un correo enviado sin fila es la situación
+    que este concepto vino a terminar.
+
+    `emitir()` deja Vencido el que el usuario tuviera vigente, que es la postcondición de
+    `CO-122`. La llaman `CO-120` (alta), `CO-122` (regeneración) y `CO-124` (reactivación).
+    """
+    EnlaceActivacion.emitir(usuario)
     sitio = get_current_site(request)
     contexto = {
         "usuario": usuario,

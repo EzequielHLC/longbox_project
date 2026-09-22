@@ -4,13 +4,12 @@ Se escriben desde el contrato, no desde la implementación: cada prueba transcri
 postcondición declarada y afirma sus dos mitades —el valor anterior y el posterior— según el
 apartado 3 de `docs/pruebas/ESPECIFICACION.md`.
 
-**Dos postcondiciones de este módulo no se pueden afirmar como están declaradas.** CO-117 declara
-«se creó tr : TokenRecuperacion», CO-118 «tr.estado pasó de Vigente a Consumido» y CO-119
-«EnlaceActivacion.estado pasó de Vigente a Consumido». `TokenRecuperacion` y `EnlaceActivacion`
-son conceptos `<<planificado>>` del modelo de dominio: no existen como tabla, así que no hay
-instancia cuyo estado mirar. Lo que sí es observable es la consecuencia —el enlace deja de
-funcionar— y eso es lo que se afirma, con el rótulo `_efecto_observable` en el nombre para que no
-se confunda con la postcondición literal. Anotado en `bitacora/12-autenticacion.md`.
+**Las postcondiciones de este módulo se afirman literalmente.** CO-117 declara «se creó
+tr : TokenRecuperacion», CO-118 «tr.estado pasó de Vigente a Consumido» y CO-119
+«EnlaceActivacion.estado pasó de Vigente a Consumido». Los dos conceptos existen como tabla desde
+el 2026-09-22, con sus tres estados, así que hay instancia cuyo estado mirar y las pruebas que
+llevaban `_efecto_observable` perdieron el sufijo. Anotado en `bitacora/12-autenticacion.md`,
+B-12-003.
 """
 
 from datetime import timedelta
@@ -26,7 +25,12 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from freezegun import freeze_time
 
-from apps.accounts.models import IntentoFallido, Usuario
+from apps.accounts.models import (
+    EnlaceActivacion,
+    IntentoFallido,
+    TokenRecuperacion,
+    Usuario,
+)
 from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.core.models import RegistroAuditoria
 
@@ -317,6 +321,28 @@ def test_CO117_una_cuenta_activa_recibe_el_enlace_en_su_direccion(client, client
     assert mail.outbox[0].to == [cliente.email]
 
 
+def test_CO117_se_creo_el_token_de_recuperacion_asociado_a_la_cuenta(client, cliente):
+    """Postcondición (a): «se creó tr : TokenRecuperacion con vigencia de 30 minutos, y se formó
+    tr → Usuario»."""
+    assert not TokenRecuperacion.objects.filter(usuario=cliente).exists()
+
+    client.post(URL_PEDIR_ENLACE, {"email": cliente.email})
+
+    token = TokenRecuperacion.objects.get(usuario=cliente)
+    assert token.estado == TokenRecuperacion.VIGENTE
+    assert token.vence_en - token.emitido_en == timedelta(
+        seconds=settings.VIGENCIA_ENLACE_RECUPERACION
+    )
+
+
+def test_CO117_un_correo_sin_cuenta_no_crea_ningun_token(client):
+    """Postcondición: «si el correo no corresponde a ninguna cuenta activa: ninguna
+    postcondición». La fila es una postcondición: tampoco se crea."""
+    client.post(URL_PEDIR_ENLACE, {"email": "nadie@longbox.test"})
+
+    assert not TokenRecuperacion.objects.exists()
+
+
 def test_CO117_un_correo_sin_cuenta_no_produce_ninguna_postcondicion(client):
     """Postcondición: «si el correo no corresponde a ninguna cuenta activa: ninguna
     postcondición»."""
@@ -373,12 +399,21 @@ def test_CO118_la_contrasena_anterior_queda_invalidada(client, cliente):
     assert not cliente.check_password(PASSWORD_DE_PRUEBA)
 
 
-def test_CO118_el_token_queda_consumido_efecto_observable(client, cliente):
-    """Postcondición (c): «tr.estado pasó de Vigente a Consumido».
+def test_CO118_el_token_pasa_de_vigente_a_consumido(client, cliente):
+    """Postcondición (c): «tr.estado pasó de Vigente a Consumido». Las dos mitades."""
+    client.post(URL_PEDIR_ENLACE, {"email": cliente.email})
+    token = TokenRecuperacion.objects.get(usuario=cliente)
+    assert token.estado == TokenRecuperacion.VIGENTE
 
-    `TokenRecuperacion` no existe como tabla —es `<<planificado>>`—, así que no hay estado que
-    leer. Lo observable es que el mismo enlace deja de servir para una segunda vez.
-    """
+    fijar_contrasena(client, url_de_token(cliente), NUEVA_CONTRASENA)
+
+    token.refresh_from_db()
+    assert token.estado == TokenRecuperacion.CONSUMIDO
+
+
+def test_CO118_el_token_consumido_no_admite_un_segundo_uso(client, cliente):
+    """Postcondición (c), segunda mitad de la misma frase: consumido quiere decir que no sirve
+    otra vez. Que el estado cambie y que el enlace deje de abrir son dos cosas distintas."""
     enlace = url_de_token(cliente)
     fijar_contrasena(client, enlace, NUEVA_CONTRASENA)
 
@@ -388,6 +423,18 @@ def test_CO118_el_token_queda_consumido_efecto_observable(client, cliente):
     cliente.refresh_from_db()
     assert cliente.check_password(NUEVA_CONTRASENA), "El enlace no admite un segundo uso."
     assert not cliente.check_password("TerceraClave000")
+
+
+def test_CO118_E2_una_contrasena_rechazada_no_consume_el_token(client, cliente):
+    """Excepción E2: «el token no se consume y el usuario puede corregir sin necesidad de uno
+    nuevo». Es una postcondición negativa: lo que no debe cambiar."""
+    client.post(URL_PEDIR_ENLACE, {"email": cliente.email})
+    token = TokenRecuperacion.objects.get(usuario=cliente)
+
+    fijar_contrasena(client, url_de_token(cliente), "123")
+
+    token.refresh_from_db()
+    assert token.estado == TokenRecuperacion.VIGENTE
 
 
 def test_CO118_invalida_las_sesiones_en_todos_los_dispositivos(cliente):
@@ -454,7 +501,12 @@ def test_CO118_un_enlace_vencido_no_cambia_la_credencial(client, cliente):
 
 @pytest.fixture
 def pendiente(db):
-    """Una cuenta como la deja CO-120: Pendiente de activación y sin credencial utilizable."""
+    """Una cuenta como la deja CO-120: Pendiente, sin credencial utilizable y con su enlace.
+
+    El `EnlaceActivacion` va en el fixture porque la postcondición de CO-120 lo crea: una
+    cuenta pendiente sin enlace no es un estado que el sistema produzca, y montarla así
+    probaría un escenario que ningún contrato promete.
+    """
     usuario = UsuarioFactory(
         rol=Usuario.CAJERO,
         estado=Usuario.PENDIENTE_ACTIVACION,
@@ -462,6 +514,7 @@ def pendiente(db):
     )
     usuario.set_unusable_password()
     usuario.save()
+    EnlaceActivacion.emitir(usuario)
     return usuario
 
 
@@ -487,12 +540,20 @@ def test_CO119_la_credencial_pasa_de_nula_al_hash_de_la_elegida(client, pendient
     assert pendiente.password != NUEVA_CONTRASENA, "Nunca en texto plano (RNF-04)."
 
 
-def test_CO119_el_enlace_no_admite_un_segundo_uso_efecto_observable(client, pendiente):
-    """Postcondición (c): «EnlaceActivacion.estado pasó de Vigente a Consumido».
+def test_CO119_el_enlace_pasa_de_vigente_a_consumido(client, pendiente):
+    """Postcondición (c): «EnlaceActivacion.estado pasó de Vigente a Consumido». Las dos
+    mitades."""
+    enlace = EnlaceActivacion.objects.get(usuario=pendiente)
+    assert enlace.estado == EnlaceActivacion.VIGENTE
 
-    `EnlaceActivacion` es `<<planificado>>` y no existe como tabla. Lo observable es que el mismo
-    enlace no sirve una segunda vez para fijar otra contraseña.
-    """
+    fijar_contrasena(client, url_de_activacion(pendiente), NUEVA_CONTRASENA)
+
+    enlace.refresh_from_db()
+    assert enlace.estado == EnlaceActivacion.CONSUMIDO
+
+
+def test_CO119_el_enlace_no_admite_un_segundo_uso(client, pendiente):
+    """Postcondición (c), segunda mitad: «no admite un segundo uso»."""
     enlace = url_de_activacion(pendiente)
     fijar_contrasena(client, enlace, NUEVA_CONTRASENA)
 
@@ -501,6 +562,36 @@ def test_CO119_el_enlace_no_admite_un_segundo_uso_efecto_observable(client, pend
     pendiente.refresh_from_db()
     assert pendiente.check_password(NUEVA_CONTRASENA)
     assert not pendiente.check_password("SegundaClave222")
+
+
+def test_CO119_E1_un_enlace_vencido_se_distingue_de_uno_ya_usado(client, pendiente):
+    """Excepciones E1 y E2: «enlace vencido» y «enlace ya utilizado» dicen cosas distintas.
+
+    Es la razón por la que el modelo de dominio declara `EnlaceActivacion` un concepto: un
+    token firmado distingue válido de inválido y nada más, y con eso las dos excepciones se
+    responderían igual.
+    """
+    enlace = EnlaceActivacion.objects.get(usuario=pendiente)
+    enlace.vence_en = timezone.now() - timedelta(minutes=1)
+    enlace.save(update_fields=["vence_en"])
+
+    assert enlace.motivo_de_rechazo == EnlaceActivacion.VENCIDO
+
+    enlace.vence_en = timezone.now() + timedelta(hours=1)
+    enlace.estado = EnlaceActivacion.CONSUMIDO
+    enlace.save(update_fields=["vence_en", "estado"])
+
+    assert enlace.motivo_de_rechazo == EnlaceActivacion.CONSUMIDO
+
+
+def test_CO119_E3_una_contrasena_rechazada_no_consume_el_enlace(client, pendiente):
+    """Excepción E3: «el enlace no se consume por un intento fallido». Postcondición negativa."""
+    enlace = EnlaceActivacion.objects.get(usuario=pendiente)
+
+    fijar_contrasena(client, url_de_activacion(pendiente), "123")
+
+    enlace.refresh_from_db()
+    assert enlace.estado == EnlaceActivacion.VIGENTE
 
 
 def test_CO119_registra_la_activacion_en_auditoria(client, pendiente):

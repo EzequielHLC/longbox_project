@@ -3,16 +3,18 @@
 Incluye CO-156 `cancelarOperacion` en sus tres puntos de este módulo: CU-USR-BAJ A1, CU-USR-REA A1
 y CU-USR-ELI A1.
 
-Se escriben desde el contrato. Igual que en el módulo 12, `EnlaceActivacion` es un concepto
-`<<planificado>>` del modelo de dominio y no existe como tabla: las postcondiciones que declaran
-su creación o su cambio de estado se afirman por su efecto observable —llega el correo, el enlace
-viejo deja de servir— y llevan `_efecto_observable` en el nombre.
+Se escriben desde el contrato. Igual que en el módulo 12, las postcondiciones que declaran la
+creación de un `EnlaceActivacion` o su cambio de estado se afirman **literalmente**: el concepto
+existe como tabla desde el 2026-09-22, con sus tres estados, y las pruebas que llevaban
+`_efecto_observable` perdieron el sufijo. Anotado en `bitacora/12-autenticacion.md`, B-12-003.
 
 **Las cuatro pruebas que estaban en `xfail(strict)` pasan.** Eran las tres postcondiciones de
 CO-124 y CO-199 que la reactivación no cumplía —no recibía el rol— y la excepción E1 de CO-198,
 que se rechazaba recién al confirmar. Los dos desvíos se resolvieron a favor del contrato y están
 anotados en `bitacora/13-gestion-de-usuarios.md` (R-13-002 y R-13-003).
 """
+
+from datetime import timedelta
 
 import pytest
 from django.core import mail
@@ -25,7 +27,7 @@ from apps.accounts.forms import (
     MENSAJE_CUENTA_CONGELADA,
     MENSAJE_UNICO_ADMINISTRADOR,
 )
-from apps.accounts.models import Usuario
+from apps.accounts.models import EnlaceActivacion, Usuario
 from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.accounts.tests.helpers_usuarios import (
     DATOS_DE_ALTA,
@@ -127,8 +129,26 @@ def test_CO120_la_cuenta_nace_sin_credencial_utilizable(client_admin, pendiente)
     assert not pendiente.has_usable_password()
 
 
-def test_CO120_se_envio_el_enlace_al_correo_del_nuevo_usuario_efecto_observable(client_admin):
-    """Postcondición (a)(b)(c): «se creó ea : EnlaceActivacion», «ea → u», «el enlace se envió»."""
+def test_CO120_se_creo_el_enlace_de_activacion_asociado_a_la_cuenta(client_admin):
+    """Postcondición (a) y (b): «se creó u : Usuario y ea : EnlaceActivacion», «se formó ea → u»."""
+    assert not EnlaceActivacion.objects.exists()
+
+    client_admin.post(URL_ALTA, DATOS_DE_ALTA)
+
+    usuario = Usuario.objects.get(email=DATOS_DE_ALTA["email"])
+    assert EnlaceActivacion.objects.get(usuario=usuario)
+
+
+def test_CO120_el_enlace_nace_vigente_y_con_48_horas(client_admin, pendiente):
+    """Postcondición (c): «ea.vigencia quedó en 48 horas y ea.estado en Vigente»."""
+    enlace = EnlaceActivacion.objects.get(usuario=pendiente)
+
+    assert enlace.estado == EnlaceActivacion.VIGENTE
+    assert enlace.vence_en - enlace.emitido_en == timedelta(hours=48)
+
+
+def test_CO120_se_envio_el_enlace_al_correo_del_nuevo_usuario(client_admin):
+    """Postcondición: «el enlace se envió al correo del nuevo usuario»."""
     mail.outbox.clear()
 
     client_admin.post(URL_ALTA, DATOS_DE_ALTA)
@@ -308,8 +328,21 @@ def test_CO121_una_cuenta_inactiva_no_cambia_aunque_se_envie_el_formulario(
 # ---------------------------------------------------------------------------
 
 
-def test_CO122_se_reenvia_un_enlace_nuevo_efecto_observable(client_admin, pendiente):
-    """Postcondición (a): «se creó un EnlaceActivacion nuevo». «El correo fue reenviado»."""
+def test_CO122_se_creo_un_enlace_nuevo_con_vigencia_de_48_horas(client_admin, pendiente):
+    """Postcondición (a): «se creó un EnlaceActivacion nuevo con vigencia de 48 horas»."""
+    anterior = EnlaceActivacion.objects.get(usuario=pendiente)
+
+    client_admin.post(url_reenviar_activacion(pendiente))
+
+    enlaces = EnlaceActivacion.objects.filter(usuario=pendiente)
+    assert enlaces.count() == 2
+    nuevo = enlaces.exclude(pk=anterior.pk).get()
+    assert nuevo.estado == EnlaceActivacion.VIGENTE
+    assert nuevo.vence_en - nuevo.emitido_en == timedelta(hours=48)
+
+
+def test_CO122_el_correo_de_activacion_fue_reenviado(client_admin, pendiente):
+    """Postcondición: «el correo de activación fue reenviado»."""
     mail.outbox.clear()
 
     client_admin.post(url_reenviar_activacion(pendiente))
@@ -318,8 +351,23 @@ def test_CO122_se_reenvia_un_enlace_nuevo_efecto_observable(client_admin, pendie
     assert mail.outbox[0].to == [pendiente.email]
 
 
-def test_CO122_el_enlace_anterior_deja_de_admitir_uso_efecto_observable(client_admin, pendiente):
-    """Postcondición (c): «el EnlaceActivacion anterior pasó a estado Vencido y no admite uso»."""
+def test_CO122_el_enlace_anterior_pasa_de_vigente_a_vencido(client_admin, pendiente):
+    """Postcondición (c): «el EnlaceActivacion anterior pasó a estado Vencido». Las dos mitades."""
+    anterior = EnlaceActivacion.objects.get(usuario=pendiente)
+    assert anterior.estado == EnlaceActivacion.VIGENTE
+
+    client_admin.post(url_reenviar_activacion(pendiente))
+
+    anterior.refresh_from_db()
+    assert anterior.estado == EnlaceActivacion.VENCIDO
+
+
+def test_CO122_el_enlace_anterior_deja_de_admitir_uso(client_admin, pendiente):
+    """Postcondición (c), segunda mitad: «y no admite uso».
+
+    Vencerlo en la tabla y que la llave deje de abrir son dos cosas distintas, y las dos
+    hacen falta: la fila explica el rechazo, el token lo produce.
+    """
     anterior = enlace_de_activacion(mail.outbox[-1])
     mail.outbox.clear()
 
@@ -453,9 +501,19 @@ def test_CO124_la_credencial_anterior_queda_invalidada(client_admin, dado_de_baj
     assert not dado_de_baja.check_password(PASSWORD_DE_PRUEBA)
 
 
-def test_CO124_se_envia_un_enlace_de_activacion_efecto_observable(client_admin, dado_de_baja):
-    """Postcondición (a): «se creó un EnlaceActivacion con vigencia de 48 horas, enviado al correo
-    de la cuenta»."""
+def test_CO124_se_creo_un_enlace_de_activacion_con_48_horas(client_admin, dado_de_baja):
+    """Postcondición (a): «se creó un EnlaceActivacion con vigencia de 48 horas»."""
+    assert not EnlaceActivacion.objects.filter(usuario=dado_de_baja).exists()
+
+    reactivar(client_admin, dado_de_baja)
+
+    enlace = EnlaceActivacion.objects.get(usuario=dado_de_baja)
+    assert enlace.estado == EnlaceActivacion.VIGENTE
+    assert enlace.vence_en - enlace.emitido_en == timedelta(hours=48)
+
+
+def test_CO124_el_enlace_se_envia_al_correo_de_la_cuenta(client_admin, dado_de_baja):
+    """Postcondición: «enviado al correo de la cuenta»."""
     mail.outbox.clear()
 
     reactivar(client_admin, dado_de_baja)
@@ -565,8 +623,23 @@ def test_CO125_el_correo_queda_disponible_para_un_alta_nueva(client_admin, pendi
     assert Usuario.objects.filter(email=correo).count() == 1
 
 
-def test_CO125_el_enlace_pendiente_queda_invalidado_efecto_observable(client_admin, pendiente):
-    """Postcondición (c): «el EnlaceActivacion pendiente quedó invalidado»."""
+def test_CO125_el_enlace_pendiente_queda_invalidado(client_admin, pendiente):
+    """Postcondición (c): «el EnlaceActivacion pendiente quedó invalidado».
+
+    Acá «invalidado» es más fuerte que Vencido: la cuenta se elimina físicamente —es la única
+    eliminación física del sistema— y el enlace se va con ella. No queda una fila apuntando a
+    un usuario que ya no existe.
+    """
+    assert EnlaceActivacion.objects.filter(usuario=pendiente).exists()
+
+    client_admin.post(url_eliminar(pendiente))
+
+    assert not EnlaceActivacion.objects.filter(usuario_id=pendiente.pk).exists()
+    assert not Usuario.objects.filter(email=pendiente.email).exists()
+
+
+def test_CO125_el_enlace_eliminado_ya_no_abre_nada(client_admin, pendiente):
+    """La otra mitad de «invalidado»: la llave tampoco sirve."""
     enlace = enlace_de_activacion(mail.outbox[-1])
 
     client_admin.post(url_eliminar(pendiente))

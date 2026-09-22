@@ -101,6 +101,68 @@ por más que su comportamiento observable sea el correcto. Está anotado así en
 
 ---
 
+### B-12-003 · EnlaceActivacion y TokenRecuperacion existen como conceptos con estado
+
+**Tipo:** Agregado · **Fecha:** 2026-09-22 · **Alcance:** `CO-117` a `CO-120`, `CO-122`, `CO-124`, `CO-125`
+**Estado:** Resuelta — construido el 2026-09-22
+
+**Qué apareció.**
+Al construir los dos conceptos que `B-12-002` dejaba pendientes apareció una pregunta que el
+modelo de dominio no resuelve y los contratos tampoco: **qué relación guarda la fila con la
+credencial que viaja en el correo.** El modelo declara el concepto —vigencia, estado, momento de
+emisión— y no dice si el enlace del correo *es* esa fila, ni cómo llega el sistema de una a la
+otra.
+
+No es una pregunta ociosa. Si la fila fuera la credencial, su identificador tendría que viajar en
+la URL, y un identificador de fila es adivinable: el enlace de activación de la cuenta 41 sería
+`/activar/41/`.
+
+**Qué dice la especificación.**
+> `MODELO_DE_DOMINIO.md`, Área 1 — «class EnlaceActivacion <<planificado>> { vigencia : 48 horas ·
+> estado : {Vigente, Consumido, Vencido} · emitido en : fecha y hora }»
+
+Declara los atributos. Sobre la forma de la credencial, nada, y es correcto que no diga nada: es
+una decisión de implementación y no de dominio.
+
+**Qué se hizo.**
+**La fila acompaña al token, no lo reemplaza.** La credencial sigue siendo el token firmado de
+Django, que se deriva del hash de la contraseña y por eso se invalida solo al usarse. La fila es
+el **sujeto** de las postcondiciones: es la que tiene estado, la que pasa de Vigente a Consumido y
+la que puede decir *por qué* un enlace fue rechazado.
+
+Esa última es la ganancia que el modelo de dominio anticipaba y que ahora se puede ver en
+pantalla: `CU-AUT-ACT` E1 («vencido») y E2 («ya utilizado») decían lo mismo porque el token no
+distingue más que válido de inválido. Ahora dicen cosas distintas, y `CU-AUT-REC` E1 también.
+
+Tres decisiones que conviene tener a la vista:
+
+| Decisión | Por qué |
+| --- | --- |
+| `estado` es un campo y no un derivado | Los contratos declaran que el estado **pasó** de un valor a otro, y un campo derivado no puede haber pasado de nada |
+| El vencimiento por reloj se resuelve al leer (`estado_actual`) | Nadie está mirando en el instante en que un plazo se cumple. Lo que sí se escribe es la transición que alguien provoca: consumirlo o reemplazarlo |
+| Al emitir uno nuevo, el anterior queda Vencido y **no se borra** | Cuántos enlaces hizo falta emitir para una cuenta es un dato; una fila borrada no lo cuenta |
+
+Las dos clases comparten una base abstracta: son el mismo concepto con distinta vigencia y
+distinto caso de uso. `EnlaceActivacion` dura 48 horas y lo emite un Administrador sobre una
+cuenta que acaba de crear; `TokenRecuperacion` dura 30 minutos y lo pide cualquiera que sepa un
+correo.
+
+Las siete pruebas que llevaban `_efecto_observable` verifican ahora la postcondición literal y
+perdieron el sufijo. Varias se partieron en dos, porque la frase del contrato declara dos cosas
+—«pasó a Consumido» y «no admite un segundo uso»— y agrupar dos postcondiciones en una prueba
+deja sin saber cuál falló.
+
+**Qué habría que cambiar.**
+Nada obligatorio. Dos cosas que convendría que el documento dijera, ahora que hay dónde decirlas:
+
+- **`MODELO_DE_DOMINIO.md`, Área 1: los dos conceptos pasan de `<<planificado>>` a
+  `<<construido>>`.** Con eso el conteo queda en 21 construidos y 18 planificados.
+- **El modelo declara la vigencia y el estado, pero no la regla de que sólo puede haber un enlace
+  Vigente por cuenta**, que es lo que `CO-122` implica al mandar vencer el anterior. Hoy esa regla
+  vive en el código. Si es una invariante, merece número.
+
+---
+
 ## Resoluciones
 
 > Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en

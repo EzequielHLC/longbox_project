@@ -1,6 +1,10 @@
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
+from django.utils import timezone
 
 # La comiquería está en Posadas y vende dentro del país: el visitante no
 # debería tener que elegir "Argentina" en un desplegable de 200 países para
@@ -257,3 +261,179 @@ class IntentoFallido(models.Model):
 
     def __str__(self):
         return f"{self.email} desde {self.ip} el {self.ocurrido_en:%Y-%m-%d %H:%M}"
+
+
+class EnlaceDeCorreo(models.Model):
+    """Base de `EnlaceActivacion` y `TokenRecuperacion` (`MODELO_DE_DOMINIO.md`, Área 1).
+
+    Los dos son el mismo concepto con distinta vigencia y distinto caso de uso: algo que se
+    emite para una cuenta, viaja por correo, se consume **una sola vez** y vence solo. El
+    modelo de dominio los declara conceptos y no atributos por una razón que se ve acá:
+
+    > «cuatro casos de uso los tratan como objetos con estado propio […] Un dato que se emite,
+    > se consume una sola vez, vence solo y del que hay que distinguir tres razones de rechazo
+    > no es un atributo de la cuenta: es un concepto.»
+
+    **Qué aporta esta tabla que el token firmado no podía.** El token de Django distingue
+    válido de inválido y nada más. Con la fila, un enlace rechazado dice *por qué*: consumido
+    o vencido. Es lo que `CU-AUT-ACT` valida como tres estados distinguibles y lo que
+    `CU-AUT-REC` E1 necesita para separar «ya utilizado» de «expirado».
+
+    **La fila no reemplaza al token, lo acompaña.** La credencial que viaja en la URL sigue
+    siendo el token firmado: la fila no puede viajar, porque su identificador sería adivinable.
+    La fila es el *sujeto* de las postcondiciones; el token es la llave.
+
+    **`estado` guarda la transición, no la deduce.** Los contratos declaran cambios de estado
+    —`CO-118` «tr.estado pasó de Vigente a Consumido», `CO-122` «el anterior pasó a Vencido»—
+    y un campo derivado no puede haber «pasado» de nada. El vencimiento por reloj es el único
+    que no se escribe en el momento en que ocurre, porque nadie está mirando: para eso está
+    `estado_actual`, que lo resuelve al leerlo.
+    """
+
+    VIGENTE = "vigente"
+    CONSUMIDO = "consumido"
+    VENCIDO = "vencido"
+
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (VIGENTE, "Vigente"),
+        (CONSUMIDO, "Consumido"),
+        (VENCIDO, "Vencido"),
+    ]
+
+    # Cuánto vive un enlace de esta clase. Lo declara cada subclase.
+    VIGENCIA = None
+
+    # `default` y no `auto_now_add`: el vencimiento se calcula desde el momento
+    # de emisión, y con `auto_now_add` ese momento no existe todavía cuando hay
+    # que calcularlo. Tomando dos veces el reloj, «vence 48 horas después de
+    # emitido» quedaba siendo casi cierto, que sobre un plazo es no serlo.
+    emitido_en = models.DateTimeField("emitido en", default=timezone.now)
+    vence_en = models.DateTimeField("vence en")
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default=VIGENTE)
+    consumido_en = models.DateTimeField("consumido en", null=True, blank=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["-emitido_en"]
+
+    def __str__(self):
+        return f"{self._meta.verbose_name} de {self.usuario_id} · {self.estado_actual}"
+
+    def save(self, *args, **kwargs):
+        if self.vence_en is None:
+            self.vence_en = self.emitido_en + self.VIGENCIA
+        return super().save(*args, **kwargs)
+
+    # ------------------------------------------------------------------ #
+    # Estado
+    # ------------------------------------------------------------------ #
+
+    @property
+    def vencido_por_reloj(self):
+        return timezone.now() >= self.vence_en
+
+    @property
+    def estado_actual(self):
+        """El estado que el concepto tiene *ahora*.
+
+        Un enlace guardado como Vigente cuya vigencia ya pasó está Vencido, aunque nadie haya
+        escrito la transición: no hay nadie mirando en el instante en que un plazo se cumple.
+        Lo que sí se escribe es la transición que alguien provoca —consumirlo, reemplazarlo—,
+        que es la que los contratos declaran.
+        """
+        if self.estado == self.VIGENTE and self.vencido_por_reloj:
+            return self.VENCIDO
+        return self.estado
+
+    @property
+    def esta_vigente(self):
+        return self.estado_actual == self.VIGENTE
+
+    @property
+    def motivo_de_rechazo(self):
+        """`None` si sirve; si no, por qué no. Es lo que la tabla vino a poder responder."""
+        if self.esta_vigente:
+            return None
+        return self.estado_actual
+
+    # ------------------------------------------------------------------ #
+    # Transiciones
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def emitir(cls, usuario):
+        """Emite uno nuevo y deja Vencidos los que el usuario tuviera vigentes.
+
+        Es la postcondición de `CO-122`: «se creó un EnlaceActivacion nuevo […] el anterior
+        pasó a estado Vencido y no admite uso». Vale igual en la primera emisión, donde no hay
+        ninguno anterior que vencer, así que `CO-120` y `CO-122` comparten este camino.
+
+        Al anterior se lo vence y no se lo borra: cuántos enlaces hizo falta emitir para una
+        cuenta es un dato, y una fila borrada no lo cuenta.
+        """
+        cls.objects.filter(usuario=usuario, estado=cls.VIGENTE).update(estado=cls.VENCIDO)
+        return cls.objects.create(usuario=usuario)
+
+    @classmethod
+    def vigente_de(cls, usuario):
+        """El enlace que el usuario puede usar hoy, o `None`."""
+        enlace = cls.objects.filter(usuario=usuario, estado=cls.VIGENTE).first()
+        return enlace if enlace and enlace.esta_vigente else None
+
+    @classmethod
+    def ultimo_de(cls, usuario):
+        """El último emitido, sirva o no. Es el que explica por qué un enlace fue rechazado."""
+        return cls.objects.filter(usuario=usuario).first()
+
+    def consumir(self):
+        """Vigente → Consumido. No admite un segundo uso.
+
+        Devuelve `True` si lo consumió esta llamada. Uno que ya estaba consumido o vencido
+        devuelve `False` y no se toca: que el estado no cambie es la postcondición.
+        """
+        if not self.esta_vigente:
+            return False
+        self.estado = self.CONSUMIDO
+        self.consumido_en = timezone.now()
+        self.save(update_fields=["estado", "consumido_en"])
+        return True
+
+
+class EnlaceActivacion(EnlaceDeCorreo):
+    """El enlace con el que el titular de una cuenta nueva elige su primera contraseña.
+
+    Lo emiten `CO-120` (alta), `CO-122` (regeneración) y `CO-124` (reactivación); lo consume
+    `CO-119`. Vigencia de 48 horas, según el modelo de dominio.
+    """
+
+    VIGENCIA = timedelta(seconds=settings.VIGENCIA_ENLACE_ACTIVACION)
+
+    usuario = models.ForeignKey(
+        "accounts.Usuario", on_delete=models.CASCADE, related_name="enlaces_de_activacion"
+    )
+
+    class Meta(EnlaceDeCorreo.Meta):
+        abstract = False
+        verbose_name = "enlace de activación"
+        verbose_name_plural = "enlaces de activación"
+
+
+class TokenRecuperacion(EnlaceDeCorreo):
+    """El enlace con el que alguien que olvidó su contraseña elige una nueva.
+
+    Lo emite `CO-117` y lo consume `CO-118`. Vigencia de 30 minutos, según el modelo de
+    dominio: es más corta que la de activación porque este enlace lo pide cualquiera que sepa
+    un correo, mientras que el de activación lo emite un Administrador sobre una cuenta que
+    acaba de crear.
+    """
+
+    VIGENCIA = timedelta(seconds=settings.VIGENCIA_ENLACE_RECUPERACION)
+
+    usuario = models.ForeignKey(
+        "accounts.Usuario", on_delete=models.CASCADE, related_name="tokens_de_recuperacion"
+    )
+
+    class Meta(EnlaceDeCorreo.Meta):
+        abstract = False
+        verbose_name = "token de recuperación"
+        verbose_name_plural = "tokens de recuperación"

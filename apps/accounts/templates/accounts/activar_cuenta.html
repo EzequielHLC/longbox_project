@@ -36,12 +36,33 @@
       </div>
     </form>
   {% else %}
-    {# Token vencido, ya usado o reemplazado por uno más nuevo. #}
+    {% comment %}
+    CU-AUT-ACT distingue tres motivos de rechazo, y `motivo_de_rechazo` sale del
+    EnlaceActivacion: el token firmado por sí solo no sabe cuál de los tres es.
+    E1 (vencido) manda a pedir uno nuevo; E2 (ya utilizado) ofrece el inicio de
+    sesión sin revelar el estado de la cuenta.
+    {% endcomment %}
     <h1 class="font-display text-3xl font-bold tracking-wide">El enlace ya no es válido</h1>
-    <p class="mt-4 text-sm">
-      El enlace de activación ha vencido, ya fue utilizado o fue reemplazado por uno más
-      reciente. Solicite al administrador del sistema la generación de un enlace nuevo.
-    </p>
+    {% if motivo_de_rechazo == "consumido" %}
+      <p class="mt-4 text-sm">
+        Este enlace de activación ya fue utilizado.
+      </p>
+      <p class="mt-6 text-sm">
+        <a href="{% url 'accounts:login' %}" class="text-screen underline hover:text-signal">
+          Ir al inicio de sesión
+        </a>
+      </p>
+    {% elif motivo_de_rechazo == "vencido" %}
+      <p class="mt-4 text-sm">
+        El enlace de activación venció o fue reemplazado por uno más reciente. Solicite al
+        administrador del sistema la generación de un enlace nuevo.
+      </p>
+    {% else %}
+      <p class="mt-4 text-sm">
+        El enlace de activación ha vencido, ya fue utilizado o fue reemplazado por uno más
+        reciente. Solicite al administrador del sistema la generación de un enlace nuevo.
+      </p>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

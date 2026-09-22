@@ -31,7 +31,7 @@ from apps.accounts.forms import (
     FormularioRegistroCliente,
     FormularioUsuarioPersonal,
 )
-from apps.accounts.models import Usuario
+from apps.accounts.models import EnlaceActivacion, TokenRecuperacion, Usuario
 from apps.accounts.tokens import token_de_activacion, token_de_recuperacion
 from apps.core import georef
 from apps.core.mixins import RolRequeridoMixin
@@ -115,7 +115,28 @@ class RestablecerContrasenaView(PasswordResetConfirmView):
     success_url = reverse_lazy("accounts:password_reset_complete")
     token_generator = token_de_recuperacion
 
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        # CU-AUT-REC E1 distingue «ya utilizado» de «expirado». Sin la fila, el
+        # token firmado sólo sabe decir «no sirve»: es exactamente la diferencia
+        # que el concepto vino a hacer posible.
+        contexto["motivo_de_rechazo"] = self._motivo_de_rechazo()
+        return contexto
+
+    def _motivo_de_rechazo(self):
+        if self.validlink or self.user is None:
+            return None
+        token = TokenRecuperacion.ultimo_de(self.user)
+        return token.motivo_de_rechazo if token else None
+
     def form_valid(self, form):
+        # Se consume antes de guardar la contraseña, que es lo que invalida el
+        # token firmado: después de `super().form_valid()` la llave ya no abre,
+        # pero la fila tiene que quedar diciendo que este enlace se usó.
+        token = TokenRecuperacion.vigente_de(self.user)
+        if token:
+            token.consumir()
+
         respuesta = super().form_valid(form)
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.CAMBIO_CONTRASENA,
@@ -743,7 +764,28 @@ class ActivarCuentaView(PasswordResetConfirmView):
     success_url = reverse_lazy("accounts:activacion_completa")
     token_generator = token_de_activacion
 
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        # CU-AUT-ACT valida tres estados distinguibles —vigente, consumido,
+        # vencido— y sus excepciones E1 y E2 dicen cosas distintas al usuario.
+        # Quien lo responde es el `EnlaceActivacion`, no el token firmado.
+        contexto["motivo_de_rechazo"] = self._motivo_de_rechazo()
+        return contexto
+
+    def _motivo_de_rechazo(self):
+        if self.validlink or self.user is None:
+            return None
+        enlace = EnlaceActivacion.ultimo_de(self.user)
+        return enlace.motivo_de_rechazo if enlace else None
+
     def form_valid(self, form):
+        # Se consume antes de guardar la contraseña, por el mismo motivo que en
+        # CO-118: guardar rota el hash y con él la llave, y lo que tiene que
+        # quedar escrito es que este enlace fue el que se usó.
+        enlace = EnlaceActivacion.vigente_de(self.user)
+        if enlace:
+            enlace.consumir()
+
         respuesta = super().form_valid(form)
         usuario = self.user
         usuario.estado = Usuario.ACTIVO
