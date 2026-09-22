@@ -8,9 +8,10 @@ Se escriben desde el contrato. Igual que en el módulo 12, `EnlaceActivacion` es
 su creación o su cambio de estado se afirman por su efecto observable —llega el correo, el enlace
 viejo deja de servir— y llevan `_efecto_observable` en el nombre.
 
-**Tres postcondiciones de CO-124 no se cumplen.** Están escritas igual, marcadas `xfail(strict)`,
-y anotadas en `bitacora/13-gestion-de-usuarios.md` (B-13-002). `strict=True` es deliberado: el día
-que la reactivación acepte un rol, la prueba deja de estar en xfail y la suite avisa.
+**Las cuatro pruebas que estaban en `xfail(strict)` pasan.** Eran las tres postcondiciones de
+CO-124 y CO-199 que la reactivación no cumplía —no recibía el rol— y la excepción E1 de CO-198,
+que se rechazaba recién al confirmar. Los dos desvíos se resolvieron a favor del contrato y están
+anotados en `bitacora/13-gestion-de-usuarios.md` (R-13-002 y R-13-003).
 """
 
 import pytest
@@ -46,6 +47,15 @@ URL_PANEL = reverse("core:panel")
 
 def url_reactivar(usuario):
     return reverse("accounts:usuario_reactivar", args=[usuario.pk])
+
+
+def reactivar(client, usuario, rol=None):
+    """CO-124 es `confirmarReactivacionDeUsuario(usuario, rol)`: el rol es un argumento.
+
+    Cuando la prueba no es sobre el rol, se manda el que la cuenta traía. No es un valor por
+    omisión del sistema —el contrato no restaura nada— sino la elección que hace esta prueba.
+    """
+    return client.post(url_reactivar(usuario), {"rol": rol or usuario.rol})
 
 
 def url_eliminar(usuario):
@@ -422,7 +432,7 @@ def test_CO124_el_estado_pasa_de_inactivo_a_pendiente_de_activacion(client_admin
     """Postcondición (c): «u.estado pasó de Inactivo a Pendiente de activación (no a Activo)»."""
     assert dado_de_baja.estado == Usuario.INACTIVO
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     dado_de_baja.refresh_from_db()
     assert dado_de_baja.estado == Usuario.PENDIENTE_ACTIVACION
@@ -436,7 +446,7 @@ def test_CO124_la_credencial_anterior_queda_invalidada(client_admin, dado_de_baj
     """
     assert dado_de_baja.check_password(PASSWORD_DE_PRUEBA)
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     dado_de_baja.refresh_from_db()
     assert not dado_de_baja.has_usable_password()
@@ -448,7 +458,7 @@ def test_CO124_se_envia_un_enlace_de_activacion_efecto_observable(client_admin, 
     de la cuenta»."""
     mail.outbox.clear()
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     assert len(mail.outbox) == 1
     assert mail.outbox[0].to == [dado_de_baja.email]
@@ -462,7 +472,7 @@ def test_CO124_el_historial_del_usuario_se_conserva_integro(client_admin, dado_d
     )
     assert historial_antes
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     historial_despues = list(
         RegistroAuditoria.objects.filter(actor=dado_de_baja).values_list("pk", flat=True)
@@ -474,20 +484,12 @@ def test_CO124_registra_la_reactivacion_en_auditoria(client_admin, dado_de_baja)
     """Postcondición: entrada «Reactivación de usuario del sistema» con actor y momento."""
     accion = RegistroAuditoria.REACTIVACION_USUARIO
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     registro = RegistroAuditoria.objects.get(accion=accion)
     assert registro.objetivo_email == dado_de_baja.email
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "CO-124 declara confirmarReactivacionDeUsuario(usuario, rol) y la postcondición "
-        "«u.rol quedó con el valor declarado». La vista no recibe ningún rol: conserva el que "
-        "la cuenta tenía. Ver bitacora/13-gestion-de-usuarios.md, B-13-002."
-    ),
-)
 def test_CO124_el_rol_queda_con_el_valor_declarado(client_admin, dado_de_baja):
     """Postcondición (c): «u.rol quedó con el valor declarado».
 
@@ -497,35 +499,21 @@ def test_CO124_el_rol_queda_con_el_valor_declarado(client_admin, dado_de_baja):
     """
     assert dado_de_baja.rol == Usuario.CAJERO
 
-    client_admin.post(url_reactivar(dado_de_baja), {"rol": Usuario.ADMINISTRADOR})
+    reactivar(client_admin, dado_de_baja, rol=Usuario.ADMINISTRADOR)
 
     dado_de_baja.refresh_from_db()
     assert dado_de_baja.rol == Usuario.ADMINISTRADOR
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "CO-124 pide que la entrada de auditoría incluya el rol asignado. El detalle registra "
-        "sólo la transición de estado. Ver bitacora/13-gestion-de-usuarios.md, B-13-002."
-    ),
-)
 def test_CO124_la_auditoria_incluye_el_rol_asignado(client_admin, dado_de_baja):
     """Postcondición: entrada «Reactivación de usuario del sistema» […] «incluyendo el rol
     asignado»."""
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.REACTIVACION_USUARIO)
     assert Usuario.CAJERO in registro.detalle.lower()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "CO-199 pide presentar el rol «permitiendo modificarlo antes de confirmar». La pantalla "
-        "lo muestra como texto, sin control editable. Ver B-13-002."
-    ),
-)
 def test_CO199_la_pantalla_permite_modificar_el_rol_antes_de_confirmar(client_admin, dado_de_baja):
     """Responsabilidad de CO-199: «presentar el rol con el que quedará reactivada, permitiendo
     modificarlo antes de confirmar»."""
@@ -609,7 +597,7 @@ def test_CO125_una_cuenta_inactiva_no_se_elimina(client_admin, dado_de_baja):
 def test_CO125_una_pendiente_que_ya_inicio_sesion_no_se_elimina(client_admin, dado_de_baja):
     """Excepción E1 y Notas: «no alcanza con estar Pendiente: una cuenta reactivada por CO-124
     también lo está, y ésa sí tiene historial»."""
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
     dado_de_baja.refresh_from_db()
     assert dado_de_baja.estado == Usuario.PENDIENTE_ACTIVACION
 
@@ -683,14 +671,6 @@ def test_CO198_solicitar_la_baja_no_modifica_el_estado(client_admin, cajero_acti
     assert _foto_de(cajero_activo) == antes
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "CO-198 E1 bloquea la solicitud de baja sobre la última cuenta Administrador activa. "
-        "El resguardo vive sólo en el POST: la pantalla de confirmación se ofrece igual y el "
-        "rechazo llega recién al confirmar. Ver bitacora/13-gestion-de-usuarios.md, B-13-003."
-    ),
-)
 def test_CO198_no_se_ofrece_sobre_el_ultimo_administrador(client_admin, administrador):
     """CO-198, excepción E1: «última cuenta Administrador activa: se bloquea» (I-12).
 

@@ -26,6 +26,7 @@ from apps.accounts.forms import (
     MENSAJE_CUENTA_CONGELADA,
     MENSAJE_UNICO_ADMINISTRADOR,
     FormularioLogin,
+    FormularioReactivacionUsuario,
     FormularioRecuperarContrasena,
     FormularioRegistroCliente,
     FormularioUsuarioPersonal,
@@ -523,9 +524,17 @@ class ReenviarActivacionView(GestionDeUsuariosMixin, View):
 class UsuarioBajaView(GestionDeUsuariosMixin, DetailView):
     """CU-USR-BAJ — Dar de Baja Usuario del Sistema.
 
-    El GET es la confirmación explícita que pide el paso 2; la baja se aplica
-    únicamente por POST. Es una baja lógica: el usuario nunca se borra, así el
-    historial de operaciones que registró queda intacto.
+    El GET es `CO-198 solicitarBajaDeUsuario`, la confirmación explícita que pide
+    el paso 2; el POST es `CO-123 confirmarBajaDeUsuario`. Es una baja lógica: el
+    usuario nunca se borra, así el historial de operaciones que registró queda
+    intacto.
+
+    **El resguardo del último Administrador vive en los dos.** `CO-198` lo
+    declara como excepción E1 de la *solicitud*, no sólo de la confirmación:
+    ofrecer la pantalla de baja sobre la única cuenta Administrador activa es
+    invitar a intentar algo que el sistema no permite. Es el principio que
+    `CO-202` enuncia — «la interfaz no decide, refleja» — y el mismo criterio con
+    el que la edición de una cuenta Inactiva ya se bloquea en el GET.
     """
 
     model = Usuario
@@ -534,6 +543,16 @@ class UsuarioBajaView(GestionDeUsuariosMixin, DetailView):
 
     def get_queryset(self):
         return Usuario.objects.filter(rol__in=Usuario.ROLES_DE_PERSONAL)
+
+    def get(self, request, *args, **kwargs):
+        usuario = self.get_object()
+
+        with transaction.atomic():
+            if services.es_el_unico_administrador_activo(usuario):
+                messages.error(request, MENSAJE_UNICO_ADMINISTRADOR)
+                return redirect("accounts:usuario_lista")
+
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         usuario = self.get_object()
@@ -545,7 +564,10 @@ class UsuarioBajaView(GestionDeUsuariosMixin, DetailView):
         with transaction.atomic():
             if services.es_el_unico_administrador_activo(usuario):
                 messages.error(request, MENSAJE_UNICO_ADMINISTRADOR)
-                return redirect("accounts:usuario_baja", pk=usuario.pk)
+                # Al listado y no a la pantalla de baja: esa pantalla ya no se
+                # sirve para esta cuenta, así que volver a ella sólo produciría
+                # una segunda redirección y el mensaje repetido.
+                return redirect("accounts:usuario_lista")
 
             usuario.estado = Usuario.INACTIVO
             usuario.save()
@@ -585,6 +607,13 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
     devolverle el acceso con la contraseña que tenía —que pudo quedar anotada o
     compartida— sería reabrir una credencial vieja. Al pasar por el enlace, la
     persona elige una contraseña nueva y la anterior queda invalidada.
+
+    **El rol se elige acá, no se restaura.** Es lo que CO-124 declara en su firma
+    —`confirmarReactivacionDeUsuario(usuario, rol)`— y lo que CO-199 pide
+    presentar «permitiendo modificarlo antes de confirmar». Va junto con CO-121,
+    que prohíbe editar una cuenta Inactiva: entre las dos reglas, ningún cambio
+    de rol puede quedar preparado sobre una cuenta dormida y aplicarse solo al
+    volver.
     """
 
     model = Usuario
@@ -594,16 +623,31 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
     def get_queryset(self):
         return Usuario.objects.filter(rol__in=Usuario.ROLES_DE_PERSONAL)
 
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        # CO-199: el rol que la cuenta traía es el valor propuesto, no el
+        # impuesto. Quien reactiva lo ve y decide si sigue siendo el que va.
+        contexto.setdefault("form", FormularioReactivacionUsuario(initial={"rol": self.object.rol}))
+        return contexto
+
     def post(self, request, *args, **kwargs):
-        usuario = self.get_object()
+        self.object = usuario = self.get_object()
 
         if not usuario.esta_congelada:
             messages.error(request, "Solo se puede reactivar una cuenta dada de baja.")
             return redirect("accounts:usuario_lista")
 
+        form = FormularioReactivacionUsuario(request.POST)
+        if not form.is_valid():
+            return self.render_to_response(self.get_context_data(form=form))
+
+        rol_anterior = usuario.rol
+        rol_nuevo = form.cleaned_data["rol"]
+
         with transaction.atomic():
             # Mismo camino que un alta: pendiente, sin contraseña utilizable y
             # con un enlace nuevo. Rotar el hash mata la contraseña anterior.
+            usuario.rol = rol_nuevo
             services.preparar_para_activacion(usuario)
             usuario.save()
             services.enviar_enlace_de_activacion(usuario, request)
@@ -612,16 +656,22 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
                 actor=request.user,
                 objetivo=usuario,
                 ip=obtener_ip(request),
+                # El rol asignado va en el detalle porque CO-124 lo pide, y va
+                # como par —el anterior y el nuevo— por la misma razón que el
+                # resto de la auditoría de este módulo: el estado final solo no
+                # dice si hubo cambio.
                 detalle=(
                     f"estado: '{Usuario.INACTIVO}' → '{Usuario.PENDIENTE_ACTIVACION}'; "
+                    f"rol asignado: '{rol_anterior}' → '{rol_nuevo}'; "
                     "se envió un enlace para elegir una contraseña nueva"
                 ),
             )
 
         messages.success(
             request,
-            f"Se reactivó la cuenta de {usuario.email} y se envió un enlace para establecer "
-            "una nueva contraseña. Hasta entonces la cuenta no puede iniciar sesión.",
+            f"Se reactivó la cuenta de {usuario.email} con el rol "
+            f"{usuario.get_rol_display()} y se envió un enlace para establecer una nueva "
+            "contraseña. Hasta entonces la cuenta no puede iniciar sesión.",
         )
         return redirect("accounts:usuario_lista")
 

@@ -168,6 +168,68 @@ al modelo de dominio el que falta. `CO-124`, excepción E2: o se elimina, o se e
 circunstancia `I-10` deja de bloquear el correo de una cuenta inactiva —si esa circunstancia
 existe, es información que el modelo de dominio hoy no tiene.
 
+
+### B-13-005 · Se retiró el admin de Django, y con él la única vía de crear una cuenta sin rol
+
+**Tipo:** Agregado · **Fecha:** 2026-09-22 · **Alcance:** `CU-USR-ALT`, `CU-USR-MOD`, `CU-USR-BAJ`, `I-13`
+**Estado:** Resuelta — decidido y construido el 2026-09-22
+
+**Qué apareció.**
+El proyecto tenía cuatro `admin.py` registrando nueve modelos, la ruta `admin/` y una prueba
+(`apps/accounts/tests/test_admin.py`) cuyo docstring decía «el rol se administra desde el admin de
+Django hasta que exista el CU-USR-MOD». `CU-USR-MOD` existe y está construido desde hace tiempo;
+el admin siguió ahí.
+
+Lo que el admin permitía, medido contra dos reglas del sistema:
+
+| Regla | Lo que el admin permitía |
+| --- | --- |
+| Ninguna escritura ocurre fuera de una operación contratada | Editar el rol y el estado de cualquier cuenta desde el listado, sin informe de impacto, sin el resguardo de I-12 y sin entrada de auditoría |
+| No existe ninguna cuenta fuera de los tres roles | `createsuperuser` fabrica una cuenta con `is_superuser=True`, que el modelo de dominio no declara |
+
+La primera es la más seria. `UsuarioAdmin` declaraba `list_editable = ("rol", "estado")`: quitar
+el rol Administrador a la única cuenta que lo tenía era editar una celda de una grilla. `I-12` se
+sostiene en un servicio invocado desde las vistas —está anotado así en `docs/DEUDA.md`— y el admin
+no pasa por ninguna vista.
+
+**Qué dice la especificación.**
+Nada sobre el admin de Django: es una herramienta del framework y el documento no habla de
+herramientas. Lo que sí dice, y es lo que decide:
+
+> `I-12` — «siempre existe al menos un Administrador activo».
+
+> `I-13` — «el log de auditoría no se modifica ni se borra».
+
+Y los tres roles del modelo de dominio, Área 1, sin un cuarto.
+
+**Qué se hizo.**
+Se retiraron los cuatro `admin.py`, la ruta `admin/`, `django.contrib.admin` de `INSTALLED_APPS` y
+`test_admin.py`.
+
+De las tres cosas que esa prueba cubría, dos ya no existen —el formulario de rol del admin y la
+edición del rol desde su listado— y la tercera, la inmutabilidad del log, **sigue probada a nivel
+de modelo** en `apps/core/tests/test_auditoria.py`
+(`test_una_entrada_de_auditoria_no_se_puede_modificar` y `…no_se_puede_borrar`). Ésa es además la
+prueba que corresponde: `test_admin.py` verificaba que el admin *no ofreciera* editar, que es una
+propiedad de una pantalla; las dos del modelo verifican que `save()` y `delete()` levanten
+`RegistroAuditoriaError`, que es la garantía por cualquier camino de escritura. La cobertura no
+bajó: subió de sitio.
+
+El alta de la primera cuenta Administrador pasa al comando
+`manage.py crear_administrador_inicial`, que corre sólo si no hay ningún Administrador activo,
+crea un `Usuario` con rol Administrador —no un superusuario— y deja entrada en el registro de
+auditoría con acción propia, `ALTA_ADMINISTRADOR_INICIAL`, y sin actor.
+
+**Qué habría que cambiar.**
+Nada propio: queda cubierto por la **enmienda pendiente de `R-01-002`**, el límite del sistema que
+declara las tareas de consola fuera del modelo de casos de uso. El alta del primer Administrador
+es la cuarta de esa lista. Mientras la enmienda no llegue a `.contexto-ia/`, este comando es
+comportamiento sin contrato declarado, y está anotado así en `docs/DEUDA.md`.
+
+Conviene que la enmienda diga también **por qué** esa tarea no puede ser un caso de uso: no hay
+actor que pueda ejecutarla, porque el sistema todavía no tiene ninguna cuenta. Es la única
+operación del sistema de la que eso es cierto.
+
 ---
 
 ## Resoluciones

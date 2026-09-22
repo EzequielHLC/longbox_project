@@ -197,8 +197,15 @@ class RegistroAuditoria(models.Model):
     Auditoría la va a ampliar con más acciones y con la vista de consulta.
 
     El log es *inmutable*: ningún rol, ni siquiera Administrador, puede editar
-    o borrar una entrada. Eso se garantiza acá abajo, en el modelo, para que
-    valga aunque alguien lo intente desde el admin o desde un shell.
+    o borrar una entrada. Eso se garantiza acá abajo, en el modelo y no en
+    permisos de pantalla, para que valga por cualquier camino de escritura
+    —una migración de datos, un `update()` de queryset, el shell—.
+
+    `ALTA_ADMINISTRADOR_INICIAL` tiene acción propia y no comparte la de un alta
+    común a propósito: es la única cuenta del sistema que nace sin que otra
+    cuenta la haya creado, así que su entrada es la única con `actor` nulo en
+    todo el módulo 13. Con acción propia se la encuentra; mezclada con las demás
+    habría que buscarla por la ausencia de un dato.
     """
 
     INICIO_SESION = "inicio_sesion"
@@ -206,6 +213,7 @@ class RegistroAuditoria(models.Model):
     BLOQUEO_POR_INTENTOS = "bloqueo_por_intentos"
     CAMBIO_CONTRASENA = "cambio_contrasena"
     ALTA_USUARIO = "alta_usuario"
+    ALTA_ADMINISTRADOR_INICIAL = "alta_administrador_inicial"
     MODIFICACION_USUARIO = "modificacion_usuario"
     BAJA_USUARIO = "baja_usuario"
     REACTIVACION_USUARIO = "reactivacion_usuario"
@@ -234,6 +242,7 @@ class RegistroAuditoria(models.Model):
         (CIERRE_SESION, "Cierre de sesión"),
         (BLOQUEO_POR_INTENTOS, "Bloqueo por intentos fallidos"),
         (CAMBIO_CONTRASENA, "Cambio de contraseña"),
+        (ALTA_ADMINISTRADOR_INICIAL, "Alta del primer Administrador de la instalación"),
         (ALTA_USUARIO, "Alta de usuario del sistema"),
         (MODIFICACION_USUARIO, "Modificación de usuario del sistema"),
         (BAJA_USUARIO, "Baja de usuario del sistema"),

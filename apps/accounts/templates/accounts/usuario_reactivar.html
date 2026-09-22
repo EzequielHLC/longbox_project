@@ -23,7 +23,7 @@ acción destructiva: el recuadro va en `line`, no en `signal`.
     <dt class="font-mono text-xs uppercase tracking-wider text-static">Correo</dt>
     <dd class="font-mono text-xs">{{ usuario_objetivo.email }}</dd>
 
-    <dt class="font-mono text-xs uppercase tracking-wider text-static">Rol</dt>
+    <dt class="font-mono text-xs uppercase tracking-wider text-static">Rol al darse de baja</dt>
     <dd>{{ usuario_objetivo.get_rol_display }}</dd>
 
     <dt class="font-mono text-xs uppercase tracking-wider text-static">Estado</dt>
@@ -42,17 +42,31 @@ acción destructiva: el recuadro va en `line`, no en `signal`.
     {% endif %}
   </div>
 
-  <div class="flex items-center gap-6 border-t border-line px-6 py-5">
-    {% if usuario_objetivo.esta_congelada %}
-      <form method="post">
-        {% csrf_token %}
+  {% if usuario_objetivo.esta_congelada %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="border-t border-line px-6 py-5">
+        {% comment %}
+        CO-199 pide presentar el rol «permitiendo modificarlo antes de confirmar». Viene
+        precargado con el que la cuenta traía, que es una propuesta y no un valor impuesto:
+        CO-124 lo registra como el rol asignado en esta operación, no como el restaurado.
+        {% endcomment %}
+        {% include "_campo.html" with campo=form.rol ayuda="Es el rol con el que la cuenta vuelve al sistema. Revíselo: no se restaura el anterior por omisión." %}
+      </div>
+
+      <div class="flex items-center gap-6 border-t border-line px-6 py-5">
         <div class="marco-boton">
           <button type="submit" class="boton-primario">Reactivar cuenta</button>
         </div>
-      </form>
-    {% endif %}
-    {% url 'accounts:usuario_lista' as cancelar %}
-    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
-  </div>
+        {% url 'accounts:usuario_lista' as cancelar %}
+        {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+      </div>
+    </form>
+  {% else %}
+    <div class="flex items-center gap-6 border-t border-line px-6 py-5">
+      {% url 'accounts:usuario_lista' as cancelar %}
+      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

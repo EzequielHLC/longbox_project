@@ -35,7 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # `django.contrib.admin` no está, y es deliberado: ver `config/urls.py`.
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

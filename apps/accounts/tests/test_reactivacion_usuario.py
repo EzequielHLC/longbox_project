@@ -30,6 +30,11 @@ def url_reactivar(usuario):
     return reverse("accounts:usuario_reactivar", args=[usuario.pk])
 
 
+def reactivar(client, usuario, rol=None):
+    """CO-124 toma el rol con el que la cuenta vuelve; sin él la operación no está completa."""
+    return client.post(url_reactivar(usuario), {"rol": rol or usuario.rol})
+
+
 @pytest.fixture
 def dado_de_baja(client_admin):
     """Un cajero que trabajó (tiene sesión iniciada) y después fue dado de baja."""
@@ -58,7 +63,7 @@ def test_la_pantalla_pide_confirmacion_explicita(client_admin, dado_de_baja):
 def test_reactivar_deja_la_cuenta_pendiente_y_manda_enlace(client_admin, dado_de_baja):
     mail.outbox.clear()
 
-    respuesta = client_admin.post(url_reactivar(dado_de_baja))
+    respuesta = reactivar(client_admin, dado_de_baja)
 
     assert respuesta.status_code == 302
     dado_de_baja.refresh_from_db()
@@ -70,7 +75,7 @@ def test_reactivar_deja_la_cuenta_pendiente_y_manda_enlace(client_admin, dado_de
 
 def test_reactivar_invalida_la_contrasena_anterior(client_admin, dado_de_baja):
     """El acceso no vuelve con la credencial vieja: hay que elegir una nueva."""
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     dado_de_baja.refresh_from_db()
     assert dado_de_baja.has_usable_password() is False
@@ -79,7 +84,7 @@ def test_reactivar_invalida_la_contrasena_anterior(client_admin, dado_de_baja):
 
 def test_una_cuenta_reactivada_no_puede_entrar_hasta_usar_el_enlace(client_admin, dado_de_baja):
     mail.outbox.clear()
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     navegador = Client()
     navegador.post(URL_LOGIN, {"username": dado_de_baja.email, "password": PASSWORD_DE_PRUEBA})
@@ -99,19 +104,32 @@ def test_una_cuenta_reactivada_no_puede_entrar_hasta_usar_el_enlace(client_admin
     assert navegador.get(reverse("core:mostrador")).status_code == 200
 
 
-def test_la_cuenta_reactivada_conserva_su_rol_y_su_historial(client_admin, dado_de_baja):
+def test_la_cuenta_reactivada_conserva_su_historial(client_admin, dado_de_baja):
+    """El historial es de la cuenta y sobrevive a la vuelta.
+
+    El rol no entra acá: no se conserva, se elige (CO-124). Que la reactivación pueda dejarlo
+    igual que antes es una decisión de quien reactiva, no una propiedad de la operación.
+    """
     registros_previos = RegistroAuditoria.objects.filter(actor=dado_de_baja).count()
     assert registros_previos > 0
 
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
-    dado_de_baja.refresh_from_db()
-    assert dado_de_baja.rol == "cajero"
     assert RegistroAuditoria.objects.filter(actor=dado_de_baja).count() == registros_previos
 
 
+def test_la_reactivacion_puede_devolver_la_cuenta_con_otro_rol(client_admin, dado_de_baja):
+    """CO-124: «u.rol quedó con el valor declarado», no con el que tenía al darse de baja."""
+    assert dado_de_baja.rol == Usuario.CAJERO
+
+    reactivar(client_admin, dado_de_baja, rol=Usuario.ADMINISTRADOR)
+
+    dado_de_baja.refresh_from_db()
+    assert dado_de_baja.rol == Usuario.ADMINISTRADOR
+
+
 def test_la_reactivacion_queda_en_auditoria(client_admin, dado_de_baja, administrador):
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
 
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.REACTIVACION_USUARIO)
     assert registro.actor == administrador
@@ -121,7 +139,7 @@ def test_la_reactivacion_queda_en_auditoria(client_admin, dado_de_baja, administ
 
 
 def test_no_se_reactiva_una_cuenta_que_no_esta_de_baja(client_admin, cajero):
-    respuesta = client_admin.post(url_reactivar(cajero), follow=True)
+    respuesta = client_admin.post(url_reactivar(cajero), {"rol": cajero.rol}, follow=True)
 
     assert "Solo se puede reactivar una cuenta dada de baja." in respuesta.content.decode()
     cajero.refresh_from_db()
@@ -172,7 +190,7 @@ def test_la_tabla_ofrece_reactivar_y_no_editar(client_admin, dado_de_baja):
 
 def test_una_cuenta_reactivada_no_se_puede_eliminar(client_admin, dado_de_baja):
     """Quedó Pendiente, pero tiene historial: el borrado físico no corresponde."""
-    client_admin.post(url_reactivar(dado_de_baja))
+    reactivar(client_admin, dado_de_baja)
     dado_de_baja.refresh_from_db()
     assert dado_de_baja.esta_pendiente_de_activacion
 

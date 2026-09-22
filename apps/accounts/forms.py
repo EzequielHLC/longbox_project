@@ -257,6 +257,32 @@ class FormularioUsuarioPersonal(forms.ModelForm):
         return usuario
 
 
+class FormularioReactivacionUsuario(forms.Form):
+    """CU-USR-REA — el rol con el que la cuenta vuelve al sistema.
+
+    `CO-124` declara la operación como `confirmarReactivacionDeUsuario(usuario, rol)`, y sus
+    Notas explican para qué: «el rol se elige acá y queda registrado junto con la reactivación,
+    en lugar de restaurarse el que tenía. Es lo que impide dejar preparado un cambio de rol
+    sobre una cuenta dormida (ver CO-121)».
+
+    `CO-121` prohíbe editar una cuenta Inactiva justamente para eso. Elegir el rol acá es la
+    otra mitad de esa defensa: sin ella, reincorporar a alguien le devuelve automáticamente los
+    permisos que tenía cuando se fue, sin que nadie los vuelva a mirar.
+
+    Mismo criterio que el alta de personal: `cliente` no es una opción. Esa cuenta es del
+    CU-CLI-ALT y un POST con `rol="cliente"` tiene que morir acá.
+    """
+
+    rol = forms.ChoiceField(
+        label="Rol con el que se reactiva",
+        choices=[
+            (valor, etiqueta)
+            for valor, etiqueta in Usuario.ROL_CHOICES
+            if valor in Usuario.ROLES_DE_PERSONAL
+        ],
+    )
+
+
 class FormularioRegistroCliente(BaseUserCreationForm):
     """CU-CLI-ALT — Registrar Cuenta de Cliente.
 

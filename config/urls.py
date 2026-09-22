@@ -1,16 +1,28 @@
 """URL configuration for config project.
 
 Rutas raíz del proyecto. Cada app expone las suyas en su propio `urls.py`.
+
+**No hay admin de Django.** Se retiró junto con los cuatro `admin.py` de las
+apps, por dos reglas del sistema que no admite:
+
+- Ninguna escritura del sistema ocurre fuera de una operación contratada. El
+  admin es una puerta de escritura sobre cualquier tabla, sin contrato, sin
+  informe de impacto y sin entrada de auditoría.
+- No existe ninguna cuenta fuera de los tres roles. Un superusuario es
+  exactamente eso: una cuenta que el modelo de dominio no declara.
+
+El alta de la primera cuenta Administrador en una instalación nueva es el
+comando `manage.py crear_administrador_inicial`, declarado como tarea de
+consola y fuera del modelo de casos de uso (ver `bitacora/01-alta-editorial.md`,
+R-01-002).
 """
 
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
     path("cuentas/", include("apps.accounts.urls")),
     path("catalogo/", include("apps.catalog.urls")),
     path("proveedores/", include("apps.suppliers.urls")),
