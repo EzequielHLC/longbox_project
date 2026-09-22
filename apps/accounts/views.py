@@ -303,15 +303,19 @@ class UsuarioListaView(GestionDeUsuariosMixin, ListView):
 class ClienteListaView(GestionDeUsuariosMixin, ListView):
     """Cuentas de Cliente, **solo para consultar**.
 
-    No es un CU: es la contraparte de lectura del registro público (CU-CLI-ALT). El
+    La describe CU-CLI-CON · Consultar Cuentas de Cliente, con CO-194 y CO-195: es
+    la contraparte de lectura del registro público (CU-CLI-ALT). El
     Administrador necesita poder responder "¿esta persona tiene cuenta?, ¿desde
     cuándo?, ¿qué teléfono dejó?, ¿aceptó la política?" para dar soporte, y
     nada de eso requiere poder modificar la cuenta.
 
     Por eso la pantalla no tiene ninguna acción: dar de baja una cuenta de
-    Cliente es el CU-CLI-BAJ, que todavía no está documentado y probablemente tenga
-    reglas propias (pedidos en curso, puntos acumulados, stock guardado en el
-    local). Cuando se aborde, se le agregan las acciones a esta misma tabla.
+    Cliente es el CU-CLI-BAJ, que la pide el propio Cliente desde su panel —con
+    el mapeo de impacto sobre pedidos activos, stock almacenado y saldo de
+    puntos que su ficha declara—, y ese panel todavía no existe.
+
+    La ficha de cliente de CO-195 tampoco está construida: hoy esta pantalla
+    cubre el listado de CO-194 y nada más.
     """
 
     context_object_name = "clientes"
@@ -571,9 +575,10 @@ class UsuarioBajaView(GestionDeUsuariosMixin, DetailView):
 class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
     """Devuelve al sistema una cuenta que había sido dada de baja.
 
-    Agregado al CU (ver `/docs/modulos/gestion_usuarios.md`): sin esto, la baja
-    del CU-USR-BAJ sería definitiva y alguien que vuelve al trabajo necesitaría una
-    cuenta nueva, perdiendo la continuidad de su historial.
+    La describe CU-USR-REA · Reactivar Cuenta de Usuario del Sistema, con CO-124,
+    CO-199 y CO-122. Sin esto, la baja del CU-USR-BAJ sería definitiva y alguien
+    que vuelve al trabajo necesitaría una cuenta nueva, perdiendo la continuidad
+    de su historial.
 
     La cuenta no vuelve directamente a Activa: vuelve a **Pendiente de
     activación** con un enlace nuevo. Se dio de baja por algún motivo, y
@@ -624,9 +629,10 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
 class UsuarioEliminarPendienteView(GestionDeUsuariosMixin, DetailView):
     """Elimina una cuenta que nunca llegó a activarse.
 
-    Agregado al CU (ver `/docs/modulos/gestion_usuarios.md`): el CU-USR-BAJ pide
-    estado Activo para dar de baja, así que una cuenta cargada con el correo
-    equivocado quedaría Pendiente para siempre, con ese correo bloqueado.
+    La describe CU-USR-ELI · Eliminar Cuenta Nunca Activada, con CO-200 y CO-125.
+    El CU-USR-BAJ pide estado Activo para dar de baja, así que una cuenta cargada
+    con el correo equivocado quedaría Pendiente para siempre, con ese correo
+    bloqueado.
 
     Es la única eliminación física del sistema, y se justifica porque una
     cuenta que nunca se usó no pudo registrar ninguna operación: no hay

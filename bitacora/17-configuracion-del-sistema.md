@@ -13,7 +13,7 @@
 ### B-17-001 · El diagnóstico del modelo se construyó declarándose fuera de todo caso de uso, y trae contenido de prueba propio
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-CFG-LLM`, `CO-149`, `CO-150`
-**Estado:** Abierta
+**Estado:** Resuelta — no hay vacío; enmienda pendiente en las Notas, el 2026-09-22
 
 **Qué apareció.**
 La ruta del diagnóstico lleva escrito en `apps/suppliers/urls.py` que es «herramienta de operación,
@@ -48,7 +48,7 @@ pegar un correo real, decir eso, porque entonces el banco sobra.
 ### B-17-002 · La baja de los catálogos de parámetros es una casilla, y los contratos declaran un par solicitar/confirmar
 
 **Tipo:** Desvío · **Fecha:** 2026-09-14 · **Alcance:** `CU-CFG-EDT`, `CU-CFG-TIP`, `CU-CAT-ETQ`
-**Estado:** Abierta
+**Estado:** Resuelta — desvío confirmado; manda el contrato, decidido el 2026-09-22
 
 **Nota sobre el tipo.** Como en `B-12-001`, se registra después porque no se tomó como desvío: el
 código es anterior a la existencia de los contratos.
@@ -83,3 +83,60 @@ Nada en el documento: los contratos están bien y el código es el que se aparta
 como `Parcial` en `docs/ESTADO.md` para `CU-CFG-EDT`, `CU-CFG-TIP` y `CU-CAT-ETQ`. Lo que conviene
 decidir es si el par solicitar/confirmar se construye para los seis catálogos de una vez —comparten
 vista, así que se hace una sola— o caso de uso por caso de uso.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-17-001 · Resolución de B-17-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** pendiente (de redacción)
+
+**Qué se decidió.**
+**No hay vacío de especificación.** El **paso 2 de `CU-CFG-LLM`** ya declara que el contenido de
+prueba lo provee el sistema: el banco de muestras es parte del caso de uso, no un agregado. La
+entrada buscó la respuesta en `CO-149` y ahí no está, pero la ficha sí la tiene.
+
+Es la situación que `CLAUDE.md` describe cuando dice que la ficha y el contrato no dicen lo mismo
+y hacen falta los dos: el contrato declara el efecto y la ficha narra el flujo, y de dónde sale el
+contenido con el que se diagnostica es parte del flujo.
+
+La separación entre `apps/suppliers/muestras.py` y `apps/catalog/isbn.py` se confirma tal cual
+está, y por el motivo que la entrada da: un generador de ISBN al alcance del código de catálogo
+termina completando el ISBN que falta en un borrador, y un ISBN inventado es matemáticamente
+válido y no identifica nada.
+
+**Enmienda pendiente.**
+`CO-149`, campo Notas: remitir al paso 2 de la ficha para el origen del contenido de prueba. Es
+redacción, no alcance — evita que el próximo que lea sólo el contrato vuelva a abrir esta misma
+pregunta.
+
+**Qué se hizo.**
+`DiagnosticoLLMView` y su plantilla dejaron de declararse fuera de todo caso de uso: citan
+`CU-CFG-LLM` con `CO-149`, `CO-150` y `CO-214`, y dicen que el banco de muestras es el contenido
+de prueba que el paso 2 declara.
+
+---
+
+### R-17-002 · Resolución de B-17-002
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna · **Tipo confirmado:** Desvío
+
+**Qué se decidió.**
+**Manda el contrato.** La baja de un catálogo de parámetros es un par solicitar/confirmar con
+informe de impacto, no una casilla dentro del formulario de edición. Es el mismo patrón que la
+baja de producto y la de proveedor, que ya están construidas así.
+
+Y se decide la pregunta que la entrada dejaba abierta: **el par se construye una sola vez para los
+seis catálogos**. Comparten `ParametroFormularioMixin`, así que construirlo caso de uso por caso
+de uso sería escribir seis veces la misma vista y dejar que diverjan.
+
+**Qué se hizo.**
+Nada todavía. El trabajo **va al plan del módulo 17**, organizado por contrato y no por caso de
+uso: los `Gestionar`/`Administrar` se van a separar en alta, baja y modificación, y una
+reconciliación organizada por caso de uso quedaría invalidada cuando eso llegue.

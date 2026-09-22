@@ -131,10 +131,10 @@ el ancho mínimo de esa columna.
                   {% if form.acepta_politica.errors %}border-signal{% else %}border-line{% endif %}">
         {{ form.acepta_politica }}
         <label for="{{ form.acepta_politica.id_for_label }}" class="text-sm leading-snug">
-          Acepto los
-          <a href="{% url 'core:terminos' %}" target="_blank" rel="noopener"
+          Acepto la
+          <a href="{% url 'core:politica_privacidad' %}" target="_blank" rel="noopener"
              class="underline decoration-signal underline-offset-4 hover:text-signal">
-            términos y condiciones y la política de privacidad</a>,
+            política de privacidad</a>
           y el tratamiento de mis datos personales.
         </label>
       </div>

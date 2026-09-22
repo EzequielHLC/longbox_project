@@ -1008,7 +1008,7 @@ class ProductoEditorialForm(forms.ModelForm):
       el producto y con qué aritmética se le fijó el precio. Son la historia del
       lote, no datos del tomo: cambiarlos acá haría que el resumen del lote
       dejara de coincidir con sus propios productos.
-    - `demorado`, `fecha_estimada`, `nota_demora` — son de CU-ALT-CAN, que está
+    - `demorado`, `fecha_estimada`, `nota_demora` — son de CU-ALT-DEM, que está
       bloqueado por Pedidos.
     """
 

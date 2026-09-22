@@ -1,9 +1,9 @@
 """La pantalla de diagnóstico del modelo de lenguaje.
 
-No corresponde a ningún caso de uso: es una herramienta de operación. Existe
-porque el pipeline depende de un servicio que corre **afuera de Django** y que se
-apaga sin avisar — sin ella, la única forma de enterarse es que un correo quede
-fallido con un mensaje genérico.
+La describe CU-CFG-LLM · Diagnosticar el Servicio de Modelo de Lenguaje, con
+CO-149, CO-150 y CO-214. Existe porque el pipeline depende de un servicio que
+corre **afuera de Django** y que se apaga sin avisar — sin ella, la única forma
+de enterarse es que un correo quede fallido con un mensaje genérico.
 
 Como todo lo demás, no llama al modelo de verdad: se parchea
 `integraciones.pedir`, la única puerta HTTP del proyecto.

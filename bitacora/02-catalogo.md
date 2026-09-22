@@ -13,7 +13,7 @@
 ### B-02-001 · La reactivación de producto se construyó declarándola fuera de todo caso de uso
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-CAT-REA`, `CO-035`, `CO-036`
-**Estado:** Abierta
+**Estado:** Resuelta — comentario vencido; corregido el código el 2026-09-22
 
 **Qué apareció.**
 `ProductoReactivarView` y su plantilla llevan escrito, en el docstring y en el encabezado del
@@ -49,7 +49,7 @@ ahí, el próximo que lea la vista va a creerle.
 ### B-02-002 · El modelo declara la unicidad insensible a mayúsculas en dos catálogos, y el código la aplica en los cinco
 
 **Tipo:** Corrección · **Fecha:** 2026-09-14 · **Alcance:** `CU-CAT-ETQ`, `CU-CFG-TIP`, `CU-CFG-EDT`
-**Estado:** Abierta
+**Estado:** Resuelta — con enmienda pendiente al documento, decidida el 2026-09-22
 
 **Qué apareció.**
 `MODELO_DE_DOMINIO.md`, Área 2, califica la unicidad del nombre de cada catálogo de clasificación
@@ -92,3 +92,53 @@ segundo formato que se lee igual y no lo es.
 `Etiqueta`. Y I-08, para que diga que la unicidad dentro del grupo tampoco distingue mayúsculas.
 Es una enmienda de redacción, pero de la clase que importa: es la regla que decide si un alta se
 acepta o se rechaza, y hoy el documento describe un sistema más permisivo que el que existe.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-02-001 · Resolución de B-02-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+La pregunta que la entrada no podía responder desde el repositorio —si el caso de uso se agregó
+después o si el comentario nunca fue cierto— la responde el responsable: **`CU-CAT-REA` se
+incorporó al documento el 05/09**, después de que la pantalla existiera. El comentario fue cierto
+cuando se escribió y dejó de serlo ese día.
+
+No es entonces una discrepancia entre código y documento sino un **comentario vencido**, y se
+corrige sin más.
+
+**Qué se hizo.**
+Se sacó de `ProductoReactivarView`, de su plantilla y de `test_baja_producto.py` la afirmación de
+que ningún caso de uso la describe, reemplazada por la referencia a `CU-CAT-REA` y a sus dos
+contratos, `CO-035` y `CO-036`.
+
+Lo que **no** cambió es el estado de verificación: que el caso de uso exista no dice que lo
+construido cumpla el par solicitar/confirmar. Esa comparación sigue pendiente y es trabajo del
+plan del módulo 02.
+
+---
+
+### R-02-002 · Resolución de B-02-002
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** pendiente
+
+**Qué se decidió.**
+**Manda la regla del código.** Los cinco catálogos de clasificación —`Editorial`, `Tipo`,
+`Formato`, `GrupoEtiqueta` y `Etiqueta`— comparan el nombre sin distinguir mayúsculas. Es la regla
+correcta: «Rústica» y «rústica» son el mismo formato, y el documento describe hoy un sistema más
+permisivo que el que existe.
+
+**Enmienda pendiente.**
+`MODELO_DE_DOMINIO.md`, Área 2: agregar «sin distinguir mayúsculas» a `Formato`, `GrupoEtiqueta` y
+`Etiqueta`. E `I-08`, para que la unicidad dentro del grupo tampoco distinga mayúsculas.
+
+**Qué se hizo.**
+Nada. **No hay trabajo de código**: el código ya aplica la regla que se adopta, en los cinco.

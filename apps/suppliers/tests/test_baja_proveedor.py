@@ -135,7 +135,7 @@ def test_dar_de_baja_dos_veces_no_registra_dos_bajas(client_admin):
 
 
 # ---------------------------------------------------------------------------
-# La vuelta: ningún CU la describe, ver la vista
+# La vuelta: CU-PRV-REA, con CO-065 y CO-066 (ver la vista)
 # ---------------------------------------------------------------------------
 
 

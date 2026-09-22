@@ -1470,12 +1470,13 @@ class ProductoBajaView(CatalogoAdminMixin, DetailView):
 
 
 class ProductoReactivarView(CatalogoAdminMixin, DetailView):
-    """La vuelta de la baja de CU-CAT-BAJ. **Ningún CU la describe.**
+    """La vuelta de la baja de CU-CAT-BAJ. La describe **CU-CAT-REA**.
 
-    Se agrega porque sin ella la baja es un camino de ida, y el propio CU-CAT-EDI
-    quedaría sin sentido en su parte más explícita: su precondición dice que un
-    producto se edita estando de baja, y mantener al día los datos de algo que no
-    puede volver no sirve para nada.
+    Reactivar Producto Descatalogado, con el par solicitar/confirmar de CO-035 y
+    CO-036. Existe porque sin ella la baja es un camino de ida, y el propio
+    CU-CAT-EDI quedaría sin sentido en su parte más explícita: su precondición
+    dice que un producto se edita estando de baja, y mantener al día los datos de
+    algo que no puede volver no sirve para nada.
 
     Volver a cargarlo tampoco sería equivalente: el código es único e inmutable,
     así que el producto reingresaría con otra identidad y perdería su historial

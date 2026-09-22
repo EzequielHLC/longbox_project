@@ -142,7 +142,7 @@ def test_CO120_registra_el_alta_en_auditoria_con_el_rol_asignado(client_admin, a
 
 
 def test_CO120_un_correo_de_cuenta_activa_no_crea_la_cuenta(client_admin, cajero_activo):
-    """Excepción E2: «el correo ya pertenece a una cuenta Activa o Pendiente […] no se crea»."""
+    """Excepción E2: «el correo pertenece a otra cuenta, en cualquier estado […] no se crea»."""
     cuentas_antes = Usuario.objects.count()
 
     respuesta = client_admin.post(URL_ALTA, {**DATOS_DE_ALTA, "email": cajero_activo.email})
@@ -152,12 +152,27 @@ def test_CO120_un_correo_de_cuenta_activa_no_crea_la_cuenta(client_admin, cajero
 
 
 def test_CO120_un_correo_de_cuenta_pendiente_no_crea_la_cuenta(client_admin, pendiente):
-    """Excepción E2, la otra mitad: también bloquea contra una cuenta Pendiente."""
+    """Excepción E2, segundo estado: también bloquea contra una cuenta Pendiente."""
     cuentas_antes = Usuario.objects.count()
 
     client_admin.post(URL_ALTA, {**DATOS_DE_ALTA, "email": pendiente.email})
 
     assert Usuario.objects.count() == cuentas_antes
+
+
+def test_CO120_un_correo_de_cuenta_inactiva_no_crea_la_cuenta(client_admin, dado_de_baja):
+    """Excepción E2, tercer estado: el correo de una cuenta Inactiva tampoco se libera.
+
+    Es la mitad que la redacción anterior del contrato no cubría —hablaba sólo de Activa o
+    Pendiente— y la que sostiene I-10: el correo identifica una sola cuenta en cualquier
+    estado. Si se liberara al dar de baja, la colisión de CO-124 E2 pasaría a ser posible.
+    """
+    cuentas_antes = Usuario.objects.count()
+
+    respuesta = client_admin.post(URL_ALTA, {**DATOS_DE_ALTA, "email": dado_de_baja.email})
+
+    assert Usuario.objects.count() == cuentas_antes
+    assert MENSAJE_CORREO_EN_USO in respuesta.content.decode()
 
 
 # ---------------------------------------------------------------------------

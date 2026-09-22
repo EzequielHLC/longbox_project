@@ -13,7 +13,7 @@
 ### B-04-001 · El informe de impacto de la baja declara una cifra que no puede calcular
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-PRV-BAJ`, `CO-063`
-**Estado:** Abierta
+**Estado:** Resuelta — sin enmienda; se mantiene el `None`, decidido el 2026-09-22
 
 **Qué apareció.**
 El caso de uso pide que antes de dar de baja un proveedor se le muestren al Administrador dos
@@ -42,7 +42,7 @@ antes que los módulos de los que dependen.
 ### B-04-002 · Dos pantallas del módulo se construyeron declarándose fuera de todo caso de uso
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-PRV-REA`, `CU-PRV-COL`
-**Estado:** Abierta
+**Estado:** Resuelta — comentarios vencidos; corregido el código el 2026-09-22
 
 **Qué apareció.**
 Dos pantallas del módulo llevan escrito en el código que no pertenecen a ningún caso de uso:
@@ -75,7 +75,7 @@ y, hecho eso, sacar del código las afirmaciones de que ningún caso de uso las 
 ### B-04-003 · Una referencia al esquema viejo de numeración quedó sin migrar
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-PRV-BAJ`, módulo `05` Restock
-**Estado:** Abierta
+**Estado:** Resuelta — corregido el código el 2026-09-22
 
 **Qué apareció.**
 La migración de códigos del 2026-09-14 tradujo 426 referencias `CU-NN` del esquema anterior a
@@ -100,3 +100,64 @@ resuelta por una traducción inventada.
 Nada en el documento. Es una línea de comentario que conviene reescribir como «el módulo 05,
 Restock» cuando alguien toque ese archivo. Se anota acá y no se corrige sola porque la tarea del
 día era migrar numeración, no redactar comentarios.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-04-001 · Resolución de B-04-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+**Sin enmienda.** «No disponible» es un **estado de construcción**, no un caso que el contrato
+tenga que contemplar. `CO-063` describe el sistema completo, donde las dos cifras del informe de
+impacto existen siempre; que hoy una no se pueda calcular es una propiedad del avance del
+proyecto, no del sistema especificado.
+
+Escribir el caso en el contrato sería llevarle al documento una consecuencia del orden en que se
+construye, que es justo lo que el documento no debe registrar. La distinción vale también para los
+otros informes de impacto que van a pasar por lo mismo —la baja de producto, la baja de cuenta de
+Cliente—: ninguno enmienda su contrato por esto.
+
+**Qué se hizo.**
+Nada. `ImpactoDeBaja.propuestas_de_restock` **se mantiene en `None`** y la pantalla sigue diciendo
+«no se puede calcular todavía». La diferencia con el cero es la que importa para la decisión que el
+Administrador está tomando, y se conserva.
+
+---
+
+### R-04-002 · Resolución de B-04-002
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+Igual que en `B-02-001`: **`CU-PRV-REA` y `CU-PRV-COL` se incorporaron al documento el 05/09**,
+después de que las pantallas existieran. Los comentarios fueron ciertos y quedaron vencidos.
+
+**Qué se hizo.**
+Se reemplazaron las afirmaciones por la referencia al caso de uso que describe cada pantalla, en
+`apps/suppliers/views.py` (cabecera del módulo, `ProveedorReactivarView`, `CorreoListaView`,
+`DiagnosticoLLMView`), en `apps/suppliers/urls.py`, en las tres plantillas correspondientes y en
+`test_baja_proveedor.py` y `test_diagnostico_llm.py`.
+
+La verificación contra los contratos sigue pendiente y es trabajo del plan del módulo 04.
+
+---
+
+### R-04-003 · Resolución de B-04-003
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+La construcción «CU-NN en adelante» no tiene equivalente porque designa un módulo, no un caso de
+uso. Se escribe como lo que es: el módulo por su número y su nombre.
+
+**Qué se hizo.**
+`apps/suppliers/services.py`: «el módulo de Restock (CU-22 en adelante)» pasa a «el módulo 05,
+Restock». Es la última referencia al esquema anterior de numeración que quedaba en el código.

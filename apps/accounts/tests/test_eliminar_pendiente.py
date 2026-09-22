@@ -1,8 +1,9 @@
 """Eliminación de una cuenta que nunca se activó.
 
-Agregado al CU, documentado en `/docs/modulos/gestion_usuarios.md`: sin esto,
-una cuenta cargada con el correo equivocado queda pendiente para siempre y ese
-correo bloqueado, porque el CU-USR-BAJ exige estado Activo para dar de baja.
+La describe CU-USR-ELI · Eliminar Cuenta Nunca Activada, con CO-200 y CO-125:
+sin esto, una cuenta cargada con el correo equivocado queda pendiente para
+siempre y ese correo bloqueado, porque el CU-USR-BAJ exige estado Activo para
+dar de baja.
 """
 
 import pytest

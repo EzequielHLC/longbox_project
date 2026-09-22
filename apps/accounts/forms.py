@@ -31,7 +31,7 @@ MENSAJE_CORREO_EN_USO = "Ya existe una cuenta registrada con ese correo electró
 # CU-USR-MOD / CU-USR-BAJ: no se puede dejar el sistema sin nadie que lo administre.
 MENSAJE_UNICO_ADMINISTRADOR = "Debe existir al menos un Administrador activo en el sistema."
 
-# Agregados al CU (ver /docs/modulos/gestion_usuarios.md).
+# CU-USR-MOD (cuenta congelada) y CU-USR-ELI (cuenta con historial).
 MENSAJE_CUENTA_CONGELADA = (
     "La cuenta se encuentra dada de baja y no admite modificaciones. Para modificar sus "
     "datos debe reactivarse previamente."
@@ -278,12 +278,9 @@ class FormularioRegistroCliente(BaseUserCreationForm):
     )
 
     acepta_politica = forms.BooleanField(
-        # La pantalla dibuja esta misma etiqueta con el enlace a los términos;
+        # La pantalla dibuja esta misma etiqueta con el enlace a la política;
         # el texto de acá es el que queda si el campo se renderiza pelado.
-        label=(
-            "Acepto los términos y condiciones y la política de privacidad, y el "
-            "tratamiento de mis datos personales"
-        ),
+        label=("Acepto la política de privacidad y el tratamiento de mis datos " "personales"),
         # Un `BooleanField` obligatorio solo valida si llega marcado: es
         # exactamente el bloqueo que pide la excepción 3 del CU.
         required=True,

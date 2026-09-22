@@ -14,7 +14,8 @@ todavía no llegó figurando disponible no da ningún síntoma hasta que alguien
 compra. **No trae editorial ni rubro**, y no por descuido: la
 comunicación es directa de la editorial a la comiquería, así que nadie escribe
 su propio nombre en su propio newsletter. Esos dos los aporta la ficha del
-proveedor (A7 de `/docs/modulos/proveedores.md`). Pedírselos al modelo sería
+proveedor, que CU-PRV-ALT declara (`Proveedor.editorial` y `Proveedor.rubro`).
+Pedírselos al modelo sería
 invitarlo a inventarlos.
 
 **Por qué el prompt se versiona.** Un borrador generado con el prompt de marzo y

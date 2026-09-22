@@ -26,15 +26,17 @@ def localidades(request):
     return JsonResponse({"localidades": georef.obtener_localidades(provincia)})
 
 
-class TerminosView(TemplateView):
-    """Términos y condiciones / política de privacidad.
+class PoliticaPrivacidadView(TemplateView):
+    """La política de privacidad.
 
-    Pública y sin sesión: la enlaza el checkbox de consentimiento del registro
-    (CU-CLI-ALT), y de nada serviría un consentimiento "informado" si para leer lo
-    que se acepta hubiera que tener cuenta antes.
+    Es el documento que CU-CLI-ALT y CO-107 hacen aceptar, y el que el campo
+    `fecha_aceptacion_politica` fecha. Pública y sin sesión: la enlaza el
+    checkbox de consentimiento del registro, y de nada serviría un
+    consentimiento "informado" si para leer lo que se acepta hubiera que tener
+    cuenta antes.
     """
 
-    template_name = "core/terminos.html"
+    template_name = "core/politica_privacidad.html"
 
 
 # Vistas placeholder: son el destino de la redirección por rol del CU-AUT-INI.

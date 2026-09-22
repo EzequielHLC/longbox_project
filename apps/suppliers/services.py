@@ -50,7 +50,7 @@ class ImpactoDeBaja:
 
     El CU pide dos cifras: las propuestas de restock afectadas y los productos
     del catálogo vinculados. La segunda se puede calcular; la primera no, porque
-    el módulo de Restock (CU-22 en adelante) todavía no existe. Se declara igual
+    el módulo 05, Restock, todavía no existe. Se declara igual
     y en `None` —no en cero— para que la pantalla pueda decir "no se puede
     calcular todavía" en vez de afirmar que no hay ninguna, que sería mentir
     sobre un dato que el CU considera parte de la decisión.

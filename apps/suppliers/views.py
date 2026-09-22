@@ -1,13 +1,13 @@
-"""Pantallas de proveedores editoriales (CU-PRV-ALT a CU-PRV-CON).
+"""Pantallas de proveedores editoriales (módulo 04).
 
 Todas son de backoffice y exclusivas del Administrador, validado del lado del
 servidor (RNF-03). Sistema visual: **modo operativo**; ninguna es pública.
 
 El orden en que conviene leerlas es el del ciclo de vida de un proveedor:
 listado (CU-PRV-CON) → alta (CU-PRV-ALT) → ficha (CU-PRV-CON paso 4) → edición (CU-PRV-EDI) → baja
-(CU-PRV-BAJ) y su vuelta.
+(CU-PRV-BAJ) → reactivación (CU-PRV-REA).
 
-Al final va la **cola de correos**, que no es de ningún CU: es la antesala del
+Al final va la **cola de correos**, que describe CU-PRV-COL: la antesala del
 pipeline de CU-ALT-NOV, donde cada correo espera una decisión antes de que se gaste
 un solo ciclo en procesarlo.
 """
@@ -297,9 +297,10 @@ class ProveedorBajaView(ProveedoresMixin, DetailView):
 
 
 class ProveedorReactivarView(ProveedoresMixin, DetailView):
-    """La vuelta de la baja de CU-PRV-BAJ. **Ningún CU la describe.**
+    """La vuelta de la baja de CU-PRV-BAJ. La describe **CU-PRV-REA**.
 
-    Se agrega porque sin ella la baja es una trampa: la razón social y el correo
+    Reactivar Proveedor Editorial, con CO-065 y CO-066. Existe porque sin ella la
+    baja es una trampa: la razón social y el correo
     son únicos a nivel de base *en cualquier estado*, así que un proveedor
     inactivo bloquea sus propios datos para siempre y retomar la relación
     comercial obligaría a inventarle una razón social distinta. Y el motivo que
@@ -342,18 +343,18 @@ class ProveedorReactivarView(ProveedoresMixin, DetailView):
 
 
 # ---------------------------------------------------------------------------
-# Cola de correos — la antesala del pipeline de CU-ALT-NOV
+# Cola de correos (CU-PRV-COL) — la antesala del pipeline de CU-ALT-NOV
 # ---------------------------------------------------------------------------
 
 
 class CorreoListaView(ProveedoresMixin, ListView):
     """Los correos recibidos, esperando una decisión.
 
-    No sale de ningún caso de uso: la fuente da por sentado que todo correo de
-    un remitente registrado se procesa solo. Esta pantalla es la contraparte de
-    la aprobación explícita, y también el camino de respaldo — la notificación
-    al celular puede fallar, y en ese caso la cola tiene que seguir estando y
-    poder resolverse desde acá.
+    La describe CU-PRV-COL · Gestionar Cola de Correos de Proveedor, con CO-016,
+    CO-017, CO-018, CO-157 y CO-158. Es la contraparte de la aprobación
+    explícita, y también el camino de respaldo — la notificación al celular
+    puede fallar, y en ese caso la cola tiene que seguir estando y poder
+    resolverse desde acá.
     """
 
     context_object_name = "correos"
@@ -473,7 +474,9 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
 class DiagnosticoLLMView(ProveedoresMixin, TemplateView):
     """Si el modelo está vivo, y qué entiende cuando se le manda algo.
 
-    No es de ningún caso de uso: es una herramienta de operación. Existe porque
+    La describe CU-CFG-LLM · Diagnosticar el Servicio de Modelo de Lenguaje, con
+    CO-149, CO-150 y CO-214. El banco de muestras propio es el contenido de
+    prueba que su paso 2 declara. Existe porque
     el pipeline de CU-ALT-NOV depende de un servicio que corre **afuera de Django** y
     que se apaga sin avisar, y sin esta pantalla la única forma de descubrirlo
     es que un correo quede en estado fallido con un mensaje genérico.

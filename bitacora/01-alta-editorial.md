@@ -13,7 +13,7 @@
 ### B-01-001 · A qué caso de uso pertenecen los campos de demora del formulario de edición
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-ALT-DEM`, `CU-ALT-CAN`, `CU-CAT-EDI`
-**Estado:** Abierta
+**Estado:** Resuelta — sin enmienda al documento; corregido el código el 2026-09-22
 
 **Qué apareció.**
 El formulario de edición de un tomo (`ProductoEditorialForm`) enumera los campos que
@@ -57,7 +57,7 @@ decirlo en la ficha.
 ### B-01-002 · La ingesta de correos se dispara a mano; el ciclo automático no existe
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-ALT-NOV`, `CO-016`
-**Estado:** Abierta
+**Estado:** Resuelta — con enmienda pendiente al documento, decidida el 2026-09-22
 
 **Qué apareció.**
 El pipeline de novedades está construido de la cola en adelante: un correo que entra a
@@ -84,3 +84,64 @@ Decidir si la ingesta manual es permanente o transitoria. Si es permanente, `CU-
 declararla como flujo alternativo con el Administrador como actor primario, y probablemente un
 contrato propio: hoy es una operación que modifica el estado del sistema y que ningún contrato
 declara. Si es transitoria, alcanza con dejarlo dicho.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-01-001 · Resolución de B-01-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+Los tres campos —`demorado`, `fecha_estimada`, `nota_demora`— pertenecen a `CU-ALT-DEM`. La ficha
+ya lo dice sin ambigüedad y no hay nada que enmendar: el que estaba mal era el comentario del
+formulario, que quedó diciendo `CU-ALT-CAN` al migrar la numeración.
+
+La restricción del formulario de edición se deriva de `CU-ALT-DEM`: es ese caso de uso el que
+escribe esos campos, y por eso `CU-CAT-EDI` no los ofrece. `CU-ALT-CAN` no los toca.
+
+**Qué se hizo.**
+`apps/catalog/forms.py`, docstring de `ProductoEditorialForm`: la referencia pasa de `CU-ALT-CAN`
+a `CU-ALT-DEM`. El comportamiento no cambia —los campos siguen sin ofrecerse en la edición— y
+ahora el formulario y el modelo dicen lo mismo.
+
+---
+
+### R-01-002 · Resolución de B-01-002
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** pendiente
+
+**Qué se decidió.**
+La carga de correos desde archivos `.eml` es una **herramienta de operación**, no un caso de uso.
+No necesita ficha, no necesita contrato propio y no es la vía manual permanente de un flujo
+especificado: es una utilidad de consola para operar el sistema.
+
+`CO-016 ejecutarCicloMonitoreoCasilla` **sigue pendiente**. La decisión no lo cubre ni lo
+reemplaza: el ciclo automático es lo que la especificación declara y lo que hay que construir. Lo
+que queda resuelto es que los comandos de consola que hoy ocupan su lugar no son deuda de
+especificación.
+
+**Enmienda pendiente.**
+Un **límite nuevo del sistema** que declare fuera del modelo de casos de uso a las tareas de
+consola:
+
+- el respaldo de la base (`respaldar_base`);
+- la sincronización de los catálogos geográficos y de países (`sincronizar_georef`,
+  `sincronizar_paises`);
+- la carga de correos desde `.eml` (`ingerir_correos`, `extraer_novedades`);
+- el alta de la primera cuenta Administrador en una instalación nueva.
+
+Mientras esa enmienda no llegue a `.contexto-ia/`, esta resolución manda sobre el texto volcado.
+Con ella, las cuatro filas correspondientes salen de «Código sin contrato» en `docs/DEUDA.md`: no
+son contratos que falten escribir sino comportamiento deliberadamente fuera del alcance funcional.
+
+**Qué se hizo.**
+Nada en el código de la ingesta. La cuarta tarea de la lista —el alta del primer Administrador— se
+construye en el bloque 2 como consecuencia del retiro del admin de Django, y queda registrada en
+`bitacora/13-gestion-de-usuarios.md`.

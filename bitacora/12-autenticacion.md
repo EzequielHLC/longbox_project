@@ -13,7 +13,7 @@
 ### B-12-001 · Los parámetros de sesión y de bloqueo son constantes, y el contrato los declara configurables
 
 **Tipo:** Desvío · **Fecha:** 2026-09-14 · **Alcance:** `CU-AUT-INI`, `CO-114`, `CO-115`, `CU-CFG-PAR`
-**Estado:** Abierta
+**Estado:** Resuelta — desvío confirmado; manda el contrato, decidido el 2026-09-22
 
 **Nota sobre el tipo.** Un desvío se consulta antes de tomarlo, nunca se registra después. Éste se
 registra después porque no se tomó como desvío: el código es anterior a la existencia del
@@ -63,7 +63,7 @@ Anotado también como decisión transversal en `docs/DEUDA.md`.
 ### B-12-002 · Tres postcondiciones del módulo no tienen sujeto sobre el cual afirmarse
 
 **Tipo:** Corrección · **Fecha:** 2026-09-14 · **Alcance:** `CO-117`, `CO-118`, `CO-119`, `CO-122`
-**Estado:** Abierta
+**Estado:** Resuelta — es un desvío; se construye, decidido el 2026-09-22
 
 **Qué apareció.**
 Al escribir las pruebas de contrato del módulo, tres postcondiciones no se pudieron transcribir:
@@ -98,3 +98,64 @@ Nada en el documento: el modelo de dominio ya justifica por qué son conceptos, 
 coherentes con él. Lo que hay que decidir es **cuándo** se construyen las dos entidades. Mientras
 no existan, `CU-AUT-REC` y `CU-AUT-ACT` no pueden pasar la puerta de contratos en sentido estricto,
 por más que su comportamiento observable sea el correcto. Está anotado así en `docs/ESTADO.md`.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-12-001 · Resolución de B-12-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna · **Tipo confirmado:** Desvío
+
+**Qué se decidió.**
+**Manda el contrato**, y el código es el que se aparta. Pero no los tres valores por igual: la
+resolución los separa.
+
+| Valor | Dónde vive | Por qué |
+| --- | --- | --- |
+| Expiración de sesión por inactividad | `ConfiguracionSistema`, sección **Seguridad** de `CU-CFG-PAR` | Parametrizable |
+| Período de bloqueo por intentos fallidos | Ídem | Parametrizable |
+| Cantidad de intentos fallidos (5) | **Fijo** | `CO-114` lo declara como número, no como parámetro |
+
+`CO-114` dice «tras 5 intentos fallidos consecutivos […] se bloquea el acceso por el período
+**parametrizado**». El adjetivo cae sobre el período, no sobre la cantidad. Los 5 intentos son
+fijos por contrato y no van al panel.
+
+La sección Seguridad de `CU-CFG-PAR` tiene entonces **dos** valores, no tres.
+
+**Una corrección a la entrada original.** El punto 1 afirma que `CO-114` y `CO-115` no se pueden
+verificar mientras el origen del valor sea otro. Es cierto de `CO-114` y **no** de `CO-115`:
+`CO-115 extenderSesion` declara que el plazo de expiración por inactividad **queda renovado**, y
+eso es verdadero cualquiera sea el origen del plazo. **`CO-115` está verificado.** Lo que el
+desvío bloquea es únicamente la mitad de `CO-114` que nombra a `ConfiguracionSistema`.
+
+**Qué se hizo.**
+Nada todavía en el código. El trabajo —mover los dos valores a `ConfiguracionSistema` y abrir la
+sección Seguridad— **va al plan del módulo 17**, que es donde `CU-CFG-PAR` se reconcilia.
+
+---
+
+### R-12-002 · Resolución de B-12-002
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna · **Tipo confirmado:** Desvío
+
+**Qué se decidió.**
+La entrada se registró como `Corrección` y **no lo es**: la especificación dice algo, lo dice bien
+—el modelo de dominio justifica por qué `EnlaceActivacion` y `TokenRecuperacion` son conceptos y
+no atributos— y el código se aparta igual. Eso es un **desvío**.
+
+La distinción no es de etiqueta. Una corrección se salda enmendando el documento; un desvío se
+salda construyendo lo que el documento declara, o consultando para apartarse. Acá se construye.
+
+**Qué se hizo.**
+Los dos conceptos se construyen con sus tres estados —Vigente, Consumido, Vencido— según el Área 1
+del modelo de dominio y los contratos `CO-117` a `CO-120` y `CO-122`. Con eso, las postcondiciones
+que hoy se afirman por su efecto observable pasan a afirmarse literalmente y las pruebas pierden
+el sufijo `_efecto_observable`.
+
+Queda registrado en la entrada `B-12-003`.

@@ -1,6 +1,7 @@
 """Reactivación y congelamiento de una cuenta dada de baja.
 
-Agregados al CU, documentados en `/docs/modulos/gestion_usuarios.md`.
+La describe CU-USR-REA · Reactivar Cuenta de Usuario del Sistema, con CO-124,
+CO-199 y CO-122.
 """
 
 import pytest

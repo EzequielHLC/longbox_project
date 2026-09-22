@@ -13,7 +13,7 @@
 ### B-18-001 · Sesenta y cuatro contratos de otros módulos quedan archivados bajo el módulo 18
 
 **Tipo:** Corrección · **Fecha:** 2026-09-14 · **Alcance:** `CO-155` a `CO-218`, todos los módulos
-**Estado:** Abierta
+**Estado:** Resuelta — el diagnóstico era incorrecto; corregido el generador el 2026-09-22
 
 **Qué apareció.**
 `.contexto-ia/contratos/18-stock-almacenado-en-local.md` contiene 68 contratos. Sólo cuatro son del
@@ -62,3 +62,42 @@ distintos, así que no hay un módulo al que mudarlo.
 Como consecuencia, convendría que `generar_contexto.py` avise cuando un contrato se archiva en un
 módulo que ninguno de sus casos de uso referenciados habita. Hoy eso no se chequea y es
 exactamente el error que se coló.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-18-001 · Resolución de B-18-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+**El diagnóstico de la entrada era incorrecto.** Afirma que la causa es de estructura del
+documento —que a partir de `CO-155` no hay encabezado nuevo— y que «el script hace lo correcto con
+lo que recibe». Las dos mitades son falsas: el documento **sí** tiene encabezados antes de
+`CO-155` («Transversales») y antes de `CO-157` («Contratos de Operaciones de Solo Lectura»).
+
+Quien falla es el generador. `RE_MODULO` sólo reconoce encabezados de la forma «Módulos NN:
+Nombre»; los dos encabezados de capítulo no tienen número de módulo, no abren módulo nuevo, y los
+64 contratos que vienen debajo se archivan bajo el último módulo numerado que quedó abierto, que
+es el 18.
+
+Es una lección sobre la entrada misma: la explicación estaba construida sobre una suposición
+—«a partir de `CO-155` no hay encabezado»— que no se verificó contra el documento.
+
+**Qué se hizo.**
+Tres cambios en `scripts/generar_contexto.py`:
+
+1. **Cada contrato se archiva según los casos de uso de su campo Referencias Cruzadas**, no según
+   la posición que ocupa en el documento. La información estaba: era cuestión de leerla de donde
+   está y no de donde se la buscaba.
+2. Los contratos cuyas referencias cruzan **más de un módulo** van a
+   `contratos/00-transversales.md`. Es el caso de `CO-156 cancelarOperacion`, referenciado por 15
+   casos de uso de 8 módulos: no hay un módulo al que mudarlo.
+3. **El chequeo que la entrada proponía**, que es lo único de ella que queda en pie: avisar cuando
+   un contrato termina en un archivo de módulo que ninguno de sus casos de uso habita.

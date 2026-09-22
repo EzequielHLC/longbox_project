@@ -16,9 +16,9 @@ Las cuatro categorías del informe pertenecen a Pedidos, Restock, Pricing y
 Tienda, que no existen. Se declaran igual y en `None`: un cero se leería como
 "no afecta a nadie", que es la conclusión equivocada para decidir una baja.
 
-La reactivación no la describe ningún CU. Existe porque sin ella la baja es un
-camino de ida y la precondición de CU-CAT-EDI —un producto de baja se edita— no
-serviría para nada.
+La reactivación la describe CU-CAT-REA, con CO-035 y CO-036. Existe porque sin
+ella la baja es un camino de ida y la precondición de CU-CAT-EDI —un producto de
+baja se edita— no serviría para nada.
 """
 
 import pytest

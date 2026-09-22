@@ -13,7 +13,7 @@
 ### B-11-001 · La consulta de cuentas de Cliente se construyó declarándose fuera de todo caso de uso
 
 **Tipo:** Agregado · **Fecha:** 2026-09-14 · **Alcance:** `CU-CLI-CON`, `CU-CLI-BAJ`, `CO-194`, `CO-195`
-**Estado:** Abierta
+**Estado:** Resuelta — comentario vencido; corregido el código el 2026-09-22
 
 **Qué apareció.**
 `ClienteListaView` lleva escrito en su docstring que no es un caso de uso, que es la contraparte de
@@ -46,3 +46,31 @@ En el documento, nada. Hay que sacar del código la afirmación de que la baja n
 —es la que puede inducir a implementarla mal— y verificar el listado contra `CO-194`. Queda
 pendiente decidir si la ficha de cliente de `CO-195` se construye ahora o junto con el resto del
 módulo: hoy no existe.
+
+---
+
+## Resoluciones
+
+> Lo que el responsable decidió sobre cada entrada, con la fecha y con qué se hizo en
+> consecuencia. **La entrada original no se toca**: sólo se le marca el estado. Una enmienda
+> declarada «pendiente» manda sobre el texto que hoy está volcado en `.contexto-ia/`, que no se
+> edita a mano y se actualiza recién cuando el documento de análisis cambie.
+
+### R-11-001 · Resolución de B-11-001
+
+**Fecha:** 2026-09-22 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+Como en `B-02-001` y `B-04-002`: **`CU-CLI-CON` y `CU-CLI-BAJ` se incorporaron al documento el
+05/09**, después de que la pantalla existiera. Las dos afirmaciones del docstring fueron ciertas
+cuando se escribieron.
+
+La segunda —que la baja de cuenta «todavía no está documentada»— es la que había que sacar con
+urgencia, porque induce a implementarla por las propias reglas en vez de por la ficha, que ya
+declara el mapeo de impacto y la confirmación con contraseña.
+
+**Qué se hizo.**
+`ClienteListaView`: la referencia pasa a `CU-CLI-CON`, con `CO-194` y `CO-195`, y la nota sobre la
+baja dice ahora lo que la ficha declara —la pide el Cliente desde su panel, que no existe— en vez
+de decir que no está documentada. Queda dicho también que `CO-195` no está construido: hoy la
+pantalla cubre el listado de `CO-194` y nada más.

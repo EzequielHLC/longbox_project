@@ -40,7 +40,7 @@ def test_ninguna_plantilla_usa_comentarios_de_varias_lineas():
 @pytest.mark.django_db
 def test_las_pantallas_publicas_se_renderizan_sin_sesion(client):
     """Humo: las tres pantallas públicas cargan enteras para un visitante."""
-    for nombre in ["accounts:login", "accounts:registro_cliente", "core:terminos"]:
+    for nombre in ["accounts:login", "accounts:registro_cliente", "core:politica_privacidad"]:
         respuesta = client.get(reverse(nombre))
 
         assert respuesta.status_code == 200, nombre
