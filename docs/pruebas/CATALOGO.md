@@ -3,21 +3,18 @@
 
 # Catálogo de pruebas, prueba por prueba
 
-Inventario de las **1132 funciones de prueba** del repositorio, que la corrida expande en **1310 casos ejecutados**. De cada una: qué hace, a qué módulo pertenece, de qué tipo es, qué garantía ofrece, qué necesita recibir para poder correr y si cumple.
+Inventario de las pruebas del repositorio. De cada una: qué hace, a qué módulo pertenece, de qué tipo es, qué garantía ofrece y qué necesita recibir para poder correr.
 
-El método con que se escribe una prueba está en [`ESPECIFICACION.md`](ESPECIFICACION.md) y los umbrales en `CLAUDE.md`. Esta foto no los repite: sólo mide.
+Este documento describe **la naturaleza de cada prueba**, que es lo único que no vive en ninguna otra parte. Las cifras las tienen sus dueños y acá se enlazan en vez de repetirse:
 
----
+| Qué | Dónde |
+| --- | --- |
+| Cuántas pruebas hay, cuántas pasan y cuánta cobertura de líneas dan | [`../ESTADO.md`](../ESTADO.md), «Las siete puertas» |
+| Qué prueba lleva el código de qué contrato | [`COBERTURA.md`](COBERTURA.md) |
+| Cómo se escribe una prueba y qué exige cada capa | [`ESPECIFICACION.md`](ESPECIFICACION.md) |
+| Los umbrales de cada puerta | `CLAUDE.md` |
 
-## Resumen
-
-| Módulo | Archivos | Funciones | Casos ejecutados | Cumplen | No cumplen |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Cuentas y acceso (`apps/accounts`) | 20 | 273 | 322 | 273 | 0 |
-| Catálogo (`apps/catalog`) | 17 | 491 | 567 | 491 | 0 |
-| Núcleo (`apps/core`) | 11 | 111 | 130 | 111 | 0 |
-| Proveedores (`apps/suppliers`) | 13 | 257 | 291 | 257 | 0 |
-| **Total** | **61** | **1132** | **1310** | **1132** | **0** |
+**Por qué no se repiten.** Un recuento copiado queda viejo en la primera tanda de pruebas nuevas, y entonces hay dos números distintos para el mismo hecho sin manera de saber cuál rige. El reparto no es prolijidad: es la regla de que cada hecho vive en un solo archivo.
 
 ---
 
@@ -97,7 +94,6 @@ La fila de concurrencia está en cero y no es un descuido de la medición: el c�
 | Archivo | Qué cubre | Tipo predominante | Funciones | Casos |
 | --- | --- | --- | ---: | ---: |
 | [`test_activacion_cuenta.py`](#test_activacion_cuentapy) | CU-USR-ALT, del lado del usuario nuevo: activar la cuenta y elegir contraseña. | Sistema · caja negra (5 de 9) | 9 | 9 |
-| [`test_admin.py`](#test_adminpy) | El rol se administra desde el admin de Django hasta que exista el CU-USR-MOD. | Sistema · caja negra (2 de 3) | 3 | 3 |
 | [`test_alta_usuario.py`](#test_alta_usuariopy) | CU-USR-ALT — Dar de Alta Usuario del Sistema. | Sistema · caja gris (7 de 13) | 13 | 14 |
 | [`test_baja_usuario.py`](#test_baja_usuariopy) | CU-USR-BAJ — Dar de Baja Usuario del Sistema. | Sistema · caja gris (10 de 11) | 11 | 11 |
 | [`test_bloqueo_intentos.py`](#test_bloqueo_intentospy) | CU-AUT-INI, excepción: 5 intentos fallidos consecutivos bloquean el acceso. | Sistema · caja gris (4 de 8) | 8 | 8 |
@@ -196,20 +192,6 @@ La fila de concurrencia está en cero y no es un descuido de la medición: el c�
 | `test_el_enlace_no_se_puede_usar_dos_veces` | El enlace no se puede usar dos veces | Sistema · caja negra · idempotencia | Pantalla (HTTP) | `client_admin` | Cumple |
 | `test_una_contrasena_debil_no_activa_la_cuenta` | Una contrasena debil no activa la cuenta | Sistema · caja gris · funcional | Pantalla (HTTP) | `client_admin` | Cumple |
 | `test_la_activacion_queda_registrada_en_auditoria` | La activacion queda registrada en auditoria | Sistema · caja gris · validación | Pantalla (HTTP) | `client_admin` | Cumple |
-
-### `test_admin.py`
-
-> El rol se administra desde el admin de Django hasta que exista el CU-USR-MOD.
-
-*Todo el archivo corre contra la base: lo marca `pytestmark = pytest.mark.django_db` en la cabecera, y por eso no se repite en cada fila.*
-
-**Tipos en este archivo:** Sistema · caja negra · funcional — 2; Sistema · caja gris · funcional — 1.
-
-| Prueba | Qué hace | Tipo de prueba | Qué ofrece | Qué recibe | Cumple |
-| --- | --- | --- | --- | --- | --- |
-| `test_el_formulario_de_usuario_incluye_el_campo_rol` | El formulario de usuario incluye el campo rol | Sistema · caja negra · funcional | Pantalla (HTTP) | `client`, `superusuario` | Cumple |
-| `test_el_rol_se_puede_cambiar_desde_la_lista` | El rol se puede cambiar desde la lista | Sistema · caja gris · funcional | Pantalla (HTTP) | `client`, `superusuario` | Cumple |
-| `test_el_log_de_auditoria_no_se_puede_editar_ni_borrar_desde_el_admin` | El log de auditoria no se puede editar ni borrar desde el admin | Sistema · caja negra · funcional | Pantalla (HTTP) | `client`, `superusuario` | Cumple |
 
 ### `test_alta_usuario.py`
 

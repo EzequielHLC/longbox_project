@@ -1,0 +1,1766 @@
+# Lo que el Modelo de Dominio y el Modelo de Datos necesitan y el código no sabe.
+#
+# `generar_modelos.py` deriva del código todo lo que el sistema ya construyó.
+# Este archivo aporta las tres cosas que no están ahí:
+#
+#   1. Los conceptos **planificados**, derivados de las fichas de los casos de
+#      uso que todavía no se construyeron. Cada uno declara de qué ficha sale.
+#   2. Las **transiciones** de los ciclos de vida. El código declara los estados
+#      —son el enumerado de un campo— pero no desde qué estado es legal llegar a
+#      cuál: eso vive repartido en servicios y vistas, y se declara acá.
+#   3. La **prosa** que ordena el modelo, el duplicado concreto que previene
+#      cada restricción de unicidad y la consulta que atiende cada índice.
+#
+# Regenerar reescribe los dos .md y no toca este archivo.
+
+# ══════════════════════════════════════════════════════════════════
+#  Modelo de Dominio — prosa
+# ══════════════════════════════════════════════════════════════════
+
+[dominio]
+
+intro = """
+Este documento describe **qué conceptos existen en el negocio, qué sabe cada uno y cómo se
+relacionan**. No describe cómo se guardan: para eso está [`MODELO_DE_DATOS.md`](MODELO_DE_DATOS.md),
+que es el mismo sistema visto desde la base.
+
+**Cubre el sistema completo: lo construido y lo planificado.** Un modelo de dominio que solo
+describa lo implementado no sirve para diseñar lo que falta, y uno que no distinga entre ambos hace
+creer que existe algo que no existe. La distinción es visual y está declarada en cada diagrama.
+"""
+
+notacion = """
+Los conceptos se dibujan con dos notaciones y la diferencia no es decorativa: separa lo que se puede
+verificar contra el código de lo que solo se puede verificar contra una ficha.
+
+| Notación | Significado | De dónde se derivó |
+| --- | --- | --- |
+| Caja de línea llena, fondo azul | **Construido.** El concepto existe hoy | De `apps/*/models.py` y de las migraciones. Sus atributos, sus asociaciones y sus estados se leen del código en cada regeneración |
+| Caja de línea de trazos, fondo ámbar | **Planificado.** El concepto todavía no existe | De la ficha del caso de uso que lo presupone. Cada caja planificada declara en una nota de qué ficha sale |
+
+Un concepto planificado **no es una promesa de implementación**: es un concepto que alguna ficha ya
+da por existente. Que aparezca acá significa que el día que ese caso de uso se construya, va a
+necesitarlo; no significa que su forma esté decidida.
+
+Los atributos llevan estereotipos entre comillas angulares: `«único»` cuando la base lo garantiza,
+`«opcional»` cuando admite ausencia, `«derivado»` cuando lo escribe el sistema y no quien crea el
+objeto.
+"""
+
+vista_general = """
+Siete áreas. Una está construida por completo, cuatro están a medias y dos son enteramente
+planificadas. El detalle de cada una viene después; esta vista sirve para ubicar dónde cae cada
+concepto y para ver de un vistazo cuánto del dominio existe hoy: **diecinueve conceptos existen y
+diecisiete todavía no.**
+
+Las flechas de trazos son las que cruzan de lo construido a lo planificado. Son el mapa de dónde va
+a tocar el código cuando esos módulos se construyan.
+"""
+
+ciclos_intro = """
+Los ciclos de vida son diagramas de máquina de estados numerados `DME-NN`. Se incluyen únicamente
+los conceptos cuyo estado gobierna qué se les puede hacer: un concepto con dos estados que solo
+sirven para filtrar no tiene ciclo de vida, tiene una bandera.
+
+**De dónde sale cada mitad del diagrama.** En los ciclos construidos, los *estados* se leen del
+enumerado del campo correspondiente, así que agregar un estado en el código lo agrega al diagrama.
+Las *transiciones* no están declaradas en ninguna parte del código —un `save()` que cambia un valor
+no dice desde qué otro valor era legal venir— y por eso se mantienen en el archivo de datos del
+generador. En los ciclos planificados, las dos mitades salen de la ficha.
+
+**La numeración `DME-NN` de este documento arranca en 01 y reemplaza a la anterior.** Los contratos
+del documento de análisis citan `DME-01` (ProductoEditorial), `DME-02` (Pedido) y `DME-04`
+(LotePuntos) con otra asignación; esa correspondencia está en el mapeo de
+`docs/diagramas/README-diagramas.md`.
+"""
+
+invariantes_intro = """
+Cada invariante dice **dónde se sostiene**, y esa columna es el punto de la tabla. Un invariante que
+solo vive en el formulario no es un invariante: lo esquiva la primera operación que no pase por esa
+pantalla —un comando de gestión, el pipeline automatizado, una consola.
+
+Los tres lugares posibles, de más fuerte a más débil:
+
+- **Restricción de base.** La garantiza el motor. Sobrevive a cualquier camino de escritura.
+- **Validación del concepto.** Vive en el modelo (`clean()`, `save()`, una propiedad). Cubre todo lo
+  que pase por el ORM, que es todo el sistema, pero no una escritura en SQL directo.
+- **Comprobación de formulario o de vista.** Cubre una pantalla. Es legítima solo cuando lo que
+  valida es la entrada y no el estado —que dos campos del formulario sean coherentes entre sí, por
+  ejemplo.
+
+**Una advertencia que hay que leer antes de la tabla.** En Django, los validadores de campo y el
+`clean()` del modelo **no corren al guardar**: los ejecuta `full_clean()`, y `full_clean()` lo
+llaman los formularios de modelo, no `save()` ni `objects.create()`. Este proyecto no invoca
+`full_clean()` en ninguna parte de su código de aplicación, de modo que todo invariante cuya única
+sede es un validador o un `clean()` **se sostiene únicamente en el camino del formulario**. El
+pipeline automatizado, los comandos de gestión y la consola lo esquivan.
+
+Esa es la razón de que varias filas de abajo digan «comprobación de formulario» donde a primera
+vista parecerían validación del concepto. Está declarado y no disimulado: son los invariantes cuya
+promoción a restricción de base o a `save()` queda como deuda registrada.
+"""
+
+ausencias = """
+Lo que sigue no es una lista de pendientes: es la explicación de varias decisiones del modelo
+actual. Un concepto que no existe deja huellas en los que sí existen, y sin nombrarlas esas huellas
+parecen arbitrariedades.
+
+- **No hay Pedido, y por eso `Producto.stock` es un número y no un saldo.** Hoy el stock se escribe
+  en el alta y se lee en el inventario; nada lo reserva ni lo compromete. Cuando exista Pedido, la
+  pregunta "¿cuántas unidades hay disponibles?" va a dejar de tener una sola respuesta.
+- **No hay LotePuntos, y por eso ningún concepto tiene saldo.** El reembolso íntegro en puntos que
+  cuatro casos de uso prometen no tiene todavía dónde acreditarse.
+- **No hay Oferta, y por eso `Producto.precio` es el precio que se cobra.** Cuando exista, el precio
+  del producto va a dejar de ser el precio efectivo y va a pasar a ser el precio base sobre el que
+  se aplica un descuento vigente.
+- **No hay Carrito, y por eso ninguna propagación de precios tiene a quién avisarle.** Es lo que
+  deja parciales a `CU-PVP-TAB` y `CU-PVP-MAR`: la propagación existe como cálculo y no tiene
+  destinatarios.
+- **No hay ArticuloRetenido, y por eso la opción 2 de un artículo demorado no tiene dónde dejar el
+  tomo cuando llegue.**
+- **No hay entidad de reserva separada.** Una pre-venta va a ser una `LineaDePedido` con su propio
+  estado, no un concepto aparte: lo que se reserva es una línea de un pedido pagado, no un objeto
+  independiente que después haya que reconciliar con un pedido.
+- **`RegistroAuditoria` ya está poblado y nadie lo consulta.** La escritura opera desde todos los
+  módulos construidos; la consulta con filtros es `CU-AUD-CON` y no está hecha. Es el único concepto
+  del sistema cuya mitad de escritura precede en varios meses a la de lectura, y es deliberado: un
+  log que empieza a escribirse tarde tiene un agujero que ya no se puede llenar.
+"""
+
+cruces = [
+  "Usuario ..> Producto : opera sobre",
+  "Usuario ..> BorradorProducto : revisa",
+  "Producto ..> RegistroAuditoria : deja rastro",
+  "BorradorProducto ..> RegistroAuditoria : deja rastro",
+  "Proveedor ..> Producto : abastece",
+  "Producto <.. LineaPedido : se vende como",
+  "Producto <.. LineaCarrito : se selecciona en",
+  "Producto <.. Oferta : se descuenta con",
+  "Producto <.. SuscripcionReposicion : se espera en",
+  "Producto <.. ArticuloRetenido : se retiene como",
+  "Usuario <.. Pedido : realiza",
+  "Usuario <.. LotePuntos : acumula",
+  "Usuario <.. Carrito : tiene",
+  "ProductoEditorial <.. LineaPropuestaRestock : se repone con",
+]
+
+[[dominio.reglas]]
+titulo = "1. La identidad la lleva un código; los datos descriptivos detectan duplicados."
+texto = """
+Son dos cosas distintas y confundirlas rompe el modelo. `Producto.codigo` **identifica**: existe
+siempre, es único e inmutable. El ISBN, el código de barras y las tuplas descriptivas **detectan
+duplicados**: pueden faltar sin que nada se rompa. Que no sean identidad no les quita la unicidad
+—dos filas con el mismo ISBN son la misma edición cargada dos veces— pero sí les quita la obligación
+de existir. En cuanto la marca o el título entran en la identidad, todo producto que no los tenga
+—el merch genérico, lo no oficial— se vuelve inmodelable.
+"""
+
+[[dominio.reglas]]
+titulo = "2. Los campos deciden, las etiquetas describen."
+texto = """
+Si algo entra en la clave de unicidad de un producto o en el cálculo de su precio, es un **campo**
+con su propia entidad: `Tipo` (qué clase de cosa es) y `Formato` (el tamaño físico, que es lo que
+fija el precio). Si solo sirve para **encontrar** productos, es una `Etiqueta`. Sin esa línea
+escrita, las etiquetas se vuelven el tacho de basura del modelo y en seis meses "Ivrea" existe como
+etiqueta *y* como editorial.
+"""
+
+[[dominio.reglas]]
+titulo = "3. Lo que cambia el comportamiento del sistema es campo, aunque parezca etiqueta."
+texto = """
+`Producto.solo_adultos` excluye del catálogo público. Como etiqueta, la tienda tendría que comparar
+contra la cadena `"NSFW"`, y renombrarla rompería el catálogo en silencio.
+"""
+
+[[dominio.reglas]]
+titulo = "4. El modelo de lenguaje propone, nunca aplica."
+texto = """
+Nada de lo que una extracción produce entra al catálogo por su cuenta: produce un `BorradorProducto`
+que una persona confirma. Por eso el borrador es una entidad propia y no un producto con una bandera
+de "sin revisar" — un producto a medias en la misma tabla se filtra tarde o temprano en una consulta
+que se olvide de excluirlo, y para cuando se nota ya estuvo a la venta. La misma regla explica la
+`ConfianzaCampo`: el modelo declara cuánto confía en cada dato, y esa declaración es un dato del
+sistema y no un comentario.
+"""
+
+[[dominio.reglas]]
+titulo = "5. Un producto no es una entidad, son tres."
+texto = """
+`Producto` es lo general —lo que el inventario único consulta sobre los dos rubros— y
+`ProductoEditorial` / `ProductoNoEditorial` agregan lo suyo. No son clases abstractas porque **no se
+puede tener una referencia a un concepto abstracto**, y todo lo que viene (pedidos, ventas, ofertas,
+carrito) tiene que poder apuntar a *un producto*. La consecuencia física está en el apartado de
+herencia del Modelo de Datos: un tomo editorial son dos filas en dos tablas.
+"""
+
+# ══════════════════════════════════════════════════════════════════
+#  Modelo de Datos — prosa
+# ══════════════════════════════════════════════════════════════════
+
+[esquema]
+
+intro = """
+El esquema físico de lo que está construido, leído de `apps/*/models.py` y de las 46 migraciones del
+repositorio. **Cubre únicamente lo construido:** los conceptos planificados no tienen tabla, y
+listarlos acá haría creer que la tienen. Están en
+[`MODELO_DE_DOMINIO.md`](MODELO_DE_DOMINIO.md), con su notación propia.
+
+El motor es PostgreSQL 16 y los tipos de la columna «Tipo del motor» son los que Django emite para
+ese backend.
+"""
+
+convenciones = """
+- **Nombres de tabla.** Django los forma como `app_modelo` en minúsculas y sin separador entre
+  palabras: `catalog_productoeditorial`, `suppliers_correoproveedor`.
+- **Clave primaria.** Todas las tablas llevan `id` autoincremental de 64 bits (`bigint`). Ninguna
+  usa clave natural, y es deliberado: un ISBN puede faltar y una razón social puede corregirse.
+- **Claves foráneas.** La columna se llama como el campo más el sufijo `_id`.
+- **Nulo vs. cadena vacía.** El proyecto sigue la convención de Django: los campos de texto ausentes
+  se guardan como cadena vacía y no como `NULL`, de modo que un texto tiene un solo valor para "no
+  hay dato". Los demás tipos sí usan `NULL`. Eso explica por qué varias restricciones de unicidad
+  llevan la condición «solo cuando el campo no está vacío»: sin ella, todas las filas sin ISBN
+  chocarían entre sí por compartir la cadena vacía.
+- **Fechas.** Todas las marcas de tiempo se guardan con zona horaria (`timestamp with time zone`).
+- **Dinero.** Siempre `numeric`, nunca punto flotante. Los precios llevan dos decimales; el
+  coeficiente de importación lleva seis, porque es un cociente y no dinero, y recortarlo antes de
+  aplicarlo arrastraría el error a cada precio del lote.
+"""
+
+er_intro = """
+El diagrama muestra **solo las claves**: la primaria de cada tabla y las foráneas que la vinculan.
+Con diecinueve tablas, dibujar todas las columnas produce una figura que no se puede leer, y el
+detalle completo viene después, tabla por tabla.
+
+Dos tablas de Django aparecen como destino de una clave foránea y no como entidad propia:
+`django_content_type`, a la que apunta el objetivo genérico del registro de auditoría, y
+`auth_group` / `auth_permission`, del sistema de permisos que el proyecto no usa para autorizar
+—la autorización va por el rol de la cuenta— pero que el usuario de Django arrastra.
+"""
+
+unicidad_intro = """
+Dispersas por tabla, las restricciones de unicidad se leen como detalles de implementación. Juntas
+son otra cosa: **son el conjunto de reglas de identidad del sistema**, la respuesta completa a la
+pregunta de cuándo dos filas son la misma cosa cargada dos veces.
+
+Dos observaciones que valen para toda la tabla:
+
+- **Las que se definen sobre una expresión se materializan como índice único y no como restricción
+  de tabla.** Todas las de nombre sin distinguir mayúsculas están en ese caso. Buscarlas en
+  `information_schema.table_constraints` da un falso negativo: hay que mirarlas en `pg_indexes`.
+- **Una clave de identidad falta y no es un olvido.** La tupla descriptiva de un producto editorial
+  —título, volumen, tipo, formato y editorial— no puede ser una restricción de base con herencia
+  multi-tabla, porque título y tipo viven en la tabla del padre y el resto en la de la hija, y una
+  restricción no abarca dos tablas. Lo que la recupera es `clave_edicion`, una columna derivada que
+  copia los cinco valores a la tabla de la hija para que la restricción vuelva a caber.
+"""
+
+borrado_intro = """
+Cada relación declara qué pasa con la fila que apunta cuando desaparece la fila apuntada. Las tres
+políticas del sistema responden a tres criterios distintos, y agrupadas así se ve que no hay
+excepciones sueltas.
+"""
+
+herencia = """
+Es lo que más sorprende al leer el esquema por primera vez, y conviene explicarlo antes de que
+parezca un error: **un tomo editorial son dos filas en dos tablas.**
+
+`Producto` guarda lo común a los dos rubros —código, título, tipo, estado, stock, precio— y cada
+especialización agrega una tabla con lo suyo. La fila hija no repite las columnas del padre: las
+alcanza por una columna que es al mismo tiempo su clave primaria y una clave foránea al padre.
+Consultar un producto editorial completo es entonces una unión de las dos tablas, y Django la hace
+sola.
+
+**Por qué así y no con una tabla de columnas nulables.** Un mazo de cartas no tiene editorial, ni
+volumen, ni ISBN, ni formato; un tomo no tiene marca. Con una sola tabla, la mitad de las columnas de
+cada fila serían nulas y lo que las hace obligatorias o no viviría en validaciones sueltas, lejos del
+esquema. Acá la base misma dice qué campos existen para qué cosa.
+
+**Por qué no clases abstractas.** El inventario de `CU-CAT-INV` es único: un listado con los mismos
+filtros sobre los dos rubros a la vez, ordenado y paginado. Con tablas independientes esa consulta
+no existe, y tampoco existirían las claves foráneas que ya apuntan al padre —`BorradorProducto`, la
+auditoría, y las que traigan pedidos y ventas.
+
+**Las tres consecuencias que hay que tener presentes al leer el esquema:**
+
+1. `catalog_producto` tiene una columna `clase` que dice de qué hija es cada fila. Django sabe llegar
+   a la hija sin ella, pero la columna permite contar y filtrar por rubro sin salir de la tabla del
+   padre, y permite condicionar una restricción de unicidad a un solo rubro.
+2. Recorrer un listado del padre y bajar a la hija por fila es el N+1 clásico de esta forma de
+   herencia. Se resuelve trayendo las hijas en la misma consulta.
+3. Guardar un producto editorial **por la tabla del padre no recalcula `clave_edicion`**, porque el
+   `save()` del padre no toca la tabla de la hija. Un producto editorial se edita siempre por su
+   propia clase.
+
+Los enlaces concretos del esquema:
+"""
+
+migraciones_intro = """
+El orden en que la base llegó a su forma actual. La columna de la derecha sale del docstring de cada
+migración cuando lo tiene, y del nombre del archivo cuando no.
+
+**Lo que esta tabla no puede decir es si están aplicadas.** La suite de pruebas crea una base
+temporal desde cero, así que puede quedar en verde con migraciones sin aplicar sobre la base de
+desarrollo y las pantallas caídas. Eso se verifica a mano, con el listado de migraciones pendientes,
+antes de cerrar cada módulo.
+"""
+
+ausencias = """
+- **Nada de comercio.** No hay tabla de pedido, línea de pedido, carrito, transacción de pago ni
+  cierre de caja. Es la mitad del sistema y es el bloque que más claves foráneas va a agregar sobre
+  `catalog_producto` y `accounts_usuario`.
+- **Nada de fidelización.** No hay lote de puntos ni movimiento de puntos, y por lo tanto ningún
+  cliente tiene saldo.
+- **Nada de ofertas.** `catalog_producto.precio` es hoy el precio efectivo porque no hay descuento
+  que aplicarle.
+- **Nada de restock.** No hay propuesta ni línea de propuesta ni suscripción de reposición, aunque
+  `CU-RST-PED` —el envío del correo consolidado— sí está construido: opera sobre un conjunto de
+  productos que le entrega su invocante, sin tabla propia.
+- **Nada de stock almacenado en local.**
+- **Nada de contenido de tienda:** banners, FAQ e identidad visual.
+- **`ConfiguracionSistema` administra tres de los quince parámetros que `CU-CFG-PAR` enumera.** Los
+  doce restantes pertenecen a módulos no construidos y no tienen columna todavía.
+"""
+
+# ══════════════════════════════════════════════════════════════════
+#  Áreas del Modelo de Dominio
+# ══════════════════════════════════════════════════════════════════
+
+[[area]]
+id = "acceso"
+titulo = "Personas y acceso"
+conceptos = ["accounts.Usuario", "accounts.IntentoFallido"]
+planificados = []
+asociaciones_extra = [
+  'Usuario "0..1" .. "0..*" IntentoFallido : se cuentan por (correo, IP)',
+]
+prosa = """
+**Un solo concepto de persona, con tres roles.** No hay una entidad `Cliente` separada de una
+entidad `Empleado`: es el mismo `Usuario` con distinto `rol`. La decisión se sostiene en que las dos
+comparten todo lo que hace a una cuenta —credencial, estado, activación, bloqueo por intentos— y se
+diferencian solo en qué pueden hacer, que es exactamente lo que un rol describe.
+
+Los datos de envío del Cliente viven en la misma entidad porque son **uno por cuenta**. Una libreta
+de direcciones múltiples, si alguna vez hace falta, pertenece al área de comercio y no acá.
+
+**El consentimiento se guarda fechado y no como un sí o un no.** Un booleano acredita que el titular
+aceptó pero no cuándo, y lo que el Artículo 5° de la Ley 25.326 exige poder demostrar es el acto
+fechado. De paso, la ausencia de fecha equivale a la ausencia de consentimiento, así que un solo dato
+cumple las dos funciones.
+
+**`IntentoFallido` guarda el correo tal como se tipeó**, aunque no corresponda a ninguna cuenta. Si
+solo se contaran los intentos contra cuentas existentes, la diferencia de comportamiento delataría
+qué correos están registrados.
+"""
+
+[[area]]
+id = "clasificacion"
+titulo = "La clasificación del catálogo"
+conceptos = [
+  "catalog.Editorial",
+  "catalog.GrupoEtiqueta",
+  "catalog.Etiqueta",
+  "catalog.Tipo",
+  "catalog.Formato",
+  "catalog.TablaPrecioReferencia",
+]
+planificados = ["Oferta"]
+invitados = ["catalog.Producto", "catalog.ProductoEditorial"]
+prosa = """
+Ésta es el área donde la regla 2 se ve funcionando. **Dos ejes deciden y uno describe.**
+
+- **`Tipo`** dice qué clase de cosa es: manga, cómic, artbook, novela ligera y libro de un lado; TCG,
+  figura, merchandising e insumo del otro. Entra en la clave de unicidad y en la de la tabla de
+  precios. Su campo `clase` existe porque cuatro de los cinco consumidores de la tabla son solo
+  editoriales, y sin el discriminador nada impide cargar una fila «Ivrea + Figura + B6» en la tabla
+  de precios.
+- **`Formato`** es el tamaño físico del tomo, y es **lo que fija el precio**: dos tomos de la misma
+  editorial y el mismo tipo valen distinto según su tamaño. En qué tipos aplica cada formato lo
+  declara el propio formato con una relación de muchos a muchos; declararlo con grupos obligaría a
+  duplicar «tapa dura» por cada tipo y partiría la tabla de precios en dos filas para el mismo tamaño
+  físico.
+- **`Etiqueta`**, agrupada por `GrupoEtiqueta`, solo sirve para encontrar. No entra en ninguna clave,
+  no interviene en ningún precio, y un producto puede tener varias. El grupo existe porque sin él el
+  filtro de la tienda es una bolsa: un cliente que busca cómics de Marvel y otro que busca manga
+  shonen usarían la misma caja revuelta.
+
+**`TablaPrecioReferencia` necesita los tres campos.** La misma editorial cobra distinto un manga que
+un cómic, y dentro del manga cobra distinto un B6 que un Tankōbon. Sacar cualquiera de los tres deja
+filas que no se pueden distinguir. Los tipos que no se miden por tamaño —artbook, novela ligera— no
+entran: su precio se escribe en el alta.
+
+**`Oferta` es el único concepto planificado del área, y su ausencia explica una cosa del modelo
+actual:** que `Producto.precio` sea el precio que se cobra. Cuando exista, ese campo va a pasar a ser
+el precio base y el precio efectivo va a ser una derivación con la oferta vigente aplicada. La ficha
+de `CU-PVP-ALT` declara además que las ofertas no se solapan sobre el mismo alcance, lo que es un
+invariante y no una validación de pantalla.
+"""
+
+[[area]]
+id = "producto"
+titulo = "El producto y sus dos especializaciones"
+conceptos = [
+  "catalog.Producto",
+  "catalog.ProductoEditorial",
+  "catalog.ProductoNoEditorial",
+  "catalog.LoteAlta",
+]
+planificados = ["SuscripcionReposicion"]
+invitados = [
+  "catalog.Etiqueta",
+  "catalog.Tipo",
+  "catalog.Editorial",
+  "catalog.Formato",
+  "catalog.TablaPrecioReferencia",
+  "suppliers.Proveedor",
+  "accounts.Usuario",
+]
+prosa = """
+La regla 5 en el diagrama. `Producto` es lo general y no se instancia nunca por su cuenta: un
+producto siempre es de un rubro. El sistema lo hace explícito rechazando el guardado de un
+`Producto` que no declare especialización, en vez de dejar que la fila huérfana exista y aparezca
+más adelante en un listado sin poder abrirse.
+
+**Qué queda en el padre y qué baja.** Queda lo que el inventario único necesita consultar sobre los
+dos rubros a la vez —código, título, tipo, estado, stock, precio, etiquetas— y baja lo que solo tiene
+sentido en uno. `ProductoEditorial` suma todo lo que hace a una *edición*: volumen, ISBN, editorial,
+formato, la maquinaria de precio de los importados y la fecha de llegada.
+`ProductoNoEditorial` suma poco y quita bastante, que es justamente el punto.
+
+**«Demorado» no es un estado, es un indicador.** Un producto demorado sigue en pre-venta, se sigue
+pudiendo reservar, y lo único que cambió es que se sabe que no llega cuando decía. Modelarlo como
+estado obligaría a que salir de la demora implicara elegir a qué estado volver. Solo aplica al
+material editorial: el no editorial no admite pre-venta, así que no puede demorarse.
+
+**`LoteAlta` existe por dos motivos que no se resuelven con productos sueltos.** La entrada de
+auditoría de una carga es una sola por lote y no una por ítem; y en los importados hay que conservar
+el coeficiente de importación y el margen *vigentes al momento del alta*, que después cambian. El
+coeficiente se persiste calculado con seis decimales y no se recalcula al leer: los totales del lote
+se pueden corregir, pero el coeficiente con el que se fijaron estos precios es un hecho histórico.
+
+**`SuscripcionReposicion` es el único concepto planificado del área** y es el que convierte una
+consulta frustrada en un dato: cuántas personas esperan un producto agotado. Es la entrada de
+`CU-RST-PRO`, que ordena la propuesta de restock por esa cuenta.
+"""
+
+[[area]]
+id = "pipeline"
+titulo = "De un correo del proveedor a un producto"
+conceptos = [
+  "suppliers.Proveedor",
+  "suppliers.CorreoProveedor",
+  "catalog.BorradorProducto",
+  "catalog.ConfianzaCampo",
+  "catalog.SesionRevision",
+]
+planificados = ["PropuestaRestock", "LineaPropuestaRestock"]
+invitados = ["catalog.ProductoEditorial", "catalog.Editorial", "accounts.Usuario"]
+asociaciones_extra = [
+  'BorradorProducto ..> ProductoEditorial : al confirmarse crea (dependencia de proceso)',
+]
+prosa = """
+Es el área que más conceptos aportó que ninguna lectura del relevamiento había anticipado, y la
+regla 4 es la que los ordena a todos: **el modelo propone, nunca aplica.**
+
+**`Proveedor` es tres cosas a la vez y conviene no confundirlas.** Es una agenda de contactos
+comerciales; es el filtro de remitentes válidos del pipeline, lo que convierte a su correo comercial
+en una credencial de confianza y no en un dato de contacto cualquiera; y es la cabecera de los
+borradores que ese pipeline genere. La editorial y el tipo de material no vienen en el correo, y no
+por descuido: la comunicación es directa de la editorial a la comiquería, así que nadie escribe su
+propio nombre en su propio newsletter. Que la editorial quede vacía **significa** algo —el proveedor
+trae varias— y no es un dato sin cargar.
+
+**`CorreoProveedor` es la cola de aprobación, y es la pieza que hace posible la decisión humana.**
+Por la dirección comercial de un proveedor llegan facturas, promociones y avisos de demora, no solo
+novedades. Sin la cola, el sistema entrega todos esos mensajes al modelo y produce borradores sin
+sentido que alguien tiene que rechazar uno por uno: el trabajo no se elimina, se traslada. Su
+identificador de mensaje es la clave de idempotencia, y un ciclo que vuelva a leer la misma casilla
+no encola dos veces el mismo correo.
+
+**El estado del correo no es el estado de sus borradores.** Un correo procesado con éxito puede
+tener todos sus borradores rechazados y sigue siendo un correo procesado. Son dos ciclos de vida
+separados, y confundirlos haría que rechazar borradores revirtiera el estado del correo que los
+produjo.
+
+**`ConfianzaCampo` es una entidad y no un dato dentro del borrador** porque la ficha no pide solo
+*leer* la confianza: exige que el Administrador haga una acción afirmativa sobre cada campo de
+confianza baja antes de poder confirmar. Eso es un dato que se escribe, por campo. Y hay que
+distinguirla del **reparo**: la confianza la declara el modelo sobre sí mismo, el reparo es lo que
+el sistema le corrigió al contrastarlo con algo verificable —un ISBN cuyo dígito de control no
+cierra, una portada referenciada que no está entre las partes del correo.
+
+**`SesionRevision` la ficha no la declara como entidad y la necesita igual.** El flujo habla de «al
+cerrar la sesión», audita su cierre con confirmados, rechazados y pendientes, y arma un pedido
+consolidado por proveedor *de esa sesión*. Sin algo que agrupe la tanda, dos revisiones el mismo día
+producirían un único correo mezclado al mismo proveedor en lugar de dos pedidos separados. Se abre
+con la primera decisión y no al abrir la pantalla: mirar la cola no es revisar.
+
+**`PropuestaRestock` y su línea son los conceptos planificados del área.** Reproducen el mismo patrón
+de cabecera e ítem que `LoteAlta`, y por el mismo motivo: la propuesta conserva el momento y el tipo
+de disparo, y cada línea conserva la cantidad sugerida con la que nació, que el Administrador puede
+cambiar antes de despachar.
+"""
+
+[[area]]
+id = "comercio"
+titulo = "Comercio y logística"
+conceptos = []
+planificados = [
+  "Carrito",
+  "LineaCarrito",
+  "Pedido",
+  "LineaPedido",
+  "TransaccionPago",
+  "CierreDeCaja",
+  "CasoDevolucion",
+  "ArticuloRetenido",
+]
+invitados = ["accounts.Usuario", "catalog.Producto"]
+prosa = """
+**El área entera es planificada.** Ningún concepto de acá existe hoy en el código, y es la mitad del
+sistema: los dos canales de venta, el ciclo de vida del pedido, la logística de envíos fraccionados y
+las devoluciones.
+
+**`Pedido` es uno solo para los dos canales.** La venta presencial y la compra online producen el
+mismo concepto con distinto valor de `canal`; lo que cambia es por qué estados transita —una venta
+de mostrador nace despachada, porque el cliente se lleva el material en el momento— y no qué es.
+Modelarlos como dos entidades obligaría a duplicar el cierre de caja, el historial del cliente y el
+reporte de ventas.
+
+**`LineaPedido` lleva estado propio, y ésa es la decisión que sostiene todo el módulo 08.** Un pedido
+con un artículo demorado no está demorado entero: tiene una línea demorada y el resto disponible, y
+las tres opciones que se le ofrecen al Cliente operan sobre esa línea y no sobre el pedido. Sin
+estado por línea, la opción «despachar lo disponible ahora» no se puede representar.
+
+**`ArticuloRetenido` es donde aterriza esa opción.** El tomo que llega tarde queda retenido en el
+local a nombre del Cliente con su propia fecha de vencimiento, y su ciclo es independiente del
+pedido que lo originó.
+
+**`TransaccionPago` guarda la referencia de la pasarela y no solo el monto.** Es lo que permite
+reconocer un aviso repetido de la pasarela y no generar un segundo pedido por el mismo pago.
+
+**`CasoDevolucion` es único por ítem de pedido**, en cualquier estado. La ficha lo pide
+explícitamente para que un reclamo rechazado no pueda reabrirse como uno nuevo, y eso es una
+restricción de identidad y no una comprobación de pantalla.
+"""
+
+[[area]]
+id = "fidelizacion"
+titulo = "Fidelización por puntos"
+conceptos = []
+planificados = ["LotePuntos", "MovimientoPuntos"]
+invitados = ["accounts.Usuario"]
+prosa = """
+**Área enteramente planificada**, y la que más consecuencias tiene sobre el resto: cuatro casos de
+uso de tres módulos distintos prometen reembolsar o compensar en puntos, y ninguno tiene todavía
+dónde acreditarlos.
+
+**El saldo no es un número en la cuenta del cliente: es la suma de sus lotes vigentes.** La ficha de
+`CU-PTS-CAD` lo exige sin nombrarlo — la caducidad opera a nivel de lote individual y no sobre el
+saldo total, así que un cliente puede tener simultáneamente lotes vencidos y lotes vigentes. Con un
+saldo escalar no hay forma de saber qué parte caduca cuándo. Y el consumo es por orden de caducidad
+más próxima, lo que exige poder distinguir un lote de otro.
+
+**`MovimientoPuntos` es el registro de cada acreditación y cada débito con su saldo resultante**, que
+es lo que `CU-PTS-CON` presenta como historial. No es derivable de los lotes: un débito consume
+varios lotes parcialmente, y reconstruir el movimiento desde los saldos residuales de los lotes es
+imposible una vez que hubo un segundo débito.
+
+**`LotePuntos.origen` es el mismo enumerado en los cinco flujos que crean lotes** —compra, reembolso,
+compensación y ajuste manual—, y esa unicidad de vocabulario es lo que permite responder de dónde
+salió cada punto del sistema.
+"""
+
+[[area]]
+id = "traza"
+titulo = "Parámetros, contenido y trazabilidad"
+conceptos = ["core.ConfiguracionSistema", "core.RegistroAuditoria"]
+planificados = ["Banner", "ContenidoFAQ", "IdentidadVisual"]
+invitados = ["accounts.Usuario"]
+asociaciones_extra = [
+  'class Concepto #EEEEEE',
+  'RegistroAuditoria "0..*" ..> "0..1" Concepto : objetivo genérico',
+  'note right of Concepto : No es una clase del dominio: representa a cualquier\nconcepto auditable. La referencia es por tipo y clave.',
+]
+prosa = """
+**`RegistroAuditoria` apunta a cualquier cosa por un objetivo genérico** —el tipo de objeto y su
+clave— y no por una clave foránea por cada tipo posible. Arrancó siendo una referencia a una cuenta,
+porque el primer módulo que lo usó operaba sobre cuentas ajenas; con altas de lote, productos,
+proveedores, correos y borradores auditados, una columna por objetivo posible habría dejado la tabla
+con quince claves foráneas nulas.
+
+**Es inmutable por diseño y no por permisos de pantalla.** El concepto rechaza su propia modificación
+y su propio borrado, así que la garantía se sostiene aunque la operación se intente desde una consola
+o desde el panel de administración de Django. La inmutabilidad que vive en la pantalla la esquiva
+cualquier camino que no pase por ella, que es exactamente lo que un auditor no puede aceptar.
+
+**Guarda el correo del actor y el del objetivo desnormalizados**, además de la referencia. Es lo que
+hace que la traza sobreviva a la eliminación de la cuenta —la única eliminación física del sistema— y
+lo que permite registrar un intento de acceso con un correo que no corresponde a ninguna cuenta.
+
+**`ConfiguracionSistema` es una tabla de una sola fila** y el sistema fuerza su identificador en cada
+guardado en vez de confiar en que nadie cree una segunda. Si hubiera dos, nadie sabría cuál rige y el
+precio de los importados dependería de cuál se leyó primero.
+
+**Los tres conceptos planificados del área son contenido de la tienda pública**, no parámetros.
+`CU-CFG-VIS` está además con su alcance abierto: qué parte de la identidad visual es token fijo del
+sistema de diseño y qué parte es configurable no está decidido, y de eso depende si `IdentidadVisual`
+guarda tres colores o quince.
+"""
+
+# ══════════════════════════════════════════════════════════════════
+#  Conceptos planificados
+# ══════════════════════════════════════════════════════════════════
+
+[[planificado]]
+clave = "Oferta"
+nombre = "Oferta"
+origen = "`CU-PVP-ALT`, `CU-PVP-EDI`, `CU-PVP-BAJ`, `CU-PVP-CON`"
+descripcion = "Un descuento con vigencia propia sobre un producto o sobre un tipo de material."
+atributos = [
+  "descripción : texto",
+  "fecha de inicio : fecha",
+  "fecha de vencimiento : fecha",
+  "tipo de descuento : porcentaje | monto fijo",
+  "valor : decimal «> 0»",
+  "alcance : producto | tipo de material",
+  "estado : Programada | Activa | Vencida | Dada de baja",
+]
+asociaciones = [
+  'Oferta "0..*" -- "0..1" Producto : alcance individual',
+  'Oferta "0..*" -- "0..1" Tipo : alcance por tipo',
+]
+
+[[planificado]]
+clave = "SuscripcionReposicion"
+nombre = "SuscripcionReposicion"
+origen = "`CU-RST-SUS`, `CU-RST-NOT`"
+descripcion = "El interés registrado de un cliente en un producto agotado, único por par cliente-producto."
+atributos = [
+  "creada en : fecha y hora",
+  "estado : Activa | Notificada | Notificación fallida",
+]
+asociaciones = [
+  'SuscripcionReposicion "0..*" -- "1" Producto : espera',
+  'Usuario "1" -- "0..*" SuscripcionReposicion : pide aviso',
+]
+
+[[planificado]]
+clave = "PropuestaRestock"
+nombre = "PropuestaRestock"
+origen = "`CU-RST-PRO`, `CU-RST-APR`"
+descripcion = "La tanda de reposición que el ciclo semanal arma y el Administrador despacha proveedor por proveedor."
+atributos = [
+  "fecha de generación : fecha y hora",
+  "tipo de disparo : automático | manual",
+  "estado : Pendiente de aprobación | Cerrada",
+]
+asociaciones = []
+
+[[planificado]]
+clave = "LineaPropuestaRestock"
+nombre = "LineaPropuestaRestock"
+origen = "`CU-RST-PRO`, `CU-RST-APR`"
+descripcion = "Un producto de la propuesta con su cantidad sugerida y el estado de despacho de su proveedor."
+atributos = [
+  "cantidad sugerida : entero ≥ 0",
+  "suscriptores activos : entero ≥ 0 «al momento de generar»",
+  "estado de despacho : Pendiente | Despachado | Descartado",
+  "añadida a mano : sí / no",
+]
+asociaciones = [
+  'PropuestaRestock "1" *-- "0..*" LineaPropuestaRestock : agrupa',
+  'LineaPropuestaRestock "0..*" -- "1" ProductoEditorial : pide',
+]
+
+[[planificado]]
+clave = "Carrito"
+nombre = "Carrito"
+origen = "`CU-TDA-CAR`"
+descripcion = "La selección en curso de un cliente, que persiste entre sesiones hasta que se compra o se vacía."
+atributos = ["actualizado en : fecha y hora"]
+asociaciones = ['Usuario "1" -- "0..1" Carrito : tiene']
+
+[[planificado]]
+clave = "LineaCarrito"
+nombre = "LineaCarrito"
+origen = "`CU-TDA-CAR`, `CU-TDA-CMP`"
+descripcion = "Un producto del carrito con su cantidad y el precio vigente al momento de la última consulta."
+atributos = [
+  "cantidad : entero ≥ 0",
+  "precio vigente : decimal con 2 decimales",
+  "cubierta con puntos : sí / no",
+]
+asociaciones = [
+  'Carrito "1" *-- "0..*" LineaCarrito : contiene',
+  'LineaCarrito "0..*" -- "1" Producto : refiere a',
+]
+
+[[planificado]]
+clave = "Pedido"
+nombre = "Pedido"
+origen = "`CU-TDA-CMP`, `CU-TDA-INV`, `CU-VTA-REG`, `CU-PED-CON`, `CU-PED-EST`"
+descripcion = "Una compra confirmada, de cualquiera de los dos canales, con su ciclo de vida propio."
+atributos = [
+  "número : texto «único»",
+  "canal : Online | Presencial",
+  "estado : ver DME-07",
+  "correo del invitado : correo «opcional»",
+  "dirección de envío : texto «copiada, no referenciada»",
+  "costo de envío : decimal con 2 decimales",
+  "fecha : fecha y hora",
+]
+asociaciones = [
+  'Usuario "0..1" -- "0..*" Pedido : realiza',
+]
+
+[[planificado]]
+clave = "LineaPedido"
+nombre = "LineaPedido"
+origen = "`CU-TDA-CMP`, `CU-PED-OPC`, `CU-PED-CMP`, `CU-PED-CAN`"
+descripcion = "Un artículo del pedido con estado propio: es lo que permite que un pedido tenga una línea demorada y el resto disponible."
+atributos = [
+  "cantidad : entero ≥ 0",
+  "precio unitario : decimal con 2 decimales «congelado al confirmar»",
+  "cubierta con puntos : sí / no",
+  "estado del ítem : ver DME-08",
+  "decisión ante demora : Pausar | Despacho diferido | Cancelar «opcional»",
+  "compensación acumulada : decimal con 2 decimales",
+]
+asociaciones = [
+  'Pedido "1" *-- "0..*" LineaPedido : compone',
+  'LineaPedido "0..*" -- "1" Producto : vende',
+]
+
+[[planificado]]
+clave = "TransaccionPago"
+nombre = "TransaccionPago"
+origen = "`CU-TDA-CMP`, `CU-TDA-INV`, `CU-VTA-REG`, `CU-STK-DES`"
+descripcion = "El cobro de un pedido, con la referencia de la pasarela cuando el canal la usa."
+atributos = [
+  "medio de pago : Efectivo | Transferencia | Tarjeta | Pasarela",
+  "monto : decimal con 2 decimales",
+  "estado : Aprobado | Rechazado | Pendiente de verificación",
+  "referencia de la pasarela : texto «único, opcional»",
+]
+asociaciones = ['Pedido "1" -- "0..1" TransaccionPago : se cobra con']
+
+[[planificado]]
+clave = "CierreDeCaja"
+nombre = "CierreDeCaja"
+origen = "`CU-CAJ-CIE`"
+descripcion = "El resumen consolidado de una jornada por canal y por medio de pago."
+atributos = [
+  "fecha de la jornada : fecha «único»",
+  "totales por canal : estructura",
+  "totales por medio de pago : estructura",
+  "transacciones incluidas : entero ≥ 0",
+  "transacciones excluidas : entero ≥ 0",
+]
+asociaciones = ['CierreDeCaja "0..1" -- "0..*" TransaccionPago : consolida']
+
+[[planificado]]
+clave = "CasoDevolucion"
+nombre = "CasoDevolucion"
+origen = "`CU-DEV-SOL`, `CU-DEV-RES`"
+descripcion = "Un reclamo sobre un artículo entregado, único por ítem de pedido en cualquier estado."
+atributos = [
+  "motivo : Defecto de fabricación | Error de imprenta | Disconformidad",
+  "descripción : texto largo «opcional»",
+  "evidencia : imagen «obligatoria»",
+  "estado : Pendiente | Resuelto | Rechazado",
+  "resolución : Cambio | Reembolso en puntos «opcional»",
+  "motivo del rechazo : texto largo «opcional»",
+]
+asociaciones = ['CasoDevolucion "0..1" -- "1" LineaPedido : reclama']
+
+[[planificado]]
+clave = "ArticuloRetenido"
+nombre = "ArticuloRetenido"
+origen = "`CU-STK-CON`, `CU-STK-DES`, `CU-STK-ADM`, `CU-STK-VEN`"
+descripcion = "Una unidad guardada en el local a nombre de un cliente, con su propia fecha de vencimiento."
+atributos = [
+  "fecha de ingreso : fecha",
+  "fecha de vencimiento : fecha «editable con motivo»",
+  "valor : decimal con 2 decimales",
+  "estado : ver DME-12",
+]
+asociaciones = [
+  'Usuario "1" -- "0..*" ArticuloRetenido : tiene guardado',
+  'ArticuloRetenido "0..*" -- "1" Producto : es una unidad de',
+]
+
+[[planificado]]
+clave = "LotePuntos"
+nombre = "LotePuntos"
+origen = "`CU-PTS-CON`, `CU-PTS-CJE`, `CU-PTS-CAD`, `CU-PTS-ADM`"
+descripcion = "Un bloque de puntos acreditado de una vez, con su propia caducidad y su propio saldo residual."
+atributos = [
+  "cantidad : entero ≥ 0 «acreditada»",
+  "disponible : entero ≥ 0 «saldo residual»",
+  "origen : Compra | Reembolso | Compensación | Ajuste manual",
+  "fecha de acreditación : fecha y hora",
+  "fecha de caducidad : fecha",
+  "estado : ver DME-09",
+]
+asociaciones = ['Usuario "1" -- "0..*" LotePuntos : acumula']
+
+[[planificado]]
+clave = "MovimientoPuntos"
+nombre = "MovimientoPuntos"
+origen = "`CU-PTS-CON`, `CU-PTS-ADM`"
+descripcion = "Cada acreditación y cada débito con su saldo resultante, que es lo que el cliente ve como historial."
+atributos = [
+  "tipo : Acreditación | Débito",
+  "cantidad : entero ≥ 0",
+  "saldo resultante : entero ≥ 0",
+  "motivo : texto «obligatorio en el ajuste manual»",
+  "ocurrido en : fecha y hora",
+]
+asociaciones = [
+  'LotePuntos "0..*" -- "0..*" MovimientoPuntos : consume o alimenta',
+]
+
+[[planificado]]
+clave = "Banner"
+nombre = "Banner"
+origen = "`CU-CFG-BAN`"
+descripcion = "Una imagen de la portada de la tienda, con su posición en la galería."
+atributos = ["imagen : imagen", "posición : entero ≥ 0"]
+asociaciones = []
+
+[[planificado]]
+clave = "ContenidoFAQ"
+nombre = "ContenidoFAQ"
+origen = "`CU-CFG-FAQ`"
+descripcion = "El texto de las preguntas frecuentes, editado en Markdown y publicado tal cual."
+atributos = ["contenido : texto largo «Markdown»", "actualizado en : fecha y hora"]
+asociaciones = []
+
+[[planificado]]
+clave = "IdentidadVisual"
+nombre = "IdentidadVisual"
+origen = "`CU-CFG-VIS` *(alcance abierto: ítem P-07)*"
+descripcion = "Nombre, logo, paleta y datos públicos de contacto de la tienda. Fila única, como la configuración."
+atributos = [
+  "nombre de la tienda : texto",
+  "logo : imagen",
+  "color primario / secundario / acento : texto «HEX»",
+  "fondo : color sólido | imagen",
+  "correo de contacto : correo",
+  "enlaces a redes : estructura",
+]
+asociaciones = []
+
+# ══════════════════════════════════════════════════════════════════
+#  Ciclos de vida (DME)
+# ══════════════════════════════════════════════════════════════════
+
+[[ciclo]]
+id = "DME-01"
+concepto = "Cuenta de usuario"
+estado = "construido"
+modelo = "accounts.Usuario"
+campo = "estado"
+nota = """
+**La cuenta dada de baja se congela, no se edita.** Si se pudiera, quedarían cambios preparados sobre
+una cuenta dormida —otro correo, un rol más alto— que recién surtirían efecto cuando alguien la
+reactivara. Congelarla obliga a que todo camino de vuelta al acceso pase por una reactivación
+explícita y auditada.
+
+**Reactivar devuelve a «pendiente de activación» y no a «activo».** Quien vuelve tiene que elegir
+contraseña de nuevo, porque no hay forma de saber quién tuvo acceso al correo mientras la cuenta
+estuvo de baja.
+
+**La eliminación física es el único borrado del sistema y solo alcanza a lo que nunca se usó.** No
+alcanza con estar pendiente: una cuenta reactivada también lo está, y ésa sí tiene historial. La
+prueba de que nunca se usó es no tener ningún inicio de sesión registrado.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente de activación"
+evento = "alta de personal"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activo"
+evento = "registro de cliente"
+
+[[ciclo.transiciones]]
+de = "Pendiente de activación"
+a = "Activo"
+evento = "activación con el enlace"
+
+[[ciclo.transiciones]]
+de = "Pendiente de activación"
+a = "*"
+evento = "eliminación (nunca inició sesión)"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Inactivo"
+evento = "baja"
+
+[[ciclo.transiciones]]
+de = "Inactivo"
+a = "Pendiente de activación"
+evento = "reactivación"
+
+[[ciclo]]
+id = "DME-02"
+concepto = "Proveedor editorial"
+estado = "construido"
+modelo = "suppliers.Proveedor"
+campo = "estado"
+nota = """
+El ciclo es simple, pero la baja **no es cosmética**: saca al proveedor del filtro de remitentes del
+pipeline, de modo que sus correos dejan de encolarse. Hay además una segunda bandera independiente
+del estado —el procesamiento de novedades— porque la relación comercial puede estar viva y el
+parseo de sus correos apagado: un proveedor que manda las novedades en un formato que el modelo lee
+mal se registra igual, pero no conviene que alimente el pipeline.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activo"
+evento = "alta"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Inactivo"
+evento = "baja"
+
+[[ciclo.transiciones]]
+de = "Inactivo"
+a = "Activo"
+evento = "reactivación"
+
+[[ciclo]]
+id = "DME-03"
+concepto = "Correo de proveedor"
+estado = "construido"
+modelo = "suppliers.CorreoProveedor"
+campo = "estado"
+nota = """
+**Éste es el ciclo donde vive la regla de que nada costoso se ejecuta sin aprobación explícita.** El
+correo entra en «Pendiente» y se queda ahí: la transición a «En proceso» la dispara una persona, no
+el reloj.
+
+**«Fallido» no vuelve a «Descartado» y no es lo mismo.** Un fallo puede deberse a una indisponibilidad
+transitoria del servicio de modelo de lenguaje y no al contenido del mensaje; descartarlo perdería un
+anuncio de novedades legítimo. Por eso el correo fallido permanece en la cola y se puede reprocesar.
+
+**El descarte exige motivo.** Una cola llena de descartes sin explicación no permite después decidir
+a qué proveedores conviene dejarles el procesamiento habilitado.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente de aprobación"
+evento = "el ciclo de monitoreo lo encola"
+
+[[ciclo.transiciones]]
+de = "Pendiente de aprobación"
+a = "Descartado"
+evento = "el Administrador lo descarta / motivo obligatorio"
+
+[[ciclo.transiciones]]
+de = "Pendiente de aprobación"
+a = "En proceso"
+evento = "el Administrador lo aprueba"
+
+[[ciclo.transiciones]]
+de = "En proceso"
+a = "Procesado"
+evento = "la extracción generó borradores"
+
+[[ciclo.transiciones]]
+de = "En proceso"
+a = "Falló el procesamiento"
+evento = "el modelo no respondió o no identificó productos"
+
+[[ciclo.transiciones]]
+de = "Falló el procesamiento"
+a = "En proceso"
+evento = "reprocesamiento"
+
+[[ciclo.transiciones]]
+de = "Procesado"
+a = "En proceso"
+evento = "reprocesamiento / reemplaza los borradores abiertos"
+
+[[ciclo]]
+id = "DME-04"
+concepto = "Borrador de producto"
+estado = "construido"
+modelo = "catalog.BorradorProducto"
+campo = "estado"
+nota = """
+**«Incompleto» y «Pendiente de revisión» son los dos estados abiertos**, y la diferencia entre ellos
+es qué le falta: uno tiene campos bloqueantes vacíos y el otro no. Los dos admiten decisión.
+
+**Confirmado y rechazado son terminales.** Un borrador confirmado ya es un producto y uno rechazado
+ya se descartó; el reprocesamiento del correo que los originó reemplaza los que sigan abiertos y no
+toca a éstos.
+
+**La confirmación no forma una asociación permanente con el producto que crea.** La relación
+«el borrador produjo este producto» es una dependencia de proceso —sirve para auditar de dónde salió
+un producto— y no una asociación del dominio en tiempo de ejecución.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente de revisión"
+evento = "extracción completa"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Extracción incompleta"
+evento = "faltan campos bloqueantes"
+
+[[ciclo.transiciones]]
+de = "Extracción incompleta"
+a = "Pendiente de revisión"
+evento = "el Administrador completa los campos"
+
+[[ciclo.transiciones]]
+de = "Pendiente de revisión"
+a = "Confirmado"
+evento = "confirmar / crea el producto"
+
+[[ciclo.transiciones]]
+de = "Pendiente de revisión"
+a = "Rechazado"
+evento = "rechazar / motivo obligatorio"
+
+[[ciclo.transiciones]]
+de = "Extracción incompleta"
+a = "Rechazado"
+evento = "rechazar / motivo obligatorio"
+
+[[ciclo]]
+id = "DME-05"
+concepto = "Sesión de revisión"
+estado = "construido"
+modelo = "catalog.SesionRevision"
+campo = "estado"
+nota = """
+Dos estados y un ciclo que no vuelve, pero el cierre no es una formalidad: **es lo que dispara los
+correos de pedido consolidado**, uno por proveedor involucrado en las confirmaciones de esa sesión.
+Por eso el cierre es una acción deliberada y no el efecto de abandonar la pantalla.
+
+La sesión es **por revisor**: dos administradores revisando simultáneamente constituyen dos tandas y
+producen dos correos separados al mismo proveedor, que es lo correcto.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Abierta"
+evento = "primera confirmación o rechazo"
+
+[[ciclo.transiciones]]
+de = "Abierta"
+a = "Cerrada"
+evento = "cierre explícito / invoca CU-RST-PED por proveedor"
+
+[[ciclo]]
+id = "DME-06"
+concepto = "Producto"
+estado = "construido"
+modelo = "catalog.Producto"
+campo = "estado"
+nota = """
+**«Cancelado por editorial» es terminal y del que no se retorna.** Un título cancelado no llega
+nunca, y por eso se reembolsa el 100 %. La baja de catálogo rechaza expresamente un producto en ese
+estado en lugar de descatalogarlo, y la reactivación tampoco lo admite: moverlo a un estado del que
+sí se retorna borraría la única marca de que ese título no va a llegar nunca.
+
+**«Descatalogado» sí vuelve.** Es la baja lógica del catálogo, y conserva el producto en el
+inventario interno y en el historial.
+
+**El material no editorial no admite «Pre-venta» ni «Cancelado por editorial»**, y eso se valida en
+el concepto y no escondiendo la opción en la pantalla.
+
+**«Demorado» no aparece acá porque no es un estado**, es un indicador que acompaña a «Pre-venta».
+Ver el área del producto.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activo"
+evento = "alta con stock inmediato"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pre-venta"
+evento = "alta con fecha de llegada futura (solo editorial)"
+
+[[ciclo.transiciones]]
+de = "Pre-venta"
+a = "Activo"
+evento = "confirmación del ingreso físico del lote"
+
+[[ciclo.transiciones]]
+de = "Pre-venta"
+a = "Cancelado por editorial"
+evento = "cancelación en lote (solo editorial)"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Agotado"
+evento = "el stock llegó a cero"
+
+[[ciclo.transiciones]]
+de = "Agotado"
+a = "Activo"
+evento = "reposición"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Descatalogado"
+evento = "baja del catálogo"
+
+[[ciclo.transiciones]]
+de = "Agotado"
+a = "Descatalogado"
+evento = "baja del catálogo"
+
+[[ciclo.transiciones]]
+de = "Descatalogado"
+a = "Activo"
+evento = "reactivación"
+
+[[ciclo]]
+id = "DME-07"
+concepto = "Pedido"
+estado = "planificado"
+origen = "`CU-TDA-CMP` y RF-18, con las transiciones automáticas de `CU-ALT-TRA` y `CU-ALT-DEM`"
+nota = """
+**Dos secuencias de entrada, no una.** Un pedido con todo en stock nace en «Pendiente de armado»; uno
+que contenga al menos un producto en pre-venta nace en «Esperando stock de pre-venta», aunque el
+resto de sus líneas esté disponible.
+
+**Dos de los estados no admiten transición manual.** «Esperando stock de pre-venta» y «Esperando
+artículo demorado» solo salen por un proceso del sistema, y el intento de avanzarlos a mano se
+rechaza. El resto de la secuencia sí la avanza el Administrador, un paso por vez y sin retroceso:
+cualquier estado ya alcanzado es irreversible desde la interfaz.
+
+**«Esperando artículo demorado» se alcanza por dos caminos distintos** —una demora comunicada por el
+proveedor antes de la fecha, o un lote que llega incompleto en la fecha— y en los dos casos activa
+las tres opciones que se le ofrecen al Cliente.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente de armado"
+evento = "compra con todo en stock"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Esperando stock de pre-venta"
+evento = "compra con al menos una pre-venta"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Despachado"
+evento = "venta presencial (el cliente retira en el momento)"
+
+[[ciclo.transiciones]]
+de = "Esperando stock de pre-venta"
+a = "Pendiente de armado"
+evento = "ingreso confirmado / automático"
+
+[[ciclo.transiciones]]
+de = "Esperando stock de pre-venta"
+a = "Esperando artículo demorado"
+evento = "lote parcial o demora / automático"
+
+[[ciclo.transiciones]]
+de = "Pendiente de armado"
+a = "Armado"
+evento = "el Administrador avanza"
+
+[[ciclo.transiciones]]
+de = "Armado"
+a = "Esperando artículo demorado"
+evento = "demora registrada / automático"
+
+[[ciclo.transiciones]]
+de = "Esperando artículo demorado"
+a = "Armado"
+evento = "el artículo llegó / automático"
+
+[[ciclo.transiciones]]
+de = "Armado"
+a = "Empaquetado"
+evento = "el Administrador avanza"
+
+[[ciclo.transiciones]]
+de = "Empaquetado"
+a = "Despachado"
+evento = "el Administrador avanza"
+
+[[ciclo]]
+id = "DME-08"
+concepto = "Línea de pedido"
+estado = "planificado"
+origen = "`CU-PED-OPC`, `CU-PED-CAN` y `CU-TDA-CMP`"
+nota = """
+**Es el ciclo que hace posible el módulo 08.** Sin estado por línea, un pedido con un artículo
+demorado estaría demorado entero y la opción «despachar lo disponible ahora» no se podría
+representar: son las líneas disponibles las que avanzan a empaquetado mientras la demorada se queda.
+
+**«Cancelado con reembolso en puntos» es terminal y no arrastra al pedido.** Cancelar una línea no
+cambia necesariamente el estado del pedido que la contiene, si el pedido tiene otras líneas no
+afectadas.
+
+**Estar en «Esperando artículo demorado» no dice si el Cliente respondió.** La decisión es un atributo
+aparte, y por eso el vencimiento de la ventana se evalúa mirando la decisión y no el estado: «decidió
+pausar» y «todavía no respondió» comparten el mismo estado.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Disponible"
+evento = "el producto tenía stock"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Reservado"
+evento = "el producto estaba en pre-venta"
+
+[[ciclo.transiciones]]
+de = "Reservado"
+a = "Disponible"
+evento = "ingreso confirmado"
+
+[[ciclo.transiciones]]
+de = "Reservado"
+a = "Esperando artículo demorado"
+evento = "demora registrada"
+
+[[ciclo.transiciones]]
+de = "Disponible"
+a = "Esperando artículo demorado"
+evento = "demora registrada"
+
+[[ciclo.transiciones]]
+de = "Esperando artículo demorado"
+a = "Disponible"
+evento = "el artículo llegó"
+
+[[ciclo.transiciones]]
+de = "Esperando artículo demorado"
+a = "Cancelado con reembolso en puntos"
+evento = "opción 3 / reembolso íntegro"
+
+[[ciclo.transiciones]]
+de = "Reservado"
+a = "Cancelado con reembolso en puntos"
+evento = "cancelación en lote del título"
+
+[[ciclo.transiciones]]
+de = "Disponible"
+a = "Empaquetado"
+evento = "el pedido avanza"
+
+[[ciclo.transiciones]]
+de = "Empaquetado"
+a = "Despachado"
+evento = "el pedido se despacha"
+
+[[ciclo]]
+id = "DME-09"
+concepto = "Lote de puntos"
+estado = "planificado"
+origen = "`CU-PTS-CJE`, `CU-PTS-CAD` y `CU-PTS-ADM`"
+nota = """
+**«Agotado» y «Vencido» no son lo mismo y hay que distinguirlos.** Un lote agotado se consumió: sus
+puntos se gastaron y el cliente recibió algo a cambio. Un lote vencido caducó sin usarse. Fundirlos
+en un solo estado terminal haría imposible responder cuántos puntos perdió un cliente por no usarlos,
+que es exactamente el dato que la notificación de caducidad le informa.
+
+**El consumo es por caducidad más próxima**, no por antigüedad de acreditación. Es una diferencia real
+cuando un ajuste manual crea un lote con caducidad distinta de la estándar.
+
+**Un lote con puntos comprometidos en un canje sin confirmar no se vence:** el ciclo de caducidad
+difiere la invalidación hasta que la transacción concurrente se resuelva.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activo"
+evento = "acreditación (compra, reembolso, compensación o ajuste)"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Activo"
+evento = "consumo parcial / reduce el disponible"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Agotado"
+evento = "el disponible llegó a cero"
+
+[[ciclo.transiciones]]
+de = "Activo"
+a = "Vencido"
+evento = "se alcanzó la fecha de caducidad"
+
+[[ciclo]]
+id = "DME-10"
+concepto = "Oferta"
+estado = "planificado"
+origen = "`CU-PVP-ALT`, `CU-PVP-EDI`, `CU-PVP-BAJ`"
+nota = """
+**Los dos finales tienen el mismo efecto sobre los precios y distinto efecto sobre el log.** El
+vencimiento automático y la baja manual anticipada restauran igual el precio original en los dos
+canales; lo que cambia es quién figura como actor de la operación, el Temporizador o el
+Administrador. Fundirlos en un estado perdería esa diferencia.
+
+**Ni «Vencida» ni «Dada de baja» son editables ni reactivables.** Para volver a aplicar el descuento
+hay que crear una oferta nueva.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Programada"
+evento = "alta con fecha de inicio futura"
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activa"
+evento = "alta con fecha de inicio de hoy o anterior"
+
+[[ciclo.transiciones]]
+de = "Programada"
+a = "Activa"
+evento = "llegó la fecha de inicio / automático"
+
+[[ciclo.transiciones]]
+de = "Activa"
+a = "Vencida"
+evento = "llegó la fecha de vencimiento / automático"
+
+[[ciclo.transiciones]]
+de = "Activa"
+a = "Dada de baja"
+evento = "baja anticipada del Administrador"
+
+[[ciclo.transiciones]]
+de = "Programada"
+a = "Dada de baja"
+evento = "baja anticipada del Administrador"
+
+[[ciclo]]
+id = "DME-11"
+concepto = "Caso de devolución"
+estado = "planificado"
+origen = "`CU-DEV-SOL`, `CU-DEV-RES`"
+nota = """
+Los tres estados son los que la ficha declara, y el punto está en que **los dos finales son
+terminales por identidad y no solo por flujo**: no se puede abrir un caso nuevo sobre el mismo ítem
+del mismo pedido en ningún estado, así que un caso rechazado no se puede reintentar disfrazado de
+caso nuevo.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente"
+evento = "el Cliente abre el reclamo con evidencia"
+
+[[ciclo.transiciones]]
+de = "Pendiente"
+a = "Resuelto"
+evento = "cambio autorizado o reembolso en puntos"
+
+[[ciclo.transiciones]]
+de = "Pendiente"
+a = "Rechazado"
+evento = "el Administrador rechaza / motivo obligatorio"
+
+[[ciclo]]
+id = "DME-12"
+concepto = "Artículo retenido en el local"
+estado = "planificado"
+origen = "`CU-STK-CON`, `CU-STK-DES`, `CU-STK-ADM`, `CU-STK-VEN`"
+nota = """
+**«Próximo a vencer» no es un estado, es una etiqueta visual** derivada de la fecha: la ficha la
+describe como un destacado del listado y no como una transición. Modelarla como estado obligaría a un
+proceso que la escriba y a otro que la saque.
+
+**El vencimiento se comporta distinto según haya o no un despacho en curso.** Un artículo disponible
+que vence vuelve al stock general sin reembolso; uno con despacho pendiente no se reintegra, se le
+extienden tres días y se alerta al Administrador. Es la única extensión automática del sistema.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Disponible"
+evento = "el artículo demorado llegó y quedó retenido"
+
+[[ciclo.transiciones]]
+de = "Disponible"
+a = "Pendiente de despacho"
+evento = "el Cliente solicita el envío"
+
+[[ciclo.transiciones]]
+de = "Pendiente de despacho"
+a = "Disponible"
+evento = "el pago del envío falló"
+
+[[ciclo.transiciones]]
+de = "Pendiente de despacho"
+a = "Despachado"
+evento = "el local confirma la salida física"
+
+[[ciclo.transiciones]]
+de = "Disponible"
+a = "Vencido y devuelto al stock"
+evento = "se alcanzó la fecha de vencimiento / automático"
+
+[[ciclo]]
+id = "DME-13"
+concepto = "Propuesta de restock"
+estado = "planificado"
+origen = "`CU-RST-PRO`, `CU-RST-APR`"
+nota = """
+Dos estados en la cabecera y tres en cada línea, y la relación entre ambos es lo interesante: **la
+propuesta se cierra sola cuando ya no queda ningún proveedor pendiente**, despachado o descartado. No
+hay una acción de cierre.
+
+Mientras haya una propuesta pendiente sin resolver, el ciclo no genera otra: la ficha lo declara como
+excepción del proceso automático, y es un invariante de la cabecera.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Pendiente de aprobación"
+evento = "ciclo semanal o disparo manual"
+
+[[ciclo.transiciones]]
+de = "Pendiente de aprobación"
+a = "Cerrada"
+evento = "todos los proveedores despachados o descartados / automático"
+
+[[ciclo]]
+id = "DME-14"
+concepto = "Suscripción de reposición"
+estado = "planificado"
+origen = "`CU-RST-SUS`, `CU-RST-NOT`"
+nota = """
+**«Notificación fallida» existe para que un fallo de envío no le saque el turno a nadie.** La
+suscripción se marca pero no sale de la lista de espera, así que el suscriptor conserva su posición
+cronológica. Sin ese estado, el único registro del fallo sería una entrada de log y el cliente
+perdería su lugar sin que nadie lo note.
+"""
+
+[[ciclo.transiciones]]
+de = "*"
+a = "Activa"
+evento = "el Cliente pide el aviso sobre un producto agotado"
+
+[[ciclo.transiciones]]
+de = "Activa"
+a = "*"
+evento = "el Cliente cancela el aviso"
+
+[[ciclo.transiciones]]
+de = "Activa"
+a = "Notificada"
+evento = "ingresó stock y le tocó el turno FIFO"
+
+[[ciclo.transiciones]]
+de = "Activa"
+a = "Notificación fallida"
+evento = "tres reintentos de envío fallidos / conserva el turno"
+
+[[ciclo.transiciones]]
+de = "Notificación fallida"
+a = "Notificada"
+evento = "reenvío exitoso"
+
+# ══════════════════════════════════════════════════════════════════
+#  Invariantes
+# ══════════════════════════════════════════════════════════════════
+
+[[invariante]]
+regla = "Todo producto tiene código, y el código no se repite ni cambia una vez asignado."
+donde = "Restricción de base + validación del concepto"
+tecnico = "columna `UNIQUE` sobre `codigo`; el valor lo deriva `Producto.save()` de la clave primaria"
+
+[[invariante]]
+regla = "Todo producto pertenece a uno de los dos rubros. No existe un producto «suelto»."
+donde = "Validación del concepto"
+tecnico = "`Producto.save()` levanta `ProductoAbstractoError` si la clase no declara rubro"
+
+[[invariante]]
+regla = "Dos productos editoriales no comparten ISBN, salvo que ninguno lo declare."
+donde = "Restricción de base"
+tecnico = "`producto_editorial_unico_por_isbn`, condicionada a ISBN no vacío"
+
+[[invariante]]
+regla = "Dos productos editoriales no comparten la tupla título + volumen + tipo + formato + editorial."
+donde = "Restricción de base, sobre una columna derivada"
+tecnico = "`producto_editorial_unico_por_clave` sobre `clave_edicion`, que `save()` recalcula"
+
+[[invariante]]
+regla = "El tipo de material de un producto pertenece al mismo rubro que el producto."
+donde = "**Comprobación de formulario**"
+tecnico = "`ProductoEditorial.clean()` y `ProductoNoEditorial.clean()`, que solo corren vía `full_clean()`. La confirmación de un borrador usa `objects.create()` y no pasa por ahí"
+
+[[invariante]]
+regla = "El material no editorial no admite pre-venta ni cancelación por editorial."
+donde = "**Comprobación de formulario**"
+tecnico = "`ProductoNoEditorial.clean()` contra `ESTADOS_PERMITIDOS`, por la misma razón que la fila anterior"
+
+[[invariante]]
+regla = "Un formato solo se ofrece para los tipos en los que aplica; sin tipos declarados es universal."
+donde = "**Comprobación de formulario**"
+tecnico = "`Formato.aplica_a()`, que usan el desplegable del alta y la validación del formulario. Ninguna escritura fuera de una pantalla lo consulta"
+
+[[invariante]]
+regla = "Un precio de referencia es único por la combinación editorial + tipo + formato."
+donde = "Restricción de base"
+tecnico = "`precio_unico_por_editorial_tipo_y_formato`"
+
+[[invariante]]
+regla = "Los nombres de los catálogos de clasificación no se repiten, sin distinguir mayúsculas."
+donde = "Restricción de base sobre expresión"
+tecnico = "cinco restricciones `Lower(nombre)`, materializadas como índices únicos"
+
+[[invariante]]
+regla = "Una etiqueta es única dentro de su grupo, no en todo el catálogo."
+donde = "Restricción de base sobre expresión"
+tecnico = "`etiqueta_unica_por_nombre_y_grupo`. «Terror» puede ser un género y una colección"
+
+[[invariante]]
+regla = "Ningún importe del sistema es negativo, y ningún precio de venta es cero."
+donde = "**Comprobación de formulario**"
+tecnico = "validadores `NO_NEGATIVO` y `POSITIVO`. Django los ejecuta en `full_clean()`, no en `save()`, así que la base admitiría un importe negativo escrito por fuera de una pantalla"
+
+[[invariante]]
+regla = "El correo de una cuenta identifica a una sola cuenta y se guarda en minúsculas."
+donde = "Restricción de base + validación del concepto"
+tecnico = "columna `UNIQUE`; `Usuario.save()` normaliza antes de guardar"
+
+[[invariante]]
+regla = "Solo una cuenta activa puede iniciar sesión."
+donde = "Validación del concepto"
+tecnico = "`Usuario.save()` deriva `is_active` del estado, de modo que no puedan desincronizarse"
+
+[[invariante]]
+regla = "Una cuenta solo se elimina físicamente si nunca inició sesión."
+donde = "Validación del concepto"
+tecnico = "`Usuario.se_puede_eliminar`, que exige estado pendiente y ningún inicio registrado"
+
+[[invariante]]
+regla = "Una entrada del log de auditoría no se modifica ni se borra, por ningún rol ni por ningún camino."
+donde = "Validación del concepto"
+tecnico = "`RegistroAuditoria.save()` y `.delete()` levantan `RegistroAuditoriaError`"
+
+[[invariante]]
+regla = "Existe exactamente una configuración del sistema."
+donde = "Validación del concepto"
+tecnico = "`ConfiguracionSistema.save()` fuerza la clave primaria; `delete()` está prohibido"
+
+[[invariante]]
+regla = "El correo comercial de un proveedor identifica a un solo proveedor, sin distinguir mayúsculas."
+donde = "Restricción de base sobre expresión"
+tecnico = "`proveedor_unico_por_correo_comercial`. Es el filtro de remitentes del pipeline"
+
+[[invariante]]
+regla = "Un mensaje de la casilla se encola una sola vez."
+donde = "Restricción de base"
+tecnico = "columna `UNIQUE` sobre `message_id`, que es la clave de idempotencia del ciclo"
+
+[[invariante]]
+regla = "Un borrador declara a lo sumo un nivel de confianza por campo."
+donde = "Restricción de base"
+tecnico = "`confianza_unica_por_campo_del_borrador`"
+
+[[invariante]]
+regla = "Un borrador con un campo de confianza baja sin revisar no se confirma."
+donde = "En lote: validación del concepto. Individualmente: **comprobación de la vista**"
+tecnico = "En lote lo rechaza `revisiones.confirmar(en_lote=True)`; individualmente lo rechaza la vista de detalle antes de invocar al servicio. Un llamador que no sea esa vista confirma igual"
+
+[[invariante]]
+regla = "Un borrador con campos bloqueantes vacíos no se confirma, por ninguna vía."
+donde = "Validación del concepto"
+tecnico = "`revisiones.confirmar()` lo comprueba antes que nada, dentro de la transacción y bajo bloqueo, con `BorradorProducto.campos_bloqueantes_vacios`. Es la comparación que muestra dónde debería estar la fila anterior"
+
+[[invariante]]
+regla = "Un correo de proveedor no se borra mientras tenga borradores que lo referencien."
+donde = "Restricción de base"
+tecnico = "política `proteger` sobre la clave foránea del borrador al correo"
+
+[[invariante]]
+regla = "El coeficiente de importación conserva sus seis decimales hasta después de aplicarse a cada ítem."
+donde = "Restricción de base + cálculo del concepto"
+tecnico = "columna `numeric(10,6)`; el redondeo a la unidad monetaria ocurre sobre el precio final"
+
+# ══════════════════════════════════════════════════════════════════
+#  Qué duplicado previene cada restricción de unicidad
+# ══════════════════════════════════════════════════════════════════
+
+[[unicidad]]
+restriccion = "editorial_unica_por_nombre"
+previene = "«Ivrea» y «IVREA» como dos editoriales distintas, cada una con su propia tabla de precios."
+
+[[unicidad]]
+restriccion = "grupo_etiqueta_unico_por_nombre"
+previene = "Dos ejes «Género» en el filtro de la tienda, con las etiquetas repartidas entre los dos."
+
+[[unicidad]]
+restriccion = "etiqueta_unica_por_nombre_y_grupo"
+previene = "Dos etiquetas «Shonen» dentro de Género. Deja convivir «Terror» como género y como colección, que son dos cosas."
+
+[[unicidad]]
+restriccion = "tipo_unico_por_nombre"
+previene = "«Manga» y «manga» como dos tipos, lo que partiría la tabla de precios y el filtro del inventario."
+
+[[unicidad]]
+restriccion = "formato_unico_por_nombre"
+previene = "Dos formatos «B6», que duplicarían la fila de precio de referencia para el mismo tamaño físico."
+
+[[unicidad]]
+restriccion = "precio_unico_por_editorial_tipo_y_formato"
+previene = "Dos precios de referencia para «Ivrea + Manga + B6». Con dos filas, qué precio rige depende del orden de la consulta."
+
+[[unicidad]]
+restriccion = "producto_unico_por_codigo_de_barras"
+previene = "El mismo artículo cargado dos veces desde envases idénticos. La condición evita que los que no lo declaran choquen entre sí por la cadena vacía."
+
+[[unicidad]]
+restriccion = "producto_editorial_unico_por_isbn"
+previene = "La misma edición cargada dos veces. Un ISBN identifica una edición y nada más."
+
+[[unicidad]]
+restriccion = "producto_editorial_unico_por_clave"
+previene = "El mismo tomo sin ISBN cargado dos veces —el material de fondo viejo no siempre lo trae—, incluso desde dos altas simultáneas."
+
+[[unicidad]]
+restriccion = "proveedor_unico_por_razon_social"
+previene = "«Editorial Ivrea» y «EDITORIAL IVREA» como dos agendas para el mismo interlocutor."
+
+[[unicidad]]
+restriccion = "proveedor_unico_por_correo_comercial"
+previene = "Dos proveedores con la misma dirección: qué proveedor «es» un correo entrante dependería del orden de la consulta."
+
+[[unicidad]]
+restriccion = "confianza_unica_por_campo_del_borrador"
+previene = "Dos niveles de confianza para el mismo campo del mismo borrador, con la revisión marcada en uno solo."
+
+[[unicidad]]
+restriccion = "catalog.Producto.codigo"
+previene = "Dos productos con la misma etiqueta de góndola. Es la identidad de la fila y lo que el Cajero tipea en el mostrador."
+
+[[unicidad]]
+restriccion = "accounts.Usuario.username"
+previene = "Es infraestructura heredada del usuario de Django, no una regla del negocio: el sistema identifica por correo. Se conserva porque quitarla obligaría a reescribir el modelo de usuario entero."
+
+[[unicidad]]
+restriccion = "accounts.Usuario.email"
+previene = "Dos cuentas con el mismo correo, que haría ambigua la identificación en el inicio de sesión y en la recuperación de contraseña."
+
+[[unicidad]]
+restriccion = "suppliers.CorreoProveedor.message_id"
+previene = "El mismo mensaje encolado dos veces por un ciclo que se reintentó o que releyó la casilla."
+
+# ══════════════════════════════════════════════════════════════════
+#  Qué consulta atiende cada índice
+# ══════════════════════════════════════════════════════════════════
+
+[[indice]]
+indice = "catalog.Producto:estado,titulo"
+consulta = "El inventario, que abre filtrando por estado y ordenando por título, y lo hace en cada carga."
+
+[[indice]]
+indice = "catalog.BorradorProducto:estado,creado_en"
+consulta = "«Qué tengo pendiente de revisar», ordenado por llegada. Es la consulta de la pantalla de revisión."
+
+[[indice]]
+indice = "suppliers.CorreoProveedor:estado,-recibido_en"
+consulta = "«Qué correos tengo pendientes de aprobar», con lo más nuevo primero."
+
+[[indice]]
+indice = "core.RegistroAuditoria:objetivo_tipo,objetivo_pk"
+consulta = "«Todo lo que se hizo sobre este producto / esta cuenta / este lote». Sobre un objetivo genérico no hay clave foránea que lo indexe solo."
+
+[[indice]]
+indice = "accounts.IntentoFallido:email"
+consulta = "El conteo de intentos fallidos recientes de un correo, que decide el bloqueo del inicio de sesión."
+
+[[indice]]
+indice = "accounts.IntentoFallido:ocurrido_en"
+consulta = "La ventana temporal de ese mismo conteo: los intentos posteriores a un instante."
+
+# ══════════════════════════════════════════════════════════════════
+#  Criterio de cada política de borrado
+# ══════════════════════════════════════════════════════════════════
+
+[[borrado]]
+politica = "PROTECT"
+criterio = "**Lo apuntado es un catálogo o un origen que no puede desaparecer sin dejar huérfano al que apunta.** Borrarlo tiene que fallar en voz alta, no llevarse datos por delante."
+
+[[borrado]]
+politica = "SET_NULL"
+criterio = "**El vínculo es informativo y la fila sobrevive sin él.** Quién cargó un lote o de qué precio de referencia salió un precio son datos que enriquecen; perderlos no invalida la fila."
+
+[[borrado]]
+politica = "CASCADE"
+criterio = "**Lo apuntado no tiene existencia propia fuera de su dueño.** Un nivel de confianza sin su borrador, o un precio de referencia sin su editorial, no significan nada."
+
+# ══════════════════════════════════════════════════════════════════
+#  Notas por tabla del Modelo de Datos
+# ══════════════════════════════════════════════════════════════════
+
+[nota_de_tabla]
+
+"accounts.Usuario" = """
+Extiende el usuario de Django, así que la tabla conserva sus columnas de infraestructura
+—`password`, `is_staff`, `is_superuser`, `date_joined`— además de las del negocio. `is_active` no se
+escribe a mano: lo deriva el concepto de `estado`, para que los dos no puedan discrepar.
+"""
+
+"core.ConfiguracionSistema" = """
+Una sola fila, con identificador forzado a 1. La credencial del servicio de modelo de lenguaje se
+guarda acá y nunca se devuelve al formulario: la pantalla muestra solo sus últimos caracteres.
+"""
+
+"core.RegistroAuditoria" = """
+El objetivo es genérico: `objetivo_tipo` apunta al catálogo de tipos de contenido de Django y
+`objetivo_pk` a la fila. Los dos correos desnormalizados existen para que la traza sobreviva a la
+eliminación de la cuenta que nombra.
+"""
+
+"catalog.Producto" = """
+La tabla del padre de la jerarquía. `clase` dice de qué hija es cada fila; la escribe el sistema.
+`codigo` admite nulo en la columna porque se deriva de la clave primaria y se asigna en un segundo
+guardado dentro de la misma transacción: el estado intermedio no existe para nadie de afuera.
+"""
+
+"catalog.ProductoEditorial" = """
+`producto_ptr_id` es a la vez clave primaria y clave foránea al padre. `clave_edicion` es la columna
+derivada que recupera como restricción de base la tupla descriptiva que la herencia había partido en
+dos tablas.
+"""
+
+"catalog.LoteAlta" = """
+`cre` lleva seis decimales porque es un cociente y no dinero. `cotizacion` se guarda incluso cuando
+el lote es en pesos —vale 1— para que el cálculo de cualquier ítem se reconstruya sin preguntarse si
+hubo conversión.
+"""
+
+"suppliers.CorreoProveedor" = """
+`message_id` es la clave de idempotencia del ciclo de monitoreo. `remitente` guarda la dirección tal
+como vino y no la del proveedor: si el proveedor cambia su correo, este archivo tiene que seguir
+diciendo desde dónde llegó este mensaje.
+"""
+
+"catalog.BorradorProducto" = """
+Casi todas sus columnas admiten nulo, y ésa es la diferencia de fondo con `catalog_producto`: un
+borrador existe para poder guardar algo incompleto y que una persona lo termine. `reparos` guarda lo
+que el sistema le corrigió al modelo; el nivel de confianza que el modelo declara sobre sí mismo va
+en su propia tabla.
+"""
