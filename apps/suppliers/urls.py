@@ -23,6 +23,12 @@ urlpatterns = [
     # donde cada mensaje espera la aprobación explícita.
     path("correos/", views.CorreoListaView.as_view(), name="correo_lista"),
     path("correos/<int:pk>/", views.CorreoDetalleView.as_view(), name="correo_detalle"),
+    path("correos/<int:pk>/aprobar/", views.AprobarCorreoView.as_view(), name="correo_aprobar"),
+    path(
+        "correos/<int:pk>/reprocesar/",
+        views.ReprocesarCorreoView.as_view(),
+        name="correo_reprocesar",
+    ),
     # CU-CFG-LLM — diagnóstico: si el modelo está vivo y qué entiende cuando se
     # le manda algo.
     path("modelo/", views.DiagnosticoLLMView.as_view(), name="diagnostico_llm"),

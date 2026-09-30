@@ -1,57 +1,43 @@
 {% extends "base_operativo.html" %}
 
-{% block titulo %}Eliminar cuenta pendiente · Longbox{% endblock %}
+{% block titulo %}Eliminar cuenta · Longbox{% endblock %}
 {% block seccion %}Gestión de usuarios{% endblock %}
 
 {% block contenido %}
 {% comment %}
-Confirmación explícita, igual que la baja: es la única eliminación real del
-sistema, así que `signal` se usa acá con intención.
+Confirmación explícita, igual que la baja: es la única eliminación real de una
+cuenta, y lo dice el texto, no un color.
 {% endcomment %}
-<div class="mx-auto max-w-2xl border border-signal bg-ash">
-  <div class="border-b border-line px-6 py-5">
-    <p class="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-signal">
-      Acción irreversible
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'accounts:usuario_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Usuarios del sistema" atras=1 %}</span>
+    <h1>Eliminar la cuenta</h1>
+  </div>
+</header>
+
+<div class="panel panel--atencion formulario--angosto">
+  <p class="fila-2 fuerte">{% include "_iconos.html" with icono="atencion" %}<span>Atención: la eliminación no se puede deshacer.</span></p>
+
+  {% include "accounts/_datos_de_cuenta.html" with cuenta=usuario_objetivo %}
+
+  {% if usuario_objetivo.se_puede_eliminar %}
+    <p>
+      La cuenta se eliminará por completo y su dirección de correo quedará nuevamente
+      disponible.
     </p>
-    <h1 class="mt-2 font-display text-3xl font-bold tracking-wide">Eliminar la cuenta</h1>
-  </div>
+  {% else %}
+    <p class="error-de-campo">
+      Error: la cuenta registra actividad previa, por lo que no puede eliminarse. Para
+      retirarla del sistema debe darse de baja, conservando su historial.
+    </p>
+  {% endif %}
 
-  <dl class="grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 px-6 py-5 text-sm">
-    <dt class="font-mono text-xs uppercase tracking-wider text-static">Nombre</dt>
-    <dd>{{ usuario_objetivo.get_full_name|default:"—" }}</dd>
-
-    <dt class="font-mono text-xs uppercase tracking-wider text-static">Correo</dt>
-    <dd class="font-mono text-xs">{{ usuario_objetivo.email }}</dd>
-
-    <dt class="font-mono text-xs uppercase tracking-wider text-static">Rol</dt>
-    <dd>{{ usuario_objetivo.get_rol_display }}</dd>
-
-    <dt class="font-mono text-xs uppercase tracking-wider text-static">Estado</dt>
-    <dd>{{ usuario_objetivo.get_estado_display }}</dd>
-  </dl>
-
-  <div class="border-t border-line px-6 py-5 text-sm">
-    {% if usuario_objetivo.se_puede_eliminar %}
-      <p>
-        La cuenta se eliminará por completo y su dirección de correo quedará nuevamente
-        disponible.
-      </p>
-    {% else %}
-      {# Estado de error: acá sí hace falta decir por qué no se puede. #}
-      <p class="text-signal">
-        La cuenta registra actividad previa, por lo que no puede eliminarse. Para
-        retirarla del sistema debe darse de baja, conservando su historial.
-      </p>
-    {% endif %}
-  </div>
-
-  <div class="flex items-center gap-6 border-t border-line px-6 py-5">
+  <div class="acciones">
     {% if usuario_objetivo.se_puede_eliminar %}
       <form method="post">
         {% csrf_token %}
-        <div class="marco-boton">
-          <button type="submit" class="boton-primario">Eliminar cuenta</button>
-        </div>
+        <button type="submit" class="boton-primario">Eliminar cuenta</button>
       </form>
     {% endif %}
     {% url 'accounts:usuario_lista' as cancelar %}

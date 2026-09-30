@@ -1,0 +1,18 @@
+{% comment %}
+Los mensajes de una pantalla: éxito, aviso o error. Sin color: el prefijo en
+peso 600 dice de qué se trata (`identidad_visual.md`, Indicadores).
+
+Los mensajes informativos de Django se leen como avisos: la voz del sistema
+tiene tres tipos, no cuatro.
+{% endcomment %}
+{% if messages %}
+  <ul class="mensajes">
+    {% for message in messages %}
+      <li class="mensaje" {% if message.tags == 'error' %}role="alert"{% else %}role="status"{% endif %}>
+        {% if message.tags == 'success' %}{% include "_iconos.html" with icono="listo" %}{% elif message.tags == 'error' %}{% include "_iconos.html" with icono="error" %}{% else %}{% include "_iconos.html" with icono="atencion" %}{% endif %}
+        <span><span class="mensaje__prefijo">{% if message.tags == 'success' %}Listo:{% elif message.tags == 'error' %}Error:{% else %}Atención:{% endif %}</span>
+        {{ message }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

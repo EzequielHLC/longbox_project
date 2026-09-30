@@ -3,440 +3,272 @@
 {% comment %}
 Parámetros globales: lo que el negocio ajusta sin tocar código.
 
-Están todos en una pantalla porque se consultan juntos. Para entender por qué un
-tomo salió a un precio hay que ver cuatro cosas —la tabla, el tipo, el formato y
-el margen— y tenerlas en cuatro pantallas distintas obliga a ir y volver
-perdiendo el hilo. Las etiquetas no entran en el precio, pero son el eje
-descriptivo del catálogo y se administran igual que el resto.
-
-El alta y la edición de cada cosa van aparte y no en línea: cada una tiene sus
-propias validaciones, y resolverlas todas en un mismo formulario haría que un
+El alta y la edición de cada catálogo van aparte y no en línea: cada una tiene
+sus propias validaciones, y resolverlas todas en un mismo formulario haría que un
 error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
 {% endcomment %}
 
 {% block titulo %}Parámetros globales · Longbox{% endblock %}
 {% block seccion %}Parámetros{% endblock %}
 
-{% block cabecera_extra %}
-  {{ block.super }}
-  <style>
-    .bloque-parametro { border-left: 2px solid #2C2A30; }
-    .bloque-parametro > h2 { display: flex; align-items: baseline; gap: 0.75rem; }
-    .regla-acento {
-      height: 1px;
-      background: linear-gradient(90deg, #FF1436 0%, #B0102A 18%, #2C2A30 55%, transparent 100%);
-    }
-  </style>
-{% endblock %}
-
 {% block contenido %}
-<div class="mx-auto max-w-5xl">
-  <h1 class="font-display text-3xl font-bold tracking-wide">Parámetros globales</h1>
-  <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-    Clasificación del catálogo, tabla de precios y valores por defecto del sistema
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Parámetros globales</h1>
+    <p>Clasificación del catálogo, tabla de precios y valores por defecto del sistema.</p>
+  </div>
+</header>
+
+<section class="seccion" aria-labelledby="titulo-calculo">
+  <div class="seccion__titulo"><h2 id="titulo-calculo">{% include "_iconos.html" with icono="precios" %}Cálculo de precios</h2></div>
+  <p class="seccion__bajada">
+    El margen se aplica sobre el precio base de los productos importados. Cambiarlo rige
+    para las altas siguientes: cada producto conserva el margen con el que se cargó.
   </p>
-  <div class="regla-acento mt-4"></div>
 
-  {# ------------------------------------------------------------------ #}
-  <section class="mt-8 bloque-parametro pl-5">
-    <h2 class="font-display text-lg font-semibold tracking-wide">Cálculo de precios</h2>
-    <p class="mt-1 text-sm text-static">
-      El margen se aplica sobre el precio base de los productos importados. Cambiarlo rige
-      para las altas siguientes: cada producto conserva el margen con el que se cargó.
-    </p>
-
-    <form method="post" novalidate class="mt-5 border border-line bg-ash p-6">
-      {% csrf_token %}
-      <div class="grid gap-5 md:grid-cols-2">
-        {% include "_campo.html" with campo=form.margen_ganancia %}
-        {% include "_campo.html" with campo=form.stock_inicial_por_defecto %}
-      </div>
-
-      <div class="mt-6 flex flex-wrap items-center gap-6">
-        <div class="marco-boton">
-          <button type="submit" class="boton-primario">Guardar</button>
-        </div>
-        <p class="font-mono text-[0.65rem] text-static">
-          Última modificación: {{ configuracion.actualizado_en|date:"d/m/Y H:i" }}
-          {% if configuracion.actualizado_por %}
-            · {{ configuracion.actualizado_por.get_full_name|default:configuracion.actualizado_por.email }}
-          {% endif %}
-        </p>
-      </div>
-    </form>
-  </section>
-
-  {# ------------------------------------------------------------------ #}
-  {% comment %}
-  El modelo de lenguaje. Va en esta pantalla porque es un parámetro operativo
-  más (A16), pero en su propio formulario: se toca por otro motivo que el margen
-  —lo cambia quien despliega, no el negocio— y una de sus mitades es una
-  credencial.
-
-  El motivo de que sea configurable y no una variable de entorno: **el sistema se
-  demuestra desplegado**, y el modelo local corre en una máquina que no viaja.
-  Sin poder apuntar a un proveedor remoto desde acá, la mitad del sistema no se
-  puede mostrar fuera de esa máquina.
-  {% endcomment %}
-  <section class="mt-10 bloque-parametro pl-5">
-    <h2 class="font-display text-xl font-semibold tracking-wide">Modelo de lenguaje</h2>
-    <p class="mt-1 max-w-3xl text-sm text-static">
-      Servicio que extrae los datos de los correos de novedades. Después de cambiarlo,
-      verifíquelo en
-      <a href="{% url 'suppliers:diagnostico_llm' %}" class="text-screen hover:text-signal">Diagnóstico
-      del modelo</a>.
-    </p>
-
-    <form method="post" novalidate class="mt-5 border border-line bg-ash p-6">
-      {% csrf_token %}
-      <div class="grid gap-5 md:grid-cols-2">
-        {% include "_campo.html" with campo=form_modelo.llm_modo %}
-        {% include "_campo.html" with campo=form_modelo.llm_modelo %}
-      </div>
-      {% include "_campo.html" with campo=form_modelo.llm_url %}
-
-      <div class="grid gap-5 md:grid-cols-3">
-        {% include "_campo.html" with campo=form_modelo.api_key %}
-        {% include "_campo.html" with campo=form_modelo.llm_timeout %}
-        {% include "_campo.html" with campo=form_modelo.llm_temperatura %}
-      </div>
-
-      {% comment %}
-      La clave nunca se devuelve al formulario: se muestran los últimos cuatro
-      caracteres, que es lo justo para reconocer cuál está puesta. Mostrarla
-      entera convertiría esta pantalla en un lugar del que copiar el secreto.
-      {% endcomment %}
-      {% comment %}
-      Prioridad 2 y no la principal: el modelo de lenguaje es un bloque de esta
-      pantalla, no su decisión. La acción principal es guardar los parámetros
-      del negocio, arriba — dos botones principales compitiendo en la misma
-      pantalla es exactamente lo que la jerarquía vino a resolver.
-      {% endcomment %}
-      <div class="mt-6">
-        <button type="submit" name="guardar_modelo" value="1" class="boton-seccion">
-          Guardar configuración del modelo
-        </button>
-      </div>
-    </form>
-  </section>
-
-  {# ------------------------------------------------------------------ #}
-  <section class="mt-10 bloque-parametro pl-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="font-display text-lg font-semibold tracking-wide">Tipos de material</h2>
-        <p class="mt-1 text-sm text-static">
-          Qué clase de material es. Los tipos marcados por formato piden además el tamaño
-          del tomo al darlo de alta.
-        </p>
-      </div>
-      <a href="{% url 'catalog:tipo_crear' %}" class="boton-seccion">Nuevo tipo</a>
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.margen_ganancia %}
+      {% include "_campo.html" with campo=form.stock_inicial_por_defecto %}
     </div>
 
-    <div class="mt-4 overflow-x-auto border border-line">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                     tracking-[0.15em] text-static">
-            <th class="px-4 py-3 font-medium">Nombre</th>
-            <th class="px-4 py-3 font-medium">Se clasifica por formato</th>
-            <th class="px-4 py-3 font-medium">Estado</th>
-            <th class="px-4 py-3 text-right font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tipo in tipos %}
-            <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-              <td class="px-4 py-3">{{ tipo.nombre }}</td>
-              <td class="px-4 py-3 font-mono text-xs">
-                {% if tipo.usa_formato %}
-                  <span class="text-azure">Sí</span>
-                {% else %}
-                  <span class="text-static">No · precio a mano</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3">
-                <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                             {% if tipo.activo %}border-static text-screen
-                             {% else %}border-line text-static{% endif %}">
-                  {% if tipo.activo %}Activo{% else %}Inactivo{% endif %}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <a href="{% url 'catalog:tipo_editar' tipo.pk %}" class="boton-menor">
-                  <span>Editar</span>
-                </a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" class="px-4 py-6 text-sm text-static">
-                No hay tipos cargados. Sin al menos uno no se puede dar de alta ningún producto.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  {# ------------------------------------------------------------------ #}
-  <section class="mt-10 bloque-parametro pl-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="font-display text-lg font-semibold tracking-wide">Formatos</h2>
-        <p class="mt-1 text-sm text-static">
-          El tamaño del tomo, que es lo que fija su precio. Sin tipos declarados, el
-          formato se ofrece para todos.
-        </p>
-      </div>
-      <a href="{% url 'catalog:formato_crear' %}" class="boton-seccion">Nuevo formato</a>
-    </div>
-
-    <div class="mt-4 overflow-x-auto border border-line">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                     tracking-[0.15em] text-static">
-            <th class="px-4 py-3 font-medium">Nombre</th>
-            <th class="px-4 py-3 font-medium">Medidas</th>
-            <th class="px-4 py-3 font-medium">Se ofrece en</th>
-            <th class="px-4 py-3 font-medium">Estado</th>
-            <th class="px-4 py-3 text-right font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for formato in formatos %}
-            <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-              <td class="px-4 py-3">{{ formato.nombre }}</td>
-              <td class="px-4 py-3 font-mono text-xs text-static">
-                {{ formato.descripcion|default:"—" }}
-              </td>
-              {% comment %}
-              Sin tipos declarados el formato es universal, y decirlo con todas
-              las letras evita que se lea como "todavía no lo configuraron".
-              {% endcomment %}
-              <td class="px-4 py-3 font-mono text-xs">
-                {% if formato.tipos.all %}
-                  {{ formato.tipos.all|join:", " }}
-                {% else %}
-                  <span class="text-static">Todos</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3">
-                <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                             {% if formato.activo %}border-static text-screen
-                             {% else %}border-line text-static{% endif %}">
-                  {% if formato.activo %}Activo{% else %}Inactivo{% endif %}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <a href="{% url 'catalog:formato_editar' formato.pk %}" class="boton-menor">
-                  <span>Editar</span>
-                </a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5" class="px-4 py-6 text-sm text-static">No hay formatos cargados.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  {# ------------------------------------------------------------------ #}
-  <section class="mt-10 bloque-parametro pl-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="font-display text-lg font-semibold tracking-wide">Editoriales</h2>
-        <p class="mt-1 text-sm text-static">
-          Quién publica el material editorial. También se agregan desde la carga de un lote.
-        </p>
-      </div>
-      <a href="{% url 'catalog:editorial_crear' %}" class="boton-seccion">Nueva editorial
-      </a>
-    </div>
-
-    <div class="mt-4 overflow-x-auto border border-line">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                     tracking-[0.15em] text-static">
-            <th class="px-4 py-3 font-medium">Nombre</th>
-            <th class="px-4 py-3 font-medium">Precios cargados</th>
-            <th class="px-4 py-3 font-medium">Estado</th>
-            <th class="px-4 py-3 text-right font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for editorial in editoriales %}
-            <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-              <td class="px-4 py-3">{{ editorial.nombre }}</td>
-              <td class="px-4 py-3 font-mono text-xs
-                         {% if not editorial.cantidad_precios %}text-signal{% endif %}">
-                {{ editorial.cantidad_precios }}
-                {% if not editorial.cantidad_precios %}· sus productos van con precio a mano{% endif %}
-              </td>
-              <td class="px-4 py-3">
-                <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                             {% if editorial.activa %}border-static text-screen
-                             {% else %}border-line text-static{% endif %}">
-                  {% if editorial.activa %}Activa{% else %}Inactiva{% endif %}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <a href="{% url 'catalog:editorial_editar' editorial.pk %}" class="boton-menor">
-                  <span>Editar</span>
-                </a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" class="px-4 py-6 text-sm text-static">
-                No hay editoriales cargadas.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  {# ------------------------------------------------------------------ #}
-  {% comment %}
-  Las etiquetas se fueron a su propia pantalla y acá queda el acceso.
-
-  Es el unico catalogo abierto de los seis: los tipos, los formatos y las
-  editoriales son cerrados y se tocan una vez por semestre, y las etiquetas
-  crecen con cada franquicia, genero y coleccion nueva. Un catalogo que crece
-  necesita buscador, y un buscador dentro de esta pantalla filtraria la seccion
-  equivocada.
-  {% endcomment %}
-  <section class="mt-10 bloque-parametro pl-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="font-display text-lg font-semibold tracking-wide">Etiquetas</h2>
-        <p class="mt-1 text-sm text-static">
-          Sirven para buscar y agrupar productos: franquicia, genero, coleccion.
-          Un producto puede tener varias y ninguna es obligatoria.
-        </p>
-      </div>
-      <a href="{% url 'catalog:etiquetas' %}" class="boton-seccion">Administrar etiquetas
-      </a>
-    </div>
-
-    {% if grupos %}
-      <div class="mt-4 flex flex-wrap gap-2">
-        {% for grupo in grupos %}
-          <a href="{% url 'catalog:etiquetas' %}"
-             class="border px-3 py-1.5 font-mono text-[0.7rem] hover:border-static
-                    {% if grupo.activo %}border-line text-screen{% else %}border-line text-static{% endif %}">
-            {{ grupo.nombre }}
-            <span class="text-static">&middot; {{ grupo.cantidad_etiquetas }}</span>
-            {% if not grupo.activo %}<span class="text-static">&middot; inactivo</span>{% endif %}
-          </a>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="mt-4 border border-line bg-ash px-4 py-3 text-sm text-static">
-        Todavia no hay grupos de etiquetas cargados.
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Guardar</button>
+      <p class="texto-chico secundario">
+        Última modificación: <span class="datos">{{ configuracion.actualizado_en|date:"d/m/Y H:i" }}</span>
+        {% if configuracion.actualizado_por %}· {{ configuracion.actualizado_por.get_full_name|default:configuracion.actualizado_por.email }}{% endif %}
       </p>
-    {% endif %}
-  </section>
+    </div>
+  </form>
+</section>
 
-  {# ------------------------------------------------------------------ #}
-  <section class="mt-10 bloque-parametro pl-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="font-display text-lg font-semibold tracking-wide">
-          Tabla de precios de referencia
-        </h2>
-        <p class="mt-1 text-sm text-static">
-          El precio de venta por editorial, tipo y formato. Es el que se pre-completa al
-          cargar un lote nacional.
-        </p>
-      </div>
-      <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">Nuevo precio</a>
+{% comment %}
+El modelo de lenguaje: un parámetro operativo más, en su propio formulario
+porque se toca por otro motivo que el margen y una de sus mitades es una
+credencial. Es configurable desde acá porque el sistema se demuestra desplegado.
+{% endcomment %}
+<section class="seccion" aria-labelledby="titulo-modelo">
+  <div class="seccion__titulo">
+    <h2 id="titulo-modelo">{% include "_iconos.html" with icono="modelo" %}Modelo de lenguaje</h2>
+    <a href="{% url 'suppliers:diagnostico_llm' %}" class="boton-texto texto-chico"><span>Diagnóstico del modelo</span>{% include "_iconos.html" with icono="siguiente" %}</a>
+  </div>
+  <p class="seccion__bajada">
+    Servicio que extrae los datos de los correos de novedades. Después de cambiarlo,
+    verifíquelo en <a href="{% url 'suppliers:diagnostico_llm' %}">Diagnóstico del modelo</a>.
+  </p>
+
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form_modelo.llm_modo %}
+      {% include "_campo.html" with campo=form_modelo.llm_modelo %}
+    </div>
+    {% include "_campo.html" with campo=form_modelo.llm_url %}
+
+    {% comment %}
+    La clave nunca se devuelve al formulario: se muestran los últimos cuatro
+    caracteres, lo justo para reconocer cuál está puesta.
+    {% endcomment %}
+    <div class="rejilla-3">
+      {% include "_campo.html" with campo=form_modelo.api_key %}
+      {% include "_campo.html" with campo=form_modelo.llm_timeout %}
+      {% include "_campo.html" with campo=form_modelo.llm_temperatura %}
     </div>
 
-    <form method="get" class="mt-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-      <div>
-        <label for="editorial"
-               class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-          Editorial
-        </label>
-        <select id="editorial" name="editorial" class="w-64">
-          <option value="">Todas</option>
-          {% for editorial in editoriales %}
-            <option value="{{ editorial.pk }}"
-                    {% if editorial_elegida == editorial.pk %}selected{% endif %}>
-              {{ editorial.nombre }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="boton-seccion boton-seccion--tenue">Filtrar</button>
-      {% if editorial_elegida %}
-        <a href="{% url 'catalog:parametros' %}"
-           class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static
-                  hover:text-screen">
-          Ver todas
-        </a>
-      {% endif %}
-    </form>
+    {% comment %}
+    Nivel 2 y no el principal: el modelo de lenguaje es un bloque de esta
+    pantalla, no su decisión.
+    {% endcomment %}
+    <div class="acciones">
+      <button type="submit" name="guardar_modelo" value="1" class="boton-seccion">Guardar configuración del modelo</button>
+    </div>
+  </form>
+</section>
 
-    <div class="mt-4 overflow-x-auto border border-line">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                     tracking-[0.15em] text-static">
-            <th class="px-4 py-3 font-medium">Editorial</th>
-            <th class="px-4 py-3 font-medium">Tipo</th>
-            <th class="px-4 py-3 font-medium">Formato</th>
-            <th class="px-4 py-3 text-right font-medium">Precio</th>
-            <th class="px-4 py-3 font-medium">Actualizado</th>
-            <th class="px-4 py-3 text-right font-medium">Acciones</th>
+<section class="seccion" aria-labelledby="titulo-tipos">
+  <div class="seccion__titulo">
+    <h2 id="titulo-tipos">{% include "_iconos.html" with icono="tipo" %}Tipos de material</h2>
+    <a href="{% url 'catalog:tipo_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo tipo</span></a>
+  </div>
+  <p class="seccion__bajada">
+    Qué clase de material es. Los tipos marcados por formato piden además el tamaño del
+    tomo al darlo de alta.
+  </p>
+
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Nombre</th><th>Se clasifica por formato</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for tipo in tipos %}
+          <tr>
+            <td class="celda-principal">{{ tipo.nombre }}</td>
+            <td>{% if tipo.usa_formato %}Sí{% else %}<span class="secundario">No · precio a mano</span>{% endif %}</td>
+            <td><span class="marca-estado{% if not tipo.activo %} marca-estado--apagado{% endif %}">{% if tipo.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+            <td class="acciones-de-fila"><a href="{% url 'catalog:tipo_editar' tipo.pk %}" class="boton-menor">Editar</a></td>
           </tr>
-        </thead>
-        <tbody>
-          {% for precio in precios %}
-            <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-              <td class="px-4 py-3">{{ precio.editorial }}</td>
-              <td class="px-4 py-3">{{ precio.tipo }}</td>
-              <td class="px-4 py-3">{{ precio.formato }}</td>
-              <td class="px-4 py-3 text-right font-mono text-xs">${{ precio.pvp }}</td>
-              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-                {{ precio.actualizado_en|date:"d/m/Y H:i" }}
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 text-right">
-                <div class="flex justify-end gap-3">
-                  <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">
-                    <span>Editar</span>
-                  </a>
-                  <a href="{% url 'catalog:precio_eliminar' precio.pk %}"
-                     class="boton-menor boton-menor--critico">
-                    <span>Eliminar</span>
-                  </a>
-                </div>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6" class="px-4 py-6 text-sm text-static">
-                {% if editorial_elegida %}
-                  Esta editorial no tiene precios cargados: sus productos se dan de alta con
-                  precio a mano.
-                {% else %}
-                  No hay precios cargados. Sin ellos, cada alta nacional pide el precio a mano.
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+        {% empty %}
+          <tr><td colspan="4" class="tabla-vacia">No hay tipos cargados. Sin al menos uno no se puede dar de alta ningún producto.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="seccion" aria-labelledby="titulo-formatos">
+  <div class="seccion__titulo">
+    <h2 id="titulo-formatos">{% include "_iconos.html" with icono="formato" %}Formatos</h2>
+    <a href="{% url 'catalog:formato_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo formato</span></a>
+  </div>
+  <p class="seccion__bajada">
+    El tamaño del tomo, que es lo que fija su precio. Sin tipos declarados, el formato se
+    ofrece para todos.
+  </p>
+
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Nombre</th><th>Medidas</th><th>Se ofrece en</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for formato in formatos %}
+          <tr>
+            <td class="celda-principal">{{ formato.nombre }}</td>
+            <td class="datos secundario">{{ formato.descripcion|default:"—" }}</td>
+            {% comment %}
+            Sin tipos declarados el formato es universal, y decirlo con todas las
+            letras evita que se lea como «todavía no lo configuraron».
+            {% endcomment %}
+            <td>{% if formato.tipos.all %}{{ formato.tipos.all|join:", " }}{% else %}<span class="secundario">Todos</span>{% endif %}</td>
+            <td><span class="marca-estado{% if not formato.activo %} marca-estado--apagado{% endif %}">{% if formato.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+            <td class="acciones-de-fila"><a href="{% url 'catalog:formato_editar' formato.pk %}" class="boton-menor">Editar</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="tabla-vacia">No hay formatos cargados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="seccion" aria-labelledby="titulo-editoriales">
+  <div class="seccion__titulo">
+    <h2 id="titulo-editoriales">{% include "_iconos.html" with icono="editorial" %}Editoriales</h2>
+    <a href="{% url 'catalog:editorial_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nueva editorial</span></a>
+  </div>
+  <p class="seccion__bajada">Quién publica el material editorial. También se agregan desde la carga de un lote.</p>
+
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Nombre</th><th>Precios cargados</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for editorial in editoriales %}
+          <tr>
+            <td class="celda-principal">{{ editorial.nombre }}</td>
+            <td class="datos">
+              {{ editorial.cantidad_precios }}
+              {% if not editorial.cantidad_precios %}<span class="estado estado--atencion">· sus productos van con precio a mano</span>{% endif %}
+            </td>
+            <td><span class="marca-estado{% if not editorial.activa %} marca-estado--apagado{% endif %}">{% if editorial.activa %}Activa{% else %}Inactiva{% endif %}</span></td>
+            <td class="acciones-de-fila"><a href="{% url 'catalog:editorial_editar' editorial.pk %}" class="boton-menor">Editar</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="tabla-vacia">No hay editoriales cargadas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% comment %}
+Las etiquetas tienen su propia pantalla: son el único catálogo abierto, y un
+catálogo que crece necesita buscador. Acá queda el acceso.
+{% endcomment %}
+<section class="seccion" aria-labelledby="titulo-etiquetas">
+  <div class="seccion__titulo">
+    <h2 id="titulo-etiquetas">{% include "_iconos.html" with icono="etiqueta" %}Etiquetas</h2>
+    <a href="{% url 'catalog:etiquetas' %}" class="boton-seccion"><span>Administrar etiquetas</span>{% include "_iconos.html" with icono="siguiente" %}</a>
+  </div>
+  <p class="seccion__bajada">
+    Sirven para buscar y agrupar productos: franquicia, genero, coleccion.
+    Un producto puede tener varias y ninguna es obligatoria.
+  </p>
+
+  {% if grupos %}
+    <div class="fila-2">
+      {% for grupo in grupos %}
+        <a href="{% url 'catalog:etiquetas' %}" class="ficha{% if not grupo.activo %} secundario{% endif %}">
+          {{ grupo.nombre }} <span class="datos secundario">· {{ grupo.cantidad_etiquetas }}</span>
+          {% if not grupo.activo %}<span>· inactivo</span>{% endif %}
+        </a>
+      {% endfor %}
     </div>
-  </section>
-</div>
+  {% else %}
+    <p class="secundario">Todavia no hay grupos de etiquetas cargados.</p>
+  {% endif %}
+</section>
+
+<section class="seccion" aria-labelledby="titulo-precios">
+  <div class="seccion__titulo">
+    <h2 id="titulo-precios">{% include "_iconos.html" with icono="precios" %}Tabla de precios de referencia</h2>
+    <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo precio</span></a>
+  </div>
+  <p class="seccion__bajada">
+    El precio de venta por editorial, tipo y formato. Es el que se pre-completa al cargar
+    un lote nacional.
+  </p>
+
+  <form method="get" class="barra-de-herramientas">
+    <div class="campo">
+      <label for="editorial" class="etiqueta">Editorial</label>
+      <select id="editorial" name="editorial">
+        <option value="">Todas</option>
+        {% for editorial in editoriales %}
+          <option value="{{ editorial.pk }}" {% if editorial_elegida == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+    {% if editorial_elegida %}
+      <a href="{% url 'catalog:parametros' %}" class="boton-texto">Ver todas</a>
+    {% endif %}
+  </form>
+
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Editorial</th><th>Tipo</th><th>Formato</th><th class="numero">Precio</th><th>Actualizado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for precio in precios %}
+          <tr>
+            <td>{{ precio.editorial }}</td>
+            <td>{{ precio.tipo }}</td>
+            <td>{{ precio.formato }}</td>
+            <td class="numero">${{ precio.pvp }}</td>
+            <td class="datos sin-cortar secundario">{{ precio.actualizado_en|date:"d/m/Y H:i" }}</td>
+            <td class="acciones-de-fila">
+              <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">Editar</a>
+              <a href="{% url 'catalog:precio_eliminar' precio.pk %}" class="boton-menor boton-menor--critico">Eliminar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="tabla-vacia">
+              {% if editorial_elegida %}
+                Esta editorial no tiene precios cargados: sus productos se dan de alta con precio a mano.
+              {% else %}
+                No hay precios cargados. Sin ellos, cada alta nacional pide el precio a mano.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

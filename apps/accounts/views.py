@@ -336,8 +336,7 @@ class ClienteListaView(GestionDeUsuariosMixin, ListView):
     el mapeo de impacto sobre pedidos activos, stock almacenado y saldo de
     puntos que su ficha declara—, y ese panel todavía no existe.
 
-    La ficha de cliente de CO-195 tampoco está construida: hoy esta pantalla
-    cubre el listado de CO-194 y nada más.
+    Cada fila enlaza a la ficha de CO-195 (`ClienteFichaView`).
     """
 
     context_object_name = "clientes"
@@ -383,6 +382,62 @@ class ClienteListaView(GestionDeUsuariosMixin, ListView):
         contexto["estados"] = Usuario.ESTADO_CHOICES
         contexto["provincias"] = provincias
         return contexto
+
+
+class UsuarioFichaView(GestionDeUsuariosMixin, DetailView):
+    """CU-USR-CON paso 6 — `CO-202 consultarFichaDeUsuario`.
+
+    Presenta los datos de la cuenta y **sólo las acciones que su estado
+    admite**: Activa → modificar y dar de baja; Pendiente → reenviar el enlace
+    y eliminar; Inactiva → únicamente reactivar. Es el principio que el propio
+    contrato enuncia: «la interfaz no decide, refleja». Por el mismo motivo no
+    se ofrece la baja de la única cuenta Administrador activa (`CO-198` E1).
+
+    No modifica nada ni se audita: es una consulta.
+    """
+
+    model = Usuario
+    template_name = "accounts/usuario_ficha.html"
+    context_object_name = "usuario_objetivo"
+
+    def get_queryset(self):
+        # Las cuentas de Cliente tienen su propia ficha, de sólo lectura
+        # (CO-195). Por esta dirección no se alcanzan.
+        return Usuario.objects.filter(rol__in=Usuario.ROLES_DE_PERSONAL)
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        usuario = self.object
+        with transaction.atomic():
+            ultimo_admin = services.es_el_unico_administrador_activo(usuario)
+        contexto["puede_modificar"] = usuario.estado == Usuario.ACTIVO
+        contexto["puede_dar_de_baja"] = usuario.estado == Usuario.ACTIVO and not ultimo_admin
+        contexto["es_ultimo_administrador"] = ultimo_admin
+        contexto["puede_reenviar"] = usuario.esta_pendiente_de_activacion
+        contexto["puede_eliminar"] = usuario.se_puede_eliminar
+        contexto["puede_reactivar"] = usuario.esta_congelada
+        return contexto
+
+
+class ClienteFichaView(GestionDeUsuariosMixin, DetailView):
+    """CU-CLI-CON paso 6 — `CO-195 consultarFichaDeCliente`.
+
+    Identificación, contacto, domicilio, estado, fecha de registro y fecha de
+    aceptación de la política de privacidad. **Sin ninguna acción**: las
+    operaciones sobre una cuenta de cliente pertenecen a su titular, y
+    ofrecérselas al Administrador crearía una vía por la que los datos
+    personales cambian sin que el titular intervenga.
+
+    La restricción de rol vive en el servidor (RNF-03): el padrón contiene datos
+    alcanzados por la Ley 25.326.
+    """
+
+    model = Usuario
+    template_name = "accounts/cliente_ficha.html"
+    context_object_name = "cliente"
+
+    def get_queryset(self):
+        return Usuario.objects.filter(rol=Usuario.CLIENTE)
 
 
 class UsuarioAltaView(GestionDeUsuariosMixin, CreateView):

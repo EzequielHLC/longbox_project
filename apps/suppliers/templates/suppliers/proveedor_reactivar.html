@@ -3,56 +3,47 @@
 La vuelta de la baja de CU-PRV-BAJ: la describe CU-PRV-REA, con CO-065 y CO-066.
 El motivo por el que existe está en la vista.
 
-No lleva `signal`: reactivar no destruye nada. Es la contraparte tranquila de la
-pantalla de baja, y el paralelo con la reactivación de una cuenta de personal se
-detiene acá — un proveedor no tiene credenciales que renovar.
+Reactivar no destruye nada: el recuadro va con el borde común. Abandonar la
+pantalla sin confirmar es `CO-156 cancelarOperacion`.
 {% endcomment %}
 
 {% block titulo %}Reactivar {{ proveedor.razon_social }} · Longbox{% endblock %}
 {% block seccion %}Proveedores{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-2xl">
-  {% url 'suppliers:proveedor_detalle' proveedor.pk as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
+{% url 'suppliers:proveedor_detalle' proveedor.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del proveedor" atras=1 %}</span>
+    <h1>Reactivar proveedor</h1>
+    <p>{{ proveedor.razon_social }} · <span class="datos">{{ proveedor.correo_comercial }}</span></p>
+  </div>
+</header>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Reactivar proveedor</h1>
-  <p class="mt-2 text-sm text-static">
-    <span class="text-screen">{{ proveedor.razon_social }}</span> ·
-    <span class="font-mono text-xs">{{ proveedor.correo_comercial }}</span>
-  </p>
-
-  {% if proveedor.esta_activo %}
-    <p class="mt-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
-      Este proveedor ya está activo. No hay nada que confirmar.
+{% if proveedor.esta_activo %}
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está activo. No hay nada que confirmar.</span></p>
+{% else %}
+  <div class="panel formulario--angosto">
+    <div class="seccion__titulo"><h2>Qué implica reactivarlo</h2></div>
+    <ul class="lista-renglones">
+      <li>
+        <span>Su correo comercial vuelve a reconocerse como remitente válido, y sus mensajes
+        de novedades vuelven a procesarse.</span>
+      </li>
+      <li><span>Conserva sus datos, sus productos vinculados y su historial de auditoría.</span></li>
+    </ul>
+    <p class="texto-chico secundario">
+      Si el correo del proveedor cambió mientras estuvo de baja, corríjalo antes de
+      reactivarlo: si no, el sistema va a seguir esperando mensajes de la dirección vieja.
     </p>
-  {% else %}
-    <div class="mt-6 border-l-2 border-azure bg-panel px-5 py-4">
-      <h2 class="font-display text-lg font-semibold tracking-wide">Qué implica reactivarlo</h2>
-      <ul class="mt-3 space-y-2 text-sm">
-        <li>
-          Su correo comercial vuelve a reconocerse como remitente válido, y sus mensajes
-          de novedades vuelven a procesarse.
-        </li>
-        <li>Conserva sus datos, sus productos vinculados y su historial de auditoría.</li>
-      </ul>
-      <p class="mt-3 font-mono text-[0.65rem] leading-relaxed text-static">
-        Si el correo del proveedor cambió mientras estuvo de baja, corríjalo antes de
-        reactivarlo: si no, el sistema va a seguir esperando mensajes de la dirección
-        vieja.
-      </p>
-    </div>
 
-    <form method="post" class="mt-6 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+    <form method="post" class="acciones">
       {% csrf_token %}
-      <div class="marco-boton">
-        <button type="submit" class="boton-primario">Confirmar reactivación</button>
-      </div>
+      <button type="submit" class="boton-primario">Confirmar reactivación</button>
       {% url 'suppliers:proveedor_edicion' proveedor.pk as editar_antes %}
       {% include "_boton_texto.html" with url=editar_antes texto="Editar antes de reactivar" %}
-      {% url 'suppliers:proveedor_detalle' proveedor.pk as cancelar %}
-      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
     </form>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
 {% endblock %}

@@ -4,85 +4,65 @@
 {% block seccion %}Gestión de usuarios{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <h1 class="font-display text-3xl font-bold tracking-wide">Usuarios del sistema</h1>
-    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-      Cuentas de personal · Cajero y Administrador
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Usuarios del sistema</h1>
+    <p>Cuentas de personal: Cajero y Administrador.</p>
   </div>
+  <a href="{% url 'accounts:usuario_alta' %}" class="boton-primario">
+    {% include "_iconos.html" with icono="agregar" %}<span>Nuevo usuario</span>
+  </a>
+</header>
 
-  <div class="marco-boton">
-    <a href="{% url 'accounts:usuario_alta' %}" class="boton-primario">Nuevo usuario</a>
+<section class="seccion">
+  {% comment %}
+  El formulario funciona sin JavaScript: se envía con «Buscar» y recarga la
+  pantalla. Con JavaScript, `_tabla_filtrable.html` lo intercepta y refresca
+  sólo la tabla mientras se escribe.
+  {% endcomment %}
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}"
+             placeholder="Nombre o correo — atajo: /" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="rol" class="etiqueta">Rol</label>
+      <select id="rol" name="rol">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in roles %}
+          <option value="{{ valor }}" {% if rol_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+
+    {% if busqueda or rol_elegido or estado_elegido %}
+      <a href="{% url 'accounts:usuario_lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% endif %}
+  </form>
+
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "accounts/_tabla_usuarios.html" %}
+    </div>
   </div>
-</div>
-
-{% comment %}
-El formulario funciona sin JavaScript: se envía con el botón "Buscar" y recarga
-la pantalla. Con JavaScript, el script de abajo lo intercepta y refresca solo la
-tabla mientras se escribe.
-{% endcomment %}
-<form id="filtros" method="get" data-sin-capa
-      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-  <div class="grow">
-    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Buscar
-    </label>
-    <input type="text" id="q" name="q" value="{{ busqueda }}"
-           placeholder="Buscar por nombre o correo — atajo: /" autocomplete="off"
-           class="w-full min-w-[26rem]">
-  </div>
-
-  <div>
-    <label for="rol" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Rol
-    </label>
-    <select id="rol" name="rol" class="w-56">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in roles %}
-        <option value="{{ valor }}" {% if rol_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Estado
-    </label>
-    <select id="estado" name="estado" class="w-56">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in estados %}
-        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar
-  </button>
-
-  {% if busqueda or rol_elegido or estado_elegido %}
-    <a href="{% url 'accounts:usuario_lista' %}"
-       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static
-              hover:text-screen">
-      Limpiar filtros
-    </a>
-  {% endif %}
-</form>
-
-<div class="relative">
-  <div id="capa-tabla"
-       class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-    {% include "_loader.html" with clase="loader--chico" %}
-  </div>
-
-  <div id="tabla">
-    {% include "accounts/_tabla_usuarios.html" %}
-  </div>
-</div>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}

@@ -10,36 +10,32 @@ la referencian lo hacen con `SET_NULL`, así que ninguno se rompe.
 {% block seccion %}Parámetros{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-xl">
-  {% url 'catalog:parametros' as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a parámetros" atras=1 %}
+{% url 'catalog:parametros' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
+    <h1>Eliminar precio de referencia</h1>
+  </div>
+</header>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Eliminar precio de referencia</h1>
-
-  <dl class="mt-6 grid grid-cols-[10rem_1fr] gap-y-3 border border-line bg-ash p-6 text-sm">
-    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Editorial</dt>
-    <dd>{{ precio.editorial }}</dd>
-    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Tipo</dt>
-    <dd>{{ precio.tipo }}</dd>
-    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Formato</dt>
-    <dd>{{ precio.formato }}</dd>
-    <dt class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">Precio</dt>
-    <dd class="font-mono">${{ precio.pvp }}</dd>
+<div class="panel panel--atencion formulario--angosto">
+  <dl class="datos-de-ficha">
+    <dt>Editorial</dt><dd>{{ precio.editorial }}</dd>
+    <dt>Tipo</dt><dd>{{ precio.tipo }}</dd>
+    <dt>Formato</dt><dd>{{ precio.formato }}</dd>
+    <dt>Precio</dt><dd class="datos">${{ precio.pvp }}</dd>
   </dl>
 
-  <p class="mt-6 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
+  <p>
     Los productos ya cargados conservan su precio: lo que se pierde es el
     pre-completado. A partir de ahora, cada alta de esta combinación va a pedir el precio
     a mano hasta que se cargue una fila nueva.
   </p>
 
-  <form method="post" class="mt-6 flex items-center gap-6">
+  <form method="post" class="acciones">
     {% csrf_token %}
-    <div class="marco-boton">
-      <button type="submit" class="boton-primario">Eliminar</button>
-    </div>
-    {% url 'catalog:parametros' as cancelar %}
-    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+    <button type="submit" class="boton-primario">Eliminar</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
   </form>
 </div>
 {% endblock %}

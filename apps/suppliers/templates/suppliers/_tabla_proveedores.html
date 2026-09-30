@@ -12,137 +12,98 @@ Las cuatro columnas son las que enumera el CU: razón social, correo comercial,
 estado y cantidad de productos vinculados.
 {% endcomment %}
 {% if proveedores %}
-  <p class="mb-2 font-mono text-xs text-static">
-    {{ paginator.count }} proveedor{{ paginator.count|pluralize:"es" }}
-    {% if busqueda or estado_elegido %}
-      que coincide{{ paginator.count|pluralize:"n" }} con el filtro
-    {% endif %}
-  </p>
+  <div class="pila-3">
+    <p class="texto-chico secundario">
+      {{ paginator.count }} proveedor{{ paginator.count|pluralize:"es" }}
+      {% if busqueda or estado_elegido %}
+        que coincide{{ paginator.count|pluralize:"n" }} con el filtro
+      {% endif %}
+    </p>
 
-  <div class="overflow-x-auto border border-line">
-    <table class="w-full text-left text-sm">
-      <thead>
-        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                   tracking-[0.15em] text-static">
-          <th class="px-4 py-3 font-medium">Razón social</th>
-          <th class="px-4 py-3 font-medium">Correo comercial</th>
-          <th class="px-4 py-3 font-medium">Contacto</th>
-          <th class="px-4 py-3 font-medium">Estado</th>
-          <th class="px-4 py-3 text-right font-medium">Productos</th>
-          <th class="px-4 py-3 text-right font-medium">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for proveedor in proveedores %}
-          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-            {% comment %}
-            Una razón social o un correo muy largos no pueden empujar al resto
-            de las columnas: se recortan con puntos suspensivos y el valor
-            completo queda en el `title`, a un hover de distancia.
-            {% endcomment %}
-            <td class="px-4 py-3">
-              <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-                 class="block max-w-[16rem] truncate hover:text-signal"
-                 title="{{ proveedor.razon_social }}">{{ proveedor.razon_social }}</a>
-            </td>
-            <td class="px-4 py-3 font-mono text-xs">
-              <span class="block max-w-[18rem] truncate" title="{{ proveedor.correo_comercial }}">
-                {{ proveedor.correo_comercial }}
-              </span>
-              {% comment %}
-              La marca aparece **solo** en el caso que de otro modo sería
-              invisible: activo, pero con el procesamiento apagado. Que un
-              proveedor de baja no alimente el pipeline ya lo dice su estado, y
-              que uno normal sí lo haga es lo esperable — ponerle un cartel a
-              cada fila sería ruido en una tabla que se lee de un vistazo.
-              {% endcomment %}
-              {% if proveedor.esta_activo and not proveedor.procesa_novedades %}
-                <span class="mt-1 block text-[0.6rem] uppercase tracking-wider text-static">
-                  Novedades apagadas
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-3 text-static">
-              <span class="block max-w-[12rem] truncate">
-                {{ proveedor.nombre_contacto|default:"—" }}
-              </span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                           {% if proveedor.esta_activo %}border-static text-screen
-                           {% else %}border-line text-static{% endif %}">
-                {{ proveedor.get_estado_display }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-xs text-static">
-              {{ proveedor.cantidad_productos }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              {% comment %}
-              Las acciones dependen del estado y son excluyentes: un proveedor
-              activo se da de baja, uno inactivo se reactiva. Editar está
-              disponible siempre —la precondición de CU-PRV-EDI dice "cualquier
-              estado"— pero vive en la ficha, que es de donde el CU la arranca.
-              {% endcomment %}
-              <div class="flex justify-end gap-3">
-                <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}"
-                   class="boton-menor"><span>Ver ficha</span></a>
-                {% if proveedor.esta_activo %}
-                  <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}"
-                     class="boton-menor boton-menor--critico"><span>Dar de baja</span></a>
-                {% else %}
-                  <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}"
-                     class="boton-menor"><span>Reactivar</span></a>
-                {% endif %}
-              </div>
-            </td>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Razón social</th>
+            <th>Correo comercial</th>
+            <th>Contacto</th>
+            <th>Estado</th>
+            <th class="numero">Productos</th>
+            <th class="derecha">Acciones</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  {% if is_paginated %}
-    <div class="mt-4 flex items-center justify-between font-mono text-xs text-static">
-      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-      <span class="flex gap-4">
-        {% if page_obj.has_previous %}
-          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
-             class="hover:text-screen">← Anterior</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
-             class="hover:text-screen">Siguiente →</a>
-        {% endif %}
-      </span>
+        </thead>
+        <tbody>
+          {% for proveedor in proveedores %}
+            <tr>
+              <td class="celda-principal">
+                <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}">{{ proveedor.razon_social }}</a>
+              </td>
+              <td>
+                <span class="datos cortar-palabras">{{ proveedor.correo_comercial }}</span>
+                {% comment %}
+                La marca aparece **sólo** en el caso que de otro modo sería
+                invisible: activo, pero con el procesamiento apagado.
+                {% endcomment %}
+                {% if proveedor.esta_activo and not proveedor.procesa_novedades %}
+                  <br><span class="estado estado--atencion">Novedades apagadas</span>
+                {% endif %}
+              </td>
+              <td class="secundario">{{ proveedor.nombre_contacto|default:"—" }}</td>
+              <td>
+                <span class="marca-estado{% if not proveedor.esta_activo %} marca-estado--apagado{% endif %}">{{ proveedor.get_estado_display }}</span>
+              </td>
+              <td class="numero">{{ proveedor.cantidad_productos }}</td>
+              <td class="acciones-de-fila">
+                {% comment %}
+                Las acciones dependen del estado y son excluyentes: un proveedor
+                activo se da de baja, uno inactivo se reactiva. Editar vive en la
+                ficha, que es de donde CU-PRV-EDI la arranca.
+                {% endcomment %}
+                <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}" class="boton-menor">Ver ficha</a>
+                {% if proveedor.esta_activo %}
+                  <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+                {% else %}
+                  <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-menor">Reactivar</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endif %}
+
+    {% if is_paginated %}
+      <div class="paginacion">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
+               class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
+               class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+          {% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
 {% else %}
   {% comment %}
-  Los dos estados vacíos del CU-PRV-CON: E1 (el filtro no devolvió nada, se ofrece
-  limpiarlo) y E2 (no hay ningún proveedor todavía, se ofrece el acceso directo
-  al alta). Son mensajes distintos porque son problemas distintos.
+  Los dos estados vacíos del CU-PRV-CON: E1 (el filtro no devolvió nada, se
+  ofrece limpiarlo) y E2 (no hay ningún proveedor todavía, se ofrece el alta).
   {% endcomment %}
-  <div class="border border-line bg-panel px-4 py-6">
+  <div class="vacio">
+    {% include "_iconos.html" with icono="proveedores" %}
     {% if busqueda or estado_elegido %}
-      <p class="text-sm text-static">
-        Ningún proveedor coincide con los criterios de búsqueda.
-      </p>
-      <a href="{% url 'suppliers:proveedor_lista' %}"
-         class="mt-3 inline-block font-mono text-[0.7rem] uppercase tracking-wider text-static
-                hover:text-screen">
-        Limpiar filtros
-      </a>
+      <p>Ningún proveedor coincide con los criterios de búsqueda.</p>
+      <a href="{% url 'suppliers:proveedor_lista' %}" class="boton-texto">Limpiar filtros</a>
     {% else %}
-      <p class="text-sm text-static">
+      <p>
         No hay proveedores registrados. Sin al menos uno con correo configurado, el
         procesamiento automático de novedades no tiene remitentes que reconocer.
       </p>
-      <a href="{% url 'suppliers:proveedor_alta' %}"
-         class="mt-3 inline-block font-mono text-[0.7rem] uppercase tracking-wider text-static
-                hover:text-screen">
-        Registrar el primero →
-      </a>
+      <a href="{% url 'suppliers:proveedor_alta' %}" class="boton-texto"><span>Registrar el primero</span>{% include "_iconos.html" with icono="siguiente" %}</a>
     {% endif %}
   </div>
 {% endif %}

@@ -1,10 +1,7 @@
 {% comment %}
-El botón de prioridad 4: ir a otro lado.
-
-Existe como parcial y no como un puñado de clases porque tiene tres piezas que
-hay que escribir bien y siempre igual —la flecha, la etiqueta y su copia en
-`data-texto`—, y una copia que no coincide con la etiqueta se ve recién al pasar
-el mouse.
+El botón de nivel 4: ir a otro lado. Sin fondo, sin borde, sin subrayado en
+reposo; con `atras`, la etiqueta va precedida por «←» (`identidad_visual.md`,
+Botones).
 
     {% include "_boton_texto.html" with url=proveedor.get_absolute_url texto="Ver ficha" %}
     {% include "_boton_texto.html" with url=volver texto="Volver al inventario" atras=1 %}
@@ -12,41 +9,16 @@ el mouse.
 
 Parámetros:
   url      destino. Sin él sale como `<button>`, para los que envían un formulario.
-  texto    la etiqueta. Va dos veces, y de eso se ocupa este archivo.
-  atras    la flecha apunta a la izquierda y va adelante. Para volver y cancelar.
-  critico  el acento pasa a `signal`. Para salidas destructivas.
-  submit   el botón envía el formulario en vez de solo existir.
+  texto    la etiqueta.
+  atras    antepone «←». Para volver y cancelar.
+  critico  marca una salida destructiva. Se ve igual: lo que la distingue es el texto.
+  submit   el botón envía el formulario en vez de sólo existir.
   nombre   `name` del botón, cuando el servidor distingue por cuál se envió.
 {% endcomment %}
 {% spaceless %}
-{% comment %}
-El atributo `class` va en una sola línea aunque quede larga: partido en dos deja
-saltos y sangría dentro del atributo en el HTML que sale, y este parcial se
-dibuja hasta cuatro veces por pantalla.
-{% endcomment %}
 {% if url %}
-  <a href="{{ url }}" class="boton-texto{% if atras %} boton-texto--atras{% endif %}{% if critico %} boton-texto--critico{% endif %}">
+  <a href="{{ url }}" class="boton-texto{% if atras %} boton-texto--atras{% endif %}{% if critico %} boton-texto--critico{% endif %}">{% if atras %}<span aria-hidden="true">←</span> {% endif %}<span>{{ texto }}</span></a>
 {% else %}
-  <button type="{% if submit %}submit{% else %}button{% endif %}"{% if nombre %} name="{{ nombre }}" value="1"{% endif %} class="boton-texto{% if atras %} boton-texto--atras{% endif %}{% if critico %} boton-texto--critico{% endif %}">
+  <button type="{% if submit %}submit{% else %}button{% endif %}"{% if nombre %} name="{{ nombre }}" value="1"{% endif %} class="boton-texto{% if atras %} boton-texto--atras{% endif %}{% if critico %} boton-texto--critico{% endif %}">{% if atras %}<span aria-hidden="true">←</span> {% endif %}<span>{{ texto }}</span></button>
 {% endif %}
-
-  {% comment %}
-  La flecha es un SVG en línea y hereda el color con `currentColor`, como el
-  resto de los iconos del sistema: mismo lienzo de 24, mismo trazo, sin relleno.
-  {% endcomment %}
-  {% if atras %}
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-    </svg>
-  {% endif %}
-
-  <span data-texto="{{ texto }}">{{ texto }}</span>
-
-  {% if not atras %}
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-    </svg>
-  {% endif %}
-
-{% if url %}</a>{% else %}</button>{% endif %}
 {% endspaceless %}

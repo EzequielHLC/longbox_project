@@ -18,6 +18,7 @@ from django.utils import timezone
 
 from apps.catalog import borradores as borradores_de_producto
 from apps.core import cambios, llm
+from apps.core.models import RegistroAuditoria
 from apps.suppliers import correos
 from apps.suppliers import extraccion as extraccion_de_novedades
 from apps.suppliers.models import CorreoProveedor, Proveedor
@@ -187,6 +188,79 @@ def descartar(correo, actor, motivo):
     return correo
 
 
+class CorreoYaResuelto(Exception):
+    """El correo ya no está en el estado que la operación exige.
+
+    Es `CO-017` E1: otro Administrador lo aprobó mientras éste lo tenía
+    abierto. Lleva el estado actual para informarlo.
+    """
+
+    def __init__(self, correo):
+        super().__init__(correo.get_estado_display())
+        self.correo = correo
+
+
+def _tomar_para_procesar(correo_pk, estados_de_partida, actor):
+    """Pasa el correo a *En proceso* si todavía está en uno de los estados de partida.
+
+    La transición se hace con el correo bloqueado y en su propia transacción,
+    que se confirma **antes** de llamar al modelo: así una segunda aprobación
+    concurrente ve *En proceso* y no vuelve a procesarlo (`CO-017` E1), y el
+    bloqueo no queda tomado durante los minutos que puede tardar la extracción.
+    """
+    with transaction.atomic():
+        correo = CorreoProveedor.objects.select_for_update().get(pk=correo_pk)
+        if correo.estado not in estados_de_partida:
+            raise CorreoYaResuelto(correo)
+        correo.estado = CorreoProveedor.EN_PROCESO
+        correo.resuelto_por = actor
+        correo.resuelto_en = timezone.now()
+        correo.save(update_fields=["estado", "resuelto_por", "resuelto_en"])
+    return correo
+
+
+def aprobar_correo(correo_pk, *, actor, ip=None):
+    """`CO-017 aprobarCorreoParaProcesamiento`.
+
+    Autoriza el procesamiento de un correo *Pendiente de aprobación*, ejecuta la
+    extracción y genera los borradores. El correo pasa por *En proceso* y
+    termina *Procesado* o *Falló el procesamiento* (E4). Levanta
+    `CorreoYaResuelto` si el correo ya no estaba pendiente (E1).
+    """
+    correo = _tomar_para_procesar(correo_pk, (CorreoProveedor.PENDIENTE,), actor)
+    return _procesar(correo, actor=actor, ip=ip)
+
+
+def reprocesar_correo(correo_pk, *, actor, ip=None):
+    """`CO-019 reprocesarCorreo`.
+
+    Vuelve a extraer un correo *Procesado* o *Falló el procesamiento*. Sólo si
+    la extracción tiene éxito se reemplazan los borradores abiertos; los
+    confirmados y los rechazados no se tocan nunca, y si la extracción falla
+    los abiertos se conservan.
+    """
+    correo = _tomar_para_procesar(
+        correo_pk, (CorreoProveedor.PROCESADO, CorreoProveedor.FALLIDO), actor
+    )
+    return _procesar(correo, actor=actor, ip=ip)
+
+
+def _procesar(correo, *, actor, ip):
+    resultado = extraer_novedades(correo, actor=actor, ip=ip)
+    if resultado.generacion is None:
+        # La generación de borradores audita su propia operación. Si no la
+        # hubo (E4), la decisión del Administrador igual queda registrada: el
+        # CU-PRV-COL la declara auditada en cualquier caso.
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.BORRADORES_GENERADOS,
+            actor=actor,
+            objetivo=correo,
+            ip=ip,
+            detalle=f"«{correo.asunto or 'sin asunto'}»: sin borradores. {correo.motivo}",
+        )
+    return resultado
+
+
 def _nombre_de_archivo(message_id):
     """Un nombre de archivo legible derivado del identificador del mensaje.
 
@@ -254,14 +328,14 @@ def extraer_novedades(correo, *, actor=None, ip=None):
     así, cuando un borrador salga raro, se puede ver contra qué texto se armó
     sin tener que volver a gastar una corrida del modelo.
 
-    El estado del correo cambia según cómo salga:
+    El estado del correo cambia según cómo salga (`CO-017`):
 
-    - **Procesado** si el modelo respondió, aunque haya entendido cero productos
-      o lo haya clasificado como "otro". Que un correo resulte no ser de
-      novedades es un resultado válido, no un fallo — es justamente lo que la
-      clasificación viene a detectar.
-    - **Fallido** si no hubo respuesta utilizable. Ahí sí hay algo que arreglar:
-      el servicio caído o el prompt.
+    - **Procesado** si el modelo respondió e identificó al menos un producto.
+    - **Falló el procesamiento** si no hubo respuesta utilizable **o si no
+      identificó ningún producto** (`CO-017` E4). El correo queda en la cola
+      para reprocesarlo: el fallo puede deberse a una indisponibilidad
+      transitoria y no al contenido. Hasta el 2026-09-30 un correo sin
+      productos quedaba Procesado; se corrigió a favor del contrato (B-04-004).
 
     Nunca levanta: quien llama puede estar recorriendo una cola.
     """
@@ -269,7 +343,8 @@ def extraer_novedades(correo, *, actor=None, ip=None):
 
     correo.extraccion = resultado.como_json()
     correo.version_prompt = resultado.version_prompt
-    if resultado:
+    identifico_productos = bool(resultado) and bool(resultado.productos)
+    if identifico_productos:
         correo.estado = CorreoProveedor.PROCESADO
         correo.motivo = ""
     else:
@@ -277,11 +352,11 @@ def extraer_novedades(correo, *, actor=None, ip=None):
         correo.motivo = _motivo_del_fallo(resultado)
     correo.save(update_fields=["extraccion", "version_prompt", "estado", "motivo"])
 
-    # Los borradores se arman solo si hubo algo que entender. Un correo fallido
-    # o que resultó no ser de novedades no genera nada, y eso no es un error:
-    # es la respuesta correcta, y es lo que justifica que la cola exista.
+    # Los borradores se arman sólo si hubo algo que entender. Un correo fallido
+    # no genera nada, y los borradores abiertos que ya tenía se conservan: sólo
+    # una extracción exitosa los reemplaza (`CO-019`).
     generacion = None
-    if resultado and resultado.intencion == extraccion_de_novedades.NOVEDADES:
+    if identifico_productos and resultado.intencion == extraccion_de_novedades.NOVEDADES:
         generacion = borradores_de_producto.generar(
             correo, portadas=portadas_de(correo), actor=actor, ip=ip
         )
@@ -290,6 +365,11 @@ def extraer_novedades(correo, *, actor=None, ip=None):
 
 def _motivo_del_fallo(resultado):
     """En castellano y con la causa separada, que es lo que se arregla distinto."""
+    if resultado:
+        return (
+            "El modelo no identificó ningún producto en el correo. Si es un anuncio de "
+            "novedades, revise el contenido extraído y vuelva a procesarlo."
+        )
     if resultado.error == llm.SIN_SERVICIO:
         return (
             "No se pudo consultar el modelo de lenguaje. Verifique que el servicio "

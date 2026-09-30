@@ -1,211 +1,34 @@
 {% extends "base.html" %}
 {% comment %}
-Cáscara del **modo operativo** del sistema visual (`.contexto-ia/TOKENS_VISUALES.md`):
-las pantallas que el personal usa muchas veces por día. Misma paleta y misma
-tipografía que el modo público, pero sin glitch, ruido, ticker ni transición
-wipe: acá mandan la velocidad de lectura y de acción (RNF-02).
+Cáscara del **modo operativo**: las pantallas que el personal usa muchas veces
+por día. Columna de alto completo con el menú lateral y el área de trabajo a
+todo el ancho, en densidad compacta (`identidad_visual.md`, Modo operativo).
 
-`signal` (rojo) se reserva para errores de validación y confirmación de
-acciones destructivas. Si aparece decorando una tabla, está mal usado.
+No lee nunca las variables `--tienda-*`: la identidad configurable de la
+tienda no alcanza al backoffice.
 
 Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-INI).
 {% endcomment %}
 
 {% block cabecera_extra %}
-  {# Los tokens (paleta, tipografías) son compartidos y viven en base.html. #}
-  {% include "_botones.html" %}
-  {% include "_campos.html" %}
-  <style>
-    /* ------------------------------------------------------------------
-       Loader: siete cuadros recorriendo un circuito cerrado, rotado 45°.
-       ------------------------------------------------------------------ */
-    @keyframes recorrido-loader {
-      0%     { left: 0;    top: 0; }
-      10.5%  { left: 0;    top: 0; }
-      12.5%  { left: 32px; top: 0; }
-      23%    { left: 32px; top: 0; }
-      25%    { left: 64px; top: 0; }
-      35.5%  { left: 64px; top: 0; }
-      37.5%  { left: 64px; top: 32px; }
-      48%    { left: 64px; top: 32px; }
-      50%    { left: 32px; top: 32px; }
-      60.5%  { left: 32px; top: 32px; }
-      62.5%  { left: 32px; top: 64px; }
-      73%    { left: 32px; top: 64px; }
-      75%    { left: 0;    top: 64px; }
-      85.5%  { left: 0;    top: 64px; }
-      87.5%  { left: 0;    top: 32px; }
-      98%    { left: 0;    top: 32px; }
-      100%   { left: 0;    top: 0; }
-    }
-
-    .loader {
-      position: relative;
-      width: 96px;
-      height: 96px;
-      transform: rotate(45deg);
-    }
-    .loader--chico { transform: rotate(45deg) scale(0.55); }
-
-    .loader-cuadro {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 28px;
-      height: 28px;
-      margin: 2px;
-      background: #EDEAE4;
-      animation: recorrido-loader 10s ease-in-out infinite both;
-    }
-    .loader-cuadro:nth-of-type(1) { animation-delay: -1.4285714286s; }
-    .loader-cuadro:nth-of-type(2) { animation-delay: -2.8571428571s; }
-    .loader-cuadro:nth-of-type(3) { animation-delay: -4.2857142857s; }
-    .loader-cuadro:nth-of-type(4) { animation-delay: -5.7142857143s; }
-    .loader-cuadro:nth-of-type(5) { animation-delay: -7.1428571429s; }
-    .loader-cuadro:nth-of-type(6) { animation-delay: -8.5714285714s; }
-    .loader-cuadro:nth-of-type(7) { animation-delay: -10s; }
-
-    /* Capa de carga de pantalla completa. Se muestra sola al cargar y se
-       esconde con una animación CSS: si el JavaScript fallara, igual
-       desaparece y nunca deja la pantalla tapada. */
-    .capa-carga {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: grid;
-      place-items: center;
-      background-color: #0A0A0D;
-      animation: ocultar-capa 0.3s ease-in 0.25s forwards;
-    }
-    /* Mientras se navega a otra pantalla la capa se queda puesta. */
-    .capa-carga--fija { animation: none; opacity: 1; visibility: visible; }
-
-    @keyframes ocultar-capa {
-      to { opacity: 0; visibility: hidden; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .loader-cuadro { animation: none; }
-      .capa-carga { animation-delay: 0s; animation-duration: 0.01s; }
-    }
-
-    /* Estilo del `select` nativo: es lo que se ve si no hay JavaScript. Con
-       JavaScript lo reemplaza el desplegable propio del script de más abajo.
-       El resto de los controles vive en `_campos.html`. */
-    option {
-      border: 0;
-      background-color: #141317;
-      color: #EDEAE4;
-    }
-    select {
-      appearance: none;
-      -webkit-appearance: none;
-      padding-right: 2.25rem;
-      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%2357525C' d='M0 0h12L6 8z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      background-size: 0.6rem;
-    }
-
-    /* ------------------------------------------------------------------
-       Menú lateral. Los grupos son `<details>` nativos; acá solo se les
-       saca la flecha del sistema operativo y se le pone la nuestra, para
-       que el menú se vea igual en Windows, Mac y Linux.
-       ------------------------------------------------------------------ */
-    .menu-enlace {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.5rem 1.25rem;
-      border-left: 2px solid transparent;
-      color: #EDEAE4;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.75rem;
-      letter-spacing: 0.04em;
-      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    }
-    /* El icono queda un tono por debajo del texto: acompaña la lectura sin
-       competir con ella, y se enciende junto con el resto de la fila. */
-    .menu-enlace svg, .menu-titulo svg { color: #57525C; transition: color 0.15s; }
-    .menu-enlace:hover svg,
-    .menu-titulo:hover svg,
-    .menu-enlace--actual svg { color: #EDEAE4; }
-    .menu-enlace:hover { background: #1C1B1F; }
-
-    /* Dónde estoy parado: la barra en `signal`. Es de las pocas veces que el
-       rojo entra en una pantalla operativa sin ser un error, y se justifica
-       porque es un único elemento por pantalla, no una decoración repetida. */
-    .menu-enlace--actual {
-      border-left-color: #FF1436;
-      background: #1C1B1F;
-      font-weight: 500;
-    }
-    .menu-enlace--hijo { padding-left: 2.5rem; }
-    .menu-enlace--inactivo { color: #57525C; cursor: default; }
-    .menu-enlace--inactivo:hover { background: transparent; }
-    .menu-enlace--inactivo:hover svg { color: #57525C; }
-
-    .menu-titulo {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.5rem 1.25rem;
-      cursor: pointer;
-      color: #EDEAE4;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.75rem;
-      letter-spacing: 0.04em;
-      list-style: none;
-    }
-    .menu-titulo::-webkit-details-marker { display: none; }
-    .menu-titulo:hover { background: #1C1B1F; }
-    /* Flecha propia, al final de la fila: apunta a la derecha cerrado y abajo
-       abierto. Va al margen derecho y no antes del rótulo para que el icono del
-       grupo quede alineado con el de las entradas sueltas. */
-    .menu-titulo::after {
-      content: "▸";
-      margin-left: auto;
-      color: #57525C;
-      transition: transform 0.15s;
-    }
-    .menu-grupo[open] > .menu-titulo::after { transform: rotate(90deg); }
-
-    /* En pantalla angosta el menú se despliega desde el encabezado. */
-    #menu-lateral.menu-abierto {
-      display: block;
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      z-index: 40;
-    }
-  </style>
-
-  {% include "_desplegable.html" %}
   {% include "_archivo.html" %}
   {% include "_selector_etiquetas.html" %}
   {% include "_ambito_guion.html" %}
 {% endblock %}
 
-{% comment %}
-La cáscara es una columna de alto completo: encabezado arriba y, debajo, una
-fila que ocupa todo lo que sobra. Es lo que hace que la barra lateral llegue
-hasta el pie aunque la pantalla tenga tres líneas de contenido; sin esto su
-borde se cortaba a la altura del último elemento y la pantalla quedaba partida
-por la mitad.
-{% endcomment %}
-{% block clase_body %}flex min-h-screen flex-col bg-void font-body text-screen{% endblock %}
+{% block clase_body %}modo-operativo{% endblock %}
 
 {% block cuerpo_inicio %}
+{% comment %}
+La capa de carga sólo aparece si el guion la activa, mientras se navega a otra
+pantalla o se envía un formulario. Si el guion falla, nunca queda tapando la
+pantalla.
+{% endcomment %}
 <div id="capa-carga" class="capa-carga">
   {% include "_loader.html" %}
 </div>
 
 <script>
-  // La capa arranca visible y se esconde sola con una animación CSS, así que
-  // el usuario ve el indicador aunque la pantalla cargue al instante. Acá solo
-  // se la vuelve a mostrar —y se la deja fija— mientras se navega a otra
-  // pantalla o se envía un formulario, que es cuando la espera es real.
   (function () {
     const capa = document.getElementById("capa-carga");
 
@@ -215,7 +38,7 @@ por la mitad.
 
     document.addEventListener("click", function (evento) {
       const enlace = evento.target.closest("a[href]");
-      if (!enlace || enlace.target === "_blank") return;
+      if (!enlace || enlace.target === "_blank" || enlace.hasAttribute("download")) return;
 
       const destino = new URL(enlace.href, location.href);
       const esLaMismaPantalla =
@@ -226,13 +49,13 @@ por la mitad.
     });
 
     document.addEventListener("submit", function (evento) {
-      // El buscador de la tabla trae su propio indicador, más chico.
+      // El buscador de la tabla trae su propio indicador; las descargas no
+      // navegan a ninguna pantalla nueva.
       if (evento.target.hasAttribute("data-sin-capa")) return;
       mostrar();
     });
 
-    // Al volver con el botón "atrás" el navegador restaura la pantalla tal
-    // como estaba: si no se saca la capa a mano, queda tapando todo.
+    // Al volver con «atrás» el navegador restaura la pantalla tal como estaba.
     window.addEventListener("pageshow", function (evento) {
       if (evento.persisted) capa.classList.remove("capa-carga--fija");
     });
@@ -241,72 +64,49 @@ por la mitad.
 {% endblock %}
 
 {% block encabezado %}
-<header class="border-b border-line bg-ash">
-  <div class="flex items-center justify-between gap-4 px-6 py-3">
-    <div class="flex items-baseline gap-6">
-      {% comment %}
-      En pantalla angosta el menú lateral se esconde y se abre desde acá; en
-      pantalla ancha está siempre a la vista y este botón no aparece.
-      {% endcomment %}
-      <button type="button" id="abrir-menu" aria-controls="menu-lateral"
-              aria-expanded="false" aria-label="Abrir el menú"
-              class="self-center font-mono text-lg leading-none text-static
-                     hover:text-screen md:hidden">≡</button>
-
-      <a href="{% url 'core:panel' %}" class="font-display text-xl font-bold tracking-widest">
-        LONGBOX
-      </a>
-      <span class="font-mono text-xs uppercase tracking-[0.2em] text-static">
-        {% block seccion %}Backoffice{% endblock %}
-      </span>
-    </div>
-    {% if user.is_authenticated %}
-      <div class="flex items-center gap-5">
-        <span class="hidden font-mono text-xs text-static sm:inline">
-          {{ user.email }} · {{ user.get_rol_display }}
-        </span>
-        <form method="post" action="{% url 'accounts:logout' %}">
-          {% csrf_token %}
-          {# Prioridad 4: salir es navegación, no una acción de la pantalla. #}
-          {% include "_boton_texto.html" with texto="Cerrar sesión" submit=1 %}
-        </form>
-      </div>
-    {% endif %}
+<header class="encabezado-operativo">
+  <div class="fila-5">
+    <button type="button" id="abrir-menu" aria-controls="menu-lateral"
+            aria-expanded="false" class="boton-texto solo-angosto">
+      {% include "_iconos.html" with icono="menu" %}<span>Menú</span>
+    </button>
+    {# La marca lleva al inicio de cada rol, no a una pantalla que le daría 403. #}
+    <a href="{% if user.rol == 'cajero' %}{% url 'core:mostrador' %}{% else %}{% url 'core:panel' %}{% endif %}" class="marca">
+      {% include "_iconos.html" with icono="libro" %}<span>Longbox</span>
+    </a>
+    <span class="seccion-actual">{% block seccion %}Backoffice{% endblock %}</span>
   </div>
+  {% if user.is_authenticated %}
+    <div class="fila-5">
+      <span class="cuenta">
+        {% include "_iconos.html" with icono="usuario" %}
+        <span>{{ user.email }} · {{ user.get_rol_display }}</span>
+      </span>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        {# Nivel 4: salir es navegación, no una acción de la pantalla. #}
+        <button type="submit" class="boton-texto">
+          {% include "_iconos.html" with icono="salir" %}<span>Cerrar sesión</span>
+        </button>
+      </form>
+    </div>
+  {% endif %}
 </header>
 {% endblock %}
 
 {% block layout %}
-{# `flex-1` reparte a la fila todo el alto que el encabezado no usa. #}
-<div class="flex flex-1">
+<div class="cuerpo-operativo">
   {% include "_menu_lateral.html" %}
 
-  {% comment %}
-  `min-w-0` no es decorativo: sin él, una tabla ancha empuja el contenedor
-  flex y desborda la pantalla entera en vez de scrollear dentro de su caja.
-  {% endcomment %}
-  <main class="min-w-0 grow px-6 py-8">
-    {% block mensajes %}
-      {% if messages %}
-        <ul class="mb-6 space-y-2">
-          {% for message in messages %}
-            <li class="border-l-2 px-4 py-3 text-sm
-                       {% if message.tags == 'error' %}border-signal bg-panel text-screen
-                       {% else %}border-static bg-panel text-screen{% endif %}">
-              {{ message }}
-            </li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endblock %}
-
+  <main class="area-de-trabajo">
+    {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
     {% block contenido %}{% endblock %}
   </main>
 </div>
 
 <script>
-  // Apertura del menú en pantalla angosta. Es lo único que el menú necesita de
-  // JavaScript: los grupos que se abren y cierran son `<details>` nativos.
+  // Apertura del menú en pantalla angosta. Los grupos que se abren y cierran
+  // son `<details>` nativos y no necesitan guion.
   (function () {
     const boton = document.getElementById("abrir-menu");
     const menu = document.getElementById("menu-lateral");
@@ -317,7 +117,6 @@ por la mitad.
       boton.setAttribute("aria-expanded", abierto ? "true" : "false");
     });
 
-    // Tocar fuera del menú lo cierra: en un celular, si no, tapa la pantalla.
     document.addEventListener("click", function (evento) {
       if (evento.target.closest("#menu-lateral") || evento.target.closest("#abrir-menu")) return;
       menu.classList.remove("menu-abierto");

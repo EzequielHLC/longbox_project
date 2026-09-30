@@ -1,105 +1,42 @@
 {% extends "base_publico.html" %}
-{% load static %}
 {% comment %}
 CU-AUT-INI — Iniciar Sesión. Va en **modo público**: es la puerta de entrada del
 sistema y la pantalla que enlaza con el registro de Cliente (CU-CLI-ALT). Que
 después de entrar el Cajero y el Administrador aterricen en el backoffice no la
-convierte en una pantalla operativa: no se usa muchas veces por día, se usa una
-vez y se sale.
+convierte en una pantalla operativa: se usa una vez y se sale.
+
+El formulario va en la columna, sin panel ni fondo propio; la acción principal
+es la única `.boton-primario` y las salidas van debajo como `.boton-texto`
+(`identidad_visual.md`, Modo público).
 {% endcomment %}
 
 {% block titulo %}Iniciar sesión · Longbox{% endblock %}
 {% block seccion %}Acceso{% endblock %}
 
-{% block estilos_pantalla %}
-<style>
-  /* --------------------------------------------------------------------
-     Fondo fotográfico del login: una calle de Akihabara de noche.
-
-     Se eligió esta foto y no la aérea de Shibuya porque tiene el cielo
-     negro arriba a la izquierda: un hueco tranquilo donde el panel se
-     puede leer. Una toma pareja de detalle en todo el cuadro obligaría a
-     oscurecerla tanto que ya no se vería la foto.
-
-     Encima van dos velos, y el orden importa: primero el `void` al 78%,
-     que es lo que baja el ruido de los neones a nivel de ambiente, y
-     arriba un tirón de `signal2` desde abajo que empuja la imagen hacia
-     la paleta del sistema en vez de dejarla en su cian y magenta
-     originales. Con `saturate` por debajo de 1 los carteles dejan de
-     competir con el rojo de la marca, que es el único acento que tiene
-     que destacar en la pantalla.
-     -------------------------------------------------------------------- */
-  .foto-fondo {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(to top, rgba(176, 16, 42, 0.16), transparent 55%),
-      linear-gradient(rgba(10, 10, 13, 0.78), rgba(10, 10, 13, 0.78)),
-      url("{% static 'img/login-akihabara.jpg' %}");
-    background-size: cover;
-    background-position: center 40%;
-    background-repeat: no-repeat;
-    filter: saturate(0.7) contrast(1.05);
-  }
-</style>
-{% endblock %}
-
-{% comment %}
-El login cambia el grano por la foto más la cuadrícula: es la pantalla más
-vacía del sistema —un panel chico en el medio— y la única que se ve antes de
-entrar, así que es donde el fondo tiene lugar para trabajar sin taparle nada
-a nadie. La cuadrícula queda arriba, sin fondo propio, como una malla sobre
-la ciudad.
-{% endcomment %}
-{% block fondo %}
-  <div class="foto-fondo" aria-hidden="true"></div>
-  <div class="cuadricula cuadricula--sobre-foto" aria-hidden="true"></div>
-{% endblock %}
-
 {% block contenido %}
-{% comment %}
-El panel es más ancho y menos alto que antes: los dos botones necesitan lugar
-para caber en una fila sin que las etiquetas se partan en dos renglones.
-{% endcomment %}
-<div class="mx-auto max-w-lg">
+<h1>Iniciar sesión</h1>
 
-  <p class="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-signal">
-    ログイン · Acceso
-  </p>
-  <h1 class="glitch mt-2 font-display text-4xl font-extrabold tracking-wide"
-      data-texto="INICIAR SESIÓN">INICIAR SESIÓN</h1>
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert"><span class="mensaje__prefijo">Error:</span> {{ error }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
-  {% if form.non_field_errors %}
-    <ul class="mt-5 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-    </ul>
-  {% endif %}
+<form method="post" novalidate class="pila">
+  {% csrf_token %}
 
-  <form method="post" novalidate class="panel-formulario mt-6 space-y-5 px-8 py-7">
-    {% csrf_token %}
+  {% include "_campo.html" with campo=form.username %}
+  {% include "_campo.html" with campo=form.password %}
 
-    {% include "_campo.html" with campo=form.username %}
-    {% include "_campo.html" with campo=form.password %}
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Ingresar</button>
+  </div>
+</form>
 
-    {% comment %}
-    Las dos salidas de la pantalla, en la proporción que les corresponde:
-    entrar es a lo que se viene, registrarse es para quien todavía no puede.
-    {% endcomment %}
-    <div class="fila-acciones pt-2">
-      <button type="submit" class="boton-publico">Ingresar</button>
-      <div class="marco-tenue">
-        <a href="{% url 'accounts:registro_cliente' %}" class="boton-publico-menor">Registrarse</a>
-      </div>
-    </div>
-
-    <p class="text-center">
-      <a href="{% url 'accounts:password_reset' %}"
-         class="font-mono text-xs uppercase tracking-[0.15em] text-static hover:text-screen">
-        ¿Olvidó su contraseña?
-      </a>
-    </p>
-  </form>
+<div class="pila-2">
+  <a href="{% url 'accounts:registro_cliente' %}" class="boton-texto">Registrarse</a>
+  <a href="{% url 'accounts:password_reset' %}" class="boton-texto">Olvidé mi contraseña</a>
 </div>
 {% endblock %}

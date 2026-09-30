@@ -109,13 +109,13 @@ def test_la_fila_del_propio_usuario_esta_marcada(client_admin, administrador, pe
     """El Administrador se ve a sí mismo en la tabla: conviene que lo sepa."""
     filas = filas_de_la_tabla(client_admin.get(URL_LISTA))
 
-    marcadas = [fila for fila in filas if ">propia<" in fila]
+    marcadas = [fila for fila in filas if ">Propia<" in fila]
     assert len(marcadas) == 1
     assert administrador.email in marcadas[0]
 
 
 def test_los_filtros_siguen_siendo_selects_de_verdad(client_admin):
-    """El desplegable propio es una mejora sobre el `select`, no un reemplazo.
+    """Los filtros son `select` nativos (`identidad_visual.md`, Formularios).
 
     Si el HTML dejara de traer los `select`, la pantalla dejaría de funcionar
     sin JavaScript y los filtros no viajarían en el envío del formulario.

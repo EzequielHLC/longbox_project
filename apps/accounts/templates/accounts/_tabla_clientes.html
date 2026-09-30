@@ -6,104 +6,88 @@ incrustado en la pantalla y también solo, cuando el buscador lo pide con
 No lleva columna de acciones: la pantalla es de consulta (ver `ClienteListaView`).
 {% endcomment %}
 {% if clientes %}
-  <p class="mb-2 font-mono text-xs text-static">
-    {{ paginator.count }} cliente{{ paginator.count|pluralize }}
-    {% if busqueda or estado_elegido or provincia_elegida %}
-      que coincide{{ paginator.count|pluralize }} con el filtro
-    {% endif %}
-  </p>
+  <div class="pila-3">
+    <p class="texto-chico secundario">
+      {{ paginator.count }} cliente{{ paginator.count|pluralize }}
+      {% if busqueda or estado_elegido or provincia_elegida %}
+        que coincide{{ paginator.count|pluralize }} con el filtro
+      {% endif %}
+    </p>
 
-  <div class="overflow-x-auto border border-line">
-    <table class="w-full text-left text-sm">
-      <thead>
-        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                   tracking-[0.15em] text-static">
-          <th class="px-4 py-3 font-medium">Nombre</th>
-          <th class="px-4 py-3 font-medium">Correo</th>
-          <th class="px-4 py-3 font-medium">Teléfono</th>
-          <th class="px-4 py-3 font-medium">Envío</th>
-          <th class="px-4 py-3 font-medium">Estado</th>
-          <th class="whitespace-nowrap px-4 py-3 font-medium">Registro</th>
-          <th class="whitespace-nowrap px-4 py-3 font-medium">Política</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cliente in clientes %}
-          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-            <td class="px-4 py-3">
-              <span class="block max-w-[16rem] truncate"
-                    title="{{ cliente.get_full_name|default:'Sin nombre cargado' }}">
-                {{ cliente.get_full_name|default:"—" }}
-              </span>
-            </td>
-            <td class="px-4 py-3 font-mono text-xs">
-              <span class="block max-w-[18rem] truncate" title="{{ cliente.email }}">
-                {{ cliente.email }}
-              </span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">
-              {{ cliente.telefono|default:"—" }}
-            </td>
-            <td class="px-4 py-3 text-xs">
-              {% if cliente.direccion_completa %}
-                <span class="block max-w-[20rem] truncate" title="{{ cliente.direccion_completa }}">
-                  {{ cliente.direccion_completa }}
-                </span>
-              {% else %}
-                <span class="text-static">Sin dirección</span>
-              {% endif %}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                           {% if cliente.estado == 'activo' %}border-static text-screen
-                           {% else %}border-line text-static{% endif %}">
-                {{ cliente.get_estado_display }}
-              </span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-              {{ cliente.date_joined|date:"d/m/Y" }}
-            </td>
-            {% comment %}
-            Evidencia del consentimiento informado (Ley 25.326). Una cuenta sin
-            fecha es una cuenta creada por otra vía —el admin de Django, una
-            carga a mano— y conviene que se note.
-            {% endcomment %}
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">
-              {% if cliente.acepto_politica_privacidad %}
-                <span class="text-static">
-                  {{ cliente.fecha_aceptacion_politica|date:"d/m/Y" }}
-                </span>
-              {% else %}
-                <span class="text-signal">Sin registrar</span>
-              {% endif %}
-            </td>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Envío</th>
+            <th>Estado</th>
+            <th>Registro</th>
+            <th>Política</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  {% if is_paginated %}
-    <div class="mt-4 flex items-center justify-between font-mono text-xs text-static">
-      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-      <span class="flex gap-4">
-        {% if page_obj.has_previous %}
-          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;provincia={{ provincia_elegida|urlencode }}&amp;page={{ page_obj.previous_page_number }}"
-             class="hover:text-screen">← Anterior</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;provincia={{ provincia_elegida|urlencode }}&amp;page={{ page_obj.next_page_number }}"
-             class="hover:text-screen">Siguiente →</a>
-        {% endif %}
-      </span>
+        </thead>
+        <tbody>
+          {% for cliente in clientes %}
+            <tr>
+              <td class="celda-principal">
+                <a href="{% url 'accounts:cliente_ficha' cliente.pk %}">{{ cliente.get_full_name|default:"Sin nombre cargado" }}</a>
+              </td>
+              <td class="cortar-palabras">{{ cliente.email }}</td>
+              <td class="datos sin-cortar">{{ cliente.telefono|default:"—" }}</td>
+              <td>
+                {% if cliente.direccion_completa %}
+                  {{ cliente.direccion_completa }}
+                {% else %}
+                  <span class="secundario">Sin dirección</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="marca-estado{% if cliente.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span>
+              </td>
+              <td class="datos sin-cortar secundario">{{ cliente.date_joined|date:"d/m/Y" }}</td>
+              {% comment %}
+              Evidencia del consentimiento informado (Ley 25.326). Una cuenta sin
+              fecha es una cuenta creada por otra vía, y conviene que se note.
+              {% endcomment %}
+              <td class="datos sin-cortar">
+                {% if cliente.acepto_politica_privacidad %}
+                  <span class="secundario">{{ cliente.fecha_aceptacion_politica|date:"d/m/Y" }}</span>
+                {% else %}
+                  <span class="estado estado--atencion">Sin registrar</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endif %}
-{% else %}
-  <p class="border border-line bg-panel px-4 py-6 text-sm text-static">
-    {% if busqueda or estado_elegido or provincia_elegida %}
-      Ningún cliente coincide con los criterios de búsqueda.
-    {% else %}
-      Todavía no hay clientes registrados.
+
+    {% if is_paginated %}
+      <div class="paginacion">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;provincia={{ provincia_elegida|urlencode }}&amp;page={{ page_obj.previous_page_number }}"
+               class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado_elegido }}&amp;provincia={{ provincia_elegida|urlencode }}&amp;page={{ page_obj.next_page_number }}"
+               class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+          {% endif %}
+        </span>
+      </div>
     {% endif %}
-  </p>
+  </div>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="clientes" %}
+    <p>
+      {% if busqueda or estado_elegido or provincia_elegida %}
+        Ningún cliente coincide con los criterios de búsqueda.
+      {% else %}
+        Todavía no hay clientes registrados.
+      {% endif %}
+    </p>
+  </div>
 {% endif %}

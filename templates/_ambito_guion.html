@@ -10,16 +10,6 @@ Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
   verdadero: universal *es* la lista vacía, no un estado paralelo que conviva
   con casillas marcadas que nadie ve.
 {% endcomment %}
-<style>
-  /* La ficha elegida se pinta en `azure`: es estado, no alerta. */
-  .ficha-opcion:has(input:checked) {
-    border-color: #1478FF;
-    color: #EDEAE4;
-    background-color: rgba(20, 120, 255, 0.12);
-  }
-  .ficha-opcion:hover { border-color: #57525C; }
-  .ficha-opcion:has(input:focus-visible) { outline: 1px solid #1478FF; outline-offset: 2px; }
-</style>
 <script>
   (function () {
     function armarAmbito(raiz) {
@@ -32,7 +22,6 @@ Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
 
       function mostrar(acotado) {
         opciones.classList.toggle("hidden", !acotado);
-        opciones.classList.toggle("flex", acotado);
         if (!acotado) {
           for (const casilla of casillas) casilla.checked = false;
         }

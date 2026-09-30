@@ -1,22 +1,16 @@
 {% comment %}
-Autocompletado propio, en reemplazo del `<datalist>` nativo.
+Autocompletado propio sobre un `<datalist>`.
 
-Mismo problema —y misma solución— que el `<select>` en `_desplegable.html`: la
-lista que despliega un `<datalist>` la dibuja el navegador, no acepta nuestra
-tipografía ni nuestra paleta, y en medio de la pantalla se ve un componente de
-Windows. Acá el `<datalist>` se conserva como *fuente de datos* y se le saca al
-campo el atributo `list`, así el navegador deja de mostrar la suya y dibujamos
-la nuestra con los tokens del sistema.
+Se conserva por una razón que no es de dibujo: la lista nativa busca
+distinguiendo acentos, y nadie escribe «Oberá» con tilde mientras busca. Acá el
+`<datalist>` sigue siendo la *fuente de datos*; al campo se le saca el atributo
+`list` para que el navegador no muestre la suya encima de ésta.
 
 Sin JavaScript el atributo `list` sigue puesto y el navegador hace lo suyo: se
 degrada al comportamiento nativo, que es feo pero funciona.
 
 Se aplica a los campos con `data-autocompletado="<id del datalist>"`.
 {% endcomment %}
-<style>
-  .caja-autocompletado { position: relative; }
-</style>
-
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     for (const campo of document.querySelectorAll("[data-autocompletado]")) {
@@ -40,8 +34,7 @@ Se aplica a los campos con `data-autocompletado="<id del datalist>"`.
     caja.append(campo);
 
     const lista = document.createElement("ul");
-    lista.className =
-      "absolute z-20 mt-1 hidden max-h-72 w-full overflow-y-auto border border-line bg-panel py-1";
+    lista.className = "lista-autocompletado hidden";
     lista.setAttribute("role", "listbox");
     caja.append(lista);
 
@@ -79,8 +72,6 @@ Se aplica a los campos con `data-autocompletado="<id del datalist>"`.
     function pintar() {
       lista.querySelectorAll("li").forEach((item, indice) => {
         const activo = indice === indiceActivo;
-        item.classList.toggle("bg-ash", activo);
-        item.classList.toggle("text-static", !activo);
         item.setAttribute("aria-selected", activo ? "true" : "false");
       });
     }
@@ -103,7 +94,6 @@ Se aplica a los campos con `data-autocompletado="<id del datalist>"`.
         const item = document.createElement("li");
         item.textContent = nombre;
         item.setAttribute("role", "option");
-        item.className = "cursor-pointer px-3 py-2 font-mono text-sm text-screen";
         // `mousedown` y no `click`: el clic llega después del `blur` del
         // campo, que ya cerró la lista y se llevó puesto el elemento.
         item.addEventListener("mousedown", (evento) => {

@@ -4,7 +4,7 @@ sistema y la de clientes, y sirve para cualquier listado que siga este contrato:
 
   - un `<form method="get" data-sin-capa id="filtros">` con los controles;
   - un contenedor `id="tabla"` con el fragmento de la tabla adentro;
-  - una capa `id="capa-tabla"` con el loader chico, para el feedback;
+  - una capa `id="capa-tabla" class="capa-tabla"` con el indicador de carga;
   - la vista devuelve *solo* el fragmento cuando le llega `?parcial=1`.
 
 Sin JavaScript el formulario se envía con su botón "Buscar" y recarga la
@@ -31,13 +31,11 @@ tabla está paginada: filtrar solo lo visible daría resultados falsos.
     let pedidoEnCurso = null;
 
     function mostrarCapa() {
-      capa?.classList.remove("hidden");
-      capa?.classList.add("grid");
+      capa?.classList.add("capa-tabla--visible");
     }
 
     function ocultarCapa() {
-      capa?.classList.add("hidden");
-      capa?.classList.remove("grid");
+      capa?.classList.remove("capa-tabla--visible");
     }
 
     function refrescar() {

@@ -1,0 +1,65 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CLI-CON paso 6 — `CO-195 consultarFichaDeCliente`. De sólo lectura por
+diseño: no hay ningún formulario ni ningún enlace a una operación sobre la
+cuenta. Las operaciones pertenecen a su titular.
+{% endcomment %}
+
+{% block titulo %}{{ cliente.get_full_name|default:cliente.email }} · Longbox{% endblock %}
+{% block seccion %}Clientes{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'accounts:cliente_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Clientes" atras=1 %}</span>
+    <h1>{{ cliente.get_full_name|default:"Sin nombre cargado" }}</h1>
+    <p>Cuenta de cliente · sólo lectura</p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-identificacion">
+    <div class="seccion__titulo"><h2 id="titulo-identificacion">Identificación y contacto</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Nombre</dt>
+      <dd>{{ cliente.get_full_name|default:"—" }}</dd>
+
+      <dt>Correo</dt>
+      <dd class="datos">{{ cliente.email }}</dd>
+
+      <dt>Teléfono</dt>
+      <dd class="datos">{{ cliente.telefono|default:"—" }}</dd>
+
+      <dt>Estado</dt>
+      <dd><span class="marca-estado{% if cliente.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span></dd>
+
+      <dt>Registro</dt>
+      <dd class="datos">{{ cliente.date_joined|date:"d/m/Y H:i" }}</dd>
+
+      <dt>Aceptó la política de privacidad</dt>
+      <dd class="datos">{{ cliente.fecha_aceptacion_politica|date:"d/m/Y H:i"|default:"—" }}</dd>
+    </dl>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-domicilio">
+    <div class="seccion__titulo"><h2 id="titulo-domicilio">Domicilio de envío</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Dirección</dt>
+      <dd>{{ cliente.direccion|default:"—" }}{% if cliente.depto %}, {{ cliente.depto }}{% endif %}</dd>
+
+      <dt>Referencias</dt>
+      <dd>{{ cliente.direccion_linea2|default:"—" }}</dd>
+
+      <dt>Localidad</dt>
+      <dd>{{ cliente.localidad|default:"—" }}</dd>
+
+      <dt>Provincia</dt>
+      <dd>{{ cliente.provincia|default:"—" }}</dd>
+
+      <dt>Código postal</dt>
+      <dd class="datos">{{ cliente.codigo_postal|default:"—" }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}

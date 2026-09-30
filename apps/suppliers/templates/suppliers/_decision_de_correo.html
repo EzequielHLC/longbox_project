@@ -1,0 +1,77 @@
+{% comment %}
+La decisión sobre un correo de la cola (CU-PRV-COL):
+
+- *Pendiente de aprobación*: aprobarlo (`CO-017`), que dispara la extracción, o
+  descartarlo con motivo (`CO-018`). Son dos caminos de igual peso.
+- *Procesado* o *Falló el procesamiento*: reprocesarlo (`CO-019`), que reemplaza
+  sólo los borradores que siguen abiertos.
+- *Descartado* o *En proceso*: nada que decidir; se muestra cómo se resolvió.
+
+La extracción puede tardar: el botón de aprobar lo dice, y la capa de carga de
+la cáscara queda visible mientras tanto.
+{% endcomment %}
+<section class="seccion" aria-labelledby="titulo-decision">
+  <div class="seccion__titulo"><h2 id="titulo-decision">Qué hacer con este correo</h2></div>
+
+  {% if correo.estado == 'pendiente' %}
+    <div class="rejilla-2">
+      <div class="panel">
+        <h3 class="fila-2">{% include "_iconos.html" with icono="listo" %}<span>Aprobar y procesar</span></h3>
+        <p class="secundario">
+          El modelo de lenguaje lee el contenido extraído y genera un borrador por cada
+          producto nuevo. Puede tardar varios minutos.
+        </p>
+        <form method="post" action="{% url 'suppliers:correo_aprobar' correo.pk %}" class="acciones">
+          {% csrf_token %}
+          <button type="submit" class="boton-primario">Aprobar y procesar</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3 class="fila-2">{% include "_iconos.html" with icono="baja" %}<span>Descartar</span></h3>
+        <p class="secundario">Lo saca de la cola sin procesarlo. El original queda archivado.</p>
+        <form method="post" novalidate class="formulario">
+          {% csrf_token %}
+          {% include "_campo.html" with campo=form.motivo %}
+          <div class="acciones">
+            <button type="submit" class="boton-primario">Descartar correo</button>
+            {% url 'suppliers:correo_lista' as dejarlo_pendiente %}
+            {% include "_boton_texto.html" with url=dejarlo_pendiente texto="Dejarlo pendiente" %}
+          </div>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <dl class="datos-de-ficha">
+      <dt>Resultado</dt>
+      <dd><span class="marca-estado{% if correo.estado == 'fallido' %} marca-estado--atencion{% endif %}">{{ correo.get_estado_display }}</span></dd>
+
+      <dt>Resuelto</dt>
+      <dd>
+        <span class="datos">{{ correo.resuelto_en|date:"d/m/Y H:i"|default:"—" }}</span>
+        {% if correo.resuelto_por %}· {{ correo.resuelto_por.get_full_name|default:correo.resuelto_por.email }}{% endif %}
+      </dd>
+
+      {% if correo.motivo %}
+        <dt>Motivo</dt>
+        <dd>{{ correo.motivo|linebreaksbr }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if correo.estado == 'procesado' or correo.estado == 'fallido' %}
+      <div class="panel formulario--angosto">
+        <h3 class="fila-2">{% include "_iconos.html" with icono="reactivar" %}<span>Volver a procesar</span></h3>
+        <p class="secundario">
+          Reemplaza los borradores de este correo que siguen abiertos. Los confirmados y los
+          rechazados no cambian. Si la extracción falla, los abiertos se conservan.
+        </p>
+        <form method="post" action="{% url 'suppliers:correo_reprocesar' correo.pk %}" class="acciones">
+          {% csrf_token %}
+          <button type="submit" class="boton-seccion">
+            {% include "_iconos.html" with icono="reactivar" %}<span>Reprocesar correo</span>
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  {% endif %}
+</section>

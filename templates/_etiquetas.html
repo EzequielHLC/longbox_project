@@ -2,65 +2,48 @@
 Selector de etiquetas: se escribe para buscar, se elige, y lo elegido queda como
 fichas con una × para quitar.
 
-**Por qué se reemplazó la lista de casillas.** Con cinco etiquetas se leía sola;
-con doscientas —que es a donde va un catálogo real— era una pared que había que
-recorrer entera para encontrar una, y no había forma de ver de un vistazo qué
-estaba elegido sin volver a recorrerla. El problema no era el agrupado sino el
-formato: una lista completa no escala, y el patrón que sí lo hace es buscar y
-acumular.
+**Por qué no una lista de casillas.** Con cinco etiquetas se leía sola; con
+doscientas —que es a donde va un catálogo real— era una pared que había que
+recorrer entera. El patrón que escala es buscar y acumular.
 
 **El control real sigue siendo el `<select multiple>` del formulario.** Queda en
-el HTML, oculto, y es el que se envía: sin JavaScript la pantalla sigue
-funcionando con el desplegable nativo, igual que el resto de los controles
-reemplazados del sistema. Nada de lo que se dibuja acá participa del POST.
-
-Cómo se maneja, que es la mitad del motivo para hacerlo:
+el HTML, oculto, y es el que se envía: sin JavaScript la pantalla funciona con
+el control nativo. Nada de lo que se dibuja acá participa del POST.
 
 - Se escribe y la lista filtra sola, sin distinguir mayúsculas ni acentos.
 - Flechas para recorrer, Enter para elegir, Escape para cerrar.
-- Retroceso con el campo vacío quita la última ficha, que es lo que hace todo
-  campo de fichas y lo que la mano espera.
+- Retroceso con el campo vacío quita la última ficha.
 
 Recibe `campo` (un `ModelMultipleChoiceField` sobre `Etiqueta`).
 {% endcomment %}
-<div class="min-w-0" data-selector-etiquetas>
-  <p class="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-    {{ campo.label }}
-  </p>
+<div class="campo" data-selector-etiquetas>
+  <p class="etiqueta">{{ campo.label }}</p>
 
   {% if campo.field.queryset.exists %}
     {{ campo }}
 
-    <div class="border border-line bg-panel">
-      {% comment %}
-      Las fichas y el campo de texto comparten caja y se leen como un solo
-      control: el cursor sigue a la última ficha, que es donde va a caer lo
-      próximo que se elija.
-      {% endcomment %}
-      <div class="flex flex-wrap items-center gap-1.5 px-2 py-2" data-fichas>
-        <input type="text" data-buscador
-               class="min-w-[8rem] flex-1 border-0 bg-transparent px-1 py-0.5 text-sm
-                      text-screen outline-none placeholder:text-static"
+    <div class="selector-etiquetas">
+      <div class="selector-etiquetas__fichas" data-fichas>
+        <input type="text" data-buscador class="selector-etiquetas__buscador"
                placeholder="Buscar etiqueta…"
                autocomplete="off" role="combobox" aria-expanded="false"
                aria-autocomplete="list" aria-label="{{ campo.label }}">
       </div>
 
-      <div class="hidden max-h-56 overflow-y-auto border-t border-line" data-lista role="listbox">
-      </div>
+      <div class="selector-etiquetas__lista hidden" data-lista role="listbox"></div>
     </div>
 
     {% if campo.help_text %}
-      <p class="mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static">{{ campo.help_text }}</p>
+      <p class="ayuda">{{ campo.help_text }}</p>
     {% endif %}
   {% else %}
-    <p class="border border-line bg-panel px-4 py-3 text-sm text-static">
+    <p class="panel texto-chico">
       No hay etiquetas cargadas. Se administran desde
-      <a href="{% url 'catalog:etiquetas' %}" class="text-screen hover:text-signal">Etiquetas</a>.
+      <a href="{% url 'catalog:etiquetas' %}">Etiquetas</a>.
     </p>
   {% endif %}
 
   {% for error in campo.errors %}
-    <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+    <p class="error-de-campo">Error: {{ error }}</p>
   {% endfor %}
 </div>

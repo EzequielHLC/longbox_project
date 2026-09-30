@@ -1,57 +1,49 @@
 {% comment %}
 El cuerpo de la pantalla de etiquetas. Va aparte porque el buscador lo pide con
-`?parcial=1` y reemplaza solo esta zona, sin recargar la pantalla.
+`?parcial=1` y reemplaza sólo esta zona, sin recargar la pantalla.
+
+Fichas y no filas de tabla: una etiqueta es un nombre y un número de uso, y
+cuarenta filas de dos columnas ocupan una pantalla entera para decir lo que las
+fichas dicen en un párrafo.
 {% endcomment %}
 {% if grupos %}
-  <div class="space-y-6">
+  <div class="pila-6">
     {% for grupo in grupos %}
-      <section class="border border-line bg-ash">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <div class="flex items-center gap-3">
-            <h2 class="font-display text-lg font-semibold tracking-wide">{{ grupo.nombre }}</h2>
-            <span class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-              {{ grupo.etiquetas_visibles|length }}
-            </span>
-            {% if not grupo.activo %}
-              <span class="border border-line px-2 py-0.5 font-mono text-[0.6rem]
-                           uppercase tracking-wider text-static">Inactivo</span>
-            {% endif %}
-          </div>
+      <section class="seccion">
+        <div class="seccion__titulo">
+          <h2 class="titulo-3">
+            {% include "_iconos.html" with icono="etiqueta" %}{{ grupo.nombre }}
+            <span class="texto-chico secundario normal">{{ grupo.etiquetas_visibles|length }}</span>
+            {% if not grupo.activo %}<span class="marca-estado marca-estado--apagado">Inactivo</span>{% endif %}
+          </h2>
           {% url 'catalog:grupo_etiqueta_editar' grupo.pk as editar_grupo %}
           {% include "_boton_texto.html" with url=editar_grupo texto="Editar grupo" %}
         </div>
 
         {% if grupo.etiquetas_visibles %}
-          {% comment %}
-          Fichas y no filas de tabla: una etiqueta es un nombre y un número, y
-          cuarenta filas de dos columnas ocupan una pantalla entera para decir
-          lo que las fichas dicen en un párrafo.
-          {% endcomment %}
-          <div class="flex flex-wrap gap-2 px-4 py-4">
+          <div class="fila-2">
             {% for etiqueta in grupo.etiquetas_visibles %}
-              <a href="{% url 'catalog:etiqueta_editar' etiqueta.pk %}"
-                 class="group inline-flex items-center gap-2 border px-3 py-1.5
-                        font-mono text-[0.7rem] hover:border-static
-                        {% if etiqueta.activa %}border-line text-screen
-                        {% else %}border-line text-static{% endif %}">
+              <a href="{% url 'catalog:etiqueta_editar' etiqueta.pk %}" class="ficha{% if not etiqueta.activa %} secundario{% endif %}">
                 <span>{{ etiqueta.nombre }}</span>
-                <span class="text-static">{{ etiqueta.cantidad_productos }}</span>
-                {% if not etiqueta.activa %}<span class="text-static">· inactiva</span>{% endif %}
+                <span class="datos secundario">{{ etiqueta.cantidad_productos }}</span>
+                {% if not etiqueta.activa %}<span>· inactiva</span>{% endif %}
               </a>
             {% endfor %}
           </div>
         {% else %}
-          <p class="px-4 py-4 text-sm text-static">Este grupo todavía no tiene etiquetas.</p>
+          <p class="secundario">Este grupo todavía no tiene etiquetas.</p>
         {% endif %}
       </section>
     {% endfor %}
   </div>
 {% elif busqueda %}
-  <p class="border border-line bg-ash px-4 py-6 text-center text-sm text-static">
-    Ninguna etiqueta coincide con «{{ busqueda }}».
-  </p>
+  <div class="vacio">
+    {% include "_iconos.html" with icono="buscar" %}
+    <p>Ninguna etiqueta coincide con «{{ busqueda }}».</p>
+  </div>
 {% else %}
-  <p class="border border-line bg-ash px-4 py-6 text-center text-sm text-static">
-    Todavía no hay etiquetas cargadas. Ninguna es obligatoria.
-  </p>
+  <div class="vacio">
+    {% include "_iconos.html" with icono="etiqueta" %}
+    <p>Todavía no hay etiquetas cargadas. Ninguna es obligatoria.</p>
+  </div>
 {% endif %}

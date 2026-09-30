@@ -2,85 +2,74 @@
 {% comment %}
 La cola de correos de proveedores: la antesala del pipeline de CU-ALT-NOV.
 
-La describe CU-PRV-COL, con CO-016, CO-017, CO-018, CO-157 y CO-158. Existe
-porque la fuente da por sentado que
-todo correo de un remitente registrado se procesa solo, y en la práctica por esa
-misma dirección llegan facturas, promociones y avisos de demora. Acá cada correo
-espera una decisión antes de que se gaste un solo ciclo en procesarlo.
+La describe CU-PRV-COL, con CO-017, CO-018, CO-019, CO-157 y CO-158. Por la
+dirección comercial de un proveedor no llegan sólo novedades: llegan facturas,
+promociones y avisos de demora. Acá cada correo espera una decisión antes de que
+se gaste un solo ciclo en procesarlo.
 
-Modo operativo, sin acción principal: en esta pantalla no se crea nada. Lo que
-se hace con un correo se decide en su ficha, mirando lo que se extrajo.
+Sin acción principal: en esta pantalla no se crea nada. Lo que se hace con un
+correo se decide en su ficha, mirando lo que se extrajo.
 {% endcomment %}
 
 {% block titulo %}Correos de proveedores · Longbox{% endblock %}
 {% block seccion %}Proveedores{% endblock %}
 
 {% block contenido %}
-<div class="mb-6">
-  <h1 class="font-display text-3xl font-bold tracking-wide">Correos de proveedores</h1>
-  <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-    Cola de aprobación · Nada se procesa sin confirmación
-  </p>
-</div>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Correos de proveedores</h1>
+    <p>Cola de aprobación. Nada se procesa sin confirmación.</p>
+  </div>
+</header>
 
 {% comment %}
-Una sola cifra, y solo cuando hay algo que hacer. Un tablero de cuatro
-recuadros acá contaría estados que no piden ninguna acción; lo único que importa
-al abrir la pantalla es cuántos esperan una decisión.
+Una sola cifra, y sólo cuando hay algo que hacer: lo único que importa al abrir
+la pantalla es cuántos esperan una decisión.
 {% endcomment %}
 {% if pendientes %}
-  <div class="mb-6 border-l-2 border-azure bg-ash px-4 py-3">
-    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Esperando decisión
-    </p>
-    <p class="mt-1 font-display text-2xl font-bold text-azure">{{ pendientes }}</p>
+  <div class="cifras">
+    <a class="cifra cifra--atencion" href="?estado=pendiente">
+      <span class="cifra__rotulo">Requiere atención</span>
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="correo" %}Esperando decisión</span>
+      <span class="cifra__valor">{{ pendientes }}</span>
+    </a>
   </div>
 {% endif %}
 
-<form id="filtros" method="get" data-sin-capa
-      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-  <div class="grow">
-    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Buscar
-    </label>
-    <input type="text" id="q" name="q" value="{{ busqueda }}"
-           placeholder="Buscar por asunto, remitente o proveedor — atajo: /" autocomplete="off"
-           class="w-full min-w-[26rem]">
+<section class="seccion">
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}"
+             placeholder="Asunto, remitente o proveedor — atajo: /" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+
+    {% if busqueda or estado_elegido %}
+      <a href="{% url 'suppliers:correo_lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% endif %}
+  </form>
+
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "suppliers/_tabla_correos.html" %}
+    </div>
   </div>
-
-  <div>
-    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Estado
-    </label>
-    <select id="estado" name="estado" class="w-56">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in estados %}
-        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar</button>
-
-  {% if busqueda or estado_elegido %}
-    <a href="{% url 'suppliers:correo_lista' %}"
-       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
-      Limpiar filtros
-    </a>
-  {% endif %}
-</form>
-
-<div class="relative">
-  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-    {% include "_loader.html" with clase="loader--chico" %}
-  </div>
-
-  <div id="tabla">
-    {% include "suppliers/_tabla_correos.html" %}
-  </div>
-</div>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}

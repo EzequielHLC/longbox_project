@@ -34,7 +34,9 @@ urlpatterns = [
     path("usuarios/", views.UsuarioListaView.as_view(), name="usuario_lista"),
     # Consulta de cuentas de Cliente: solo lectura (ver `ClienteListaView`).
     path("clientes/", views.ClienteListaView.as_view(), name="cliente_lista"),
+    path("clientes/<int:pk>/", views.ClienteFichaView.as_view(), name="cliente_ficha"),
     path("usuarios/nuevo/", views.UsuarioAltaView.as_view(), name="usuario_alta"),
+    path("usuarios/<int:pk>/", views.UsuarioFichaView.as_view(), name="usuario_ficha"),
     path("usuarios/<int:pk>/editar/", views.UsuarioEdicionView.as_view(), name="usuario_edicion"),
     path(
         "usuarios/<int:pk>/reenviar-activacion/",

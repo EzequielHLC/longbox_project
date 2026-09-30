@@ -9,30 +9,6 @@ un dedazo que nadie ve.
 El botón lo agrega JavaScript y no está en el HTML a propósito: sin JavaScript
 no habría nada que lo hiciera funcionar, y un botón muerto es peor que ninguno.
 {% endcomment %}
-<style>
-  .campo-con-ojo { position: relative; }
-  /* Sitio para el botón, para que el texto no le pase por debajo. */
-  .campo-con-ojo > input { padding-right: 5.5rem; }
-
-  .boton-ojo {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
-    padding: 0 0.85rem;
-    border: none;
-    background: transparent;
-    color: #57525C;
-    cursor: pointer;
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    transition: color 0.2s ease-in-out;
-  }
-  .boton-ojo:hover { color: #EDEAE4; }
-</style>
-
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     for (const campo of document.querySelectorAll('input[type="password"]')) {
@@ -45,7 +21,7 @@ no habría nada que lo hiciera funcionar, y un botón muerto es peor que ninguno
       // `type="button"`: sin esto, dentro de un formulario, el botón por
       // defecto es de envío y mostrar la contraseña mandaría el registro.
       boton.type = "button";
-      boton.className = "boton-ojo";
+      boton.className = "boton-texto";
 
       function pintar() {
         const oculta = campo.type === "password";

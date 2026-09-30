@@ -451,15 +451,17 @@ def test_una_extraccion_exitosa_deja_el_correo_procesado(correo):
 
 
 @pytest.mark.django_db
-def test_un_correo_que_no_era_de_novedades_igual_queda_procesado(correo):
-    """Que resulte no ser de novedades es un resultado válido, no un fallo: es
-    justamente lo que la clasificación viene a detectar."""
+def test_un_correo_sin_productos_identificados_queda_fallido(correo):
+    """`CO-017` E4: «no identifica ningún producto» es un fallo, y el correo
+    queda en la cola para reprocesarlo. Hasta el 2026-09-30 quedaba Procesado;
+    se corrigió a favor del contrato (B-04-004)."""
     with contestando(respuesta(intencion=extraccion.OTRO)):
         services.extraer_novedades(correo)
 
     correo.refresh_from_db()
-    assert correo.estado == CorreoProveedor.PROCESADO
+    assert correo.estado == CorreoProveedor.FALLIDO
     assert correo.productos_extraidos == []
+    assert "ningún producto" in correo.motivo
 
 
 @pytest.mark.django_db

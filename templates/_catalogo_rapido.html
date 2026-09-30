@@ -23,8 +23,6 @@ chequeo de repetidos, misma auditoría—: si el atajo fuera más laxo, sería
 justamente la puerta de entrada de los duplicados que ese formulario existe para
 evitar.
 
-Depende de `rehacerDesplegable`, que define `_desplegable.html` y que la cáscara
-operativa ya incluye en todas sus pantallas.
 {% endcomment %}
 <script>
   (function () {
@@ -77,7 +75,6 @@ operativa ya incluye en todas sus pantallas.
       for (const raiz of [document, molde?.content].filter(Boolean)) {
         for (const select of raiz.querySelectorAll(selectores)) {
           select.add(new Option(datos.nombre, datos.id));
-          rehacerDesplegable(select);
         }
       }
 

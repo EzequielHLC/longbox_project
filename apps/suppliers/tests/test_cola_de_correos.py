@@ -287,7 +287,8 @@ def test_la_ficha_de_un_resuelto_no_ofrece_descartarlo(client_admin, ivrea, admi
 
     contenido = client_admin.get(url_ficha(correo)).content.decode()
 
-    assert "Ya resuelto" in contenido
+    assert "Resultado" in contenido
+    assert "Descartado" in contenido
     assert "Descartar correo" not in contenido
 
 

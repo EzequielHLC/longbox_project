@@ -161,3 +161,54 @@ uso. Se escribe como lo que es: el módulo por su número y su nombre.
 **Qué se hizo.**
 `apps/suppliers/services.py`: «el módulo de Restock (CU-22 en adelante)» pasa a «el módulo 05,
 Restock». Es la última referencia al esquema anterior de numeración que quedaba en el código.
+
+---
+
+### B-04-004 · Un correo sin productos identificados quedaba Procesado, y el contrato dice que falla
+
+**Tipo:** Desvío · **Fecha:** 2026-09-30 · **Alcance:** `CU-PRV-COL`, `CU-ALT-NOV`, `CO-017` E4
+**Estado:** Resuelta — el responsable decidió el 2026-09-30 que manda el contrato (consulta C-08)
+
+**Qué apareció.**
+La extracción marcaba *Procesado* un correo cuando el modelo respondía pero no identificaba
+ningún producto, o lo clasificaba como algo que no es un anuncio de novedades. El código lo
+justificaba como «un resultado válido, no un fallo». Es anterior al contrato.
+
+**Qué dice la especificación.**
+> «Si el servicio devuelve error, no responde dentro del tiempo configurado o no identifica
+> ningún producto (E4), no se generan borradores, el correo pasa a Falló el procesamiento y
+> permanece en la cola para reprocesamiento.» (`CO-017`, Excepciones)
+
+**Qué se hizo.**
+Se corrigió el código a favor del contrato. Un correo sin productos identificados queda
+*Falló el procesamiento*, con el motivo escrito, y se puede reprocesar desde su ficha. Las dos
+pruebas que fijaban el comportamiento anterior se reescribieron para exigir el del contrato.
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### B-04-005 · La aprobación y el reprocesamiento corren dentro de la petición
+
+**Tipo:** Agregado · **Fecha:** 2026-09-30 · **Alcance:** `CU-PRV-COL`, `CO-017`, `CO-019`
+**Estado:** Resuelta — recomendación del plan 04, sin objeción del responsable (consultas C-09 y C-10)
+
+**Qué apareció.**
+El paso 5 de CU-PRV-COL dice que el sistema «ejecuta la extracción», y la extracción puede
+tardar hasta el tiempo de espera configurado. El documento no dice si eso ocurre mientras la
+pantalla espera o en segundo plano. Tampoco dice qué pasa con los borradores abiertos si un
+reprocesamiento falla.
+
+**Qué dice la especificación.**
+`Nada` sobre dónde corre. Sobre el reprocesamiento: «reemplaza únicamente los borradores que
+sigan abiertos» (`CO-019`), con «las excepciones de CO-017».
+
+**Qué se hizo.**
+La extracción corre dentro de la petición. Antes de llamar al modelo, el correo pasa a *En
+proceso* con el registro bloqueado, así que una segunda aprobación simultánea encuentra el
+estado y no vuelve a procesarlo (`CO-017` E1). Los borradores abiertos sólo se reemplazan si
+la nueva extracción tiene éxito; si falla, se conservan.
+
+**Qué habría que cambiar.**
+`CO-019`, Notas: agregar que, si la extracción falla, los borradores abiertos se conservan.

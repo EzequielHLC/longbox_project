@@ -25,9 +25,9 @@ pluggy==1.6.0
 pre_commit==4.6.1
 psycopg2-binary==2.9.12
 Pygments==2.20.0
-pytest==9.1.1
 pytest-cov==7.1.0
 pytest-django==4.12.0
+pytest==9.1.1
 python-dateutil==2.9.0.post0
 python-decouple==3.8
 python-discovery==1.5.1
@@ -40,3 +40,4 @@ sqlparse==0.5.5
 stevedore==5.9.0
 tzdata==2026.3
 virtualenv==21.7.1
+waitress==3.0.2

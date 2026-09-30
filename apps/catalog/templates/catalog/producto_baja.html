@@ -2,112 +2,84 @@
 {% comment %}
 CU-CAT-BAJ — Dar de Baja Producto.
 
-Esta pantalla es el informe de impacto que el CU exige antes de la confirmación,
-no un "¿está seguro?" adornado. Ocupa una pantalla entera por eso.
-
-Las cuatro categorías salen de `ImpactoDeBaja.categorias` y no están escritas
-acá: hoy ninguna se puede calcular, y cuando aparezca cada módulo lo que hay que
-tocar es el servicio, no esta plantilla.
-
-`signal` se usa con intención (acción destructiva), uno de los tres usos que el
-sistema visual le reserva en modo operativo.
+Esta pantalla es el informe de impacto que el CU exige antes de la confirmación.
+Las categorías salen de `ImpactoDeBaja.categorias` y no están escritas acá:
+cuando aparezca cada módulo, lo que hay que tocar es el servicio, no esta
+plantilla. Lo que todavía no se puede calcular se dice «No disponible», nunca 0.
 {% endcomment %}
 
 {% block titulo %}Dar de baja {{ producto.titulo }} · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-2xl">
-  {% url 'catalog:producto_detalle' producto.pk as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
+{% url 'catalog:producto_detalle' producto.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>Dar de baja producto</h1>
+    <p>{{ producto.titulo }} · <span class="datos">{{ producto.codigo }}</span> · {{ producto.tipo }}</p>
+  </div>
+</header>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Dar de baja producto</h1>
-  <p class="mt-2 text-sm text-static">
-    <span class="text-screen">{{ producto.titulo }}</span> ·
-    <span class="font-mono text-xs">{{ producto.codigo }}</span> · {{ producto.tipo }}
-  </p>
-
-  {% if producto.estado == "descatalogado" %}
-    <p class="mt-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
-      Este producto ya está fuera del catálogo. No hay nada que confirmar.
-    </p>
-  {% elif producto.estado == "cancelado_editorial" %}
-    <p class="mt-6 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-      Este producto está cancelado por editorial. Ese estado ya lo mantiene fuera del
+{% if producto.estado == "descatalogado" %}
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está fuera del catálogo. No hay nada que confirmar.</span></p>
+{% elif producto.estado == "cancelado_editorial" %}
+  <p class="mensaje" role="alert">
+    {% include "_iconos.html" with icono="error" %}
+    <span>
+      <span class="mensaje__prefijo">Error:</span>
+      este producto está cancelado por editorial. Ese estado ya lo mantiene fuera del
       catálogo y no admite otra baja.
-    </p>
-  {% else %}
-    <div class="mt-6 border-l-2 border-signal bg-panel px-5 py-4">
-      <h2 class="font-display text-lg font-semibold tracking-wide">Qué implica la baja</h2>
-      <ul class="mt-3 space-y-2 text-sm">
-        <li>
-          Deja de <span class="text-signal">verse en el catálogo público</span> y no se
-          puede vender.
-        </li>
-        <li>
-          Se conserva en el inventario interno, con su stock, su código y su historial
-          de ventas.
-        </li>
-        <li>Se puede revertir reactivándolo, y vuelve con la misma identidad.</li>
-      </ul>
+    </span>
+  </p>
+{% else %}
+  <div class="panel panel--atencion">
+    <div class="seccion__titulo"><h2>Qué implica la baja</h2></div>
+    <ul class="lista-renglones">
+      <li><span>Deja de <strong>verse en el catálogo público</strong> y no se puede vender.</span></li>
+      <li><span>Se conserva en el inventario interno, con su stock, su código y su historial de ventas.</span></li>
+      <li><span>Se puede revertir reactivándolo, y vuelve con la misma identidad.</span></li>
+    </ul>
+
+    <div class="cifras">
+      <div class="cifra{% if impacto.stock %} cifra--atencion{% endif %}">
+        {% if impacto.stock %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
+        <span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Stock actual</span>
+        <span class="cifra__valor">{{ impacto.stock }}</span>
+      </div>
+      <div class="cifra">
+        <span class="cifra__rotulo">Estado actual</span>
+        <span class="cifra__valor texto-base">{{ impacto.estado }}</span>
+      </div>
     </div>
 
-    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
-      <div class="border-l-2 border-line bg-ash px-4 py-3">
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Stock actual
-        </dt>
-        <dd class="mt-1 font-display text-2xl font-bold
-                   {% if impacto.stock %}text-signal{% else %}text-static{% endif %}">
-          {{ impacto.stock }}
-        </dd>
-      </div>
-      <div class="border-l-2 border-line bg-ash px-4 py-3">
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Estado actual
-        </dt>
-        <dd class="mt-1 font-display text-2xl font-bold">{{ impacto.estado }}</dd>
-      </div>
-    </dl>
-
-    <h2 class="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
-      Referencias al producto
-    </h2>
-    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+    <h3>Referencias al producto</h3>
+    <div class="cifras">
       {% for etiqueta, valor in impacto.categorias %}
-        <div class="border-l-2 border-line bg-ash px-4 py-3">
-          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-            {{ etiqueta }}
-          </dt>
+        <div class="cifra{% if valor %} cifra--atencion{% endif %}">
+          <span class="cifra__rotulo">{{ etiqueta }}</span>
           {% if valor is None %}
-            <dd class="mt-1 font-mono text-xs leading-relaxed text-static">
-              No disponible todavía.
-            </dd>
+            <span class="cifra__nota">No disponible todavía.</span>
           {% else %}
-            <dd class="mt-1 font-display text-2xl font-bold
-                       {% if valor %}text-signal{% else %}text-static{% endif %}">
-              {{ valor }}
-            </dd>
+            <span class="cifra__valor">{{ valor }}</span>
           {% endif %}
         </div>
       {% endfor %}
-    </dl>
+    </div>
 
     {% if impacto.todo_sin_determinar %}
-      <p class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-        Ninguna de estas referencias se puede consultar todavía. Revise por fuera del
-        sistema si hay compromisos pendientes con este producto antes de confirmar.
+      <p class="fila-2 fuerte">
+        {% include "_iconos.html" with icono="atencion" %}
+        <span>Ninguna de estas referencias se puede consultar todavía. Revise por fuera del
+        sistema si hay compromisos pendientes con este producto antes de confirmar.</span>
       </p>
     {% endif %}
 
-    <form method="post" class="mt-6 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+    <form method="post" class="acciones">
       {% csrf_token %}
-      <div class="marco-boton">
-        <button type="submit" class="boton-primario">Confirmar baja</button>
-      </div>
-      {% url 'catalog:producto_detalle' producto.pk as cancelar %}
-      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+      <button type="submit" class="boton-primario">Confirmar baja</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
     </form>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
 {% endblock %}

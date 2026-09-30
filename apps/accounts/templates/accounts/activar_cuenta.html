@@ -4,34 +4,24 @@
 {% block seccion %}Activación de cuenta{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-md border border-line bg-ash p-8">
+<div class="pila ancho-lectura">
   {% if validlink %}
-    <h1 class="font-display text-3xl font-bold tracking-wide">Activación de cuenta</h1>
+    <h1>Activación de cuenta</h1>
 
     {% if form.non_field_errors %}
-      <ul class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+      <ul class="mensajes">
+        {% for error in form.non_field_errors %}
+          <li class="mensaje" role="alert"><span class="mensaje__prefijo">Error:</span> {{ error }}</li>
+        {% endfor %}
       </ul>
     {% endif %}
 
-    <form method="post" novalidate class="mt-6 space-y-5">
+    <form method="post" novalidate class="pila">
       {% csrf_token %}
       {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}"
-                 class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-            {{ field.label }}
-          </label>
-          {{ field }}
-          {% if field.help_text %}
-            <div class="mt-2 text-xs text-static">{{ field.help_text|safe }}</div>
-          {% endif %}
-          {% for error in field.errors %}
-            <p class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
-          {% endfor %}
-        </div>
+        {% include "_campo.html" with campo=field %}
       {% endfor %}
-      <div class="marco-boton">
+      <div class="acciones">
         <button type="submit" class="boton-primario">Activar cuenta</button>
       </div>
     </form>
@@ -42,23 +32,17 @@
     E1 (vencido) manda a pedir uno nuevo; E2 (ya utilizado) ofrece el inicio de
     sesión sin revelar el estado de la cuenta.
     {% endcomment %}
-    <h1 class="font-display text-3xl font-bold tracking-wide">El enlace ya no es válido</h1>
+    <h1>El enlace ya no es válido</h1>
     {% if motivo_de_rechazo == "consumido" %}
-      <p class="mt-4 text-sm">
-        Este enlace de activación ya fue utilizado.
-      </p>
-      <p class="mt-6 text-sm">
-        <a href="{% url 'accounts:login' %}" class="text-screen underline hover:text-signal">
-          Ir al inicio de sesión
-        </a>
-      </p>
+      <p>Este enlace de activación ya fue utilizado.</p>
+      <p><a href="{% url 'accounts:login' %}" class="boton-texto">Ir al inicio de sesión</a></p>
     {% elif motivo_de_rechazo == "vencido" %}
-      <p class="mt-4 text-sm">
+      <p>
         El enlace de activación venció o fue reemplazado por uno más reciente. Solicite al
         administrador del sistema la generación de un enlace nuevo.
       </p>
     {% else %}
-      <p class="mt-4 text-sm">
+      <p>
         El enlace de activación ha vencido, ya fue utilizado o fue reemplazado por uno más
         reciente. Solicite al administrador del sistema la generación de un enlace nuevo.
       </p>

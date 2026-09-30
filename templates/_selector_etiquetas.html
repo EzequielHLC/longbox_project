@@ -3,7 +3,7 @@ El comportamiento del selector de etiquetas. Va una sola vez, en la cáscara
 operativa, y se aplica a cada `[data-selector-etiquetas]` de la pantalla.
 
 Está separado del parcial que dibuja el control por el mismo motivo que el
-desplegable y el selector de archivo: el marcado se repite una vez por campo y
+selector de archivo: el marcado se repite una vez por campo y
 el guion, ninguna.
 
 **El `<select multiple>` real es el que manda.** Se lo esconde y se lo maneja por
@@ -50,16 +50,13 @@ segundo estado que pueda desincronizarse del primero.
         for (const dato of elegidas()) {
           const ficha = document.createElement("span");
           ficha.dataset.ficha = "1";
-          ficha.className =
-            "inline-flex items-center gap-1.5 border border-line bg-ash px-2 py-1 " +
-            "font-mono text-[0.7rem] text-screen";
+          ficha.className = "ficha";
           const texto = document.createElement("span");
           texto.textContent = dato.grupo ? `${dato.grupo} · ${dato.nombre}` : dato.nombre;
           ficha.append(texto);
 
           const quitar = document.createElement("button");
           quitar.type = "button";
-          quitar.className = "text-static hover:text-signal";
           quitar.setAttribute("aria-label", `Quitar ${dato.nombre}`);
           quitar.textContent = "×";
           quitar.addEventListener("click", () => {
@@ -85,7 +82,7 @@ segundo estado que pueda desincronizarse del primero.
 
         if (!visibles.length) {
           const vacio = document.createElement("p");
-          vacio.className = "px-3 py-2.5 font-mono text-[0.7rem] text-static";
+          vacio.className = "selector-etiquetas__vacio";
           vacio.textContent = buscador.value.trim()
             ? "Ninguna etiqueta coincide."
             : "Ya están todas elegidas.";
@@ -98,9 +95,7 @@ segundo estado que pueda desincronizarse del primero.
           if (dato.grupo && dato.grupo !== grupoDibujado) {
             grupoDibujado = dato.grupo;
             const encabezado = document.createElement("p");
-            encabezado.className =
-              "border-b border-line bg-ash px-3 py-1.5 font-mono text-[0.6rem] " +
-              "uppercase tracking-[0.2em] text-static";
+            encabezado.className = "selector-etiquetas__grupo";
             encabezado.textContent = dato.grupo;
             lista.append(encabezado);
           }
@@ -108,7 +103,7 @@ segundo estado que pueda desincronizarse del primero.
           fila.type = "button";
           fila.dataset.indice = String(indice);
           fila.setAttribute("role", "option");
-          fila.className = "block w-full px-3 py-2 text-left text-sm hover:bg-ash";
+          fila.className = "selector-etiquetas__opcion";
           fila.textContent = dato.nombre;
           fila.addEventListener("mousedown", (evento) => {
             // `mousedown` y no `click`: el `blur` del buscador cierra la lista
@@ -125,8 +120,8 @@ segundo estado que pueda desincronizarse del primero.
         const filas = lista.querySelectorAll("[data-indice]");
         filas.forEach((fila, indice) => {
           const activa = indice === resaltado;
-          fila.classList.toggle("bg-ash", activa);
-          fila.classList.toggle("text-screen", activa);
+          fila.classList.toggle("selector-etiquetas__opcion--resaltada", activa);
+          fila.setAttribute("aria-selected", activa ? "true" : "false");
           if (activa) fila.scrollIntoView({ block: "nearest" });
         });
       }

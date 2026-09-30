@@ -1,13 +1,14 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-La ficha de un correo de la cola: qué llegó, qué se extrajo y qué se hace.
+La ficha de un correo de la cola: qué llegó, qué se extrajo y qué se hace
+(CU-PRV-COL, `CO-158 abrirFichaDeCorreo`).
 
 Lo que se muestra es el **contenido extraído**, no el HTML original. Es
 exactamente lo que se le va a mandar al modelo, y poder leerlo antes de aprobar
 es lo que permite darse cuenta de que la extracción salió mal —columnas
 corridas, una tabla que no se reconoció— sin haber gastado un solo ciclo.
 
-Las filas de una tabla de datos se distinguen de la prosa con un borde: si el
+Las filas de una tabla de datos se distinguen de la prosa con un filete: si el
 bloque no muestra ninguna fila marcada, la extracción aplanó la tabla y el
 correo no está listo para procesarse.
 {% endcomment %}
@@ -15,415 +16,259 @@ correo no está listo para procesarse.
 {% block titulo %}{{ correo.asunto|default:"Correo" }} · Longbox{% endblock %}
 {% block seccion %}Proveedores{% endblock %}
 
-{% block cabecera_extra %}
-  {{ block.super }}
-  <style>
-    /* El contenido extraído se lee como un bloque de datos, no como prosa: la
-       alineación de las barras es lo que deja ver de un vistazo si las columnas
-       quedaron parejas. */
-    .linea-extraida { white-space: pre-wrap; }
-    .linea-extraida--fila { border-left: 2px solid #1478FF; padding-left: 0.75rem; }
-  </style>
-{% endblock %}
-
 {% block contenido %}
-<div class="mx-auto max-w-4xl">
-  {% url 'suppliers:correo_lista' as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a la cola" atras=1 %}
-
-  <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-    <div class="min-w-0">
-      <h1 class="font-display text-3xl font-bold tracking-wide">
-        {{ correo.asunto|default:"Sin asunto" }}
-      </h1>
-      <p class="mt-2 flex flex-wrap items-center gap-3">
-        <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                     {% if correo.estado == 'pendiente' %}border-azure text-azure
-                     {% elif correo.estado == 'fallido' %}border-signal text-signal
-                     {% else %}border-line text-static{% endif %}">
-          {{ correo.get_estado_display }}
-        </span>
-        <a href="{% url 'suppliers:proveedor_detalle' correo.proveedor.pk %}"
-           class="font-mono text-xs text-static hover:text-screen">
-          {{ correo.proveedor }}
-        </a>
-      </p>
-    </div>
-
-    {% if correo.archivo %}
-      {% include "_boton_texto.html" with url=correo.archivo.url texto="Ver original" %}
-    {% endif %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'suppliers:correo_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Cola de correos" atras=1 %}</span>
+    <h1>{{ correo.asunto|default:"Sin asunto" }}</h1>
+    <p class="fila">
+      <span class="marca-estado{% if correo.estado == 'pendiente' or correo.estado == 'fallido' %} marca-estado--atencion{% elif correo.estado == 'descartado' %} marca-estado--apagado{% endif %}">{{ correo.get_estado_display }}</span>
+      <a href="{% url 'suppliers:proveedor_detalle' correo.proveedor.pk %}">{{ correo.proveedor }}</a>
+    </p>
   </div>
 
-  <div class="mt-6 border border-line bg-ash p-6">
-    <dl class="grid gap-5 sm:grid-cols-2">
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Remitente</dt>
-        <dd class="mt-1 break-all font-mono text-sm">{{ correo.remitente }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Fecha del correo
-        </dt>
-        <dd class="mt-1 font-mono text-sm">
-          {{ correo.fecha|date:"d/m/Y H:i"|default:"—" }}
-        </dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Ingresado</dt>
-        <dd class="mt-1 font-mono text-sm">{{ correo.recibido_en|date:"d/m/Y H:i" }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Portadas embebidas
-        </dt>
-        <dd class="mt-1 font-display text-2xl font-bold">{{ correo.cantidad_imagenes }}</dd>
-      </div>
+  {% if correo.archivo %}
+    <a href="{{ correo.archivo.url }}" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="descargar" %}<span>Ver original</span>
+    </a>
+  {% endif %}
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Datos del correo</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Remitente</dt>
+      <dd class="datos">{{ correo.remitente }}</dd>
+
+      <dt>Fecha del correo</dt>
+      <dd class="datos">{{ correo.fecha|date:"d/m/Y H:i"|default:"—" }}</dd>
+
+      <dt>Ingresado</dt>
+      <dd class="datos">{{ correo.recibido_en|date:"d/m/Y H:i" }}</dd>
+
+      <dt>Portadas embebidas</dt>
+      <dd class="datos fuerte">{{ correo.cantidad_imagenes }}</dd>
     </dl>
-
-    {% comment %}
-    La cabecera que van a heredar los borradores de este correo. Se muestra acá
-    y no solo en la ficha del proveedor porque es lo que hay que verificar antes
-    de aprobar: si el proveedor tiene la editorial equivocada, todo lo que salga
-    de este correo va a nacer mal.
-    {% endcomment %}
-    <div class="mt-5 border-t border-line pt-4">
-      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-        Sus borradores van a heredar
-      </p>
-      <p class="mt-2 text-sm">
-        <span class="{% if correo.proveedor.trae_varias_editoriales %}text-static{% endif %}">
-          {{ correo.proveedor.editorial|default:"Editorial: se extrae de cada correo" }}
-        </span>
-        <span class="text-line" aria-hidden="true"> · </span>
-        <span class="{% if not correo.proveedor.tipo_por_defecto %}text-static{% endif %}">
-          {{ correo.proveedor.tipo_por_defecto|default:"Tipo: se extrae de cada correo" }}
-        </span>
-      </p>
-    </div>
-  </div>
+  </section>
 
   {% comment %}
-  Las portadas: identificador, tipo y tamaño. No se muestran las imágenes en sí
-  porque todavía no están extraídas del original — se sacan cuando haya un
-  borrador al que asociarlas, y copiarlas antes sería duplicar bytes que ya
-  están archivados.
+  La cabecera que van a heredar los borradores de este correo. Se muestra acá
+  porque es lo que hay que verificar antes de aprobar: si el proveedor tiene la
+  editorial equivocada, todo lo que salga de este correo va a nacer mal.
   {% endcomment %}
-  {% if correo.imagenes %}
-    <section class="mt-8">
-      <h2 class="font-display text-lg font-semibold tracking-wide">Portadas embebidas</h2>
-      <p class="mt-1 text-sm text-static">
-        Vinieron dentro del correo, no hay nada que descargar. Cada una se asocia a su
-        producto por el identificador que aparece en la fila.
-      </p>
-      <div class="mt-4 overflow-x-auto border border-line">
-        <table class="w-full text-left text-sm">
+  <section class="seccion" aria-labelledby="titulo-herencia">
+    <div class="seccion__titulo"><h2 id="titulo-herencia">Sus borradores van a heredar</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Editorial</dt>
+      <dd{% if correo.proveedor.trae_varias_editoriales %} class="secundario"{% endif %}>
+        {{ correo.proveedor.editorial|default:"Se extrae de cada correo" }}
+      </dd>
+
+      <dt>Tipo de material</dt>
+      <dd{% if not correo.proveedor.tipo_por_defecto %} class="secundario"{% endif %}>
+        {{ correo.proveedor.tipo_por_defecto|default:"Se extrae de cada correo" }}
+      </dd>
+    </dl>
+  </section>
+</div>
+
+{% comment %}
+Las portadas: identificador, tipo y tamaño. No se muestran las imágenes en sí
+porque todavía no están extraídas del original: se sacan cuando haya un
+borrador al que asociarlas.
+{% endcomment %}
+{% if correo.imagenes %}
+  <section class="seccion" aria-labelledby="titulo-portadas">
+    <div class="seccion__titulo"><h2 id="titulo-portadas">Portadas embebidas</h2></div>
+    <p class="seccion__bajada">
+      Vinieron dentro del correo, no hay nada que descargar. Cada una se asocia a su
+      producto por el identificador que aparece en la fila.
+    </p>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Identificador</th><th>Tipo</th><th class="numero">Tamaño</th></tr>
+        </thead>
+        <tbody>
+          {% for imagen in correo.imagenes %}
+            <tr>
+              <td class="datos">{{ imagen.cid }}</td>
+              <td class="datos secundario">{{ imagen.tipo }}</td>
+              <td class="numero secundario">{{ imagen.bytes|filesizeformat }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+
+{% comment %}
+Lo que el modelo entendió, **antes** de que se convierta en borradores. La
+confianza la declara el modelo —«esto lo leí dudando»— y el reparo lo detecta
+el sistema —«esto lo descarté porque no verifica»—: son cosas distintas.
+{% endcomment %}
+{% if correo.extraccion %}
+  <section class="seccion" aria-labelledby="titulo-modelo">
+    <div class="seccion__titulo">
+      <h2 id="titulo-modelo">{% include "_iconos.html" with icono="modelo" %}Lo que entendió el modelo</h2>
+      <span class="texto-chico secundario">
+        Intención: <strong>{{ correo.intencion|default:"—" }}</strong>
+        {% if correo.version_prompt %}· prompt v{{ correo.version_prompt }}{% endif %}
+      </span>
+    </div>
+
+    {% if correo.productos_extraidos %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
           <thead>
-            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                       tracking-[0.15em] text-static">
-              <th class="px-4 py-3 font-medium">Identificador</th>
-              <th class="px-4 py-3 font-medium">Tipo</th>
-              <th class="px-4 py-3 text-right font-medium">Tamaño</th>
+            <tr>
+              <th>ISBN</th>
+              <th>Título</th>
+              <th>Vol.</th>
+              <th>Formato</th>
+              <th class="numero">Precio</th>
+              <th>Portada</th>
             </tr>
           </thead>
           <tbody>
-            {% for imagen in correo.imagenes %}
-              <tr class="border-b border-line last:border-b-0">
-                <td class="px-4 py-3 font-mono text-xs">{{ imagen.cid }}</td>
-                <td class="px-4 py-3 font-mono text-xs text-static">{{ imagen.tipo }}</td>
-                <td class="px-4 py-3 text-right font-mono text-xs text-static">
-                  {{ imagen.bytes|filesizeformat }}
-                </td>
+            {% for producto in correo.productos_extraidos %}
+              <tr>
+                <td class="datos{% if not producto.isbn %} secundario{% endif %}">{{ producto.isbn|default:"—" }}</td>
+                <td>{{ producto.titulo|default:"—" }}</td>
+                <td class="datos">{{ producto.volumen|default:"—" }}</td>
+                <td class="secundario">{{ producto.formato|default:"—" }}</td>
+                <td class="numero{% if not producto.precio %} fuerte{% endif %}">{{ producto.precio|default:"Sin precio" }}</td>
+                <td class="secundario">{% if producto.imagen %}Sí{% else %}—{% endif %}</td>
               </tr>
+              {% if producto.reparos %}
+                <tr>
+                  <td colspan="6">
+                    {% for reparo in producto.reparos %}<p class="reparo"><strong>Reparo:</strong> {{ reparo }}</p>{% endfor %}
+                  </td>
+                </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
-    </section>
-  {% endif %}
-
-  {% comment %}
-  Lo que el modelo entendió, **antes** de que se convierta en borradores. Es un
-  paso más de la misma idea que el contenido extraído: cada etapa del pipeline
-  se puede mirar antes de que la siguiente gaste algo.
-
-  Los reparos van en `signal` y la confianza baja en `static`: son cosas
-  distintas. La confianza la declara el modelo —"esto lo leí dudando"— y el
-  reparo lo detectamos nosotros —"esto lo descarté porque no verifica"—.
-  {% endcomment %}
-  {% if correo.extraccion %}
-    <section class="mt-8">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <h2 class="font-display text-lg font-semibold tracking-wide">Lo que entendió el modelo</h2>
-        <p class="font-mono text-[0.65rem] text-static">
-          Intención: <span class="text-screen">{{ correo.intencion|default:"—" }}</span>
-          {% if correo.version_prompt %}· prompt v{{ correo.version_prompt }}{% endif %}
-        </p>
-      </div>
-
-      {% if correo.productos_extraidos %}
-        <div class="mt-4 overflow-x-auto border border-line">
-          <table class="w-full text-left text-sm">
-            <thead>
-              <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                         tracking-[0.15em] text-static">
-                <th class="px-4 py-3 font-medium">ISBN</th>
-                <th class="px-4 py-3 font-medium">Título</th>
-                <th class="px-4 py-3 font-medium">Vol.</th>
-                <th class="px-4 py-3 font-medium">Formato</th>
-                <th class="px-4 py-3 text-right font-medium">Precio</th>
-                <th class="px-4 py-3 font-medium">Portada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for producto in correo.productos_extraidos %}
-                <tr class="border-b border-line last:border-b-0
-                           {% if producto.reparos %}bg-panel{% endif %}">
-                  <td class="px-4 py-3 font-mono text-xs
-                             {% if not producto.isbn %}text-static{% endif %}">
-                    {{ producto.isbn|default:"—" }}
-                  </td>
-                  <td class="px-4 py-3">{{ producto.titulo|default:"—" }}</td>
-                  <td class="px-4 py-3 font-mono text-xs">{{ producto.volumen|default:"—" }}</td>
-                  <td class="px-4 py-3 text-static">{{ producto.formato|default:"—" }}</td>
-                  <td class="px-4 py-3 text-right font-mono text-xs
-                             {% if not producto.precio %}text-signal{% endif %}">
-                    {{ producto.precio|default:"sin precio" }}
-                  </td>
-                  <td class="px-4 py-3 font-mono text-[0.65rem] text-static">
-                    {% if producto.imagen %}sí{% else %}—{% endif %}
-                  </td>
-                </tr>
-                {% if producto.reparos %}
-                  <tr class="border-b border-line last:border-b-0">
-                    <td colspan="6" class="px-4 pb-3 pt-0">
-                      {% for reparo in producto.reparos %}
-                        <p class="border-l-2 border-signal pl-3 font-mono text-[0.65rem]
-                                  leading-relaxed text-signal">{{ reparo }}</p>
-                      {% endfor %}
-                    </td>
-                  </tr>
-                {% endif %}
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <p class="mt-2 font-mono text-[0.65rem] text-static">
-          Todavía no son productos del catálogo: la confirmación es un paso aparte.
-        </p>
-      {% else %}
-        <p class="mt-4 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
+      <p class="texto-chico secundario">Todavía no son productos del catálogo: la confirmación es un paso aparte.</p>
+    {% else %}
+      <p class="mensaje">
+        {% include "_iconos.html" with icono="info" %}
+        <span>
           {% if correo.intencion == "novedades" %}
             El modelo lo clasificó como novedades pero no identificó ningún producto.
             Conviene revisar el contenido extraído de más abajo.
           {% else %}
             No es un anuncio de novedades, así que no se extrajo ningún producto.
           {% endif %}
-        </p>
-      {% endif %}
-    </section>
-  {% endif %}
-
-  {% comment %}
-  Los borradores que produjo la extracción. Van junto al contenido del que
-  salieron y no en una pantalla aparte, porque es la única forma de ver si el
-  modelo entendió la tabla: un borrador con el precio del tomo siguiente solo se
-  nota teniendo las dos cosas a la vista.
-
-  Acciones no hay ninguna todavía —confirmar y rechazar son CU-ALT-REV—, así que esta
-  sección solo muestra.
-  {% endcomment %}
-  {% if borradores %}
-    <section class="mt-8">
-      <h2 class="font-display text-lg font-semibold tracking-wide">Borradores generados</h2>
-      <p class="mt-1 text-sm text-static">
-        Esperan la revisión del Administrador. Todavía no son productos del catálogo:
-        confirmarlos es un paso aparte.
+        </span>
       </p>
+    {% endif %}
+  </section>
+{% endif %}
 
-      <div class="mt-4 space-y-3">
-        {% for borrador in borradores %}
-          <article class="border border-line bg-ash">
-            <div class="flex gap-4 p-4">
-              <div class="w-16 shrink-0">
-                {% if borrador.portada %}
-                  <img src="{{ borrador.portada.url }}" alt="Portada de {{ borrador.titulo }}"
-                       class="w-full border border-line">
-                {% else %}
-                  <div class="flex aspect-[2/3] w-full items-center justify-center
-                              border border-dashed border-line text-center font-mono
-                              text-[0.55rem] leading-tight text-static">
-                    Imagen<br>pendiente
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h3 class="font-display text-base font-semibold tracking-wide">
-                    {{ borrador.titulo|default:"(sin título)" }}
-                    {% if borrador.volumen %}
-                      <span class="font-mono text-sm text-static">#{{ borrador.volumen }}</span>
-                    {% endif %}
-                  </h3>
-                  {% if borrador.estado == "incompleto" %}
-                    <span class="border border-signal px-2 py-0.5 font-mono text-[0.6rem]
-                                 uppercase tracking-wider text-signal">
-                      Extracción incompleta
-                    </span>
-                  {% endif %}
-                </div>
-
-                <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
-                  <div>
-                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-                      ISBN
-                    </dt>
-                    <dd class="mt-0.5 font-mono text-xs
-                               {% if not borrador.isbn %}text-static{% endif %}">
-                      {{ borrador.isbn|default:"—" }}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-                      Precio
-                    </dt>
-                    <dd class="mt-0.5 font-mono text-xs
-                               {% if borrador.precio == None %}text-signal{% endif %}">
-                      {% if borrador.precio != None %}${{ borrador.precio }}{% else %}falta{% endif %}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-                      Formato
-                    </dt>
-                    <dd class="mt-0.5 text-xs text-static">{{ borrador.formato|default:"—" }}</dd>
-                  </div>
-                  <div>
-                    <dt class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-                      Nace como
-                    </dt>
-                    {% comment %}
-                    En `azure` porque el estado no lo eligió nadie: lo derivó el
-                    sistema de la fecha anunciada, que es exactamente para lo que
-                    el sistema visual reserva ese acento.
-                    {% endcomment %}
-                    <dd class="mt-0.5 font-mono text-xs text-azure">
-                      {{ borrador.get_estado_sugerido_display }}
-                      {% if borrador.fecha_llegada %}
-                        · {{ borrador.fecha_llegada|date:"d/m/Y" }}
-                      {% endif %}
-                    </dd>
-                  </div>
-                </dl>
-
-                {% comment %}
-                Las dos cosas que la revisión de CU-ALT-REV tiene que mirar, y que son
-                distintas: la confianza baja la declara el modelo ("esto lo leí
-                dudando") y el reparo lo detectamos nosotros ("esto lo descarté
-                porque no verifica").
-                {% endcomment %}
-                {% if borrador.confianzas_bajas_sin_revisar %}
-                  <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
-                    Confianza baja:
-                    {% for confianza in borrador.confianzas_bajas_sin_revisar %}
-                      <span class="text-screen">{{ confianza.campo }}</span>{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                  </p>
-                {% endif %}
-
-                {% for reparo in borrador.reparos %}
-                  <p class="mt-2 border-l-2 border-signal pl-3 font-mono text-[0.65rem]
-                            leading-relaxed text-signal">{{ reparo }}</p>
-                {% endfor %}
-              </div>
-            </div>
-          </article>
-        {% endfor %}
-      </div>
-
-      <p class="mt-3 font-mono text-[0.65rem] text-static">
-        La editorial y el rubro salen de la ficha del proveedor. El stock inicial se
-        ajusta al confirmar.
-      </p>
-    </section>
-  {% endif %}
-
-  <section class="mt-8">
-    <h2 class="font-display text-lg font-semibold tracking-wide">Contenido extraído</h2>
-    <p class="mt-1 text-sm text-static">
-      Es lo que se le entrega al modelo. Las líneas en azul son filas de una tabla; si no
-      hay ninguna, conviene revisar el original antes de procesarlo.
+{% comment %}
+Los borradores que produjo la extracción. Van junto al contenido del que
+salieron: un borrador con el precio del tomo siguiente sólo se nota teniendo
+las dos cosas a la vista. Confirmar y rechazar son CU-ALT-REV.
+{% endcomment %}
+{% if borradores %}
+  <section class="seccion" aria-labelledby="titulo-borradores">
+    <div class="seccion__titulo">
+      <h2 id="titulo-borradores">{% include "_iconos.html" with icono="borradores" %}Borradores generados</h2>
+      <a href="{% url 'catalog:borrador_lista' %}" class="boton-texto texto-chico"><span>Ir a la revisión</span>{% include "_iconos.html" with icono="siguiente" %}</a>
+    </div>
+    <p class="seccion__bajada">
+      Esperan la revisión del Administrador. Todavía no son productos del catálogo:
+      confirmarlos es un paso aparte.
     </p>
 
-    {% if lineas %}
-      <div class="mt-4 space-y-1 overflow-x-auto border border-line bg-panel px-5 py-4
-                  font-mono text-xs leading-relaxed">
-        {% for linea in lineas %}
-          <p class="linea-extraida {% if linea.es_fila %}linea-extraida--fila{% else %}text-static{% endif %}">{{ linea.texto }}</p>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-        No se pudo extraer contenido de este correo. Revise el original: puede venir vacío,
-        solo con una imagen, o en un formato que la extracción no contempla.
-      </p>
-    {% endif %}
-  </section>
-
-  {% comment %}
-  La decisión. La única acción de pantalla es descartar, y que no haya un botón
-  de "procesar" **no es porque falte el extractor**: el extractor existe, y hoy
-  se dispara con `python manage.py extraer_novedades --correo <id>`.
-
-  Falta el botón por RNF-02. El llamado al modelo local tarda minutos, y
-  dispararlo dentro del ciclo de request/response dejaría la pantalla colgada
-  hasta el timeout —y si el navegador corta antes, sin forma de saber si el
-  correo se procesó—. Es la pieza que necesita el ejecutor en segundo plano.
-  {% endcomment %}
-  <section class="mt-8 border-t border-line pt-6">
-    {% if correo.esta_abierto %}
-      <h2 class="font-display text-lg font-semibold tracking-wide">Qué hacer con este correo</h2>
-      <p class="mt-1 text-sm text-static">
-        Descartarlo lo saca de la cola sin procesarlo. Para procesarlo, ejecute
-        <span class="font-mono text-xs text-screen">manage.py extraer_novedades --correo {{ correo.pk }}</span>.
-      </p>
-
-      <form method="post" novalidate class="mt-4 max-w-xl">
-        {% csrf_token %}
-        {% include "_campo.html" with campo=form.motivo %}
-        <div class="mt-5 flex items-center gap-6">
-          <div class="marco-boton">
-            <button type="submit" class="boton-primario">Descartar correo</button>
-          </div>
-          {% url 'suppliers:correo_lista' as dejarlo_pendiente %}
-          {% include "_boton_texto.html" with url=dejarlo_pendiente texto="Dejarlo pendiente" %}
-        </div>
-      </form>
-    {% else %}
-      <h2 class="font-display text-lg font-semibold tracking-wide">Ya resuelto</h2>
-      <dl class="mt-3 grid gap-4 sm:grid-cols-2">
-        <div>
-          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Resultado</dt>
-          <dd class="mt-1 text-sm">{{ correo.get_estado_display }}</dd>
-        </div>
-        <div>
-          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Resuelto</dt>
-          <dd class="mt-1 font-mono text-sm">
-            {{ correo.resuelto_en|date:"d/m/Y H:i"|default:"—" }}
-            {% if correo.resuelto_por %}
-              · {{ correo.resuelto_por.get_full_name|default:correo.resuelto_por.email }}
+    <div class="pila-3">
+      {% for borrador in borradores %}
+        <article class="tarjeta">
+          <div class="tarjeta__portada">
+            {% if borrador.portada %}
+              <img src="{{ borrador.portada.url }}" alt="Portada de {{ borrador.titulo }}">
+            {% else %}
+              <div class="portada-vacia">Imagen pendiente</div>
             {% endif %}
-          </dd>
-        </div>
-      </dl>
-      {% if correo.motivo %}
-        <div class="mt-4 border-l-2 border-line bg-ash px-4 py-3">
-          <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Motivo</p>
-          <p class="mt-1 whitespace-pre-line text-sm">{{ correo.motivo }}</p>
-        </div>
-      {% endif %}
-    {% endif %}
+          </div>
+
+          <div class="tarjeta__cuerpo">
+            <div class="fila fila-entre fila-base">
+              <h3>
+                {{ borrador.titulo|default:"(sin título)" }}
+                {% if borrador.volumen %}<span class="datos secundario">#{{ borrador.volumen }}</span>{% endif %}
+              </h3>
+              {% if borrador.estado == "incompleto" %}
+                <span class="marca-estado marca-estado--atencion">Extracción incompleta</span>
+              {% endif %}
+            </div>
+
+            <dl class="tarjeta__datos">
+              <div><dt>ISBN</dt><dd{% if not borrador.isbn %} class="secundario"{% endif %}>{{ borrador.isbn|default:"—" }}</dd></div>
+              <div><dt>Precio</dt><dd{% if borrador.precio == None %} class="fuerte"{% endif %}>{% if borrador.precio != None %}${{ borrador.precio }}{% else %}Falta{% endif %}</dd></div>
+              <div><dt>Formato</dt><dd>{{ borrador.formato|default:"—" }}</dd></div>
+              {% comment %}
+              El estado no lo eligió nadie: lo derivó el sistema de la fecha
+              anunciada. Se marca como valor calculado.
+              {% endcomment %}
+              <div>
+                <dt>Nace como</dt>
+                <dd><span class="calculado" title="calculado">{{ borrador.get_estado_sugerido_display }}{% if borrador.fecha_llegada %} · {{ borrador.fecha_llegada|date:"d/m/Y" }}{% endif %}</span></dd>
+              </div>
+            </dl>
+
+            {% if borrador.confianzas_bajas_sin_revisar %}
+              <p class="texto-chico">
+                <strong>Confianza baja:</strong>
+                {% for confianza in borrador.confianzas_bajas_sin_revisar %}{{ confianza.campo }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </p>
+            {% endif %}
+
+            {% for reparo in borrador.reparos %}
+              <p class="reparo"><strong>Reparo:</strong> {{ reparo }}</p>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <p class="texto-chico secundario">
+      La editorial y el rubro salen de la ficha del proveedor. El stock inicial se
+      ajusta al confirmar.
+    </p>
   </section>
-</div>
+{% endif %}
+
+<section class="seccion" aria-labelledby="titulo-contenido">
+  <div class="seccion__titulo"><h2 id="titulo-contenido">Contenido extraído</h2></div>
+  <p class="seccion__bajada">
+    Es lo que se le entrega al modelo. Las líneas con un filete a la izquierda son filas
+    de una tabla; si no hay ninguna, conviene revisar el original antes de procesarlo.
+  </p>
+
+  {% if lineas %}
+    <div class="contenido-extraido">
+      {% for linea in lineas %}
+        <p class="linea-extraida{% if linea.es_fila %} linea-extraida--fila{% endif %}">{{ linea.texto }}</p>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="mensaje">
+      {% include "_iconos.html" with icono="atencion" %}
+      <span>
+        <span class="mensaje__prefijo">Atención:</span>
+        no se pudo extraer contenido de este correo. Revise el original: puede venir vacío,
+        sólo con una imagen, o en un formato que la extracción no contempla.
+      </span>
+    </p>
+  {% endif %}
+</section>
+
+{% include "suppliers/_decision_de_correo.html" %}
 {% endblock %}

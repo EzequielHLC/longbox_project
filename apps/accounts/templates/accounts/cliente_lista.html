@@ -4,74 +4,57 @@
 {% block seccion %}Cuentas de cliente{% endblock %}
 
 {% block contenido %}
-<div class="mb-6">
-  <h1 class="font-display text-3xl font-bold tracking-wide">Clientes</h1>
-  <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-    Cuentas registradas desde la tienda · solo consulta
-  </p>
-</div>
-
-<form id="filtros" method="get" data-sin-capa
-      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-  <div class="grow">
-    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Buscar
-    </label>
-    <input type="text" id="q" name="q" value="{{ busqueda }}"
-           placeholder="Buscar por nombre, correo o teléfono — atajo: /" autocomplete="off"
-           class="w-full min-w-[26rem]">
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Clientes</h1>
+    <p>Cuentas registradas desde la tienda · sólo consulta.</p>
   </div>
+</header>
 
-  <div>
-    <label for="provincia"
-           class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Provincia
-    </label>
-    <select id="provincia" name="provincia" class="w-56">
-      <option value="">Todas</option>
-      {% for nombre in provincias %}
-        <option value="{{ nombre }}" {% if provincia_elegida == nombre %}selected{% endif %}>
-          {{ nombre }}
-        </option>
-      {% endfor %}
-    </select>
+<section class="seccion">
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}"
+             placeholder="Nombre, correo o teléfono — atajo: /" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="provincia" class="etiqueta">Provincia</label>
+      <select id="provincia" name="provincia">
+        <option value="">Todas</option>
+        {% for nombre in provincias %}
+          <option value="{{ nombre }}" {% if provincia_elegida == nombre %}selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+
+    {% if busqueda or estado_elegido or provincia_elegida %}
+      <a href="{% url 'accounts:cliente_lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% endif %}
+  </form>
+
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "accounts/_tabla_clientes.html" %}
+    </div>
   </div>
-
-  <div>
-    <label for="estado"
-           class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Estado
-    </label>
-    <select id="estado" name="estado" class="w-56">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in estados %}
-        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar
-  </button>
-
-  {% if busqueda or estado_elegido or provincia_elegida %}
-    <a href="{% url 'accounts:cliente_lista' %}"
-       class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
-      Limpiar filtros
-    </a>
-  {% endif %}
-</form>
-
-<div class="relative">
-  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-    {% include "_loader.html" with clase="loader--chico" %}
-  </div>
-
-  <div id="tabla">
-    {% include "accounts/_tabla_clientes.html" %}
-  </div>
-</div>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}

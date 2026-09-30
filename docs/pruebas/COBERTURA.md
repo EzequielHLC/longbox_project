@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-09-22, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-09-30, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -23,10 +23,10 @@ es otra puerta y su número también vive ahí.
 
 | | |
 | --- | ---: |
-| Contratos especificados | 218 |
-| Con al menos una prueba que lleva su código | 19 |
-| Sin ninguna | 199 |
-| Pruebas de contrato en la suite | 98 |
+| Contratos especificados | 219 |
+| Con al menos una prueba que lleva su código | 27 |
+| Sin ninguna | 192 |
+| Pruebas de contrato en la suite | 137 |
 
 ---
 
@@ -34,28 +34,28 @@ es otra puerta y su número también vive ahí.
 
 ### `00-transversales.md` — Transversales
 
-18 contratos · 2 con prueba · 16 sin.
+18 contratos · 4 con prueba · 14 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-005` | confirmarPrecioManual | — | — |
-| `CO-016` | ejecutarCicloMonitoreoCasilla | — | — |
-| `CO-017` | aprobarCorreoParaProcesamiento | — | — |
-| `CO-018` | descartarCorreo | — | — |
+| `CO-017` | aprobarCorreoParaProcesamiento | 10 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-019` | reprocesarCorreo | 5 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-025` | cerrarSesionDeRevision | — | — |
-| `CO-031` | revertirPrecioManual | — | — |
+| `CO-031` | restaurarPrecioCalculado | — | — |
 | `CO-053` | confirmarCambioDeMargenGlobal | — | — |
 | `CO-074` | enviarPedidoConsolidado — *contrato de operación interna* | — | — |
 | `CO-077` | notificarReposicionASuscriptores — *contrato de operación interna* | — | — |
+| `CO-086` | fusionarCarritoDeSesion | — | — |
 | `CO-087` | declararDireccionDeEnvio | — | — |
 | `CO-089` | registrarResultadoDePago | — | — |
 | `CO-103` | aplicarCanjeDePuntosAItem | — | — |
 | `CO-104` | revertirCanjeDePuntosDeItem | — | — |
 | `CO-122` | regenerarEnlaceDeActivacion | 5 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-137` | registrarEditorial | — | — |
-| `CO-156` | cancelarOperacion | 1 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
-| `CO-157` | consultarColaDeCorreos | — | — |
-| `CO-158` | abrirFichaDeCorreo | — | — |
+| `CO-141` | registrarTipoDeMaterial | — | — |
+| `CO-144` | registrarFormato | — | — |
+| `CO-156` | cancelarOperacion | 3 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 
 ### `01-alta-editorial.md` — 01 Alta Editorial
 
@@ -77,7 +77,7 @@ es otra puerta y su número también vive ahí.
 | `CO-013` | confirmarIngresoDeLote | — | — |
 | `CO-014` | solicitarRegistroDeDemora | — | — |
 | `CO-015` | confirmarRegistroDeDemora | — | — |
-| `CO-019` | reprocesarCorreo | — | — |
+| `CO-016` | ejecutarCicloMonitoreoCasilla | — | — |
 | `CO-020` | editarBorrador | — | — |
 | `CO-021` | marcarCampoRevisado | — | — |
 | `CO-022` | confirmarBorrador | — | — |
@@ -90,7 +90,7 @@ es otra puerta y su número también vive ahí.
 
 ### `02-catalogo.md` — 02 Catálogo
 
-23 contratos · 0 con prueba · 23 sin.
+22 contratos · 0 con prueba · 22 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -111,7 +111,6 @@ es otra puerta y su número también vive ahí.
 | `CO-043` | editarEtiqueta | — | — |
 | `CO-044` | solicitarBajaDeEtiqueta | — | — |
 | `CO-045` | confirmarBajaDeEtiqueta | — | — |
-| `CO-046` | moverEtiquetaDeGrupo | — | — |
 | `CO-161` | abrirEdicionDeProducto | — | — |
 | `CO-162` | consultarInventario | — | — |
 | `CO-163` | consultarFichaDeProducto | — | — |
@@ -144,10 +143,11 @@ es otra puerta y su número también vive ahí.
 
 ### `04-proveedores.md` — 04 Proveedores
 
-10 contratos · 0 con prueba · 10 sin.
+13 contratos · 3 con prueba · 10 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
+| `CO-018` | descartarCorreo | 2 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-060` | registrarProveedor | — | — |
 | `CO-061` | editarProveedor | — | — |
 | `CO-062` | confirmarCambioDeCorreoComercial | — | — |
@@ -155,6 +155,8 @@ es otra puerta y su número también vive ahí.
 | `CO-064` | confirmarBajaDeProveedor | — | — |
 | `CO-065` | solicitarReactivacionDeProveedor | — | — |
 | `CO-066` | confirmarReactivacionDeProveedor | — | — |
+| `CO-157` | consultarColaDeCorreos | 2 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-158` | abrirFichaDeCorreo | 2 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-171` | abrirEdicionDeProveedor | — | — |
 | `CO-172` | consultarProveedores | — | — |
 | `CO-173` | consultarFichaDeProveedor | — | — |
@@ -191,14 +193,13 @@ es otra puerta y su número también vive ahí.
 
 ### `07-tienda-online.md` — 07 Tienda Online
 
-13 contratos · 0 con prueba · 13 sin.
+12 contratos · 0 con prueba · 12 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-083` | agregarProductoAlCarrito | — | — |
 | `CO-084` | modificarCantidadDeLinea | — | — |
 | `CO-085` | eliminarLineaDelCarrito | — | — |
-| `CO-086` | fusionarCarritoDeSesion | — | — |
 | `CO-088` | confirmarPedido | — | — |
 | `CO-090` | declararDatosDeInvitado | — | — |
 | `CO-091` | confirmarPedidoDeInvitado | — | — |
@@ -255,7 +256,7 @@ es otra puerta y su número también vive ahí.
 
 ### `11-cuenta-de-cliente.md` — 11 Cuenta de Cliente
 
-11 contratos · 0 con prueba · 11 sin.
+11 contratos · 2 con prueba · 9 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -268,8 +269,8 @@ es otra puerta y su número también vive ahí.
 | `CO-113` | confirmarBajaDeCuentaPropia | — | — |
 | `CO-192` | consultarPanelDeCuenta | — | — |
 | `CO-193` | consultarDetalleDePedidoPropio | — | — |
-| `CO-194` | consultarCuentasDeCliente | — | — |
-| `CO-195` | consultarFichaDeCliente | — | — |
+| `CO-194` | consultarCuentasDeCliente | 4 | `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py` |
+| `CO-195` | consultarFichaDeCliente | 5 | `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py` |
 
 ### `12-autenticacion.md` — 12 Autenticación
 
@@ -287,7 +288,7 @@ es otra puerta y su número también vive ahí.
 
 ### `13-gestion-de-usuarios.md` — 13 Gestión de Usuarios
 
-11 contratos · 10 con prueba · 1 sin.
+11 contratos · 11 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -301,7 +302,7 @@ es otra puerta y su número también vive ahí.
 | `CO-199` | solicitarReactivacionDeUsuario | 2 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-200` | solicitarEliminacionDeCuentaPendiente | 1 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-201` | consultarCuentasDePersonal | 2 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
-| `CO-202` | consultarFichaDeUsuario | — | — |
+| `CO-202` | consultarFichaDeUsuario | 7 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 
 ### `14-caja.md` — 14 Caja
 
@@ -334,24 +335,21 @@ es otra puerta y su número también vive ahí.
 
 ### `17-configuracion-del-sistema.md` — 17 Configuración del Sistema
 
-28 contratos · 0 con prueba · 28 sin.
+27 contratos · 0 con prueba · 27 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-130` | actualizarParametrosOperacionales | — | — |
 | `CO-131` | actualizarIdentidadVisual | — | — |
 | `CO-132` | agregarBanner | — | — |
-| `CO-133` | reordenarBanner | — | — |
+| `CO-133` | editarBanner | — | — |
 | `CO-134` | eliminarBanner | — | — |
 | `CO-135` | publicarContenidoDeFaq | — | — |
 | `CO-136` | confirmarPublicacionDeFaqVacia | — | — |
 | `CO-138` | editarEditorial | — | — |
 | `CO-139` | solicitarBajaDeEditorial | — | — |
 | `CO-140` | confirmarBajaDeEditorial | — | — |
-| `CO-141` | registrarTipoDeMaterial | — | — |
 | `CO-142` | editarTipoDeMaterial | — | — |
-| `CO-143` | confirmarCambioDeTabulacionDeFormato | — | — |
-| `CO-144` | registrarFormato | — | — |
 | `CO-145` | editarFormato | — | — |
 | `CO-146` | declararFormatosDeTipo | — | — |
 | `CO-147` | solicitarBajaDeFormato | — | — |
@@ -366,10 +364,12 @@ es otra puerta y su número también vive ahí.
 | `CO-212` | consultarTiposDeMaterial | — | — |
 | `CO-213` | consultarFormatos | — | — |
 | `CO-214` | consultarConfiguracionDeDiagnostico | — | — |
+| `CO-220` | solicitarBajaDeTipoDeMaterial | — | — |
+| `CO-221` | confirmarBajaDeTipoDeMaterial | — | — |
 
 ### `18-stock-almacenado-en-local.md` — 18 Stock Almacenado en Local
 
-9 contratos · 0 con prueba · 9 sin.
+10 contratos · 0 con prueba · 10 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -382,12 +382,39 @@ es otra puerta y su número también vive ahí.
 | `CO-216` | solicitarDespachoDeStockAlmacenado | — | — |
 | `CO-217` | consultarStockAlmacenado | — | — |
 | `CO-218` | consultarFichaDeArticuloRetenido | — | — |
+| `CO-227` | confirmarRetiroEnLocal | — | — |
 
 ---
 
 ## Prueba por prueba
 
 Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición verifica cada una, que es lo que hace consultable la trazabilidad sin abrir un archivo.
+
+**`CO-017` · aprobarCorreoParaProcesamiento**
+
+- `test_CO017_E1_la_segunda_aprobacion_encuentra_el_correo_tomado` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_E1_un_correo_ya_tomado_por_otro_no_se_vuelve_a_procesar` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_E4_si_el_servicio_no_responde_el_correo_falla_y_queda_en_la_cola` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_E4_si_no_identifica_ningun_producto_el_correo_falla` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_aprobar_pasa_el_correo_de_pendiente_a_procesado` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_crea_un_borrador_por_producto_con_sus_asociaciones` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_el_resumen_informa_generados_omitidos_y_reparos` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_la_operacion_queda_auditada` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_no_acepta_get` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_por_la_direccion_real_con_rol_cajero_no_procesa` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-018` · descartarCorreo**
+
+- `test_CO018_E3_sin_motivo_no_se_descarta` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO018_descartar_registra_estado_motivo_y_responsable` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-019` · reprocesarCorreo**
+
+- `test_CO019_la_ficha_ofrece_reprocesar_solo_si_corresponde` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO019_queda_auditado` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO019_reemplaza_solo_los_borradores_abiertos` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO019_si_la_extraccion_falla_los_abiertos_se_conservan` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO019_un_correo_pendiente_no_se_reprocesa` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 
 **`CO-114` · iniciarSesion**
 
@@ -515,6 +542,33 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-156` · cancelarOperacion**
 
 - `test_CO156_abandonar_antes_de_confirmar_no_cambia_nada` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO156_abandonar_la_confirmacion_no_cambia_el_producto` — `apps/catalog/tests/test_contratos_02_catalogo.py`
+- `test_CO156_abandonar_la_confirmacion_no_cambia_el_proveedor` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-157` · consultarColaDeCorreos**
+
+- `test_CO157_consultar_la_cola_no_modifica_nada` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO157_por_la_direccion_real_con_rol_cajero_se_deniega` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-158` · abrirFichaDeCorreo**
+
+- `test_CO158_abrir_la_ficha_muestra_el_contenido_y_no_modifica_nada` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO158_la_ficha_de_un_pendiente_ofrece_aprobar_y_descartar` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-194` · consultarCuentasDeCliente**
+
+- `test_CO194_A1_sin_coincidencias_lo_informa` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO194_E1_por_la_direccion_real_con_otro_rol_se_deniega` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO194_E1_sin_sesion_no_se_ve_el_padron` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO194_el_padron_lista_nombre_correo_estado_y_registro` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+
+**`CO-195` · consultarFichaDeCliente**
+
+- `test_CO195_la_ficha_no_modifica_el_estado` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO195_la_ficha_no_ofrece_ninguna_modificacion` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO195_la_ficha_presenta_los_datos_que_declara_el_contrato` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO195_por_la_direccion_real_con_otro_rol_se_deniega` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
+- `test_CO195_una_cuenta_de_personal_no_tiene_ficha_de_cliente` — `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py`
 
 **`CO-196` · abrirEnlaceDeActivacion**
 
@@ -543,6 +597,16 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO201_el_listado_no_modifica_el_estado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO201_el_listado_presenta_nombre_correo_rol_y_estado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+
+**`CO-202` · consultarFichaDeUsuario**
+
+- `test_CO202_la_ficha_no_modifica_el_estado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_no_ofrece_la_baja_del_ultimo_administrador` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_por_la_direccion_real_con_rol_cajero_se_deniega` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_una_cuenta_activa_ofrece_modificar_y_dar_de_baja` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_una_cuenta_de_cliente_no_tiene_ficha_de_personal` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_una_cuenta_inactiva_ofrece_unicamente_reactivar` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO202_una_cuenta_pendiente_ofrece_reenviar_y_eliminar` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 
 ---
 

@@ -121,7 +121,8 @@ def test_un_correo_que_no_es_de_novedades_no_genera_borradores(correo):
 
     assert BorradorProducto.objects.count() == 0
     correo.refresh_from_db()
-    assert correo.estado == CorreoProveedor.PROCESADO
+    # `CO-017` E4: sin productos identificados, el correo queda para reprocesar.
+    assert correo.estado == CorreoProveedor.FALLIDO
 
 
 @pytest.mark.django_db
@@ -295,10 +296,9 @@ def test_la_ficha_marca_los_borradores_incompletos(client_admin, correo):
 
 
 @pytest.mark.django_db
-def test_la_ficha_ya_no_dice_que_falta_el_extractor(client_admin, correo):
-    """Decía que el procesamiento se habilitaba "cuando esté el extractor
-    conectado", y el extractor existe desde que el pipeline genera borradores.
-    Lo que falta es el botón, y falta por RNF-02, que es otra cosa."""
+def test_la_ficha_ofrece_aprobar_desde_la_pantalla(client_admin, correo):
+    """La aprobación de `CO-017` se hace desde la ficha (CU-PRV-COL paso 4), y
+    ya no con una instrucción de consola."""
     from django.urls import reverse
 
     contenido = client_admin.get(
@@ -306,7 +306,8 @@ def test_la_ficha_ya_no_dice_que_falta_el_extractor(client_admin, correo):
     ).content.decode()
 
     assert "cuando esté el extractor conectado" not in contenido
-    assert "extraer_novedades --correo" in contenido
+    assert "extraer_novedades --correo" not in contenido
+    assert reverse("suppliers:correo_aprobar", args=[correo.pk]) in contenido
 
 
 @pytest.mark.django_db

@@ -8,130 +8,92 @@ Fragmento de la tabla de usuarios. Se renderiza de dos maneras:
 Por eso no puede depender de nada que esté fuera de él.
 {% endcomment %}
 {% if usuarios %}
-  <p class="mb-2 font-mono text-xs text-static">
-    {{ paginator.count }} usuario{{ paginator.count|pluralize }}
-    {% if busqueda or rol_elegido or estado_elegido %}que coincide{{ paginator.count|pluralize }}
-    con el filtro{% endif %}
-  </p>
+  <div class="pila-3">
+    <p class="texto-chico secundario">
+      {{ paginator.count }} usuario{{ paginator.count|pluralize }}
+      {% if busqueda or rol_elegido or estado_elegido %}que coincide{{ paginator.count|pluralize }}
+      con el filtro{% endif %}
+    </p>
 
-  <div class="overflow-x-auto border border-line">
-    <table class="w-full text-left text-sm">
-      <thead>
-        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                   tracking-[0.15em] text-static">
-          <th class="px-4 py-3 font-medium">Nombre</th>
-          <th class="px-4 py-3 font-medium">Correo</th>
-          <th class="px-4 py-3 font-medium">Rol</th>
-          <th class="px-4 py-3 font-medium">Estado</th>
-          <th class="whitespace-nowrap px-4 py-3 font-medium">Última modificación</th>
-          <th class="px-4 py-3 text-right font-medium">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for usuario in usuarios %}
-          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-            {% comment %}
-            Un nombre o un correo muy largos no pueden empujar al resto de las
-            columnas: se recortan con puntos suspensivos y el valor completo
-            queda en el `title`, a un hover de distancia.
-            {% endcomment %}
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-2">
-                <span class="block max-w-[16rem] truncate"
-                      title="{{ usuario.get_full_name|default:'Sin nombre cargado' }}">
-                  {{ usuario.get_full_name|default:"—" }}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Última modificación</th>
+            <th class="derecha">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usuario in usuarios %}
+            <tr>
+              <td class="celda-principal">
+                <a href="{% url 'accounts:usuario_ficha' usuario.pk %}">{{ usuario.get_full_name|default:"Sin nombre cargado" }}</a>
+                {% if usuario.pk == user.pk %}<span class="marca-estado">Propia</span>{% endif %}
+              </td>
+              <td class="cortar-palabras">{{ usuario.email }}</td>
+              {# El rol se dice con su nombre, sin color propio. #}
+              <td class="sin-cortar">{{ usuario.get_rol_display }}</td>
+              <td>
+                <span class="marca-estado{% if usuario.estado != 'activo' %} marca-estado--apagado{% endif %}">
+                  {{ usuario.get_estado_display }}
                 </span>
-                {% if usuario.pk == user.pk %}
-                  <span class="shrink-0 border border-line px-1.5 py-0.5 font-mono text-[0.6rem]
-                               uppercase tracking-wider text-static">propia</span>
-                {% endif %}
-              </div>
-            </td>
-            <td class="px-4 py-3 font-mono text-xs">
-              <span class="block max-w-[18rem] truncate" title="{{ usuario.email }}">
-                {{ usuario.email }}
-              </span>
-            </td>
-            {% comment %}
-            Codificación de rol del sistema visual: Administrador en `signal`,
-            Cajero en `azure`. El estado, en cambio, se distingue por el
-            recuadro, con variaciones neutras de `screen` y `static`.
-            {% endcomment %}
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs font-medium uppercase
-                       tracking-wider
-                       {% if usuario.rol == 'administrador' %}text-signal{% else %}text-azure{% endif %}">
-              {{ usuario.get_rol_display }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                           {% if usuario.estado == 'activo' %}border-static text-screen
-                           {% else %}border-line text-static{% endif %}">
-                {{ usuario.get_estado_display }}
-              </span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-              {{ usuario.actualizado_en|date:"d/m/Y H:i" }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              {% comment %}
-              Las acciones dependen del estado y son excluyentes:
+              </td>
+              <td class="datos sin-cortar secundario">{{ usuario.actualizado_en|date:"d/m/Y H:i" }}</td>
+              <td class="acciones-de-fila">
+                {% comment %}
+                Las acciones dependen del estado y son excluyentes (CO-202, «la
+                interfaz no decide, refleja»):
 
-              - Activa: se edita y se da de baja (baja lógica).
-              - Pendiente: se edita, y se elimina solo si nunca se usó.
-              - Inactiva: está congelada. No se edita: lo único posible es
-                reactivarla, y ese camino de vuelta al acceso queda auditado.
-              {% endcomment %}
-              <div class="flex justify-end gap-3">
+                - Activa: se edita y se da de baja.
+                - Pendiente: se edita, y se elimina sólo si nunca se usó.
+                - Inactiva: está congelada; lo único posible es reactivarla.
+                {% endcomment %}
                 {% if usuario.esta_congelada %}
-                  <a href="{% url 'accounts:usuario_reactivar' usuario.pk %}"
-                     class="boton-menor">
-                    <span>Reactivar</span>
-                  </a>
+                  <a href="{% url 'accounts:usuario_reactivar' usuario.pk %}" class="boton-menor">Reactivar</a>
                 {% else %}
-                  <a href="{% url 'accounts:usuario_edicion' usuario.pk %}" class="boton-menor">
-                    <span>Editar</span>
-                  </a>
+                  <a href="{% url 'accounts:usuario_edicion' usuario.pk %}" class="boton-menor">Editar</a>
                   {% if usuario.estado == 'activo' %}
-                    <a href="{% url 'accounts:usuario_baja' usuario.pk %}"
-                       class="boton-menor boton-menor--critico">
-                      <span>Dar de baja</span>
-                    </a>
+                    <a href="{% url 'accounts:usuario_baja' usuario.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
                   {% elif usuario.se_puede_eliminar %}
-                    <a href="{% url 'accounts:usuario_eliminar' usuario.pk %}"
-                       class="boton-menor boton-menor--critico">
-                      <span>Eliminar</span>
-                    </a>
+                    <a href="{% url 'accounts:usuario_eliminar' usuario.pk %}" class="boton-menor boton-menor--critico">Eliminar</a>
                   {% endif %}
                 {% endif %}
-              </div>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  {% if is_paginated %}
-    <div class="mt-4 flex items-center justify-between font-mono text-xs text-static">
-      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-      <span class="flex gap-4">
-        {% if page_obj.has_previous %}
-          <a href="?q={{ busqueda|urlencode }}&amp;rol={{ rol_elegido }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
-             class="hover:text-screen">← Anterior</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a href="?q={{ busqueda|urlencode }}&amp;rol={{ rol_elegido }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
-             class="hover:text-screen">Siguiente →</a>
-        {% endif %}
-      </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endif %}
-{% else %}
-  <p class="border border-line bg-panel px-4 py-6 text-sm text-static">
-    {% if busqueda or rol_elegido or estado_elegido %}
-      Ningún usuario coincide con los criterios de búsqueda.
-    {% else %}
-      No hay usuarios del sistema registrados.
+
+    {% if is_paginated %}
+      <div class="paginacion">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ busqueda|urlencode }}&amp;rol={{ rol_elegido }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
+               class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?q={{ busqueda|urlencode }}&amp;rol={{ rol_elegido }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
+               class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+          {% endif %}
+        </span>
+      </div>
     {% endif %}
-  </p>
+  </div>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="personal" %}
+    <p>
+      {% if busqueda or rol_elegido or estado_elegido %}
+        Ningún usuario coincide con los criterios de búsqueda.
+      {% else %}
+        No hay usuarios del sistema registrados.
+      {% endif %}
+    </p>
+  </div>
 {% endif %}

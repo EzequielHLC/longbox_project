@@ -1,0 +1,38 @@
+# Proxy local para publicar con un túnel (Cloudflare Tunnel), cuando la
+# conexión no admite tráfico entrante (CGNAT). Lo completa
+# `docs/despliegue/DEMOSTRACION.md`.
+#
+#   caddy run --config config/caddy/Caddyfile.tunel
+#
+# Escucha sólo en la interfaz local y en HTTP: el HTTPS lo pone el túnel. Sirve
+# `static/` y `media/`, y le pasa el resto a `manage.py servir`.
+
+{
+	# El túnel corre en esta misma máquina y avisa que la conexión original fue
+	# HTTPS con `X-Forwarded-Proto`. Sin confiar en él, Caddy pisa ese encabezado
+	# con «http» y Django redirige en círculo.
+	servers {
+		trusted_proxies static 127.0.0.1/32 ::1
+	}
+}
+
+# Cualquier nombre en el puerto 8080: el túnel pasa el nombre público en el
+# encabezado `Host`, y ese nombre cambia en cada arranque.
+http://:8080 {
+	bind 127.0.0.1
+	encode gzip
+
+	handle_path /static/* {
+		root * staticfiles
+		file_server
+	}
+
+	handle_path /media/* {
+		root * media
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}

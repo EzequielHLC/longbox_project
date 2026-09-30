@@ -9,35 +9,32 @@ el del formulario: el modelo dice `fecha` y el campo se llama `fecha_llegada`.
 
 **La marca va pegada al campo y no en una lista aparte.** Separada, revisar sería
 ir y volver entre dos zonas de la pantalla buscando a qué campo corresponde cada
-marca, que es exactamente el trabajo que la revisión tiene que evitar.
+marca.
 
-Tres niveles, tres tratamientos, y la diferencia no es decorativa:
+Tres niveles, tres tratamientos:
 
-- **alta** — no se dibuja nada. Marcar lo que está bien es ruido en un formulario
-  de doce campos.
-- **media** — se dice, en `static`. Es un aviso, no un bloqueo.
+- **alta** — no se dibuja nada. Marcar lo que está bien es ruido.
+- **media** — se dice. Es un aviso, no un bloqueo.
 - **baja** — se pide la **acción afirmativa** de CU-ALT-REV paso 3: una casilla por
-  campo, no un "revisé este borrador" genérico. Sin tildarla, el servidor rechaza
-  la confirmación; la casilla es la comodidad, no el control.
+  campo. Sin tildarla, el servidor rechaza la confirmación; la casilla es la
+  comodidad, no el control.
 {% endcomment %}
-{% include "_campo.html" with campo=campo %}
+<div class="pila-2">
+  {% include "_campo.html" with campo=campo %}
 
-{% for clave, dato in confianzas.items %}
-  {% if clave == nombre %}
-    {% if dato.nivel == "baja" %}
-      <label class="-mt-2 mb-4 flex items-start gap-2 border-l-2 border-signal bg-panel px-3 py-2
-                    font-mono text-[0.65rem] leading-relaxed text-static">
-        <input type="checkbox" name="revisado" value="{{ dato.campo }}"
-               {% if dato.revisado %}checked{% endif %}>
-        <span>
-          El modelo declaró <span class="text-signal">confianza baja</span> en este dato.
-          Márquelo como revisado para poder confirmar.
-        </span>
-      </label>
-    {% elif dato.nivel == "media" %}
-      <p class="-mt-2 mb-4 font-mono text-[0.65rem] text-static">
-        El modelo tuvo que interpretarlo (confianza media).
-      </p>
+  {% for clave, dato in confianzas.items %}
+    {% if clave == nombre %}
+      {% if dato.nivel == "baja" %}
+        <label class="casilla casilla--critica reparo">
+          <input type="checkbox" name="revisado" value="{{ dato.campo }}" {% if dato.revisado %}checked{% endif %}>
+          <span>
+            El modelo declaró confianza baja en este dato.
+            Márquelo como revisado para poder confirmar.
+          </span>
+        </label>
+      {% elif dato.nivel == "media" %}
+        <p class="ayuda">El modelo tuvo que interpretarlo (confianza media).</p>
+      {% endif %}
     {% endif %}
-  {% endif %}
-{% endfor %}
+  {% endfor %}
+</div>

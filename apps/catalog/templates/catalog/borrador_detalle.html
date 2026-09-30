@@ -5,103 +5,63 @@
 
 {% block contenido %}
 {% comment %}
-CU-ALT-REV pasos 2 y 3. Las tres acciones —guardar, confirmar y rechazar— viven en la
-misma pantalla porque las tres se deciden mirando los mismos datos; separarlas
-obligaría a ir y volver con el borrador a medio editar.
+CU-ALT-REV pasos 2 y 3. Las tres acciones —guardar, confirmar y rechazar— viven
+en la misma pantalla porque las tres se deciden mirando los mismos datos.
 
-La confianza se dibuja **junto al campo que califica** y no en una lista aparte:
-separada, revisar sería ir y volver entre dos zonas de la pantalla buscando a qué
-campo corresponde cada marca.
+La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
 {% endcomment %}
 
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <p class="font-mono text-xs uppercase tracking-[0.15em] text-static">
-      <a href="{% url 'catalog:borrador_lista' %}" class="hover:text-signal">Borradores</a>
-      · Revisión
-    </p>
-    <h1 class="mt-1 font-display text-3xl font-bold tracking-wide">
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'catalog:borrador_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Borradores" atras=1 %}</span>
+    <h1>
       {{ borrador.titulo|default:"(sin título)" }}
-      {% if borrador.volumen %}
-        <span class="text-static">#{{ borrador.volumen }}</span>
-      {% endif %}
+      {% if borrador.volumen %}<span class="datos secundario">#{{ borrador.volumen }}</span>{% endif %}
     </h1>
-    <p class="mt-1 font-mono text-xs text-static">
+    <p>
       Propuesto por {{ borrador.proveedor }} ·
-      <a href="{% url 'suppliers:correo_detalle' borrador.correo_id %}"
-         class="hover:text-signal">correo #{{ borrador.correo_id }}</a>
-      · generado el {{ borrador.creado_en|date:"d/m/Y H:i" }}
+      <a href="{% url 'suppliers:correo_detalle' borrador.correo_id %}">correo #{{ borrador.correo_id }}</a>
+      · generado el <span class="datos">{{ borrador.creado_en|date:"d/m/Y H:i" }}</span>
     </p>
   </div>
-
-  {% if borrador.esta_abierto %}
-    <div class="w-24 shrink-0">
-      {% if borrador.portada %}
-        <img src="{{ borrador.portada.url }}" alt="Portada" class="w-full border border-line">
-      {% else %}
-        <div class="flex aspect-[2/3] w-full items-center justify-center border border-dashed
-                    border-line text-center font-mono text-[0.55rem] leading-tight text-static">
-          Imagen<br>pendiente
-        </div>
-      {% endif %}
-    </div>
-  {% endif %}
-</div>
+</header>
 
 {% if not borrador.esta_abierto %}
   {% comment %}
-  Ya resuelto: no se ofrecen acciones, y se dice en qué terminó. Un formulario
-  editable sobre algo ya confirmado invitaría a cambios que no van a ningún lado.
+  Ya resuelto: no se ofrecen acciones, y se dice en qué terminó.
   {% endcomment %}
-  <section class="border-l-2 border-line bg-ash px-4 py-4">
-    <h2 class="font-display text-lg font-semibold tracking-wide">Ya resuelto</h2>
-    <dl class="mt-3 grid gap-4 sm:grid-cols-3">
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Resultado</dt>
-        <dd class="mt-1 text-sm">{{ borrador.get_estado_display }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Quién</dt>
-        <dd class="mt-1 text-sm">{{ borrador.resuelto_por|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Cuándo</dt>
-        <dd class="mt-1 font-mono text-xs">{{ borrador.resuelto_en|date:"d/m/Y H:i" }}</dd>
-      </div>
+  <section class="seccion">
+    <div class="seccion__titulo"><h2>Ya resuelto</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Resultado</dt><dd>{{ borrador.get_estado_display }}</dd>
+      <dt>Quién</dt><dd>{{ borrador.resuelto_por|default:"—" }}</dd>
+      <dt>Cuándo</dt><dd class="datos">{{ borrador.resuelto_en|date:"d/m/Y H:i" }}</dd>
+      {% if borrador.producto %}
+        <dt>Producto</dt>
+        <dd>Se agregó al catálogo como <a href="{% url 'catalog:producto_detalle' borrador.producto_id %}">{{ borrador.producto }}</a>.</dd>
+      {% endif %}
+      {% if borrador.motivo_rechazo %}
+        <dt>Motivo</dt><dd>{{ borrador.motivo_rechazo }}</dd>
+      {% endif %}
     </dl>
-    {% if borrador.producto %}
-      <p class="mt-4 text-sm">
-        Se agregó al catálogo como
-        <a href="{% url 'catalog:producto_detalle' borrador.producto_id %}"
-           class="text-screen hover:text-signal">{{ borrador.producto }}</a>.
-      </p>
-    {% endif %}
-    {% if borrador.motivo_rechazo %}
-      <p class="mt-4 border-l-2 border-signal pl-3 text-sm">{{ borrador.motivo_rechazo }}</p>
-    {% endif %}
   </section>
 
 {% else %}
 
   {% comment %}
-  El duplicado primero de todo: si el producto ya está cargado, no hay nada que
-  revisar y lo único que corresponde es descartar el borrador. Enterarse recién
-  al apretar «confirmar» sería hacerle perder el tiempo a alguien que además va
-  a tener que volver a bajar hasta el motivo del rechazo.
+  El duplicado primero de todo: si el producto ya está cargado, lo único que
+  corresponde es descartar el borrador.
   {% endcomment %}
   {% if duplicado %}
-    <section class="mb-6 border-l-2 border-signal bg-ash px-4 py-4">
-      <h2 class="font-display text-lg font-semibold tracking-wide text-signal">
-        Este producto ya está en el catálogo
-      </h2>
-      <p class="mt-2 text-sm">
-        Coincide con
-        <a href="{% url 'catalog:producto_detalle' duplicado.pk %}"
-           class="text-screen underline hover:text-signal">{{ duplicado }}</a>{% if duplicado.isbn %}
-        (ISBN <span class="font-mono text-xs">{{ duplicado.isbn }}</span>){% endif %}.
+    <div class="panel panel--atencion">
+      <h2 class="fila-2">{% include "_iconos.html" with icono="atencion" %}<span>Este producto ya está en el catálogo</span></h2>
+      <p>
+        Coincide con <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">{{ duplicado }}</a>{% if duplicado.isbn %}
+        (ISBN <span class="datos">{{ duplicado.isbn }}</span>){% endif %}.
         Descarte el borrador indicando el motivo.
       </p>
-    </section>
+    </div>
   {% endif %}
 
   {% comment %}
@@ -109,76 +69,78 @@ campo corresponde cada marca.
   leerlo antes de mirar los campos, porque explica por qué alguno está vacío.
   {% endcomment %}
   {% if borrador.reparos %}
-    <section class="mb-6 border border-line bg-ash px-4 py-4">
-      <h2 class="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
-        Datos descartados por el sistema
-      </h2>
+    <section class="seccion">
+      <div class="seccion__titulo"><h2>Datos descartados por el sistema</h2></div>
       {% for reparo in borrador.reparos %}
-        <p class="mt-2 border-l-2 border-signal pl-3 font-mono text-[0.7rem] leading-relaxed
-                  text-signal">{{ reparo }}</p>
+        <p class="reparo"><strong>Reparo:</strong> {{ reparo }}</p>
       {% endfor %}
     </section>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data" novalidate>
-    {% csrf_token %}
-
-    <div class="grid gap-6 lg:grid-cols-2">
-      <section class="border border-line bg-ash px-5 py-5">
-        <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Identificación</h2>
-        {% include "catalog/_campo_con_confianza.html" with campo=form.titulo confianzas=confianzas nombre="titulo" %}
-        {% include "catalog/_campo_con_confianza.html" with campo=form.volumen confianzas=confianzas nombre="volumen" %}
-        {% include "catalog/_campo_con_confianza.html" with campo=form.isbn confianzas=confianzas nombre="isbn" %}
-        {% include "_campo.html" with campo=form.editorial %}
-        {% include "_campo.html" with campo=form.tipo %}
-        {% include "catalog/_campo_con_confianza.html" with campo=form.formato confianzas=confianzas nombre="formato" %}
-      </section>
-
-      <section class="border border-line bg-ash px-5 py-5">
-        <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Precio y llegada</h2>
-        {% include "catalog/_campo_con_confianza.html" with campo=form.precio confianzas=confianzas nombre="precio" %}
-        {% include "_campo.html" with campo=form.estado_sugerido %}
-        {% include "catalog/_campo_con_confianza.html" with campo=form.fecha_llegada confianzas=confianzas nombre="fecha" %}
-        {% include "_campo.html" with campo=form.stock_inicial %}
-        {% include "_casilla.html" with campo=form.solo_adultos %}
-      </section>
+  <div class="dos-columnas dos-columnas--lateral-izquierda">
+    <div>
+      {% if borrador.portada %}
+        <img src="{{ borrador.portada.url }}" alt="Portada" class="portada">
+      {% else %}
+        <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+      {% endif %}
     </div>
 
-    <section class="mt-6 border border-line bg-ash px-5 py-5">
-      <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Datos opcionales</h2>
-      <div class="grid gap-6 lg:grid-cols-2">
-        {% include "_campo.html" with campo=form.autor %}
-        {% include "_campo.html" with campo=form.portada %}
-      </div>
-      {% include "_campo.html" with campo=form.sinopsis %}
-    </section>
+    <form method="post" enctype="multipart/form-data" novalidate class="formulario">
+      {% csrf_token %}
 
-    <div class="mt-6 flex flex-wrap items-center gap-7 border-t border-line pt-6">
-      <div class="marco-boton">
+      <div class="rejilla-2">
+        <fieldset class="grupo-de-campos">
+          <legend>Identificación</legend>
+          {% include "catalog/_campo_con_confianza.html" with campo=form.titulo confianzas=confianzas nombre="titulo" %}
+          {% include "catalog/_campo_con_confianza.html" with campo=form.volumen confianzas=confianzas nombre="volumen" %}
+          {% include "catalog/_campo_con_confianza.html" with campo=form.isbn confianzas=confianzas nombre="isbn" %}
+          {% include "_campo.html" with campo=form.editorial %}
+          {% include "_campo.html" with campo=form.tipo %}
+          {% include "catalog/_campo_con_confianza.html" with campo=form.formato confianzas=confianzas nombre="formato" %}
+        </fieldset>
+
+        <fieldset class="grupo-de-campos">
+          <legend>Precio y llegada</legend>
+          {% include "catalog/_campo_con_confianza.html" with campo=form.precio confianzas=confianzas nombre="precio" %}
+          {% include "_campo.html" with campo=form.estado_sugerido %}
+          {% include "catalog/_campo_con_confianza.html" with campo=form.fecha_llegada confianzas=confianzas nombre="fecha" %}
+          {% include "_campo.html" with campo=form.stock_inicial %}
+          {% include "_casilla.html" with campo=form.solo_adultos %}
+        </fieldset>
+      </div>
+
+      <fieldset class="grupo-de-campos">
+        <legend>Datos opcionales</legend>
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.autor %}
+          {% include "_campo.html" with campo=form.portada %}
+        </div>
+        {% include "_campo.html" with campo=form.sinopsis %}
+      </fieldset>
+
+      <div class="acciones">
         <button type="submit" name="confirmar" value="1" class="boton-primario">
-          Confirmar y agregar al catálogo
+          {% include "_iconos.html" with icono="listo" %}<span>Confirmar y agregar al catálogo</span>
         </button>
+        <button type="submit" name="guardar" value="1" class="boton-seccion">Guardar sin confirmar</button>
       </div>
-      <button type="submit" name="guardar" value="1" class="boton-seccion">Guardar sin confirmar
-      </button>
-    </div>
-  </form>
+    </form>
+  </div>
 
   {% comment %}
-  El rechazo va en su propio formulario y no como un tercer botón del de arriba:
-  descartar no tiene que arrastrar los campos editados, y el motivo es
-  obligatorio solo en este camino.
+  El rechazo va en su propio formulario: descartar no tiene que arrastrar los
+  campos editados, y el motivo es obligatorio sólo en este camino.
   {% endcomment %}
-  <section class="mt-8 border-t border-line pt-6">
-    <h2 class="font-display text-lg font-semibold tracking-wide">Descartar este borrador</h2>
-    <p class="mt-1 text-sm text-static">
-      No crea ningún producto. El motivo queda registrado.
-    </p>
-    <form method="post" novalidate class="mt-4 max-w-xl">
+  <section class="seccion formulario--angosto" aria-labelledby="titulo-rechazo">
+    <div class="seccion__titulo"><h2 id="titulo-rechazo">Descartar este borrador</h2></div>
+    <p class="seccion__bajada">No crea ningún producto. El motivo queda registrado.</p>
+    <form method="post" novalidate class="formulario">
       {% csrf_token %}
       {% include "_campo.html" with campo=form_rechazo.motivo %}
-      <div class="mt-5">
-        <button type="submit" name="rechazar" value="1" class="boton-seccion boton-seccion--critico">Rechazar borrador
+      <div class="acciones">
+        <button type="submit" name="rechazar" value="1" class="boton-seccion boton-seccion--critico">
+          {% include "_iconos.html" with icono="baja" %}<span>Rechazar borrador</span>
         </button>
       </div>
     </form>

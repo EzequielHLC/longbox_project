@@ -4,64 +4,62 @@
 {% block seccion %}Gestión de usuarios{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-2xl">
-  {% url 'accounts:usuario_lista' as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a usuarios" atras=1 %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'accounts:usuario_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Usuarios del sistema" atras=1 %}</span>
+    <h1>{{ titulo }}</h1>
+  </div>
+</header>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">{{ titulo }}</h1>
-
-  {% if form.non_field_errors %}
-    <ul class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-    </ul>
-  {% endif %}
-
-  <form method="post" novalidate class="mt-6 space-y-5 border border-line bg-ash p-6">
-    {% csrf_token %}
-
-    {% for field in form %}
-      {% include "_campo.html" with campo=field %}
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
     {% endfor %}
+  </ul>
+{% endif %}
 
-    {% if usuario_objetivo %}
-      <p class="border-t border-line pt-4 font-mono text-xs text-static">
-        Estado: {{ usuario_objetivo.get_estado_display }} ·
-        Última modificación: {{ usuario_objetivo.actualizado_en|date:"d/m/Y H:i" }}
-      </p>
-    {% endif %}
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
 
-    <div class="flex items-center gap-6 pt-2">
-      <div class="marco-boton">
-        <button type="submit" class="boton-primario">Guardar</button>
-      </div>
-      {% url 'accounts:usuario_lista' as cancelar %}
-      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
-    </div>
-  </form>
+  {% for field in form %}
+    {% include "_campo.html" with campo=field %}
+  {% endfor %}
 
-  {% if usuario_objetivo.esta_pendiente_de_activacion %}
-    <div class="mt-6 border border-line bg-panel p-5">
-      <p class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-        Cuenta pendiente de activación
-      </p>
-
-      <div class="mt-4 flex flex-wrap items-center gap-4">
-        {# CU-USR-MOD, flujo alternativo: regenerar el enlace de activación. #}
-        <form method="post"
-              action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="boton-seccion boton-seccion--tenue">Regenerar enlace
-          </button>
-        </form>
-
-        {% if usuario_objetivo.se_puede_eliminar %}
-          {# Salida para el correo cargado con un error de tipeo. #}
-          <a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}"
-             class="boton-seccion boton-seccion--critico">Eliminar cuenta
-          </a>
-        {% endif %}
-      </div>
-    </div>
+  {% if usuario_objetivo %}
+    <p class="texto-chico secundario">
+      Estado: {{ usuario_objetivo.get_estado_display }} ·
+      Última modificación: <span class="datos">{{ usuario_objetivo.actualizado_en|date:"d/m/Y H:i" }}</span>
+    </p>
   {% endif %}
-</div>
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar</button>
+    {% url 'accounts:usuario_lista' as cancelar %}
+    {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+  </div>
+</form>
+
+{% if usuario_objetivo.esta_pendiente_de_activacion %}
+  <section class="seccion formulario--angosto">
+    <div class="seccion__titulo"><h2>Cuenta pendiente de activación</h2></div>
+    <div class="fila-5">
+      {# CU-USR-MOD, flujo alternativo: regenerar el enlace de activación. #}
+      <form method="post" action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-seccion boton-seccion--tenue">
+          {% include "_iconos.html" with icono="correo" %}<span>Regenerar enlace</span>
+        </button>
+      </form>
+
+      {% if usuario_objetivo.se_puede_eliminar %}
+        {# Salida para el correo cargado con un error de tipeo. #}
+        <a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-seccion boton-seccion--critico">
+          {% include "_iconos.html" with icono="baja" %}<span>Eliminar cuenta</span>
+        </a>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
 {% endblock %}

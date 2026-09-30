@@ -828,3 +828,82 @@ def test_acceso_CO125_la_eliminacion_es_solo_del_administrador(client, rol, pend
     client.post(url_eliminar(pendiente))
 
     assert Usuario.objects.filter(pk=pendiente.pk).exists()
+
+
+# ---------------------------------------------------------------------------
+# CO-202 · consultarFichaDeUsuario  (CU-USR-CON paso 6)
+# ---------------------------------------------------------------------------
+
+
+def url_ficha(usuario):
+    return reverse("accounts:usuario_ficha", args=[usuario.pk])
+
+
+def _acciones_de_la_ficha(client, usuario):
+    """El bloque de acciones que presenta la ficha, y nada más de la pantalla."""
+    contenido = client.get(url_ficha(usuario)).content.decode()
+    inicio = contenido.index("data-acciones-de-ficha")
+    return contenido[inicio : contenido.index("</ul>", inicio)]
+
+
+def test_CO202_la_ficha_no_modifica_el_estado(client_admin, cajero_activo):
+    """Postcondición: ninguna."""
+    antes = _foto_de(cajero_activo)
+    registros = RegistroAuditoria.objects.count()
+
+    respuesta = client_admin.get(url_ficha(cajero_activo))
+
+    assert respuesta.status_code == 200
+    contenido = respuesta.content.decode()
+    assert cajero_activo.email in contenido
+    assert "Ana Pérez" in contenido
+    cajero_activo.refresh_from_db()
+    assert _foto_de(cajero_activo) == antes
+    assert RegistroAuditoria.objects.count() == registros
+
+
+def test_CO202_una_cuenta_activa_ofrece_modificar_y_dar_de_baja(client_admin, cajero_activo):
+    acciones = _acciones_de_la_ficha(client_admin, cajero_activo)
+
+    assert url_edicion(cajero_activo) in acciones
+    assert url_baja(cajero_activo) in acciones
+    assert url_reactivar(cajero_activo) not in acciones
+    assert url_eliminar(cajero_activo) not in acciones
+
+
+def test_CO202_una_cuenta_pendiente_ofrece_reenviar_y_eliminar(client_admin, pendiente):
+    acciones = _acciones_de_la_ficha(client_admin, pendiente)
+
+    assert reverse("accounts:usuario_reenviar_activacion", args=[pendiente.pk]) in acciones
+    assert url_eliminar(pendiente) in acciones
+    assert url_edicion(pendiente) not in acciones
+    assert url_baja(pendiente) not in acciones
+
+
+def test_CO202_una_cuenta_inactiva_ofrece_unicamente_reactivar(client_admin, dado_de_baja):
+    acciones = _acciones_de_la_ficha(client_admin, dado_de_baja)
+
+    assert url_reactivar(dado_de_baja) in acciones
+    assert url_edicion(dado_de_baja) not in acciones
+    assert url_baja(dado_de_baja) not in acciones
+    assert url_eliminar(dado_de_baja) not in acciones
+
+
+def test_CO202_no_ofrece_la_baja_del_ultimo_administrador(client_admin, administrador):
+    """«La interfaz no decide, refleja»: lo que el servidor rechaza (CO-198 E1)
+    no se ofrece."""
+    acciones = _acciones_de_la_ficha(client_admin, administrador)
+
+    assert url_baja(administrador) not in acciones
+    assert url_edicion(administrador) in acciones
+
+
+def test_CO202_por_la_direccion_real_con_rol_cajero_se_deniega(client, cajero_activo):
+    client.force_login(cajero_activo)
+
+    assert client.get(url_ficha(cajero_activo)).status_code == 403
+
+
+def test_CO202_una_cuenta_de_cliente_no_tiene_ficha_de_personal(client_admin, cliente):
+    """Las cuentas de Cliente tienen su ficha de sólo lectura (CO-195)."""
+    assert client_admin.get(url_ficha(cliente)).status_code == 404

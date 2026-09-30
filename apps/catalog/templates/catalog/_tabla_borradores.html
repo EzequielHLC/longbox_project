@@ -4,94 +4,65 @@ el cuerpo del formulario de confirmación en lote — por eso las casillas viven
 y no en la plantilla de afuera: si estuvieran afuera, filtrar la tabla dejaría
 seleccionadas filas que ya no se ven.
 
-Las dos marcas que el CU pide diferenciar visualmente son distintas y se arreglan
-distinto: al **incompleto** le falta un dato (va en `signal`, hay que completarlo)
-y al de **confianza baja** le sobra una duda sobre un dato que sí está (va en
-`static`, hay que mirarlo). Pintar los dos de rojo los volvería la misma cosa.
+Las dos marcas que el CU pide diferenciar son distintas y se arreglan distinto:
+al **incompleto** le falta un dato (hay que completarlo) y al de **confianza
+baja** le sobra una duda sobre un dato que sí está (hay que mirarlo). Las dos se
+dicen con su palabra; sólo el incompleto va en peso 600.
 {% endcomment %}
 {% if borradores %}
-  <div class="overflow-x-auto border border-line">
-    <table class="w-full text-left text-sm">
+  <div class="tabla-desplazable">
+    <table class="tabla">
       <thead>
-        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                   tracking-[0.15em] text-static">
-          <th class="px-4 py-3 font-medium">
-            <span class="sr-only">Seleccionar</span>
-          </th>
-          <th class="px-4 py-3 font-medium">Título</th>
-          <th class="px-4 py-3 font-medium">ISBN</th>
-          <th class="px-4 py-3 font-medium">Proveedor</th>
-          <th class="px-4 py-3 text-right font-medium">Precio</th>
-          <th class="px-4 py-3 text-right font-medium">Stock</th>
-          <th class="px-4 py-3 font-medium">Nace como</th>
-          <th class="px-4 py-3 font-medium">Estado</th>
-          <th class="px-4 py-3 font-medium"><span class="sr-only">Acción</span></th>
+        <tr>
+          <th><span class="sr-only">Seleccionar</span></th>
+          <th>Título</th>
+          <th>ISBN</th>
+          <th>Proveedor</th>
+          <th class="numero">Precio</th>
+          <th class="numero">Stock</th>
+          <th>Nace como</th>
+          <th>Estado</th>
+          <th class="derecha"><span class="sr-only">Acción</span></th>
         </tr>
       </thead>
       <tbody>
         {% for borrador in borradores %}
-          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-            <td class="px-4 py-3">
+          <tr>
+            <td>
               {% comment %}
-              Solo se puede seleccionar lo que el lote va a poder confirmar. Un
-              incompleto o uno con confianza sin revisar se excluiría igual del
-              lado del servidor, y ofrecer la casilla sería invitar a un clic que
-              termina en una advertencia.
+              Sólo se puede seleccionar lo que el lote va a poder confirmar: ofrecer
+              la casilla en un incompleto sería invitar a un clic que termina en una
+              advertencia.
               {% endcomment %}
               {% if borrador.estado == "pendiente" and not borrador.confianzas_bajas_sin_revisar %}
-                <input type="checkbox" name="borrador" value="{{ borrador.pk }}"
-                       aria-label="Seleccionar {{ borrador.titulo }}">
+                <input type="checkbox" name="borrador" value="{{ borrador.pk }}" aria-label="Seleccionar {{ borrador.titulo }}">
               {% else %}
-                <span class="font-mono text-[0.6rem] text-static" title="Necesita revisión individual">—</span>
+                <span class="secundario" title="Necesita revisión individual">—</span>
               {% endif %}
             </td>
-            <td class="px-4 py-3">
-              <a href="{% url 'catalog:borrador_detalle' borrador.pk %}"
-                 class="hover:text-signal">
-                {{ borrador.titulo|default:"(sin título)" }}
-                {% if borrador.volumen %}
-                  <span class="font-mono text-xs text-static">#{{ borrador.volumen }}</span>
-                {% endif %}
-              </a>
+            <td class="celda-principal">
+              <a href="{% url 'catalog:borrador_detalle' borrador.pk %}">{{ borrador.titulo|default:"(sin título)" }}</a>
+              {% if borrador.volumen %}<span class="datos secundario">#{{ borrador.volumen }}</span>{% endif %}
             </td>
-            <td class="px-4 py-3 font-mono text-xs {% if not borrador.isbn %}text-static{% endif %}">
-              {{ borrador.isbn|default:"—" }}
+            <td class="datos{% if not borrador.isbn %} secundario{% endif %}">{{ borrador.isbn|default:"—" }}</td>
+            <td class="secundario">{{ borrador.proveedor }}</td>
+            <td class="numero">{% if borrador.precio != None %}${{ borrador.precio }}{% else %}<span class="estado estado--atencion">Falta</span>{% endif %}</td>
+            <td class="numero">{{ borrador.stock_inicial }}</td>
+            {# El estado lo derivó el sistema de la fecha anunciada: valor calculado. #}
+            <td>
+              <span class="calculado" title="calculado">{{ borrador.get_estado_sugerido_display }}{% if borrador.fecha_llegada %} · {{ borrador.fecha_llegada|date:"d/m/y" }}{% endif %}</span>
             </td>
-            <td class="px-4 py-3 text-static">{{ borrador.proveedor }}</td>
-            <td class="px-4 py-3 text-right font-mono text-xs
-                       {% if borrador.precio == None %}text-signal{% endif %}">
-              {% if borrador.precio != None %}${{ borrador.precio }}{% else %}falta{% endif %}
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-xs">{{ borrador.stock_inicial }}</td>
-            {% comment %}
-            En `azure`: el estado no lo eligió nadie, lo derivó el sistema de la
-            fecha anunciada.
-            {% endcomment %}
-            <td class="px-4 py-3 font-mono text-xs text-azure">
-              {{ borrador.get_estado_sugerido_display }}
-              {% if borrador.fecha_llegada %}
-                <span class="text-static">· {{ borrador.fecha_llegada|date:"d/m/y" }}</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-3">
+            <td>
               {% if borrador.estado == "incompleto" %}
-                <span class="font-mono text-[0.65rem] uppercase tracking-wider text-signal">
-                  Incompleto
-                </span>
+                <span class="marca-estado marca-estado--atencion">Incompleto</span>
               {% elif borrador.confianzas_bajas_sin_revisar %}
-                <span class="font-mono text-[0.65rem] uppercase tracking-wider text-static">
-                  Confianza baja
-                </span>
+                <span class="marca-estado">Confianza baja</span>
               {% else %}
-                <span class="font-mono text-[0.65rem] uppercase tracking-wider text-static">
-                  Listo
-                </span>
+                <span class="marca-estado marca-estado--apagado">Listo</span>
               {% endif %}
             </td>
-            <td class="px-4 py-3 text-right">
-              <a href="{% url 'catalog:borrador_detalle' borrador.pk %}" class="boton-menor">
-                <span>Revisar</span>
-              </a>
+            <td class="acciones-de-fila">
+              <a href="{% url 'catalog:borrador_detalle' borrador.pk %}" class="boton-menor">Revisar</a>
             </td>
           </tr>
         {% endfor %}
@@ -104,16 +75,17 @@ y al de **confianza baja** le sobra una duda sobre un dato que sí está (va en
   Dos mensajes distintos porque son dos problemas distintos: el filtro no
   devolvió nada, o no hay nada que revisar. Este es el primero.
   {% endcomment %}
-  <p class="border-l-2 border-line bg-ash px-4 py-4 text-sm text-static">
-    Ningún borrador coincide con la búsqueda.
-    <a href="{% url 'catalog:borrador_lista' %}" class="text-screen hover:text-signal">
-      Limpiar los filtros
-    </a>.
-  </p>
+  <div class="vacio">
+    {% include "_iconos.html" with icono="buscar" %}
+    <p>Ningún borrador coincide con la búsqueda.</p>
+    <a href="{% url 'catalog:borrador_lista' %}" class="boton-texto">Limpiar los filtros</a>
+  </div>
 {% else %}
-  <p class="border-l-2 border-line bg-ash px-4 py-4 text-sm text-static">
-    No hay borradores pendientes. Se generan al procesar un correo de la
-    <a href="{% url 'suppliers:correo_lista' %}" class="text-screen hover:text-signal">cola de
-    proveedores</a>.
-  </p>
+  <div class="vacio">
+    {% include "_iconos.html" with icono="borradores" %}
+    <p>
+      No hay borradores pendientes. Se generan al procesar un correo de la
+      <a href="{% url 'suppliers:correo_lista' %}">cola de proveedores</a>.
+    </p>
+  </div>
 {% endif %}

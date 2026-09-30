@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-09-22**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-09-30**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,58 +11,50 @@ enlazan a éste.
 
 ## Resumen
 
-Segunda fotografía. Se tomó leyendo el código y contrastándolo contra `.contexto-ia/`, con los
-contratos ya archivados por sus Referencias Cruzadas: hasta esta corrida, 64 contratos de todos
-los módulos figuraban bajo el 18 y los recuentos por archivo no servían para nada.
+Tercera fotografía. **El código no cambió desde la anterior**: el último commit que toca código
+es `7891b0e`, del 2026-09-22. Lo que cambió es la especificación: el documento de análisis pasó
+de 75 a **103 casos de uso** y de 218 a **219 contratos**. Varios casos de uso agrupados se
+dividieron en alta, baja, modificación y consulta, y esta fotografía reparte lo construido entre
+los códigos nuevos leyendo el código de cada pantalla. Los códigos que ya no existen se listan al
+final, con los códigos que los reemplazan.
 
-La suite corre en verde: **1334 pruebas, 0 fallos, 97 % de cobertura**. **Cero `xfail`**: las
-cuatro que había marcaban contratos que el sistema no cumplía, y los dos desvíos que las
-originaban se resolvieron a favor del contrato.
+**Consecuencia de la división: sube la cantidad de `Parcial`.** Un caso de uso agrupado que se
+contaba como un solo `Parcial` ahora son cuatro filas. En cada una la observación dice qué parte
+falta. Casi siempre es la misma: **la baja es una casilla `activo` dentro del formulario de
+edición**. Los contratos piden, en cambio, un par solicitar/confirmar con informe de impacto, y
+que la modificación **no** pueda pasar un registro de activo a inactivo.
 
-**18 contratos de 218 están verificados**, uno queda parcial y 199 siguen sin prueba. Todos los
-verificados son de los módulos `12` Autenticación y `13` Gestión de Usuarios, que son los dos
-únicos con todos sus casos de uso construidos.
-
-**Ocho casos de uso tienen todos sus contratos verificados** y quedan a una sola advertencia del
-estado `Verificado`: `CU-AUT-FIN`, `CU-AUT-REC`, `CU-AUT-ACT`, `CU-USR-ALT`, `CU-USR-MOD`,
-`CU-USR-BAJ`, `CU-USR-REA` y `CU-USR-ELI`. La observación de cada uno lo dice. La advertencia es
-`ALLOWED_HOSTS`, no se resuelve dentro de un caso de uso y está en [DEUDA.md](DEUDA.md).
+**Dos casos de uso que estaban construidos pasan a `Parcial` porque su ficha creció.**
+`CU-AUT-INI` ahora referencia `CO-086 fusionarCarritoDeSesion`, que necesita `Carrito`.
+`CU-CAT-EDI` referencia `CO-031 restaurarPrecioCalculado`, que no existe en el código: se puede
+romper el vínculo del precio pero no restaurarlo. Por el mismo criterio pasan a `Parcial` las
+altas de lote y la revisión de borradores (`CO-077`, que depende de restock) y `CU-RST-PED`
+(`CO-072`, ídem).
 
 | | |
 | --- | --- |
-| Casos de uso especificados | 75 |
-| Verificados | 0 |
-| Construidos, sin verificar | 23 |
-| Parciales | 14 |
+| Casos de uso especificados | 103 |
+| Verificados | 11 |
+| Construidos, sin verificar | 9 |
+| Parciales | 37 |
 | En curso | 0 |
-| Pendientes | 38 |
+| Pendientes | 46 |
 | Bloqueados | 0 |
 
-Tres casos de uso pasaron de `Construido, sin verificar` a `Parcial` en esta fotografía, y los
-tres por la misma razón: se había leído como completo lo que sólo estaba a medias. `CU-PVP-TAB`
-no propaga el precio, `CU-PRV-COL` no deja aprobar un correo desde la pantalla y `CU-USR-CON` no
-tiene la ficha que CO-202 declara. Los tres están explicados en su fila.
-
-Contratos de operación especificados: **218**. Verificados: **18**. Parciales: **1**. Sin prueba:
-**199**. El detalle por contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), que es la
-única fuente de qué prueba cubre qué contrato.
+Contratos de operación especificados: **219**. Verificados: **26**. Parciales: **1** (`CO-114`).
+Sin prueba: **192**. El detalle por contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md),
+regenerado hoy. Es la única fuente de qué prueba cubre qué contrato. Las 98 pruebas de contrato
+de la suite apuntan a 19 contratos, y los 19 siguen vigentes con la misma operación que
+nombraban.
 
 ### Cómo leer la columna «Contratos»
 
 Dice *cuántos de los contratos que el caso de uso referencia tienen una prueba que verifica todas
 sus postcondiciones*, sobre el total que referencia. El total sale de las Referencias Cruzadas de
-cada contrato y no de suponerlo.
-
-**Un contrato compartido no se cuenta dos veces como verificado.** `CO-156 cancelarOperacion` lo
-referencian quince casos de uso de ocho módulos, y su prueba lo ejerce en tres pantallas del
-módulo 13. Para un caso de uso cuya pantalla de cancelación todavía no existe, `CO-156` **no**
-cuenta como verificado: la operación no se puede ejercer ahí. Por eso la columna suma menos que
-la cuenta ingenua de códigos con prueba.
-
-**La columna suma 22 y los contratos verificados son 18.** No es un error de arriba ni de abajo:
-`CO-156` aparece en tres filas del módulo 13 y `CO-122` en tres filas más —lo referencian
-`CU-AUT-ACT`, `CU-USR-MOD` y `CU-USR-REA`—, así que un mismo contrato se cuenta una vez por cada
-caso de uso que lo usa. El total de la cabecera cuenta contratos distintos.
+cada contrato. Un contrato compartido se cuenta una vez por cada caso de uso que lo referencia.
+En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese caso de uso**.
+`CO-156 cancelarOperacion` lo referencian ahora 22 casos de uso y su prueba lo ejerce en tres
+(`CU-USR-BAJ`, `CU-USR-REA`, `CU-USR-ELI`).
 
 ---
 
@@ -72,220 +64,236 @@ caso de uso que lo usa. El total de la cabecera cuenta contratos distintos.
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-ALT-NAC` | Construido, sin verificar | 0 / 8 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. Con pruebas propias (`test_alta_lote_nacional.py`), ninguna nombrada por contrato. |
-| `CU-ALT-IMP` | Construido, sin verificar | 0 / 11 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`, cotización desde `core/cotizaciones.py`. |
-| `CU-ALT-NOV` | Parcial | 0 / 6 | Extracción, cola de correos y generación de borradores construidas (`suppliers/correos.py`, `extraccion.py`, `catalog/borradores.py`). Falta el ciclo de monitoreo de casilla de CO-016 y la aprobación desde la pantalla de CO-017: las dos se disparan hoy con `manage.py`. El ciclo depende de P-05 — ver [DEUDA.md](DEUDA.md). |
-| `CU-ALT-REV` | Construido, sin verificar | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. |
-| `CU-ALT-DEM` | Parcial | 0 / 3 | Los campos existen (`ProductoEditorial.demorado`, `fecha_estimada`, `nota_demora`, `llegada_vigente`) y el inventario muestra el indicador. No hay pantalla de registro de demora (CO-014/CO-015) ni notificación a clientes: depende de Pedidos. |
-| `CU-ALT-TRA` | Pendiente | 0 / 5 | El estado Pre-venta existe en `Producto`. No existe el ciclo de vigilancia (CO-011), ni el escalado por inacción (CO-012), ni la confirmación de ingreso de lote (CO-013). Los dos ciclos dependen de P-05. |
-| `CU-ALT-CAN` | Pendiente | 0 / 3 | El estado terminal `Cancelado` existe en `Producto`. El flujo de cancelación en lote y el reembolso en puntos no: dependen de Pedidos y Puntos. |
+| `CU-ALT-NAC` | Parcial | 0 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`, con alta de editorial al vuelo (`EditorialRapidaView`). No hay alta al vuelo de tipo ni de formato (`CO-141`, `CO-144` desde el lote). `CO-077` no tiene código: depende de `SuscripcionReposicion`, módulo 05. |
+| `CU-ALT-IMP` | Parcial | 0 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`, cotización desde `core/cotizaciones.py`. Las mismas dos faltas que `CU-ALT-NAC`. `CO-031` como vía de A1 tampoco existe. |
+| `CU-ALT-NOV` | Parcial | 2 / 3 | **`CO-017` y `CO-019` verificados**: la aprobación y el reprocesamiento se disparan desde la ficha del correo (CU-PRV-COL). `CO-016`, el ciclo de monitoreo de la casilla, no existe y depende de P-05. |
+| `CU-ALT-REV` | Parcial | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. `CO-077` no tiene código. |
+| `CU-ALT-DEM` | Parcial | 0 / 3 | Los campos existen (`demorado`, `fecha_estimada`, `nota_demora`) y el inventario muestra el indicador. No hay pantalla de registro de demora (`CO-014`/`CO-015`) ni aviso a clientes: depende de Pedido. |
+| `CU-ALT-TRA` | Pendiente | 0 / 5 | El estado Pre-venta existe. No existen los ciclos de `CO-011` y `CO-012` (P-05) ni la confirmación de ingreso de `CO-013`. |
+| `CU-ALT-CAN` | Pendiente | 0 / 3 | El estado terminal existe. La cancelación en lote y el reembolso en puntos dependen de Pedido y Puntos. |
 
 ### `02` Catálogo
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CAT-ALT` | Construido, sin verificar | 0 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView` (el aviso de homónimo de E2). |
-| `CU-CAT-EDI` | Construido, sin verificar | 0 / 5 | `ProductoEdicionView`, con la ruptura del vínculo automático al fijar precio a mano. |
-| `CU-CAT-BAJ` | Construido, sin verificar | 0 / 3 | `ProductoBajaView` con el informe de impacto previo (`catalog/services.py`). |
-| `CU-CAT-REA` | Construido, sin verificar | 0 / 3 | `ProductoReactivarView`. Nadie comparó todavía lo construido contra el par solicitar/confirmar de CO-035 y CO-036. |
-| `CU-CAT-INV` | Parcial | 0 / 3 | `ProductoListaView` y `ProductoDetalleView`, con ficha diferenciada por rol. Falta la exportación de CO-037: no hay ninguna salida a archivo en todo el repositorio. |
-| `CU-CAT-ETQ` | Parcial | 0 / 11 | Alta, edición y cambio de grupo construidos (`EtiquetasView` y las vistas de parámetros). La baja de etiqueta y de grupo es una casilla `activa` dentro del formulario de edición, no el par solicitar/confirmar con informe de impacto que piden CO-040/041/044/045 (B-17-002). |
+| `CU-CAT-ALT` | Construido, sin verificar | 0 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. |
+| `CU-CAT-EDI` | Parcial | 0 / 5 | `ProductoEdicionView`, con la ruptura del vínculo al fijar el precio a mano (`CO-005`). **`CO-031 restaurarPrecioCalculado` no existe**: el vínculo se rompe y no se puede restaurar. |
+| `CU-CAT-BAJ` | Construido, sin verificar | 1 / 3 | `ProductoBajaView`, con el informe de impacto previo. `CO-156` verificado. |
+| `CU-CAT-REA` | Construido, sin verificar | 1 / 3 | `ProductoReactivarView`. `CO-156` verificado. Falta comparar lo construido contra `CO-035`/`CO-036`. |
+| `CU-CAT-INV` | Parcial | 0 / 3 | `ProductoListaView` y `ProductoDetalleView`, con ficha diferenciada por rol. Falta la exportación de `CO-037`: no hay ninguna salida a archivo en el repositorio. |
+| `CU-CAT-GRC` | Parcial | 0 / 1 | `EtiquetasView` lista los grupos con sus etiquetas, y la pantalla de parámetros los lista con la cantidad de etiquetas. No hay filtro por estado. |
+| `CU-CAT-GRA` | Parcial | 0 / 2 | `GrupoEtiquetaCrearView`, con el nombre normalizado. La colisión no enlaza al grupo existente ni dice su estado (E1). El formulario deja crear el grupo inactivo, y `CO-038` declara `g.activo` en sí. |
+| `CU-CAT-GRM` | Parcial | 0 / 2 | `GrupoEtiquetaEditarView`. Permite desactivar el grupo desde la casilla, cosa que `CO-039` excluye. |
+| `CU-CAT-GRB` | Parcial | 0 / 4 | La baja es la casilla del formulario: no hay informe (`CO-040`) ni confirmación (`CO-041`). **No da de baja las etiquetas del grupo**: las saca de los desplegables por filtro, sin cambiar `e.activa`, como pide `CO-041`. |
+| `CU-CAT-ETC` | Parcial | 0 / 1 | `EtiquetasView`, con búsqueda por texto sobre todas las etiquetas. No hay listado por grupo, ni paginación, ni filtro por estado. |
+| `CU-CAT-ETA` | Parcial | 0 / 2 | `EtiquetaCrearView`, con unicidad dentro del grupo. La colisión no enlaza a la existente. Permite crearla inactiva. |
+| `CU-CAT-ETM` | Parcial | 0 / 2 | `EtiquetaEditarView`: nombre, grupo (sólo activos) y estado. Permite desactivarla desde la casilla, cosa que `CO-043` excluye. |
+| `CU-CAT-ETB` | Parcial | 0 / 4 | La baja es la casilla del formulario, sin informe (`CO-044`) ni confirmación (`CO-045`). |
 
 ### `03` Pricing
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PVP-TAB` | Parcial | 0 / 7 | `TablaPrecioReferencia` con alta, edición y baja (`PrecioCrearView`, `PrecioEditarView`, `PrecioEliminarView`). **No propaga.** El CU declara que el cambio alcanza a los productos activos y a los carritos, y los pasos 3 a 5 —informe de cuántos productos se afectan, confirmación explícita, resumen en auditoría— tampoco existen. La propia pantalla lo dice: «cambiarlo acá no toca los productos ya cargados». Ver [DEUDA.md](DEUDA.md). |
-| `CU-PVP-MAR` | Parcial | 0 / 4 | El margen se edita en `ParametrosView` y queda auditado. **No hay recálculo**: CO-053 exige recalcular todos los importados y propagar a los carritos. La parte de los carritos no puede cerrar antes de la cadena comercial. |
-| `CU-PVP-ALT` | Pendiente | 0 / 2 | No existe el concepto Oferta. |
+| `CU-PVP-TBC` | Parcial | 0 / 1 | Tabla dentro de `ParametrosView`, con filtro sólo por editorial. `CO-166` pide también por tipo y por formato. |
+| `CU-PVP-TBA` | Parcial | 0 / 3 | `PrecioCrearView`. La validación de posibilidad es parcial: exige tipo por formato y formato aplicable, pero **no exige que el tipo sea del rubro editorial**. La colisión no enlaza a la fila existente. `CO-031` no existe. |
+| `CU-PVP-TBM` | Parcial | 0 / 4 | `PrecioEditarView` cambia el precio de la fila y **no propaga**. No hay informe de alcance (`CO-047`), ni confirmación (`CO-048`), ni acción de auditoría propia. La pantalla lo dice: «cambiarlo acá no toca los productos ya cargados». |
+| `CU-PVP-TBB` | Parcial | 0 / 5 | `PrecioEliminarView` borra la fila y los productos conservan su precio (`SET_NULL`). No informa cuántos productos están vinculados (`CO-050`) ni devuelve la cantidad desvinculada. |
+| `CU-PVP-MAR` | Parcial | 0 / 4 | El margen se edita dentro de `ParametrosView`. **No hay simulación (`CO-052`) ni recálculo (`CO-053`)**. La propagación a carritos no puede cerrar antes de `Carrito`. |
+| `CU-PVP-ALT` | Pendiente | 0 / 2 | No existe `Oferta`. |
 | `CU-PVP-EDI` | Pendiente | 0 / 2 | Ídem. |
-| `CU-PVP-BAJ` | Pendiente | 0 / 4 | Ídem. |
-| `CU-PVP-CON` | Pendiente | 0 / 3 | Ídem. |
+| `CU-PVP-BAJ` | Pendiente | 0 / 3 | Ídem. |
+| `CU-PVP-CON` | Pendiente | 0 / 2 | Ídem. |
 
 ### `04` Proveedores
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PRV-ALT` | Construido, sin verificar | 0 / 2 | `ProveedorAltaView`, con alta rápida de editorial sin salir de la pantalla. |
+| `CU-PRV-ALT` | Construido, sin verificar | 0 / 2 | `ProveedorAltaView`, con alta de editorial al vuelo. |
 | `CU-PRV-EDI` | Construido, sin verificar | 0 / 3 | `ProveedorEdicionView`, con confirmación al cambiar el correo comercial. |
 | `CU-PRV-CON` | Construido, sin verificar | 0 / 2 | `ProveedorListaView` y `ProveedorDetalleView`. |
-| `CU-PRV-REA` | Construido, sin verificar | 0 / 3 | `ProveedorReactivarView`. Falta comparar lo construido contra CO-065 y CO-066. |
-| `CU-PRV-COL` | Parcial | 0 / 5 | `CorreoListaView` y `CorreoDetalleView` sirven la cola y la ficha (CO-157, CO-158) y el descarte (CO-018). **No se puede aprobar un correo desde la pantalla**: la única decisión que el `POST` acepta es el descarte, y la aprobación de CO-017 se dispara con `manage.py extraer_novedades`. CO-016 tampoco existe. Ver [DEUDA.md](DEUDA.md). |
-| `CU-PRV-BAJ` | Parcial | 0 / 3 | `ProveedorBajaView` con informe de impacto. El informe declara una de las dos cifras que pide el CU: las propuestas de restock quedan en `None` porque el módulo 05 no existe. Es un estado de construcción y no una deuda del contrato (B-04-001). |
+| `CU-PRV-REA` | Construido, sin verificar | 1 / 3 | `ProveedorReactivarView`. `CO-156` verificado. Falta compararla contra `CO-065`/`CO-066`. |
+| `CU-PRV-BAJ` | Parcial | 1 / 3 | `ProveedorBajaView` con informe de impacto. `CO-156` verificado. La cifra de propuestas de restock queda «No disponible» porque el módulo 05 no existe (B-04-001). |
+| `CU-PRV-COL` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Aprobar (`AprobarCorreoView`) y reprocesar (`ReprocesarCorreoView`) desde la ficha, con la transición condicionada de E1 y la corrección de E4 a favor del contrato (B-04-004). |
 
 ### `05` Restock
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-RST-PED` | Construido, sin verificar | 0 / 2 | `suppliers/pedidos.py`, con reintento hasta tres veces. Lo invoca hoy el cierre de sesión de revisión de `CU-ALT-REV`. |
-| `CU-RST-PRO` | Pendiente | 0 / 2 | No existe PropuestaRestock. |
+| `CU-RST-PED` | Parcial | 0 / 3 | `suppliers/pedidos.py`, con reintento hasta tres veces. Lo invoca el cierre de sesión de revisión (`CO-025`). `CO-072 despacharPedidoAProveedor` necesita `PropuestaRestock`. |
+| `CU-RST-PRO` | Pendiente | 0 / 2 | No existe `PropuestaRestock`. |
 | `CU-RST-APR` | Pendiente | 0 / 8 | Ídem. |
-| `CU-RST-SUS` | Pendiente | 0 / 2 | No existe SuscripcionReposicion. |
+| `CU-RST-SUS` | Pendiente | 0 / 2 | No existe `SuscripcionReposicion`. |
 | `CU-RST-NOT` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
 
 ### `06` Ventas Presenciales
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-VTA-REG` | Pendiente | 0 / 7 | `MostradorView` es una pantalla placeholder: sólo fija el control de acceso del rol Cajero. |
+| `CU-VTA-REG` | Pendiente | 0 / 7 | `MostradorView` es una pantalla de relleno: sólo fija el control de acceso del rol Cajero. |
 
 ### `07` Tienda Online
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-TDA-CAT` | Pendiente | 0 / 3 | `TiendaView` es una pantalla placeholder: sólo fija el control de acceso del rol Cliente. |
-| `CU-TDA-CAR` | Pendiente | 0 / 6 | No existe Carrito. |
-| `CU-TDA-CMP` | Pendiente | 0 / 5 | No existe Pedido ni TransaccionPago. |
-| `CU-TDA-INV` | Pendiente | 0 / 4 | Ídem. |
+| `CU-TDA-CAT` | Pendiente | 0 / 3 | `TiendaView` es una pantalla de relleno: sólo fija el control de acceso del rol Cliente. |
+| `CU-TDA-CRC` | Pendiente | 0 / 3 | No existe `Carrito`. |
+| `CU-TDA-CRA` | Pendiente | 0 / 1 | Ídem. |
+| `CU-TDA-CRM` | Pendiente | 0 / 1 | Ídem. |
+| `CU-TDA-CRB` | Pendiente | 0 / 1 | Ídem. |
+| `CU-TDA-CMP` | Pendiente | 0 / 6 | No existen `Pedido` ni `TransaccionPago`. |
+| `CU-TDA-INV` | Pendiente | 0 / 5 | Ídem. |
 
 ### `08` Gestión de Pedidos
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PED-CON` | Pendiente | 0 / 2 | No existe Pedido. |
+| `CU-PED-CON` | Pendiente | 0 / 2 | No existe `Pedido`. |
 | `CU-PED-EST` | Pendiente | 0 / 3 | Ídem. |
-| `CU-PED-OPC` | Pendiente | 0 / 5 | Ídem. |
-| `CU-PED-CAN` | Pendiente | 0 / 1 | Ídem. |
-| `CU-PED-CMP` | Pendiente | 0 / 1 | Ídem. |
+| `CU-PED-OPC` | Pendiente | 0 / 6 | Ídem. Su DSS muestra ahora al Temporizador disparando el vencimiento de la ventana (`CO-096`, P-05). |
+| `CU-PED-CAN` | Pendiente | 0 / 2 | Ídem. |
+| `CU-PED-CMP` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
 
 ### `09` Devoluciones
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-DEV-SOL` | Pendiente | 0 / 2 | No existe CasoDevolucion. |
+| `CU-DEV-SOL` | Pendiente | 0 / 2 | No existe `CasoDevolucion`. |
 | `CU-DEV-RES` | Pendiente | 0 / 5 | Ídem. |
 
 ### `10` Puntos
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PTS-CON` | Pendiente | 0 / 2 | No existen LotePuntos ni MovimientoPuntos. |
+| `CU-PTS-CON` | Pendiente | 0 / 2 | No existen `LotePuntos` ni `MovimientoPuntos`. |
 | `CU-PTS-CJE` | Pendiente | 0 / 3 | Ídem. |
 | `CU-PTS-CAD` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
-| `CU-PTS-ADM` | Pendiente | 0 / 3 | Ídem. |
+| `CU-PTS-ADM` | Pendiente | 0 / 2 | Ídem. |
 
 ### `11` Cuenta de Cliente
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CLI-ALT` | Construido, sin verificar | 0 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. Lo que se acepta es la política de privacidad, que es lo que CO-107 declara. |
-| `CU-CLI-CON` | Parcial | 0 / 2 | `ClienteListaView` cubre el listado de CO-194. **La ficha de cliente de CO-195 no existe.** Mismo criterio que `CU-USR-CON`: el CU declara dos operaciones y sólo una tiene pantalla. Si el listado alcanza para lo que la ficha promete es una ambigüedad a resolver en el plan del módulo, no acá. |
-| `CU-CLI-DAT` | Pendiente | 0 / 4 | El Cliente no tiene panel propio: no hay pantalla de datos personales, ni cambio de correo, ni cambio de contraseña con sesión iniciada. |
-| `CU-CLI-BAJ` | Pendiente | 0 / 3 | Depende de Pedidos, Puntos y Stock Almacenado para el mapeo de impacto. |
-| `CU-CLI-HIS` | Pendiente | 0 / 2 | No existe Pedido. |
+| `CU-CLI-ALT` | Construido, sin verificar | 0 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. |
+| `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
+| `CU-CLI-DAT` | Pendiente | 0 / 4 | El Cliente no tiene panel propio. |
+| `CU-CLI-HIS` | Pendiente | 0 / 2 | No existe `Pedido`. |
+| `CU-CLI-BAJ` | Pendiente | 0 / 3 | Depende de Pedidos, Puntos y Stock Almacenado para el informe de impacto. |
 
 ### `12` Autenticación
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-AUT-INI` | Construido, sin verificar | 1 / 2 | `LoginUsuarioView`, bloqueo por intentos fallidos (`IntentoFallido`), redirección por rol y expiración por inactividad con renovación. **CO-115 verificado.** CO-114 queda parcial: su postcondición nombra `ConfiguracionSistema` y los valores viven en `config/settings/base.py` (B-12-001). |
-| `CU-AUT-FIN` | Construido, sin verificar | 1 / 1 | **Todos sus contratos verificados.** `LogoutUsuarioView`, con registro en auditoría por signal. CO-116 incluye su postcondición negativa: las sesiones de otros dispositivos no se tocan. Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-AUT-REC` | Construido, sin verificar | 2 / 2 | **Todos sus contratos verificados.** CO-117 y CO-118 se afirman ahora literalmente: `TokenRecuperacion` existe como concepto con sus tres estados (B-12-003). Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-AUT-ACT` | Construido, sin verificar | 3 / 3 | **Todos sus contratos verificados.** CO-119, CO-122 y CO-196. El `EnlaceActivacion` permite además distinguir E1 («vencido») de E2 («ya utilizado»), que antes se respondían igual. Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
+| `CU-AUT-INI` | Parcial | 1 / 3 | `LoginUsuarioView`, bloqueo por intentos, redirección por rol y expiración con renovación. **`CO-115` verificado**, `CO-114` parcial (B-12-001). **Nuevo:** la ficha referencia `CO-086 fusionarCarritoDeSesion`, que no puede existir antes de `Carrito`. |
+| `CU-AUT-FIN` | Verificado | 1 / 1 | **Todos sus contratos verificados.** |
+| `CU-AUT-REC` | Verificado | 2 / 2 | **Todos sus contratos verificados.** |
+| `CU-AUT-ACT` | Verificado | 3 / 3 | **Todos sus contratos verificados.** |
 
 ### `13` Gestión de Usuarios
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-USR-ALT` | Construido, sin verificar | 1 / 1 | **Todos sus contratos verificados.** CO-120 se afirma literalmente desde que existe `EnlaceActivacion`, incluida la vigencia de 48 horas y el estado Vigente. Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-USR-MOD` | Construido, sin verificar | 3 / 3 | **Todos sus contratos verificados.** CO-121, CO-122 y CO-197, incluidas las tres excepciones y la invalidación de sesión al cambiar el rol. Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-USR-BAJ` | Construido, sin verificar | 3 / 3 | **Todos sus contratos verificados.** CO-198 E1 pasó a cumplirse: la solicitud de baja del último Administrador se bloquea en el `GET` y no sólo al confirmar (B-13-003). Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-USR-REA` | Construido, sin verificar | 4 / 4 | **Todos sus contratos verificados.** La reactivación recibe el rol y la auditoría lo registra, que es lo que CO-124 y CO-199 declaraban y el código no hacía (B-13-002). Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-USR-ELI` | Construido, sin verificar | 3 / 3 | **Todos sus contratos verificados**, incluido el orden de CO-125 —auditoría antes del borrado— y las tres condiciones que impiden la eliminación. Sólo lo separa de `Verificado` la advertencia de `ALLOWED_HOSTS`. |
-| `CU-USR-CON` | Parcial | 1 / 2 | `UsuarioListaView` cubre CO-201, con su prueba de acceso por la dirección real. **La ficha de usuario de CO-202 no existe** como pantalla propia. Mismo criterio que `CU-CLI-CON`: el CU declara dos operaciones y sólo una tiene pantalla. Si el listado y el formulario de edición alcanzan para lo que la ficha promete es una ambigüedad del plan del módulo. |
+| `CU-USR-ALT` | Verificado | 1 / 1 | **Todos sus contratos verificados.** |
+| `CU-USR-MOD` | Verificado | 3 / 3 | **Todos sus contratos verificados.** |
+| `CU-USR-BAJ` | Verificado | 3 / 3 | **Todos sus contratos verificados**, incluido `CO-156`: abandonar la confirmación no cambia la cuenta ni audita. |
+| `CU-USR-REA` | Verificado | 4 / 4 | **Todos sus contratos verificados**, incluido `CO-156`. |
+| `CU-USR-ELI` | Verificado | 3 / 3 | **Todos sus contratos verificados**, incluido `CO-156`. |
+| `CU-USR-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** La ficha (`UsuarioFichaView`, `CO-202`) ofrece sólo las acciones que el estado admite, y no ofrece la baja del último Administrador. |
 
-### `14` Caja
-
-| Caso de uso | Estado | Contratos | Observación |
-| --- | --- | --- | --- |
-| `CU-CAJ-CIE` | Pendiente | 0 / 3 | No existe CierreDeCaja. Depende de Ventas Presenciales. |
-
-### `15` Reportes
+### `14` Caja · `15` Reportes · `16` Auditoría
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-REP-GEN` | Pendiente | 0 / 2 | No hay generación de reportes ni exportación a archivo. |
-
-### `16` Auditoría
-
-| Caso de uso | Estado | Contratos | Observación |
-| --- | --- | --- | --- |
-| `CU-AUD-CON` | Parcial | 0 / 3 | `RegistroAuditoria` existe, es inmutable por diseño y declara 28 acciones. El panel del Administrador muestra las últimas entradas. No hay pantalla de consulta con filtros (CO-205), ni detalle de entrada (CO-206), ni exportación (CO-129). |
+| `CU-CAJ-CIE` | Pendiente | 0 / 3 | No existe `CierreDeCaja`. Depende de Ventas Presenciales. |
+| `CU-REP-GEN` | Pendiente | 0 / 2 | No hay generación de reportes. |
+| `CU-AUD-CON` | Parcial | 0 / 3 | `RegistroAuditoria` existe, es inmutable y declara 28 acciones. El panel muestra las últimas entradas. No hay consulta con filtros (`CO-205`), ni detalle (`CO-206`), ni exportación (`CO-129`). |
 
 ### `17` Configuración del Sistema
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CFG-LLM` | Construido, sin verificar | 0 / 3 | `DiagnosticoLLMView` y `core/llm.py`. El banco de muestras propio es el contenido de prueba que el paso 2 del CU declara (B-17-001). |
-| `CU-CFG-PAR` | Parcial | 0 / 3 | `ParametrosView` expone margen, stock inicial por defecto y la configuración del modelo de lenguaje. El CU pide siete secciones: las que dependen de módulos no construidos no existen, y la de **Seguridad** —expiración por inactividad y período de bloqueo— sigue como constantes en `config/settings/base.py` (B-12-001). |
-| `CU-CFG-EDT` | Parcial | 0 / 5 | Alta y edición construidas. La baja es una casilla `activa` dentro del formulario, no el par solicitar/confirmar con informe de impacto de CO-139/140 (B-17-002). |
-| `CU-CFG-TIP` | Parcial | 0 / 10 | Alta y edición de `Tipo` y `Formato` construidas, con la tabulación de formatos por tipo. La baja de formato es una casilla, no el par CO-147/148 (B-17-002), y no hay confirmación del cambio de tabulación de CO-143. La baja de **tipo** es un caso aparte: existe y ningún contrato la declara — ver [DEUDA.md](DEUDA.md). |
-| `CU-CFG-BAN` | Pendiente | 0 / 4 | No existe Banner. |
-| `CU-CFG-FAQ` | Pendiente | 0 / 3 | No existe ContenidoFAQ. |
-| `CU-CFG-VIS` | Pendiente | 0 / 2 | Los tokens visuales están escritos a mano en `templates/base.html`; no hay entidad ni pantalla que los edite. |
+| `CU-CFG-PAR` | Parcial | 0 / 3 | `ParametrosView` expone margen, stock inicial por defecto y el modelo de lenguaje. Faltan las secciones de los módulos no construidos, la de **Seguridad** (B-12-001) y el **intervalo del carrusel**, que la ficha ya declara y el modelo de dominio todavía no. El margen se edita acá, y la ficha dice que desde este panel sólo se enlaza a `CU-PVP-MAR`. |
+| `CU-CFG-LLM` | Construido, sin verificar | 0 / 3 | `DiagnosticoLLMView` y `core/llm.py`. |
+| `CU-CFG-EDC` | Parcial | 0 / 1 | Listado dentro de `ParametrosView`, con estado. Cuenta **filas de precio** y no productos vinculados, como pide `CO-211`. No hay filtro por estado. |
+| `CU-CFG-EDA` | Parcial | 0 / 2 | `EditorialCrearView` y alta al vuelo (`EditorialRapidaView`). La colisión no enlaza a la existente ni dice su estado. Permite crearla inactiva. |
+| `CU-CFG-EDM` | Parcial | 0 / 2 | `EditorialEditarView`. Permite desactivar, cosa que `CO-138` excluye. |
+| `CU-CFG-EDB` | Parcial | 0 / 4 | La baja es la casilla del formulario, sin informe (`CO-139`) ni confirmación (`CO-140`). Un borrador que hereda una editorial inactiva **no registra reparo**. |
+| `CU-CFG-TPC` | Parcial | 0 / 1 | Listado dentro de `ParametrosView`: nombre, si se clasifica por formato y estado. Falta el rubro, los formatos declarados, la cantidad de productos y el filtro por estado. |
+| `CU-CFG-TPA` | Parcial | 0 / 3 | `TipoCrearView`. **El formulario no pide el rubro**: todo tipo nuevo nace editorial. No se pueden declarar formatos desde el tipo (`CO-146`). |
+| `CU-CFG-TPM` | Parcial | 0 / 3 | `TipoEditarView`. No cambia el rubro, no valida E2, E4 ni E5, y permite desactivar. |
+| `CU-CFG-TPB` | Parcial | 0 / 4 | La baja es la casilla del formulario. **Ahora tiene contrato** (`CO-220`/`CO-221`) y sale de «Código sin contrato». Falta el par con informe. |
+| `CU-CFG-FMC` | Parcial | 0 / 1 | Listado dentro de `ParametrosView`: nombre, medidas, tipos y estado. Falta la cantidad de productos y el filtro por estado. |
+| `CU-CFG-FMA` | Parcial | 0 / 2 | `FormatoCrearView`. «Aplica a todos» se infiere de la lista vacía; los contratos lo declaran como atributo. No hay alta al vuelo desde el lote. |
+| `CU-CFG-FMM` | Parcial | 0 / 2 | `FormatoEditarView`. No valida E3 y permite desactivar. |
+| `CU-CFG-FMB` | Parcial | 0 / 4 | La baja es la casilla del formulario, sin informe (`CO-147`) ni confirmación (`CO-148`). |
+| `CU-CFG-BNC` | Pendiente | 0 / 1 | No existe `Banner`. |
+| `CU-CFG-BNA` | Pendiente | 0 / 2 | Ídem. |
+| `CU-CFG-BNM` | Pendiente | 0 / 2 | Ídem. |
+| `CU-CFG-BNB` | Pendiente | 0 / 2 | Ídem. |
+| `CU-CFG-FAQ` | Pendiente | 0 / 3 | No existe `ContenidoFAQ`. |
+| `CU-CFG-VIS` | Pendiente | 0 / 2 | No existe `IdentidadVisual`. |
 
 ### `18` Stock Almacenado en Local
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-STK-CON` | Pendiente | 0 / 1 | No existe ArticuloRetenido. |
+| `CU-STK-CON` | Pendiente | 0 / 1 | No existe `ArticuloRetenido`. |
 | `CU-STK-DES` | Pendiente | 0 / 5 | Ídem. |
-| `CU-STK-ADM` | Pendiente | 0 / 4 | Ídem. |
+| `CU-STK-ADC` | Pendiente | 0 / 2 | Ídem. |
+| `CU-STK-FIS` | Pendiente | 0 / 3 | Ídem. |
+| `CU-STK-PLA` | Pendiente | 0 / 2 | Ídem. |
 | `CU-STK-VEN` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
+
+### Códigos retirados y a qué se repartieron
+
+| Retirado | Se repartió en | Qué se leyó en el código |
+| --- | --- | --- |
+| `CU-CFG-EDT` | `CU-CFG-EDC`, `EDA`, `EDM`, `EDB` | Alta y edición de editorial; baja por casilla |
+| `CU-CFG-TIP` | `CU-CFG-TPC` a `TPB` y `CU-CFG-FMC` a `FMB` | Alta y edición de tipo y de formato; bajas por casilla |
+| `CU-CAT-ETQ` | `CU-CAT-GRC` a `GRB` y `CU-CAT-ETC` a `ETB` | Alta y edición de grupo y de etiqueta; bajas por casilla |
+| `CU-PVP-TAB` | `CU-PVP-TBC`, `TBA`, `TBM`, `TBB` | Alta, edición sin propagación y borrado de fila |
+| `CU-CFG-BAN` | `CU-CFG-BNC`, `BNA`, `BNM`, `BNB` | Nada construido |
+| `CU-TDA-CAR` | `CU-TDA-CRC`, `CRA`, `CRM`, `CRB` | Nada construido |
+| `CU-STK-ADM` | `CU-STK-ADC`, `FIS`, `PLA` | Nada construido |
+
+`CU-PVP-VEN` («Vencer Ofertas») está decidido y todavía no tiene ficha: no figura entre los 103 y
+no tiene fila.
 
 ---
 
 ## Las siete puertas
 
-Se corrieron las siete sobre el repositorio entero, con PostgreSQL levantado. Es una medición
-global: dice el estado de cada puerta para todo el código, no por caso de uso.
+Medición del **2026-09-30**, con PostgreSQL levantado, sobre el repositorio entero.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1334 pasan**, 0 fallos, **0 xfail**, 5 min 53 s |
-| **Contratos** | **18 de 218 verificados**, 1 parcial, 199 sin prueba. Todos del módulo 12 y del 13 |
-| Cobertura sobre código de aplicación | **97 %** (4381 sentencias, 153 sin cubrir) |
-| Análisis estático | `ruff check apps config scripts` — sin hallazgos |
-| Formato | `black --check` — 145 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts` — sin hallazgos |
-| Configuración de despliegue | **1 advertencia**: `security.W020`, `ALLOWED_HOSTS` vacío |
+| Suite de pruebas | **1458 pasan**, 0 fallos, 6 min 14 s |
+| **Contratos** | **26 de 219 verificados**, 1 parcial (`CO-114`), 192 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **97 %** (4476 sentencias, 155 sin cubrir) |
+| Análisis estático | `ruff check apps config scripts`: sin hallazgos |
+| Formato | `black --check apps config scripts`: 151 archivos sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin las carpetas de pruebas: sin hallazgos |
+| Configuración de despliegue | `check --deploy` con la configuración de producción y el `.env` de esta máquina (`ALLOWED_HOSTS=.trycloudflare.com`): **sin advertencias** |
 
-Las tres últimas cubren ahora también `scripts/`, que dejó de estar fuera del repositorio.
+`manage.py migrate --check` sale en 0 sobre la base de desarrollo.
 
-**Sobre la advertencia de despliegue.** `ALLOWED_HOSTS` sale del entorno en
-`config/settings/production.py`, con `""` por defecto, y `.env.example` lo deja en blanco. No hay
-valor configurado en ninguna parte del repositorio porque el host de producción todavía no está
-decidido. La puerta queda en amarillo hasta que lo esté, y es lo único que separa a nueve casos de
-uso del estado `Verificado`.
+**Sobre la puerta de despliegue.** La conexión tiene CGNAT y la demostración se publica con un
+túnel de Cloudflare ([despliegue/DEMOSTRACION.md](despliegue/DEMOSTRACION.md)). Con el host
+declarado, la puerta quedó verde por primera vez, y **once casos de uso pasan a `Verificado`**:
+son los que ya tenían todos sus contratos verificados. La puerta mide la configuración de esta
+máquina: otra instalación tiene que declarar su propio `ALLOWED_HOSTS`.
 
-**Cinco archivos quedan por debajo del 90 %**, y uno importa más que los otros cuatro:
-
-| Archivo | Cobertura | Qué queda sin cubrir |
-| --- | --- | --- |
-| `apps/suppliers/management/commands/ingerir_correos.py` | **0 %** | El comando entero. Es la vía de ingesta que hoy ocupa el lugar de CO-016 |
-| `apps/core/utils.py` | 75 % | La rama sin `REMOTE_ADDR` de `obtener_ip` |
-| `apps/accounts/management/commands/crear_administrador_inicial.py` | 81 % | Las ramas interactivas: `input()` y `getpass()` no se ejercen desde la suite |
-| `apps/core/management/commands/respaldar_base.py` | 85 % | Las ramas de error del volcado |
-| `apps/core/integraciones.py` | 89 % | Ramas de degradación de la puerta HTTP |
-
-El 97 % global las tapa: ninguna hace caer la puerta, y `ingerir_correos.py` al 0 % no se ve en el
-número agregado.
+**La prueba del estilo preliminar pasa**: ninguna plantilla ni la hoja de estilo tienen
+animaciones, transiciones, sombras, esquinas redondeadas, gradientes, fuentes web, colores fuera
+de los seis tokens ni clases de Tailwind (`apps/core/tests/test_estilo_preliminar.py`).
 
 ---
 
 ## Lo que esta fotografía no cubre
 
-- **200 de los 218 contratos siguen sin verificar.** Lo cubierto son dos módulos de diez casos de
-  uso; los otros 65 siguen apoyados sólo en las pruebas descriptivas. El 97 % de cobertura dice
-  que las líneas se ejecutaron, no que el efecto que el contrato declara se cumpla.
-- **La columna «Contratos» no mide calidad.** Un contrato verificado es uno cuyas postcondiciones
-  tienen prueba; que el contrato sea el correcto es otra pregunta, y la responde la bitácora.
-- **La concurrencia de I-12 no se probó.** Dos administradores quitándose el rol a la vez es un
-  caso declarado del foco reforzado; el resguardo usa `select_for_update()` y este pase verifica
-  el resultado, no la carrera.
-- **La lectura es del código, no de la pantalla.** Ningún caso de uso se ejercitó a mano contra el
-  servidor de desarrollo. Las dos verificaciones que `CLAUDE.md` pide a mano sí se hicieron: las
-  migraciones aplican sobre la base de desarrollo y `migrate --check` sale en 0.
+- **El reparto de los códigos retirados se hizo leyendo vistas, formularios y la pantalla de
+  parámetros.** No se ejercitó ninguna pantalla contra el servidor.
+- **Las pantallas se revisaron con capturas**, no a mano en un navegador interactivo: panel,
+  inventario, ficha de producto, ficha de correo, parámetros e inicio de sesión. El resto se
+  verificó por la suite y la prueba del estilo.
 - **El estado `Parcial` es un juicio sobre el alcance, no sobre la calidad.** Dice que falta una
   parte declarada del caso de uso, no que lo construido esté mal.
-- **No se revisaron las pantallas contra `TOKENS_VISUALES.md`.** El avance visual no entra acá.

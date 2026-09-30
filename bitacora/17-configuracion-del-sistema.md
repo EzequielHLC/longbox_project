@@ -140,3 +140,98 @@ de uso sería escribir seis veces la misma vista y dejar que diverjan.
 Nada todavía. El trabajo **va al plan del módulo 17**, organizado por contrato y no por caso de
 uso: los `Gestionar`/`Administrar` se van a separar en alta, baja y modificación, y una
 reconciliación organizada por caso de uso quedaría invalidada cuando eso llegue.
+
+---
+
+### B-17-003 · El intervalo del carrusel es un parámetro que el modelo de dominio todavía no declara
+
+**Tipo:** Agregado · **Fecha:** 2026-09-30 · **Alcance:** `CU-CFG-PAR`, `CU-CFG-BNC`, `CO-130`
+**Estado:** Abierta — decidido; falta la enmienda del modelo, anunciada para la sección 5
+
+**Qué apareció.**
+La ficha de `CU-CFG-PAR` ya lista la sección Tienda con el intervalo de rotación del carrusel, y
+`CU-CFG-BNC` dice que la portada alterna los banners «con el intervalo que fija CU-CFG-PAR».
+`ConfiguracionSistema`, en `MODELO_DE_DOMINIO.md`, no tiene el atributo.
+
+**Qué dice la especificación.**
+> «Tienda: intervalo de rotación del carrusel de banners, en segundos (entero ≥ 1).»
+> (`CU-CFG-PAR`, paso 2)
+
+El modelo de dominio: `Nada`.
+
+**Qué se hizo.**
+Se agrega el atributo a `ConfiguracionSistema`, entero de 1 en adelante, editable desde
+Parámetros globales. **Valor inicial: 10 segundos, fijado por el responsable** el 2026-09-30
+(consulta C-05).
+
+**Qué habría que cambiar.**
+`MODELO_DE_DOMINIO.md`, Área 7, `ConfiguracionSistema`: agregar «--- Tienda --- intervalo del
+carrusel (s) : entero ≥ 1 «default 10»».
+
+---
+
+### B-17-004 · «Aplica a todos los tipos» es un atributo de Formato
+
+**Tipo:** Corrección · **Fecha:** 2026-09-30 · **Alcance:** `CU-CFG-FMA`, `FMM`, `FMC`, `TPA`, `TPM`, `CO-144`, `CO-145`, `CO-146`, `CO-049`
+**Estado:** Resuelta en el código — decisión del responsable el 2026-09-30 (consulta C-03). Enmienda pendiente
+
+**Qué apareció.**
+Los contratos del formato declaran «f.aplica a todos los tipos» como atributo que se fija y
+cambia. El modelo de dominio no lo tiene, y el código lo deducía de la lista vacía de tipos. Con
+esa deducción, declarar un formato universal desde un tipo (`CO-146`) lo convertía en particular
+sin que nadie lo decidiera.
+
+**Qué dice la especificación.**
+> «(c) f.nombre quedó con el valor normalizado, f.medidas y f.aplica a todos los tipos con los
+> valores declarados» (`CO-144`, Postcondiciones)
+
+`MODELO_DE_DOMINIO.md`, Área 2, `Formato`: nombre, medidas y activo. Nada más.
+
+**Qué se hizo.**
+`Formato` gana el atributo. Una migración marca como «aplica a todos» a cada formato que tenía la
+lista de tipos vacía, para que ninguno cambie de alcance al migrar.
+
+**Qué habría que cambiar.**
+`MODELO_DE_DOMINIO.md`, Área 2, `Formato`: agregar «aplica a todos los tipos : sí / no».
+
+---
+
+### B-17-005 · Acciones de auditoría para los catálogos y el contenido de la tienda
+
+**Tipo:** Agregado · **Fecha:** 2026-09-30 · **Alcance:** módulos 02, 03 y 17
+**Estado:** Resuelta en el código — el responsable delegó la elección el 2026-09-30 (consulta C-04). Enmienda pendiente
+
+**Qué apareció.**
+Las operaciones de alta, modificación y baja de editoriales, tipos, formatos, grupos y etiquetas
+se auditaban como «Modificación de parámetros globales», y `CO-130` dice que un catálogo no es un
+parámetro. FAQ, identidad visual y banners no tenían ninguna acción aplicable. El enumerado es
+cerrado y sólo se amplía declarándolo en el modelo.
+
+**Qué dice la especificación.**
+> «El enumerado sigue siendo cerrado: cualquier operación de escritura nueva que se incorpore
+> debe declarar su propio valor acá antes de poder auditarse.» (`MODELO_DE_DOMINIO.md`, Área 7,
+> nota sobre `RegistroAuditoria`)
+
+Los contratos dicen «una entrada en el registro de auditoría de la operación» y no nombran la
+acción.
+
+**Qué se hizo.**
+Se agregan estas acciones, con el objeto afectado y los valores anterior y nuevo en el detalle:
+
+| Acción | La usan |
+| --- | --- |
+| Alta de catálogo | `CO-137`, `CO-141`, `CO-144`, `CO-038`, `CO-042` |
+| Modificación de catálogo | `CO-138`, `CO-142`, `CO-145`, `CO-146`, `CO-039`, `CO-043` |
+| Baja de catálogo | `CO-140`, `CO-221`, `CO-148`, `CO-041`, `CO-045` |
+| Alta de precio de referencia | `CO-049` |
+| Baja de precio de referencia | `CO-051` |
+| Publicación de FAQ | `CO-135`, `CO-136` |
+| Modificación de identidad visual | `CO-131` |
+| Alta de banner · Modificación de banner · Baja de banner | `CO-132` · `CO-133` · `CO-134` |
+
+Se suman las tres que el modelo ya declara en INC-06 y el código no tenía: «Modificación de
+precio de referencia» (`CO-048`), «Exportación de inventario» (`CO-037`) y «Exportación del log
+de auditoría» (`CO-129`). Las entradas que ya existen no se reescriben: el log es inmutable.
+
+**Qué habría que cambiar.**
+`MODELO_DE_DOMINIO.md`, Área 7, nota de INC-06: agregar las once acciones nuevas de la tabla.

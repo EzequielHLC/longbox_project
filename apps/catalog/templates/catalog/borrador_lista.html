@@ -1,136 +1,116 @@
 {% extends "base_operativo.html" %}
+{% comment %}
+CU-ALT-REV — la cola de borradores (`CO-159 consultarColaDeBorradores`), con la
+confirmación en lote (`CO-023`) y el cierre de la sesión de revisión (`CO-025`).
+{% endcomment %}
 
 {% block titulo %}Revisión de borradores · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <h1 class="font-display text-3xl font-bold tracking-wide">Revisión de borradores</h1>
-    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-      Productos propuestos desde los correos de proveedores
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Revisión de borradores</h1>
+    <p>Productos propuestos desde los correos de proveedores.</p>
   </div>
 
   {% comment %}
-  El cierre de la sesión es la acción principal de la pantalla, y solo aparece
-  cuando hay una tanda en curso: ofrecerla siempre invitaría a apretarla sin
-  haber confirmado nada, que es un cierre sin efecto.
+  El cierre de la sesión es la acción principal de la pantalla, y sólo aparece
+  cuando hay una tanda en curso: ofrecerla siempre invitaría a un cierre sin
+  efecto.
   {% endcomment %}
   {% if sesion %}
     <form method="post" action="{% url 'catalog:cerrar_sesion_revision' %}">
       {% csrf_token %}
-      <div class="marco-boton">
-        <button type="submit" class="boton-primario">Cerrar la revisión y pedir</button>
-      </div>
+      <button type="submit" class="boton-primario">
+        {% include "_iconos.html" with icono="correo" %}<span>Cerrar la revisión y pedir</span>
+      </button>
     </form>
   {% endif %}
-</div>
+</header>
 
-<dl class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-  <div class="border-l-2 border-line bg-ash px-4 py-3">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Pendientes</dt>
-    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.total }}</dd>
+<div class="cifras">
+  <div class="cifra">
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="borradores" %}Pendientes</span>
+    <span class="cifra__valor">{{ resumen.total }}</span>
   </div>
   {% comment %}
-  El rojo aparece solo cuando hay incompletos, que es lo único de acá que pide
-  una acción concreta: completar un dato que falta.
+  Pide atención sólo cuando hay incompletos, lo único de acá que exige completar
+  un dato que falta.
   {% endcomment %}
-  <div class="border-l-2 bg-ash px-4 py-3
-              {% if resumen.incompletos %}border-signal{% else %}border-line{% endif %}">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Incompletos</dt>
-    <dd class="mt-1 font-display text-2xl font-bold
-               {% if resumen.incompletos %}text-signal{% else %}text-static{% endif %}">
-      {{ resumen.incompletos }}
-    </dd>
+  <div class="cifra{% if resumen.incompletos %} cifra--atencion{% endif %}">
+    {% if resumen.incompletos %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Incompletos</span>
+    <span class="cifra__valor">{{ resumen.incompletos }}</span>
   </div>
-  <div class="border-l-2 border-line bg-ash px-4 py-3 sm:col-span-2">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Sesión de revisión
-    </dt>
+  <div class="cifra">
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="listo" %}Sesión de revisión</span>
     {% if sesion %}
-      <dd class="mt-1 text-sm">
-        <span class="font-display text-2xl font-bold text-azure">
-          {{ sesion.confirmados.count }}
-        </span>
-        confirmado(s) y
-        <span class="font-mono">{{ sesion.rechazados.count }}</span> rechazado(s)
-        desde las {{ sesion.abierta_en|date:"H:i" }}.
-        <span class="block font-mono text-[0.65rem] text-static">
-          Al cerrarla se envía un pedido de reposición por proveedor.
-        </span>
-      </dd>
+      <span class="cifra__valor">{{ sesion.confirmados.count }}</span>
+      <span class="cifra__nota">
+        confirmado(s) y <span class="datos">{{ sesion.rechazados.count }}</span> rechazado(s)
+        desde las {{ sesion.abierta_en|date:"H:i" }}. Al cerrarla se envía un pedido de
+        reposición por proveedor.
+      </span>
     {% else %}
-      <dd class="mt-1 text-sm text-static">
-        Ninguna en curso. Se abre sola con la primera confirmación o rechazo.
-      </dd>
+      <span class="cifra__nota">Ninguna en curso. Se abre sola con la primera confirmación o rechazo.</span>
     {% endif %}
   </div>
-</dl>
+</div>
 
-<form id="filtros" method="get" data-sin-capa
-      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-  <div class="grow">
-    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Buscar
-    </label>
-    <input type="text" id="q" name="q" value="{{ busqueda }}"
-           placeholder="Buscar por título, ISBN o proveedor — atajo: /" autocomplete="off"
-           class="w-full min-w-[22rem]">
-  </div>
+<section class="seccion" aria-labelledby="titulo-cola">
+  <div class="seccion__titulo"><h2 id="titulo-cola">Cola de revisión</h2></div>
 
-  {% if proveedores %}
-    <div>
-      <label for="proveedor"
-             class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-        Proveedor
-      </label>
-      <select id="proveedor" name="proveedor" class="w-56">
-        <option value="">Todos</option>
-        {% for proveedor in proveedores %}
-          <option value="{{ proveedor.pk }}"
-                  {% if proveedor_elegido == proveedor.pk %}selected{% endif %}>
-            {{ proveedor.razon_social }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-  {% endif %}
-
-  <a href="{% url 'catalog:borrador_lista' %}" class="boton-seccion boton-seccion--tenue">Limpiar
-  </a>
-</form>
-
-{% comment %}
-La tabla va **adentro** del formulario de confirmación en lote: las casillas y el
-botón tienen que viajar juntos, y el buscador reemplaza solo el interior de
-`#tabla`, así que el formulario no se pierde al filtrar.
-{% endcomment %}
-<form method="post" action="{% url 'catalog:borrador_confirmar_lote' %}">
-  {% csrf_token %}
-
-  <div class="relative">
-    <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-      {% include "_loader.html" with clase="loader--chico" %}
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}"
+             placeholder="Título, ISBN o proveedor — atajo: /" autocomplete="off">
     </div>
 
-    <div id="tabla">
-      {% include "catalog/_tabla_borradores.html" %}
-    </div>
-  </div>
+    {% if proveedores %}
+      <div class="campo">
+        <label for="proveedor" class="etiqueta">Proveedor</label>
+        <select id="proveedor" name="proveedor">
+          <option value="">Todos</option>
+          {% for proveedor in proveedores %}
+            <option value="{{ proveedor.pk }}" {% if proveedor_elegido == proveedor.pk %}selected{% endif %}>{{ proveedor.razon_social }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
 
-  {% if borradores %}
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-4 border border-line
-                bg-ash px-4 py-4">
-      <p class="font-mono text-[0.7rem] leading-relaxed text-static">
-        La confirmación en lote omite los borradores incompletos y los que tengan confianza
-        baja sin revisar. Esos se resuelven de a uno.
-      </p>
-      <button type="submit" class="boton-seccion">Confirmar seleccionados
-      </button>
+    <a href="{% url 'catalog:borrador_lista' %}" class="boton-texto">Limpiar</a>
+  </form>
+
+  {% comment %}
+  La tabla va adentro del formulario de confirmación en lote: las casillas y el
+  botón tienen que viajar juntos, y el buscador reemplaza sólo el interior de
+  `#tabla`, así que el formulario no se pierde al filtrar.
+  {% endcomment %}
+  <form method="post" action="{% url 'catalog:borrador_confirmar_lote' %}" class="pila">
+    {% csrf_token %}
+
+    <div class="contenedor-tabla">
+      <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+      <div id="tabla">
+        {% include "catalog/_tabla_borradores.html" %}
+      </div>
     </div>
-  {% endif %}
-</form>
+
+    {% if borradores %}
+      <div class="acciones fila-entre">
+        <p class="texto-chico secundario parrafo">
+          La confirmación en lote omite los borradores incompletos y los que tengan confianza
+          baja sin revisar. Esos se resuelven de a uno.
+        </p>
+        <button type="submit" class="boton-seccion">
+          {% include "_iconos.html" with icono="listo" %}<span>Confirmar seleccionados</span>
+        </button>
+      </div>
+    {% endif %}
+  </form>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}

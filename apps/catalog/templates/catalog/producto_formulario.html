@@ -4,8 +4,7 @@ CU-CAT-EDI — Editar Producto.
 
 Una sola plantilla para los dos rubros. Lo que cambia entre uno y otro son los
 campos de identificación, y eso es un bloque con dos ramas; el resto —precio,
-stock, datos opcionales, acciones— es idéntico y no tiene por qué escribirse dos
-veces.
+stock, datos opcionales, acciones— es idéntico.
 
 El estado no se ofrece a propósito: el ciclo de vida lo gobiernan los CU que lo
 mueven. Descatalogar tiene su propia pantalla porque antes de hacerlo hay que
@@ -16,119 +15,100 @@ leer un informe de impacto.
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mb-6">
-  <p class="font-mono text-xs uppercase tracking-[0.15em] text-static">
-    <a href="{% url 'catalog:producto_lista' %}" class="hover:text-signal">Inventario</a>
-    ·
-    <a href="{% url 'catalog:producto_detalle' producto.pk %}" class="hover:text-signal">Ficha</a>
-    · Edición
-  </p>
-  <h1 class="mt-1 font-display text-3xl font-bold tracking-wide">{{ producto.titulo }}</h1>
-  <p class="mt-1 font-mono text-xs text-static">
-    {{ producto.codigo }} · {{ producto.tipo }} · {{ producto.get_estado_display }}
-  </p>
-</div>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'catalog:producto_detalle' producto.pk as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>{{ producto.titulo }}</h1>
+    <p><span class="datos">{{ producto.codigo }}</span> · {{ producto.tipo }} · {{ producto.get_estado_display }}</p>
+  </div>
+</header>
 
 {% if producto.estado == "descatalogado" %}
-  <p class="mb-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
-    Este producto está fuera del catálogo. Los cambios se guardan igual, pero no se
-    ven hasta
-    <a href="{% url 'catalog:producto_reactivar' producto.pk %}"
-       class="text-screen hover:text-signal">reactivarlo</a>.
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="info" %}
+    <span>
+      Este producto está fuera del catálogo. Los cambios se guardan igual, pero no se ven hasta
+      <a href="{% url 'catalog:producto_reactivar' producto.pk %}">reactivarlo</a>.
+    </span>
   </p>
 {% endif %}
 
 {% if duplicado %}
-  <section class="mb-6 border-l-2 border-signal bg-ash px-4 py-4">
-    <h2 class="font-display text-lg font-semibold tracking-wide text-signal">
-      Coincide con otro producto del catálogo
-    </h2>
-    <p class="mt-2 text-sm">
-      Ya existe
-      <a href="{% url 'catalog:producto_detalle' duplicado.pk %}"
-         class="text-screen underline hover:text-signal">{{ duplicado }}</a>
-      <span class="font-mono text-xs text-static">({{ duplicado.codigo }})</span>.
+  <div class="panel panel--atencion">
+    <h2 class="fila-2">{% include "_iconos.html" with icono="atencion" %}<span>Coincide con otro producto del catálogo</span></h2>
+    <p>
+      Ya existe <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">{{ duplicado }}</a>
+      <span class="datos secundario">({{ duplicado.codigo }})</span>.
       {% if es_editorial %}
-        Corrija los datos o
-        <a href="{% url 'catalog:producto_editar' duplicado.pk %}"
-           class="text-screen underline hover:text-signal">edite el existente</a>.
+        Corrija los datos o <a href="{% url 'catalog:producto_editar' duplicado.pk %}">edite el existente</a>.
       {% else %}
         Si son productos distintos, marque la confirmación de abajo.
       {% endif %}
     </p>
-  </section>
+  </div>
 {% endif %}
 
-<form method="post" enctype="multipart/form-data" novalidate>
+<form method="post" enctype="multipart/form-data" novalidate class="formulario">
   {% csrf_token %}
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <section class="border border-line bg-ash px-5 py-5">
-      <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Identificación</h2>
+  <div class="rejilla-2">
+    <fieldset class="grupo-de-campos">
+      <legend>Identificación</legend>
       {% include "_campo.html" with campo=form.titulo %}
       {% if es_editorial %}
-        {% include "_campo.html" with campo=form.volumen %}
-        {% include "_campo.html" with campo=form.isbn %}
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.volumen %}
+          {% include "_campo.html" with campo=form.isbn %}
+        </div>
         {% include "_campo.html" with campo=form.editorial %}
-        {% include "_campo.html" with campo=form.tipo %}
-        {% include "_campo.html" with campo=form.formato %}
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.tipo %}
+          {% include "_campo.html" with campo=form.formato %}
+        </div>
       {% else %}
         {% include "_campo.html" with campo=form.tipo %}
         {% include "_campo.html" with campo=form.marca %}
       {% endif %}
       {% include "_campo.html" with campo=form.codigo_barras %}
 
-      {% comment %}
-      El código no está en el formulario: es la identidad del producto y no
-      cambia. Se muestra para que se pueda copiar.
-      {% endcomment %}
-      <p class="mt-4 border-l-2 border-line bg-panel px-3 py-2 font-mono text-[0.65rem]
-                leading-relaxed text-static">
-        Código <span class="text-screen">{{ producto.codigo }}</span>. No se modifica.
-      </p>
-    </section>
+      {# El código es la identidad del producto y no cambia: se muestra para copiarlo. #}
+      <p class="texto-chico secundario">Código <span class="calculado">{{ producto.codigo }}</span>. No se modifica.</p>
+    </fieldset>
 
-    <section class="border border-line bg-ash px-5 py-5">
-      <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Precio y stock</h2>
-      {% include "_campo.html" with campo=form.precio %}
-      {% include "_campo.html" with campo=form.stock %}
+    <fieldset class="grupo-de-campos">
+      <legend>Precio y stock</legend>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form.precio %}
+        {% include "_campo.html" with campo=form.stock %}
+      </div>
       {% if es_editorial %}
         {% include "_campo.html" with campo=form.fecha_llegada %}
 
         {% comment %}
-        A1 del CU. La confirmación se dibuja siempre en esta rama y no solo tras
-        el error, porque acá el aviso tiene que llegar **antes** de escribir el
-        precio: es una consecuencia que no se deshace sola.
+        A1 del CU. La confirmación se dibuja siempre y no sólo tras el error: el
+        aviso tiene que llegar antes de escribir el precio.
         {% endcomment %}
         {% if not producto.precio_manual %}
-          <div class="mt-4 border-l-2 border-signal bg-panel px-3 py-3">
-            <p class="font-mono text-[0.65rem] leading-relaxed text-static">
+          <div class="panel panel--atencion">
+            <p class="texto-chico">
               El precio se recalcula solo cuando cambian el margen o la tabla de
               referencia. Editarlo acá lo desvincula de forma permanente.
             </p>
-            <div class="mt-2">
-              {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
-            </div>
+            {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
           </div>
         {% else %}
-          <p class="mt-4 border-l-2 border-line bg-panel px-3 py-2 font-mono text-[0.65rem]
-                    leading-relaxed text-static">
-            Precio fijado a mano. No se recalcula con el margen ni con la tabla.
-          </p>
+          <p class="texto-chico secundario">Precio fijado a mano. No se recalcula con el margen ni con la tabla.</p>
         {% endif %}
       {% endif %}
 
-      <p class="mt-4 border-l-2 border-line bg-panel px-3 py-2 font-mono text-[0.65rem]
-                leading-relaxed text-static">
-        Estado <span class="text-screen">{{ producto.get_estado_display }}</span>. Se cambia
-        desde la ficha.
-      </p>
-    </section>
+      <p class="texto-chico secundario">Estado <strong>{{ producto.get_estado_display }}</strong>. Se cambia desde la ficha.</p>
+    </fieldset>
   </div>
 
-  <section class="mt-6 border border-line bg-ash px-5 py-5">
-    <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Datos opcionales</h2>
-    <div class="grid gap-6 lg:grid-cols-2">
+  <fieldset class="grupo-de-campos">
+    <legend>Datos opcionales</legend>
+    <div class="rejilla-2">
       {% if es_editorial %}
         {% include "_campo.html" with campo=form.autor %}
       {% endif %}
@@ -137,23 +117,20 @@ leer un informe de impacto.
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}
-  </section>
+  </fieldset>
 
   {% comment %}
-  La confirmación existe solo para el rubro no editorial. En el editorial la
-  unicidad de una edición la sostiene la base, así que no hay nada que confirmar:
-  la casilla prometería una salida que termina en un error de integridad.
+  La confirmación existe sólo para el rubro no editorial. En el editorial la
+  unicidad de una edición la sostiene la base: no hay nada que confirmar.
   {% endcomment %}
   {% if duplicado and not es_editorial %}
-    <section class="mt-6 border-l-2 border-signal bg-ash px-5 py-4">
+    <div class="panel panel--atencion">
       {% include "_casilla.html" with campo=form.confirma_duplicado critico=1 %}
-    </section>
+    </div>
   {% endif %}
 
-  <div class="mt-6 flex flex-wrap items-center gap-7 border-t border-line pt-6">
-    <div class="marco-boton">
-      <button type="submit" class="boton-primario">Guardar cambios</button>
-    </div>
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar cambios</button>
     {% url 'catalog:producto_detalle' producto.pk as cancelar %}
     {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>

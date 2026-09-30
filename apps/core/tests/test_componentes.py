@@ -2,9 +2,9 @@
 
 Este archivo existe por un error concreto: la cáscara del backoffice estilaba
 `input[type="text"]`, `email` y `password`, y nada más. El día que una pantalla
-usó un número, una fecha y un área de texto, los tres salieron con el estilo
-claro de la cáscara base —letra blanca sobre fondo blanco— y el problema se
-descubrió mirando la pantalla, no corriendo la batería.
+usó un número, una fecha y un área de texto, los tres salieron sin el estilo
+del resto y el problema se descubrió mirando la pantalla, no corriendo la
+batería. Con el estilo preliminar los controles viven en `static/css/longbox.css`.
 
 La regla que se prueba acá es la que evita que vuelva a pasar: **todo tipo de
 control que alguna pantalla operativa dibuje tiene que estar cubierto**. No
@@ -20,12 +20,11 @@ from django.urls import reverse
 
 from apps.catalog.tests.factories import EditorialFactory
 
-RUTA_CAMPOS = Path(settings.BASE_DIR) / "templates" / "_campos.html"
+RUTA_HOJA = Path(settings.BASE_DIR) / "static" / "css" / "longbox.css"
 
-# Tipos que no se visten con las reglas generales porque tienen su propio
-# tratamiento: la casilla se dibuja de cero, el archivo lo reemplaza el
-# componente de `_archivo.html`, y los ocultos y los botones no se ven.
-TIPOS_CON_TRATAMIENTO_PROPIO = {"hidden", "submit", "button", "reset", "file", "checkbox", "radio"}
+# Tipos que no se visten con las reglas generales: la casilla y la opción usan
+# el control nativo con `accent-color`, y los ocultos y los botones no se ven.
+TIPOS_CON_TRATAMIENTO_PROPIO = {"hidden", "submit", "button", "reset", "checkbox", "radio"}
 
 # Pantallas operativas representativas: entre las tres aparecen todos los tipos
 # de control que el backoffice usa hoy.
@@ -33,8 +32,8 @@ PANTALLAS = ["catalog:lote_nacional", "catalog:lote_importado", "accounts:usuari
 
 
 def tipos_cubiertos():
-    """Los `input[type="…"]` que `_campos.html` viste, leídos del propio archivo."""
-    hoja = RUTA_CAMPOS.read_text(encoding="utf-8")
+    """Los `input[type="…"]` que la hoja de estilo viste, leídos del propio archivo."""
+    hoja = RUTA_HOJA.read_text(encoding="utf-8")
     return set(re.findall(r'input\[type="([a-z-]+)"\]', hoja))
 
 
@@ -47,7 +46,7 @@ def tipos_en(html):
     }
 
 
-def test_el_archivo_de_campos_cubre_algo():
+def test_la_hoja_de_estilo_cubre_algo():
     """Si la lectura del archivo dejara de encontrar selectores, el test de
     abajo pasaría solo y no probaría nada."""
     assert len(tipos_cubiertos()) >= 5
@@ -61,10 +60,9 @@ def test_ninguna_pantalla_operativa_dibuja_un_control_sin_estilo(client_admin, p
     html = client_admin.get(reverse(pantalla)).content.decode()
 
     sin_vestir = tipos_en(html) - tipos_cubiertos() - TIPOS_CON_TRATAMIENTO_PROPIO
-    assert not sin_vestir, (
-        f"La pantalla {pantalla} dibuja controles que `_campos.html` no viste: {sin_vestir}. "
-        "Sin estilo propio heredan el de la cáscara base y salen en blanco sobre blanco."
-    )
+    assert (
+        not sin_vestir
+    ), f"La pantalla {pantalla} dibuja controles que la hoja de estilo no viste: {sin_vestir}."
 
 
 @pytest.mark.django_db
@@ -84,7 +82,7 @@ def test_la_pantalla_de_alta_usa_los_tipos_que_habian_quedado_sin_estilo(client_
 
 @pytest.mark.django_db
 def test_el_area_de_texto_tambien_esta_cubierta(client_admin):
-    hoja = RUTA_CAMPOS.read_text(encoding="utf-8")
+    hoja = RUTA_HOJA.read_text(encoding="utf-8")
 
     assert "textarea" in hoja
 
@@ -92,17 +90,17 @@ def test_el_area_de_texto_tambien_esta_cubierta(client_admin):
 @pytest.mark.django_db
 @pytest.mark.parametrize("pantalla", PANTALLAS)
 def test_las_pantallas_operativas_traen_los_componentes_propios(client_admin, pantalla):
-    """El desplegable y el selector de archivo se arman con JavaScript.
+    """La vista previa de la imagen elegida se arma con JavaScript y se conserva.
 
-    Si la cáscara dejara de incluirlos, los controles nativos del sistema
-    operativo aparecerían en medio del sistema sin que nada fallara.
+    El desplegable propio, en cambio, se retiró: vuelve el `<select>` nativo
+    (`identidad_visual.md`, «Qué se retira»).
     """
     EditorialFactory()
 
     html = client_admin.get(reverse(pantalla)).content.decode()
 
-    assert "function mejorarSelects" in html
     assert "function mejorarArchivos" in html
+    assert "mejorarSelects" not in html
 
 
 @pytest.mark.django_db
@@ -112,7 +110,7 @@ def test_los_campos_obligatorios_se_marcan_solos(client_admin):
 
     html = client_admin.get(reverse("catalog:lote_importado")).content.decode()
 
-    assert 'class="ml-0.5 text-signal"' in html
+    assert 'class="obligatorio"' in html
 
 
 # ---------------------------------------------------------------------------
@@ -155,31 +153,32 @@ def test_el_selector_de_etiquetas_dibuja_el_select_real(client_admin):
 
 
 @pytest.mark.django_db
-def test_el_desplegable_propio_no_toca_los_multiples(client_admin):
-    """Ese componente elige **un** valor y cerrarse al elegirlo es la mitad de lo
-    que hace. Aplicado a un multiple, lo esconde y lo rompe."""
-    hoja = (Path(settings.BASE_DIR) / "templates" / "_desplegable.html").read_text(encoding="utf-8")
+def test_los_desplegables_son_los_nativos(client_admin):
+    """El desplegable propio se retiró con el sistema visual anterior: sus
+    únicas razones eran la tipografía y la paleta. El formulario dibuja el
+    `<select>` nativo y ningún guion lo reemplaza."""
+    EditorialFactory()
 
-    assert "not([multiple])" in hoja
+    html = client_admin.get(reverse("catalog:lote_nacional")).content.decode()
+
+    assert "<select" in html
+    assert "data-desplegable" not in html
 
 
 # ---------------------------------------------------------------------------
 # La jerarquia de botones
 #
-# Antes habia dos niveles y todo lo que no era la accion principal caia en el
-# segundo: la pantalla de parametros llego a tener once paralelogramos. Con dos
-# niveles el diseno no puede decir que importa mas.
-#
-# Lo que se prueba aca es la regla que evita que vuelva a pasar, y son dos
-# limites, no un gusto: **el primario es uno por pantalla** y **el paralelogramo
-# vive solo en filas de tabla**.
+# La jerarquía de cuatro niveles es una regla de uso y sigue vigente con el
+# estilo preliminar (`identidad_visual.md`, Botones). Son dos limites, no un
+# gusto: **el primario es uno por pantalla** y **el nivel 3 vive solo en filas**.
 # ---------------------------------------------------------------------------
 
 
-RUTA_BOTONES = Path(settings.BASE_DIR) / "templates" / "_botones.html"
+# Pantallas con dos caminos de igual peso, que llevan los dos en el nivel 1.
+DOS_CAMINOS = {"_decision_de_correo.html", "producto_lista.html"}
 
-# Las plantillas que dibujan filas: son las unicas donde el paralelogramo se lee
-# como "esta fila tiene acciones" y no como ruido.
+# Las plantillas que dibujan filas: son las unicas donde una acción de nivel 3
+# se lee como "esta fila tiene acciones" y no como ruido.
 CON_FILAS = {
     "_tabla_usuarios.html",
     "_tabla_proveedores.html",
@@ -194,19 +193,19 @@ def plantillas_operativas():
     """Las del backoffice, sin los parciales que definen los componentes."""
     raiz = Path(settings.BASE_DIR)
     rutas = list(raiz.glob("apps/*/templates/*/*.html")) + list(raiz.glob("templates/*.html"))
-    return [ruta for ruta in rutas if ruta.name not in {"_botones.html", "base_publico.html"}]
+    return [ruta for ruta in rutas if ruta.name != "base_publico.html"]
 
 
 def test_los_cuatro_niveles_estan_definidos():
-    hoja = RUTA_BOTONES.read_text(encoding="utf-8")
+    hoja = RUTA_HOJA.read_text(encoding="utf-8")
 
     for clase in (".boton-primario", ".boton-seccion", ".boton-menor", ".boton-texto"):
         assert clase in hoja, clase
 
 
-def test_el_paralelogramo_vive_solo_donde_hay_filas():
-    """Es el nivel 3 y su presencia comunica algo concreto. Repartido por toda
-    la pantalla deja de comunicarlo y solo carga el diseno."""
+def test_el_nivel_3_vive_solo_donde_hay_filas():
+    """Su presencia comunica algo concreto. Repartido por toda la pantalla deja
+    de comunicarlo y solo carga el diseno."""
     fuera_de_lugar = [
         ruta.name
         for ruta in plantillas_operativas()
@@ -217,23 +216,31 @@ def test_el_paralelogramo_vive_solo_donde_hay_filas():
 
 
 def test_ninguna_pantalla_repite_el_boton_principal():
-    """Uno por pantalla. La excepcion son los dos caminos de igual peso, y ahi
-    el segundo va en la variante fria, que se cuenta aparte."""
+    """Uno por pantalla. La excepcion son los dos caminos de igual peso: van los
+    dos en el nivel 1 y los distingue el texto. Se cuentan por separado las
+    ramas excluyentes de un `{% if %}`, que nunca se dibujan juntas."""
     repetidas = {}
     for ruta in plantillas_operativas():
-        contenido = ruta.read_text(encoding="utf-8")
-        calientes = contenido.count("boton-primario") - contenido.count("boton-primario--frio") * 2
-        if calientes > 1:
-            repetidas[ruta.name] = calientes
+        contenido = re.sub(
+            r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}",
+            "",
+            ruta.read_text(encoding="utf-8"),
+            flags=re.S,
+        )
+        ramas = re.split(r"\{%\s*(?:else|elif[^%]*)\s*%\}", contenido)
+        mayor = max(rama.count('class="boton-primario') for rama in ramas)
+        if mayor > 1 and ruta.name not in DOS_CAMINOS:
+            repetidas[ruta.name] = mayor
 
     assert repetidas == {}
 
 
-def test_el_boton_de_texto_lleva_su_copia_para_el_barrido():
-    """El color entra con una copia recortada encima del texto. Si `data-texto`
-    no coincide con la etiqueta, al pasar el mouse aparece otra palabra."""
+def test_el_boton_de_texto_no_lleva_copia_y_antepone_la_flecha_al_volver():
+    """La copia en `data-texto` sólo servía para el barrido de color, que se
+    retiró. Con `atras`, la etiqueta va precedida por «←»."""
     parcial = (Path(settings.BASE_DIR) / "templates" / "_boton_texto.html").read_text(
         encoding="utf-8"
     )
 
-    assert 'data-texto="{{ texto }}">{{ texto }}' in parcial
+    assert "data-texto=" not in parcial
+    assert '{% if atras %}<span aria-hidden="true">←</span>' in parcial

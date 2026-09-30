@@ -1,294 +1,224 @@
 {% extends "base_operativo.html" %}
 {% load l10n %}
 {% comment %}
-Ficha del producto. La abren el listado del inventario y el enlace de una
-colisión por duplicado.
+Ficha del producto (`CO-163 consultarFichaDeProducto`). La abren el listado del
+inventario y el enlace de una colisión por duplicado.
 
-Es también el punto de entrada de CU-CAT-EDI y CU-CAT-BAJ: las acciones se agregan acá en
-vez de repartirse en pantallas propias, porque las tres se deciden mirando estos
-mismos datos.
+Es también el punto de entrada de CU-CAT-EDI y CU-CAT-BAJ: las acciones se
+agregan acá porque se deciden mirando estos mismos datos.
 
-Las acciones son del Administrador. Para el Cajero la ficha es de solo lectura,
-y el bloque **no se dibuja** en lugar de esconderse con CSS.
+Las acciones y la información interna son del Administrador. Para el Cajero la
+ficha es de sólo lectura, y esos bloques **no se dibujan** en lugar de
+esconderse con CSS.
 {% endcomment %}
 
 {% block titulo %}{{ producto.titulo }} · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-4xl">
-  {% url 'catalog:producto_lista' as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver al inventario" atras=1 %}
-
-  <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-    <div>
-      <h1 class="font-display text-3xl font-bold tracking-wide">{{ producto.titulo }}</h1>
-      <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-        Volumen {{ producto.volumen }} · {{ producto.editorial }} · {{ producto.tipo }}
-        {% if producto.formato %} · {{ producto.formato }}{% endif %}
-      </p>
-    </div>
-    <span class="border px-3 py-1.5 font-mono text-[0.7rem] uppercase tracking-wider
-                 {% if producto.esta_en_pre_venta %}border-azure text-azure
-                 {% else %}border-line text-screen{% endif %}">
-      {{ producto.get_estado_display }}
-    </span>
-  </div>
-
-  <div class="mt-6 grid gap-6 md:grid-cols-[14rem_1fr]">
-    <div class="border border-line bg-ash">
-      {% if producto.portada %}
-        <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}"
-             class="w-full">
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'catalog:producto_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Inventario" atras=1 %}</span>
+    <h1>{{ producto.titulo }}</h1>
+    <p>
+      {% if producto.es_editorial %}
+        Volumen {{ producto.volumen }} · {{ producto.editorial }} · {{ producto.tipo }}{% if producto.formato %} · {{ producto.formato }}{% endif %}
       {% else %}
-        {% comment %}
-        El producto se dio de alta sin portada. Se adjunta más adelante, desde
-        la edición de producto.
-        {% endcomment %}
-        <p class="grid h-56 place-items-center px-4 text-center font-mono text-[0.7rem]
-                  uppercase tracking-[0.15em] text-static">
-          Imagen pendiente
-        </p>
+        {{ producto.tipo }}{% if producto.marca %} · {{ producto.marca }}{% endif %}
       {% endif %}
-    </div>
+    </p>
+  </div>
+  {% if producto.esta_en_pre_venta %}
+    <span class="calculado" title="calculado">{{ producto.get_estado_display }}</span>
+  {% else %}
+    <span class="marca-estado{% if producto.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
+  {% endif %}
+</header>
 
-    <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Precio</dt>
-        <dd class="mt-1 font-display text-2xl font-bold">${{ producto.precio }}</dd>
+<div class="dos-columnas dos-columnas--lateral-izquierda">
+  <div class="pila">
+    {% if producto.portada %}
+      <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" class="portada">
+    {% else %}
+      {% comment %}
+      El producto se dio de alta sin portada. Se adjunta más adelante, desde la
+      edición de producto.
+      {% endcomment %}
+      <div class="portada-vacia">
+        <span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span>
       </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Stock</dt>
-        <dd class="mt-1 font-display text-2xl font-bold
-                   {% if producto.estado == 'activo' and not producto.stock %}text-signal{% endif %}">
-          {{ producto.stock }}
-        </dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">ISBN</dt>
-        <dd class="mt-1 font-mono text-sm {% if not producto.isbn %}text-static{% endif %}">
-          {{ producto.isbn|default:"—" }}
-        </dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Origen</dt>
-        <dd class="mt-1 text-sm">{{ producto.get_origen_display }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Solo para adultos
-        </dt>
-        <dd class="mt-1 text-sm {% if not producto.solo_adultos %}text-static{% endif %}">
-          {% if producto.solo_adultos %}Sí · fuera del catálogo público{% else %}No{% endif %}
-        </dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Autor</dt>
-        <dd class="mt-1 text-sm">{{ producto.autor|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Fecha de llegada
-        </dt>
-        <dd class="mt-1 font-mono text-sm">
-          {{ producto.fecha_llegada|date:"d/m/Y"|default:"—" }}
-        </dd>
-      </div>
-    </dl>
+    {% endif %}
+
+    {% if es_administrador %}
+      <ul class="lista-renglones">
+        <li><a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Editar producto</span></a></li>
+        {% if producto.estado == "descatalogado" %}
+          <li><a href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
+        {% elif producto.estado != "cancelado_editorial" %}
+          <li><a href="{% url 'catalog:producto_baja' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
   </div>
 
-  {% comment %}
-  De dónde salió el precio. Solo tiene sentido en importados, y es lo que
-  permite reconstruir el cálculo meses después del alta, cuando el margen y la
-  cotización ya cambiaron.
-  {% endcomment %}
-  {% if producto.es_importado %}
-    <section class="mt-8 border border-line bg-ash p-5">
-      <h2 class="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
-        Composición del precio
-      </h2>
-      <dl class="mt-4 grid gap-4 font-mono text-xs sm:grid-cols-4">
-        <div>
-          <dt class="uppercase tracking-[0.15em] text-static">Costo en origen</dt>
-          <dd class="mt-1 text-sm">
-            ${{ producto.costo_origen }}
-            {% if producto.lote.tiene_conversion %}
-              <span class="text-static">{{ producto.lote.moneda_origen }}</span>
-            {% endif %}
-          </dd>
-        </div>
-        <div>
-          <dt class="uppercase tracking-[0.15em] text-static">Costo relativo de envío</dt>
-          <dd class="mt-1 text-sm text-azure">{{ producto.lote.cre|unlocalize|default:"—" }}</dd>
-        </div>
-        <div>
-          <dt class="uppercase tracking-[0.15em] text-static">Precio base</dt>
-          <dd class="mt-1 text-sm text-azure">${{ producto.precio_base }}</dd>
-        </div>
-        <div>
-          <dt class="uppercase tracking-[0.15em] text-static">Margen al alta</dt>
-          <dd class="mt-1 text-sm text-azure">
-            {{ producto.lote.margen_aplicado|unlocalize|default:"—" }}
-          </dd>
-        </div>
+  <div class="pila-6">
+    <section class="seccion" aria-labelledby="titulo-datos">
+      <div class="seccion__titulo"><h2 id="titulo-datos">Datos</h2></div>
+      <dl class="datos-de-ficha">
+        <dt>Precio</dt>
+        <dd class="texto-cifra">${{ producto.precio }}</dd>
+
+        <dt>Stock</dt>
+        <dd>
+          <span class="datos fuerte">{{ producto.stock }}</span>
+          {% if producto.estado == 'activo' and not producto.stock %}<span class="estado estado--atencion">Sin stock</span>{% endif %}
+        </dd>
+
+        <dt>Código</dt>
+        <dd class="datos">{{ producto.codigo }}</dd>
+
+        {% if producto.es_editorial %}
+          <dt>ISBN</dt>
+          <dd class="datos{% if not producto.isbn %} secundario{% endif %}">{{ producto.isbn|default:"—" }}</dd>
+
+          <dt>Origen</dt>
+          <dd>{{ producto.get_origen_display }}</dd>
+        {% endif %}
+
+        <dt>Solo para adultos</dt>
+        <dd{% if not producto.solo_adultos %} class="secundario"{% endif %}>{% if producto.solo_adultos %}Sí · fuera del catálogo público{% else %}No{% endif %}</dd>
+
+        {% if producto.es_editorial %}
+          <dt>Autor</dt>
+          <dd>{{ producto.autor|default:"—" }}</dd>
+
+          <dt>Fecha de llegada</dt>
+          <dd class="datos">{{ producto.fecha_llegada|date:"d/m/Y"|default:"—" }}</dd>
+        {% endif %}
       </dl>
-
-      {% if producto.lote.tiene_conversion %}
-        <p class="mt-4 border-t border-line pt-3 font-mono text-[0.65rem] text-static">
-          Convertido al alta con 1 {{ producto.lote.moneda_origen }} = ${{ producto.lote.cotizacion }}.
-        </p>
-      {% endif %}
-
-      {% if producto.precio_manual %}
-        <p class="mt-4 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-          El precio final se fijó a mano: este producto queda excluido de la propagación
-          automática ante cambios del margen global.
-        </p>
-      {% endif %}
     </section>
-  {% elif producto.precio_manual %}
-    <p class="mt-8 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-      El precio se fijó a mano al dar de alta el producto: no se actualiza con la tabla de
-      precios de referencia de su editorial y formato.
-    </p>
-  {% endif %}
 
-  {% comment %}
-  Las etiquetas van en su propio bloque y no en una fila de la grilla de datos:
-  son varias, se agrupan, y cada una enlaza al inventario filtrado por ella —que
-  es exactamente para lo que existen—.
-  {% endcomment %}
-  {% if producto.etiquetas.all %}
-    <div class="mt-6 border border-line bg-ash p-6">
-      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Etiquetas</p>
-      <div class="mt-3 space-y-3">
-        {% regroup producto.etiquetas.all by grupo as por_grupo %}
-        {% for bloque in por_grupo %}
-          <div class="flex flex-wrap items-baseline gap-2">
-            <span class="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-static">
-              {{ bloque.grouper }}
-            </span>
-            {% for etiqueta in bloque.list %}
-              <a href="{% url 'catalog:producto_lista' %}?etiqueta={{ etiqueta.pk }}"
-                 class="border border-line px-2 py-1 font-mono text-xs hover:border-static">
-                {{ etiqueta.nombre }}
-              </a>
-            {% endfor %}
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endif %}
+    {% comment %}
+    De dónde salió el precio. Sólo tiene sentido en importados, y es lo que
+    permite reconstruir el cálculo meses después del alta, cuando el margen y la
+    cotización ya cambiaron. Los valores que puso el sistema van marcados como
+    calculados.
+    {% endcomment %}
+    {% if producto.es_importado %}
+      <section class="seccion" aria-labelledby="titulo-composicion">
+        <div class="seccion__titulo"><h2 id="titulo-composicion">Composición del precio</h2></div>
+        <dl class="datos-de-ficha">
+          <dt>Costo en origen</dt>
+          <dd class="datos">${{ producto.costo_origen }}{% if producto.lote.tiene_conversion %} <span class="secundario">{{ producto.lote.moneda_origen }}</span>{% endif %}</dd>
 
-  {% if producto.sinopsis %}
-    <section class="mt-8">
-      <h2 class="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">Sinopsis</h2>
-      <p class="mt-3 text-sm leading-relaxed">{{ producto.sinopsis }}</p>
-    </section>
-  {% endif %}
+          <dt>Costo relativo de envío</dt>
+          <dd><span class="calculado" title="calculado">{{ producto.lote.cre|unlocalize|default:"—" }}</span></dd>
 
-  <p class="mt-8 border-t border-line pt-4 font-mono text-xs text-static">
-    Alta: {{ producto.creado_en|date:"d/m/Y H:i" }} ·
-    Última modificación: {{ producto.actualizado_en|date:"d/m/Y H:i" }}
-    {% if producto.lote %}
-      · <a href="{% url 'catalog:lote_resumen' producto.lote.pk %}" class="hover:text-azure">
-        Ver el lote de alta
-      </a>
-    {% endif %}
-  </p>
-</div>
+          <dt>Precio base</dt>
+          <dd><span class="calculado" title="calculado">${{ producto.precio_base }}</span></dd>
 
-{% comment %}
-CU-CAT-INV paso 6: los campos que el Administrador ve y el Cajero no. La ficha no
-esconde el bloque con CSS — no se dibuja, que es lo único que cuenta cuando lo
-que se protege es información y no una acción.
+          <dt>Margen al alta</dt>
+          <dd><span class="calculado" title="calculado">{{ producto.lote.margen_aplicado|unlocalize|default:"—" }}</span></dd>
+        </dl>
 
-De los tres que el CU le reserva al Administrador, dos dependen de módulos que no
-existen: el stock reservado en pedidos y los suscriptores de reposición activos.
-Se dice que no se pueden determinar en vez de mostrar un cero, con el mismo
-criterio con el que la baja de proveedor de CU-PRV-BAJ no inventa la cifra de
-propuestas de restock. Un cero acá se leería como "nadie lo tiene reservado", que
-es exactamente la conclusión equivocada para decidir una baja.
-{% endcomment %}
-{% if es_administrador %}
-  <section class="mt-8 flex flex-wrap items-center gap-6 border-t border-line pt-6">
-    <div class="marco-boton">
-      <a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-primario">
-        Editar producto
-      </a>
-    </div>
-    {% if producto.estado == "descatalogado" %}
-      {% url 'catalog:producto_reactivar' producto.pk as reactivar %}
-      {% include "_boton_texto.html" with url=reactivar texto="Reactivar" %}
-    {% elif producto.estado != "cancelado_editorial" %}
-      {% url 'catalog:producto_baja' producto.pk as dar_de %}
-      {% include "_boton_texto.html" with url=dar_de texto="Dar de baja" %}
-    {% endif %}
-  </section>
+        {% if producto.lote.tiene_conversion %}
+          <p class="texto-chico secundario">Convertido al alta con 1 {{ producto.lote.moneda_origen }} = ${{ producto.lote.cotizacion }}.</p>
+        {% endif %}
 
-  <section class="mt-8 border-t border-line pt-6">
-    <h2 class="font-display text-lg font-semibold tracking-wide">Información interna</h2>
-
-    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-      <div class="border-l-2 border-line bg-ash px-4 py-3">
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Stock reservado en pedidos
-        </dt>
-        <dd class="mt-1 text-sm text-static">
-          No disponible todavía.
-        </dd>
-      </div>
-      <div class="border-l-2 border-line bg-ash px-4 py-3">
-        <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-          Suscriptores de reposición
-        </dt>
-        <dd class="mt-1 text-sm text-static">
-          No disponible todavía.
-        </dd>
-      </div>
-    </dl>
-
-    <h3 class="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-static">
-      Historial de modificaciones
-    </h3>
-    {% if historial %}
-      <div class="mt-3 overflow-x-auto border border-line">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                       tracking-[0.15em] text-static">
-              <th class="px-4 py-3 font-medium">Cuándo</th>
-              <th class="px-4 py-3 font-medium">Quién</th>
-              <th class="px-4 py-3 font-medium">Qué</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for registro in historial %}
-              <tr class="border-b border-line last:border-b-0">
-                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">
-                  {{ registro.ocurrido_en|date:"d/m/Y H:i" }}
-                </td>
-                <td class="px-4 py-3 text-static">
-                  {{ registro.actor|default:registro.actor_email|default:"—" }}
-                </td>
-                <td class="px-4 py-3">
-                  {{ registro.get_accion_display }}
-                  {% if registro.detalle %}
-                    <span class="block font-mono text-[0.65rem] text-static">
-                      {{ registro.detalle }}
-                    </span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p class="mt-3 border-l-2 border-line bg-ash px-4 py-3 text-sm text-static">
-        Sin movimientos registrados sobre este producto.
+        {% if producto.precio_manual %}
+          <p class="mensaje">
+            {% include "_iconos.html" with icono="atencion" %}
+            <span>El precio final se fijó a mano: este producto queda excluido de la propagación
+            automática ante cambios del margen global.</span>
+          </p>
+        {% endif %}
+      </section>
+    {% elif producto.precio_manual %}
+      <p class="mensaje">
+        {% include "_iconos.html" with icono="atencion" %}
+        <span>El precio se fijó a mano al dar de alta el producto: no se actualiza con la tabla de
+        precios de referencia de su editorial y formato.</span>
       </p>
     {% endif %}
-  </section>
-{% endif %}
+
+    {% comment %}
+    Las etiquetas enlazan al inventario filtrado por ellas, que es exactamente
+    para lo que existen.
+    {% endcomment %}
+    {% if producto.etiquetas.all %}
+      <section class="seccion" aria-labelledby="titulo-etiquetas">
+        <div class="seccion__titulo"><h2 id="titulo-etiquetas">Etiquetas</h2></div>
+        <dl class="datos-de-ficha">
+          {% regroup producto.etiquetas.all by grupo as por_grupo %}
+          {% for bloque in por_grupo %}
+            <dt>{{ bloque.grouper }}</dt>
+            <dd class="fila-2">
+              {% for etiqueta in bloque.list %}
+                <a href="{% url 'catalog:producto_lista' %}?etiqueta={{ etiqueta.pk }}" class="ficha">{% include "_iconos.html" with icono="etiqueta" %}{{ etiqueta.nombre }}</a>
+              {% endfor %}
+            </dd>
+          {% endfor %}
+        </dl>
+      </section>
+    {% endif %}
+
+    {% if producto.sinopsis %}
+      <section class="seccion" aria-labelledby="titulo-sinopsis">
+        <div class="seccion__titulo"><h2 id="titulo-sinopsis">Sinopsis</h2></div>
+        <p class="parrafo lectura">{{ producto.sinopsis }}</p>
+      </section>
+    {% endif %}
+
+    <p class="texto-chico secundario">
+      Alta: <span class="datos">{{ producto.creado_en|date:"d/m/Y H:i" }}</span> ·
+      Última modificación: <span class="datos">{{ producto.actualizado_en|date:"d/m/Y H:i" }}</span>
+      {% if producto.lote %}
+        · <a href="{% url 'catalog:lote_resumen' producto.lote.pk %}">Ver el lote de alta</a>
+      {% endif %}
+    </p>
+
+    {% comment %}
+    CU-CAT-INV paso 6: los campos que el Administrador ve y el Cajero no. No se
+    dibujan para el Cajero. Los indicadores que dependen de módulos no
+    construidos se dicen «No disponible» en vez de mostrarse en cero.
+    {% endcomment %}
+    {% if es_administrador %}
+      <section class="seccion" aria-labelledby="titulo-interna">
+        <div class="seccion__titulo"><h2 id="titulo-interna">Información interna</h2></div>
+        <dl class="datos-de-ficha">
+          <dt>Stock reservado en pedidos</dt>
+          <dd class="secundario">No disponible todavía.</dd>
+          <dt>Suscriptores de reposición</dt>
+          <dd class="secundario">No disponible todavía.</dd>
+        </dl>
+
+        <h3>Historial de modificaciones</h3>
+        {% if historial %}
+          <div class="tabla-desplazable">
+            <table class="tabla">
+              <thead>
+                <tr><th>Cuándo</th><th>Quién</th><th>Qué</th></tr>
+              </thead>
+              <tbody>
+                {% for registro in historial %}
+                  <tr>
+                    <td class="datos sin-cortar">{{ registro.ocurrido_en|date:"d/m/Y H:i" }}</td>
+                    <td class="secundario">{{ registro.actor|default:registro.actor_email|default:"—" }}</td>
+                    <td>
+                      {{ registro.get_accion_display }}
+                      {% if registro.detalle %}<br><span class="texto-chico secundario">{{ registro.detalle }}</span>{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="secundario">Sin movimientos registrados sobre este producto.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

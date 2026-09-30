@@ -1,5 +1,7 @@
 """Consulta de cuentas de Cliente desde el backoffice (solo lectura)."""
 
+import re
+
 import pytest
 from django.urls import reverse
 
@@ -58,7 +60,12 @@ def test_la_tabla_no_ofrece_acciones_sobre_las_cuentas(client_admin, clientela):
     tabla = client_admin.get(URL_CLIENTES, {"parcial": "1"}).content.decode()
 
     assert "boton-menor" not in tabla
-    assert "<a " not in tabla
+    assert "<form" not in tabla
+    # El único destino de una fila es la ficha de CO-195, que también es de
+    # sólo lectura (CU-CLI-CON paso 5).
+    destinos = re.findall(r'<a href="([^"]+)"', tabla)
+    assert destinos
+    assert all(re.fullmatch(r"/cuentas/clientes/\d+/", destino) for destino in destinos)
 
 
 def test_muestra_el_telefono_armado_y_la_direccion(client_admin):

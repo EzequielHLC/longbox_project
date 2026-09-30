@@ -3,107 +3,98 @@ Fragmento de la tabla del inventario. Se renderiza incrustado en
 `producto_lista.html` y también solo, cuando el buscador lo pide con
 `?parcial=1`: por eso no depende de nada que esté fuera de él.
 
-`mono` en precios, stock y volumen: es exactamente el caso donde la tipografía
-monoespaciada sirve —columnas de números que se leen de arriba abajo—, no un
-gusto estético.
+Precios, stock y volumen en la fuente de datos, alineados a la derecha:
+columnas de números que se leen de arriba abajo.
 {% endcomment %}
 {% if productos %}
-  <p class="mb-2 font-mono text-xs text-static">
-    {{ paginator.count }} producto{{ paginator.count|pluralize }}
-    {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
-      que coincide{{ paginator.count|pluralize }} con el filtro
-    {% endif %}
-  </p>
+  <div class="pila-3">
+    <p class="texto-chico secundario">
+      {{ paginator.count }} producto{{ paginator.count|pluralize }}
+      {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
+        que coincide{{ paginator.count|pluralize }} con el filtro
+      {% endif %}
+    </p>
 
-  <div class="overflow-x-auto border border-line">
-    <table class="w-full text-left text-sm">
-      <thead>
-        <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                   tracking-[0.15em] text-static">
-          <th class="px-4 py-3 font-medium">Título</th>
-          <th class="px-4 py-3 font-medium">Vol.</th>
-          <th class="px-4 py-3 font-medium">Editorial / Marca</th>
-          <th class="px-4 py-3 font-medium">Tipo</th>
-          <th class="px-4 py-3 font-medium">Formato</th>
-          <th class="px-4 py-3 font-medium">Estado</th>
-          <th class="px-4 py-3 text-right font-medium">Stock</th>
-          <th class="px-4 py-3 text-right font-medium">Precio</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for producto in productos %}
-          <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-            <td class="px-4 py-3">
-              <a href="{% url 'catalog:producto_detalle' producto.pk %}"
-                 class="block max-w-[22rem] truncate hover:text-azure"
-                 title="{{ producto.titulo }}">{{ producto.titulo }}</a>
-            </td>
-            <td class="px-4 py-3 font-mono text-xs">{{ producto.especifico.volumen|default:"—" }}</td>
-            <td class="px-4 py-3">
-              <span class="block max-w-[12rem] truncate">{% if producto.es_editorial %}{{ producto.especifico.editorial }}{% else %}{{ producto.especifico.marca|default:"sin marca" }}{% endif %}</span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-              {{ producto.tipo }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-              {{ producto.especifico.formato|default:"—" }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              {% comment %}
-              Pre-venta se marca con el acento frío: es material que todavía no
-              está en el local, y distinguirlo de un vistazo es justamente lo
-              que se necesita al mirar el inventario. El rojo queda para el
-              único caso que pide una acción: un producto a la venta sin stock.
-              {% endcomment %}
-              <span class="border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-wider
-                           {% if producto.estado == 'pre_venta' %}border-azure text-azure
-                           {% elif producto.estado == 'activo' %}border-static text-screen
-                           {% else %}border-line text-static{% endif %}">
-                {{ producto.get_estado_display }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-xs
-                       {% if producto.estado == 'activo' and not producto.stock %}text-signal{% endif %}">
-              {{ producto.stock }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs">
-              ${{ producto.precio }}
-            </td>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Vol.</th>
+            <th>Editorial / Marca</th>
+            <th>Tipo</th>
+            <th>Formato</th>
+            <th>Estado</th>
+            <th class="numero">Stock</th>
+            <th class="numero">Precio</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  {% if is_paginated %}
-    <div class="mt-4 flex items-center justify-between font-mono text-xs text-static">
-      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-      <span class="flex gap-4">
-        {% if page_obj.has_previous %}
-          <a href="?q={{ busqueda|urlencode }}&amp;origen={{ origen_elegido }}&amp;tipo={{ tipo_elegido }}&amp;etiqueta={{ etiqueta_elegida }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
-             class="hover:text-screen">← Anterior</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a href="?q={{ busqueda|urlencode }}&amp;origen={{ origen_elegido }}&amp;tipo={{ tipo_elegido }}&amp;etiqueta={{ etiqueta_elegida }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
-             class="hover:text-screen">Siguiente →</a>
-        {% endif %}
-      </span>
+        </thead>
+        <tbody>
+          {% for producto in productos %}
+            <tr>
+              <td class="celda-principal">
+                <a href="{% url 'catalog:producto_detalle' producto.pk %}">{{ producto.titulo }}</a>
+              </td>
+              <td class="datos">{{ producto.especifico.volumen|default:"—" }}</td>
+              <td>{% if producto.es_editorial %}{{ producto.especifico.editorial }}{% else %}{{ producto.especifico.marca|default:"Sin marca" }}{% endif %}</td>
+              <td class="secundario sin-cortar">{{ producto.tipo }}</td>
+              <td class="secundario sin-cortar">{{ producto.especifico.formato|default:"—" }}</td>
+              <td>
+                {% comment %}
+                Pre-venta es un estado derivado de la fecha de llegada: se marca como
+                valor calculado. Descatalogado y cancelado van apagados.
+                {% endcomment %}
+                {% if producto.estado == 'pre_venta' %}
+                  <span class="calculado" title="calculado">{{ producto.get_estado_display }}</span>
+                {% else %}
+                  <span class="marca-estado{% if producto.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
+                {% endif %}
+              </td>
+              <td class="numero">
+                {% if producto.estado == 'activo' and not producto.stock %}
+                  <span class="estado estado--atencion">Sin stock</span>
+                {% else %}
+                  {{ producto.stock }}
+                {% endif %}
+              </td>
+              <td class="numero">${{ producto.precio }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endif %}
+
+    {% if is_paginated %}
+      <div class="paginacion">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ busqueda|urlencode }}&amp;origen={{ origen_elegido }}&amp;tipo={{ tipo_elegido }}&amp;etiqueta={{ etiqueta_elegida }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.previous_page_number }}"
+               class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?q={{ busqueda|urlencode }}&amp;origen={{ origen_elegido }}&amp;tipo={{ tipo_elegido }}&amp;etiqueta={{ etiqueta_elegida }}&amp;estado={{ estado_elegido }}&amp;page={{ page_obj.next_page_number }}"
+               class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+          {% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
 {% else %}
   {% comment %}
   Dos mensajes distintos porque son dos problemas distintos, y la condición
-  pregunta por el catálogo entero y no por los filtros. Antes enumeraba las
-  variables de filtro, y eso se rompió el día que el estado pasó a tener un valor
-  por defecto (CU-CAT-INV paso 2: la vista abre en "Activos"): con un filtro siempre
-  puesto, un catálogo vacío se anunciaba como "ningún resultado", que manda a
-  buscar un problema donde no lo hay.
+  pregunta por el catálogo entero y no por los filtros: con el filtro de estado
+  siempre puesto (CU-CAT-INV paso 2), un catálogo vacío se anunciaría como
+  «ningún resultado».
   {% endcomment %}
-  <p class="border border-line bg-panel px-4 py-6 text-sm text-static">
-    {% if resumen.total %}
-      Ningún producto coincide con los criterios de búsqueda.
-    {% else %}
-      No hay productos cargados en el catálogo.
-    {% endif %}
-  </p>
+  <div class="vacio">
+    {% include "_iconos.html" with icono="inventario" %}
+    <p>
+      {% if resumen.total %}
+        Ningún producto coincide con los criterios de búsqueda.
+      {% else %}
+        No hay productos cargados en el catálogo.
+      {% endif %}
+    </p>
+  </div>
 {% endif %}

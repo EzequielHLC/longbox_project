@@ -9,148 +9,109 @@ el operativo del backoffice.
 {% block seccion %}Registro{% endblock %}
 
 {% block contenido %}
-{% comment %}
-Más ancho que el login: son once campos, y varios van de a dos o tres por
-fila. "Código de área" es la etiqueta más larga de las cortas y es la que fija
-el ancho mínimo de esa columna.
-{% endcomment %}
-<div class="mx-auto max-w-3xl">
-
-  <p class="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-signal">
-    新規登録 · Nueva cuenta
-  </p>
-  {% comment %}
-  `data-texto` es el que dibujan las dos capas del glitch (ver base_publico).
-  {% endcomment %}
-  <h1 class="glitch mt-3 font-display text-4xl font-extrabold tracking-wide"
-      data-texto="CREAR CUENTA">CREAR CUENTA</h1>
-  <p class="mt-3 max-w-md text-sm text-static">
+<div class="pila-2">
+  <h1>Crear cuenta</h1>
+  <p class="secundario">
     Con una cuenta seguís tus pedidos, acumulás puntos y guardás tu dirección de envío.
   </p>
-
-  {% if form.non_field_errors %}
-    <ul class="mt-6 border-l-2 border-signal bg-panel px-4 py-3 text-sm">
-      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-    </ul>
-  {% endif %}
-
-  <form method="post" novalidate class="panel-formulario mt-8 space-y-6 p-8">
-    {% csrf_token %}
-
-    {% comment %} --- Datos obligatorios --- {% endcomment %}
-    {% include "_campo.html" with campo=form.nombre_completo %}
-
-    <div>
-      {% include "_campo.html" with campo=form.email %}
-      {% if form.correo_ya_registrado %}
-        {% comment %}
-        Excepción 1 del CU: el rechazo por correo repetido sale con la salida a
-        mano, no como un callejón sin salida.
-        {% endcomment %}
-        <p class="mt-2 pl-3 text-sm">
-          <a href="{% url 'accounts:password_reset' %}"
-             class="text-screen underline decoration-signal underline-offset-4 hover:text-signal">
-            ¿Es tuya? Recuperá tu contraseña
-          </a>
-        </p>
-      {% endif %}
-    </div>
-
-    <div>
-      {% include "_campo.html" with campo=form.password1 %}
-      {% comment %}
-      Los requisitos mínimos los redacta Django a partir de
-      AUTH_PASSWORD_VALIDATORS: se muestran antes de fallar, no después.
-      {% endcomment %}
-      <div class="mt-2 text-xs leading-relaxed text-static [&_li]:list-disc [&_ul]:ml-4">
-        {{ form.password1.help_text }}
-      </div>
-    </div>
-
-    {% include "_campo.html" with campo=form.password2 %}
-
-    {% comment %} --- Teléfono: país + área + número --- {% endcomment %}
-    <div class="border-t border-line pt-6">
-      <p class="mb-4 font-mono text-[0.65rem] uppercase tracking-[0.3em] text-static">
-        Teléfono · opcional
-      </p>
-
-      {% comment %}
-      El ancho de cada columna lo fija lo más largo que va a mostrar, que no
-      siempre es el dato:
-
-      - País muestra "Argentina (+54)", no "+54": es un desplegable con el
-        nombre del país, y con la columna angosta quedaba recortado.
-      - Código de área lo fija su etiqueta, que es más larga que los tres
-        dígitos que se escriben adentro.
-      {% endcomment %}
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-[14rem_10rem_1fr]">
-        {% include "_campo.html" with campo=form.telefono_pais %}
-        {% include "_campo.html" with campo=form.telefono_area ayuda="Sin el 0" %}
-        {% include "_campo.html" with campo=form.telefono_numero ayuda="Sin el 15" %}
-      </div>
-    </div>
-
-    {% comment %} --- Dirección de envío predeterminada --- {% endcomment %}
-    <div class="border-t border-line pt-6">
-      <p class="mb-4 font-mono text-[0.65rem] uppercase tracking-[0.3em] text-static">
-        Dirección de envío · opcional
-      </p>
-
-      <div class="space-y-4">
-        {% include "_campo.html" with campo=form.direccion %}
-
-        <div class="grid gap-4 sm:grid-cols-[1fr_10rem]">
-          {% include "_campo.html" with campo=form.direccion_linea2 ayuda="Barrio, chacra, entre calles" %}
-          {% include "_campo.html" with campo=form.depto %}
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          {% include "_campo.html" with campo=form.provincia %}
-          {% include "_campo.html" with campo=form.localidad ayuda="Se sugiere al elegir la provincia" %}
-        </div>
-
-        {% comment %}
-        Las sugerencias de localidad las trae el script del final, desde
-        `core:localidades`. El `<datalist>` es del navegador: sugiere sin
-        obligar, así que una localidad que la API no conozca se escribe igual.
-        {% endcomment %}
-        <datalist id="localidades"></datalist>
-
-        <div class="grid gap-4 sm:grid-cols-[11rem_1fr]">
-          {% include "_campo.html" with campo=form.codigo_postal %}
-        </div>
-
-        {% include "_campo.html" with campo=form.comentarios_envio %}
-      </div>
-    </div>
-
-    {% comment %} --- Consentimiento informado (Ley 25.326) --- {% endcomment %}
-    <div class="border-t border-line pt-6">
-      <div class="flex items-start gap-3 border-l-2 py-1 pl-3
-                  {% if form.acepta_politica.errors %}border-signal{% else %}border-line{% endif %}">
-        {{ form.acepta_politica }}
-        <label for="{{ form.acepta_politica.id_for_label }}" class="text-sm leading-snug">
-          Acepto la
-          <a href="{% url 'core:politica_privacidad' %}" target="_blank" rel="noopener"
-             class="underline decoration-signal underline-offset-4 hover:text-signal">
-            política de privacidad</a>
-          y el tratamiento de mis datos personales.
-        </label>
-      </div>
-      {% for error in form.acepta_politica.errors %}
-        <p class="mt-2 pl-3 text-sm text-signal">{{ error }}</p>
-      {% endfor %}
-    </div>
-
-    <div class="fila-acciones pt-2">
-      <button type="submit" class="boton-publico">Crear cuenta</button>
-      <div class="marco-tenue">
-        <a href="{% url 'accounts:login' %}" class="boton-publico-menor">Ingresar</a>
-      </div>
-    </div>
-  </form>
 </div>
+
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert"><span class="mensaje__prefijo">Error:</span> {{ error }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" novalidate class="pila-5">
+  {% csrf_token %}
+
+  {% comment %} --- Datos obligatorios --- {% endcomment %}
+  {% include "_campo.html" with campo=form.nombre_completo %}
+
+  <div class="pila-2">
+    {% include "_campo.html" with campo=form.email %}
+    {% if form.correo_ya_registrado %}
+      {% comment %}
+      Excepción 1 del CU: el rechazo por correo repetido sale con la salida a
+      mano, no como un callejón sin salida.
+      {% endcomment %}
+      <p class="texto-chico">
+        <a href="{% url 'accounts:password_reset' %}">¿Es tuya? Recuperá tu contraseña</a>
+      </p>
+    {% endif %}
+  </div>
+
+  {% comment %}
+  Los requisitos mínimos los redacta Django a partir de AUTH_PASSWORD_VALIDATORS
+  y salen como ayuda del campo: se muestran antes de fallar, no después.
+  {% endcomment %}
+  {% include "_campo.html" with campo=form.password1 %}
+
+  {% include "_campo.html" with campo=form.password2 %}
+
+  {% comment %} --- Teléfono: país + área + número --- {% endcomment %}
+  <fieldset class="divisor pila">
+    <legend class="titulo-3">Teléfono · opcional</legend>
+    <div class="rejilla-3">
+      {% include "_campo.html" with campo=form.telefono_pais %}
+      {% include "_campo.html" with campo=form.telefono_area ayuda="Sin el 0" %}
+      {% include "_campo.html" with campo=form.telefono_numero ayuda="Sin el 15" %}
+    </div>
+  </fieldset>
+
+  {% comment %} --- Dirección de envío predeterminada --- {% endcomment %}
+  <fieldset class="divisor pila">
+    <legend class="titulo-3">Dirección de envío · opcional</legend>
+
+    {% include "_campo.html" with campo=form.direccion %}
+
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.direccion_linea2 ayuda="Barrio, chacra, entre calles" %}
+      {% include "_campo.html" with campo=form.depto %}
+    </div>
+
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.provincia %}
+      {% include "_campo.html" with campo=form.localidad ayuda="Se sugiere al elegir la provincia" %}
+    </div>
+
+    {% comment %}
+    Las sugerencias de localidad las trae el script del final, desde
+    `core:localidades`. El `<datalist>` sugiere sin obligar, así que una
+    localidad que la API no conozca se escribe igual.
+    {% endcomment %}
+    <datalist id="localidades"></datalist>
+
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.codigo_postal %}
+    </div>
+
+    {% include "_campo.html" with campo=form.comentarios_envio %}
+  </fieldset>
+
+  {% comment %} --- Consentimiento informado (Ley 25.326) --- {% endcomment %}
+  <div class="divisor campo">
+    <label for="{{ form.acepta_politica.id_for_label }}" class="casilla">
+      {{ form.acepta_politica }}
+      <span>
+        Acepto la
+        <a href="{% url 'core:politica_privacidad' %}" target="_blank" rel="noopener">política de privacidad</a>
+        y el tratamiento de mis datos personales.
+      </span>
+    </label>
+    {% for error in form.acepta_politica.errors %}
+      <p class="error-de-campo">Error: {{ error }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Crear cuenta</button>
+  </div>
+</form>
+
+<p><a href="{% url 'accounts:login' %}" class="boton-texto">Ya tengo cuenta</a></p>
 
 <script>
   // -------------------------------------------------------------------

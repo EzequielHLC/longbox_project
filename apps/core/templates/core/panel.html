@@ -1,161 +1,124 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-Tablero de entrada del Administrador. Modo operativo: cifras grandes en
-`display`, datos en `mono`, cero atmósfera. `signal` aparece únicamente cuando
-hay algo que atender (bloqueos por intentos fallidos), no como decoración.
+Tablero de entrada del Administrador. Las cifras van en recuadros; el que
+requiere atención (bloqueos por intentos fallidos) lo dice con su rótulo y un
+borde fuerte, no con un color (`identidad_visual.md`, Indicadores).
+
+No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
 {% endcomment %}
 
 {% block titulo %}Panel · Longbox{% endblock %}
 {% block seccion %}Panel{% endblock %}
 
 {% block contenido %}
-<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <h1 class="font-display text-3xl font-bold tracking-wide">
-      Hola, {{ user.first_name|default:user.email }}
-    </h1>
-    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-      Panel de administración · {{ user.get_rol_display }}
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Hola, {{ user.first_name|default:user.email }}</h1>
+    <p>Panel de administración · {{ user.get_rol_display }}</p>
   </div>
+  <a href="{% url 'accounts:usuario_alta' %}" class="boton-primario">
+    {% include "_iconos.html" with icono="agregar" %}<span>Nuevo usuario</span>
+  </a>
+</header>
 
-  <div class="marco-boton">
-    <a href="{% url 'accounts:usuario_alta' %}" class="boton-primario">Nuevo usuario</a>
-  </div>
-</div>
-
-{% comment %} --- Cifras del sistema --- {% endcomment %}
-<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-  <div class="border border-line bg-ash p-5">
-    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Personal activo
-    </p>
-    <p class="mt-3 font-display text-4xl font-bold">{{ cuentas.personal_activo }}</p>
-    <a href="{% url 'accounts:usuario_lista' %}?estado=activo"
-       class="mt-3 inline-block font-mono text-[0.65rem] uppercase tracking-wider text-static
-              hover:text-screen">
-      Ver cuentas →
+<section class="seccion" aria-labelledby="titulo-cifras">
+  <div class="seccion__titulo"><h2 id="titulo-cifras">Cuentas</h2></div>
+  <div class="cifras">
+    <a class="cifra" href="{% url 'accounts:usuario_lista' %}?estado=activo">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="personal" %}Personal activo</span>
+      <span class="cifra__valor">{{ cuentas.personal_activo }}</span>
+      <span class="cifra__nota">Ver cuentas</span>
     </a>
-  </div>
 
-  <div class="border border-line bg-ash p-5">
-    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Pendientes de activación
-    </p>
-    <p class="mt-3 font-display text-4xl font-bold">{{ cuentas.pendientes }}</p>
     {% if cuentas.pendientes %}
-      <a href="{% url 'accounts:usuario_lista' %}?estado=pendiente_activacion"
-         class="mt-3 inline-block font-mono text-[0.65rem] uppercase tracking-wider text-static
-                hover:text-screen">
-        Ver pendientes →
+      <a class="cifra" href="{% url 'accounts:usuario_lista' %}?estado=pendiente_activacion">
+        <span class="cifra__rotulo">{% include "_iconos.html" with icono="correo" %}Pendientes de activación</span>
+        <span class="cifra__valor">{{ cuentas.pendientes }}</span>
+        <span class="cifra__nota">Ver pendientes</span>
       </a>
     {% else %}
-      <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
-        Nadie esperando activar
-      </p>
+      <div class="cifra">
+        <span class="cifra__rotulo">{% include "_iconos.html" with icono="correo" %}Pendientes de activación</span>
+        <span class="cifra__valor">0</span>
+        <span class="cifra__nota">Nadie esperando activar</span>
+      </div>
     {% endif %}
+
+    <a class="cifra" href="{% url 'accounts:cliente_lista' %}">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="clientes" %}Clientes registrados</span>
+      <span class="cifra__valor">{{ cuentas.clientes }}</span>
+      <span class="cifra__nota">{{ clientes_nuevos }} en las últimas 24 h</span>
+    </a>
+
+    {% comment %}
+    El único recuadro que puede pedir atención: un bloqueo por intentos
+    fallidos puede ser alguien que se olvidó la contraseña o alguien probando
+    contraseñas ajenas.
+    {% endcomment %}
+    <div class="cifra{% if bloqueos_del_dia %} cifra--atencion{% endif %}">
+      {% if bloqueos_del_dia %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Bloqueos por intentos fallidos</span>
+      <span class="cifra__valor">{{ bloqueos_del_dia }}</span>
+      <span class="cifra__nota">Últimas 24 h</span>
+    </div>
   </div>
+</section>
 
-  <div class="border border-line bg-ash p-5">
-    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Clientes registrados
-    </p>
-    <p class="mt-3 font-display text-4xl font-bold">{{ cuentas.clientes }}</p>
-    <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
-      {{ clientes_nuevos }} en las últimas 24 h
-    </p>
-  </div>
-
-  {% comment %}
-  El único recuadro que puede ponerse en `signal`, y solo cuando hay algo que
-  mirar: un bloqueo por intentos fallidos puede ser alguien que se olvidó la
-  contraseña o alguien probando contraseñas ajenas.
-  {% endcomment %}
-  <div class="border bg-ash p-5 {% if bloqueos_del_dia %}border-signal{% else %}border-line{% endif %}">
-    <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Bloqueos por intentos fallidos
-    </p>
-    <p class="mt-3 font-display text-4xl font-bold
-              {% if bloqueos_del_dia %}text-signal{% endif %}">
-      {{ bloqueos_del_dia }}
-    </p>
-    <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
-      Últimas 24 h
-    </p>
-  </div>
-</div>
-
-<div class="mt-8 grid gap-6 lg:grid-cols-3">
-
-  {% comment %} --- Actividad reciente (log de auditoría) --- {% endcomment %}
-  <div class="lg:col-span-2">
-    <h2 class="mb-3 font-display text-xl font-bold tracking-wide">Actividad reciente</h2>
+<div class="dos-columnas">
+  <section class="seccion" aria-labelledby="titulo-actividad">
+    <div class="seccion__titulo">
+      <h2 id="titulo-actividad">Actividad reciente</h2>
+    </div>
 
     {% if actividad %}
-      <div class="overflow-x-auto border border-line">
-        <table class="w-full text-left text-sm">
+      <div class="tabla-desplazable">
+        <table class="tabla">
           <thead>
-            <tr class="border-b border-line bg-ash font-mono text-[0.7rem] uppercase
-                       tracking-[0.15em] text-static">
-              <th class="whitespace-nowrap px-4 py-3 font-medium">Cuándo</th>
-              <th class="px-4 py-3 font-medium">Acción</th>
-              <th class="px-4 py-3 font-medium">Quién</th>
-              <th class="px-4 py-3 font-medium">Sobre</th>
+            <tr>
+              <th>Cuándo</th>
+              <th>Acción</th>
+              <th>Quién</th>
+              <th>Sobre</th>
             </tr>
           </thead>
           <tbody>
             {% for registro in actividad %}
-              <tr class="border-b border-line last:border-b-0 hover:bg-panel">
-                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-static">
-                  {{ registro.ocurrido_en|date:"d/m/Y H:i" }}
-                </td>
-                <td class="px-4 py-3 text-xs
-                           {% if registro.accion == 'bloqueo_por_intentos' %}text-signal{% endif %}">
+              <tr>
+                <td class="datos sin-cortar">{{ registro.ocurrido_en|date:"d/m/Y H:i" }}</td>
+                <td{% if registro.accion == 'bloqueo_por_intentos' %} class="fuerte"{% endif %}>
                   {{ registro.get_accion_display }}
                 </td>
-                <td class="px-4 py-3 font-mono text-xs">
-                  <span class="block max-w-[14rem] truncate" title="{{ registro.actor_email }}">
-                    {{ registro.actor_email|default:"—" }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 font-mono text-xs text-static">
-                  <span class="block max-w-[14rem] truncate" title="{{ registro.objetivo_email }}">
-                    {{ registro.objetivo_email|default:"—" }}
-                  </span>
-                </td>
+                <td class="cortar-palabras">{{ registro.actor_email|default:"—" }}</td>
+                <td class="cortar-palabras secundario">{{ registro.objetivo_email|default:"—" }}</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      <p class="mt-3 font-mono text-[0.65rem] uppercase tracking-wider text-static">
-        La consulta completa del log es el CU-AUD-CON, del módulo de Auditoría
-      </p>
     {% else %}
-      <p class="border border-line bg-panel px-4 py-6 text-sm text-static">
-        Todavía no hay actividad registrada.
-      </p>
+      <div class="vacio">
+        {% include "_iconos.html" with icono="auditoria" %}
+        <p>Todavía no hay actividad registrada.</p>
+      </div>
     {% endif %}
-  </div>
+  </section>
 
-  {% comment %} --- Atajos --- {% endcomment %}
-  <div>
-    <h2 class="mb-3 font-display text-xl font-bold tracking-wide">Accesos</h2>
-
-    <div class="space-y-3 border border-line bg-ash p-5">
-      {% url 'accounts:usuario_lista' as ver_usuarios %}
-      {% include "_boton_texto.html" with url=ver_usuarios texto="Usuarios del sistema" %}
-      {% url 'accounts:cliente_lista' as ver_clientes %}
-      {% include "_boton_texto.html" with url=ver_clientes texto="Clientes" %}
-    </div>
+  <aside class="seccion" aria-labelledby="titulo-accesos">
+    <div class="seccion__titulo"><h2 id="titulo-accesos">Accesos</h2></div>
+    <ul class="lista-renglones">
+      <li><a href="{% url 'accounts:usuario_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="personal" %}<span>Usuarios del sistema</span></a></li>
+      <li><a href="{% url 'accounts:cliente_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="clientes" %}<span>Clientes</span></a></li>
+      <li><a href="{% url 'catalog:producto_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Inventario</span></a></li>
+      <li><a href="{% url 'suppliers:correo_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="correo" %}<span>Correos recibidos</span></a></li>
+      <li><a href="{% url 'catalog:parametros' %}" class="boton-texto">{% include "_iconos.html" with icono="parametros" %}<span>Parámetros globales</span></a></li>
+    </ul>
 
     {% if cuentas.dados_de_baja %}
-      <p class="mt-4 border border-line bg-panel px-4 py-3 font-mono text-xs text-static">
+      <p class="texto-chico secundario">
         {{ cuentas.dados_de_baja }} cuenta{{ cuentas.dados_de_baja|pluralize }} de personal
         dada{{ cuentas.dados_de_baja|pluralize }} de baja.
       </p>
     {% endif %}
-  </div>
+  </aside>
 </div>
 {% endblock %}

@@ -27,11 +27,6 @@ Se extrajo igual porque el patrón es el que queremos repetir en el resto del
 proyecto, y tenerlo suelto invita a que la segunda pantalla lo copie con
 variaciones en vez de reusarlo.
 {% endcomment %}
-<style>
-  .aviso-duplicado { display: none; }
-  .aviso-duplicado[data-visible] { display: block; }
-</style>
-
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     for (const caja of document.querySelectorAll("[data-aviso-duplicado]")) {
@@ -89,20 +84,17 @@ variaciones en vez de reusarlo.
 
       const hayExacto = Boolean(datos.exacto);
       caja.innerHTML = `
-        <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] ${
-          hayExacto ? "text-signal" : "text-static"
-        }">
-          ${hayExacto ? "Ya existe con esta categoría" : "Hay productos parecidos"}
+        <p class="texto-chico ${hayExacto ? "fuerte" : "secundario"}">
+          ${hayExacto ? "Atención: ya existe con esta categoría" : "Hay productos parecidos"}
         </p>
-        <ul class="mt-2 space-y-1">
+        <ul class="pila-1">
           ${encontrados
             .map(
               (p) => `
-            <li class="font-mono text-xs">
-              <a href="${p.url}" target="_blank" rel="noopener"
-                 class="${p.exacto ? "text-signal" : "text-static"} hover:text-screen">
-                ${p.codigo} · ${escapar(p.titulo)}
-                <span class="text-static">(${escapar(p.categoria)})</span>
+            <li class="texto-chico">
+              <a href="${p.url}" target="_blank" rel="noopener" class="${p.exacto ? "fuerte" : ""}">
+                <span class="datos">${p.codigo}</span> · ${escapar(p.titulo)}
+                <span class="secundario">(${escapar(p.categoria)})</span>
               </a>
             </li>`
             )

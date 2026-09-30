@@ -1,121 +1,58 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Longbox{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500&family=Rajdhani:wght@600;700;800&display=swap">
-  <script>
-    // Tokens del sistema visual (`.contexto-ia/TOKENS_VISUALES.md`). Viven acá
-    // porque son *compartidos* por los dos modos: lo que cambia entre el modo
-    // público y el operativo no es la paleta ni la tipografía, sino cuánta
-    // atmósfera se permite. No agregar colores nuevos sin actualizar antes ese
-    // documento.
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            void: "#0A0A0D",
-            ash: "#141317",
-            panel: "#1C1B1F",
-            line: "#2C2A30",
-            static: "#57525C",
-            screen: "#EDEAE4",
-            signal: "#FF1436",
-            signal2: "#B0102A",
-            // Codificación de rol: Administrador en `signal`, Cajero en `azure`.
-            azure: "#1478FF",
-          },
-          fontFamily: {
-            display: ["Rajdhani", "sans-serif"],
-            body: ['"Noto Sans JP"', "sans-serif"],
-            mono: ['"JetBrains Mono"', "monospace"],
-          },
-        },
-      },
-    };
-  </script>
-
-  <style>
-    input[type="email"], input[type="password"], input[type="text"] {
-      width: 100%;
-      border: 1px solid rgb(203 213 225);
-      border-radius: 0.25rem;
-      padding: 0.5rem 0.75rem;
-    }
-  </style>
-  {# Cada modo del sistema visual agrega acá sus tokens: ver base_operativo.html. #}
+  {% comment %}
+  Una sola hoja para todo el sistema, con los tokens de
+  `.contexto-ia/TOKENS_VISUALES.md` declarados como variables. Se sirve desde
+  `static/`: la interfaz no pide nada a ningún servidor ajeno para dibujarse.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static 'css/longbox.css' %}">
+  {# Cada modo agrega acá lo suyo: guiones de componentes, la identidad de la tienda. #}
   {% block cabecera_extra %}{% endblock %}
 </head>
-<body class="{% block clase_body %}min-h-screen bg-slate-100 text-slate-800{% endblock %}">
+<body class="{% block clase_body %}{% endblock %}">
 
   {# Lugar para capas que se superponen a todo (la de carga, por ejemplo). #}
   {% block cuerpo_inicio %}{% endblock %}
 
-  {% block encabezado %}
-  <header class="bg-slate-900 text-white">
-    <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-      <a href="/" class="text-lg font-semibold tracking-wide">Longbox</a>
-      {% if user.is_authenticated %}
-        <div class="flex items-center gap-4 text-sm">
-          <span class="text-slate-300">{{ user.email }} · {{ user.get_rol_display }}</span>
-          <form method="post" action="{% url 'accounts:logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="rounded bg-slate-700 px-3 py-1 hover:bg-slate-600">
-              Cerrar sesión
-            </button>
-          </form>
-        </div>
-      {% endif %}
-    </div>
-  </header>
-  {% endblock %}
+  {% block encabezado %}{% endblock %}
 
   {% comment %}
-  Cuerpo de la pantalla. El modo operativo pisa este bloque entero para meter
-  la barra lateral al costado del contenido; las pantallas hijas siguen
-  llenando solo `contenido` y no se enteran de la diferencia.
+  Cuerpo de la pantalla. Cada modo pisa este bloque entero con su propia
+  disposición; las pantallas hijas siguen llenando sólo `contenido` y no se
+  enteran de la diferencia.
   {% endcomment %}
   {% block layout %}
-  <main class="{% block clase_main %}mx-auto max-w-5xl px-4 py-10{% endblock %}">
-    {% block mensajes %}
-      {% if messages %}
-        <ul class="mb-6 space-y-2">
-          {% for message in messages %}
-            <li class="rounded border border-slate-300 bg-white px-4 py-3 text-sm">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endblock %}
-
+  <main>
+    {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
     {% block contenido %}{% endblock %}
   </main>
   {% endblock %}
 
   {% if user.is_authenticated %}
-  <div id="aviso-sesion"
-       class="fixed inset-x-0 bottom-0 hidden border-t border-amber-300 bg-amber-50 px-4 py-4">
-    <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
-      <p class="text-sm">
-        La sesión está por expirar por inactividad
-        (<span id="aviso-sesion-restante"></span>).
+  {% comment %}
+  CU-AUT-INI: aviso cinco minutos antes de que la sesión expire por
+  inactividad, con opción de extenderla. Se dibuja como un mensaje de
+  atención fijo al pie (B-00-003).
+  {% endcomment %}
+  <div id="aviso-sesion" class="aviso-sesion hidden" role="status">
+    <div class="fila fila-entre">
+      <p class="texto-chico">
+        <span class="mensaje__prefijo">Atención:</span>
+        la sesión está por expirar por inactividad (<span id="aviso-sesion-restante"></span>).
       </p>
-      <button id="aviso-sesion-extender" type="button"
-              class="rounded bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700">
+      <button id="aviso-sesion-extender" type="button" class="boton-seccion">
         Mantener la sesión activa
       </button>
     </div>
   </div>
 
   <script>
-    // CU-AUT-INI: aviso 5 minutos antes de que la sesión expire por inactividad,
-    // con opción de extenderla en un clic. El contador es local; el que manda
-    // es el vencimiento real de la sesión en el servidor.
+    // El contador es local; el que manda es el vencimiento real de la sesión
+    // en el servidor.
     (function () {
       const duracion = {{ sesion_duracion_segundos }} * 1000;
       const avisoPrevio = {{ sesion_aviso_previo_segundos }} * 1000;
@@ -129,7 +66,7 @@
       function formatear(ms) {
         const minutos = Math.floor(ms / 60000);
         const segundos = Math.floor((ms % 60000) / 1000);
-        return minutos + "m " + String(segundos).padStart(2, "0") + "s";
+        return minutos + " min " + String(segundos).padStart(2, "0") + " s";
       }
 
       function revisar() {

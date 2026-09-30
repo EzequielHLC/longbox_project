@@ -1,0 +1,30 @@
+# Proxy de la demostración. Lo completa `docs/despliegue/DEMOSTRACION.md`.
+#
+# Se arranca desde la raíz del repositorio, con el nombre público en el entorno:
+#
+#   set LONGBOX_HOST=longbox.ddns.net
+#   caddy run --config config/caddy/Caddyfile
+#
+# Con un nombre de dominio como dirección del sitio, Caddy pide solo el
+# certificado a Let's Encrypt y redirige HTTP a HTTPS. Para eso el router tiene
+# que reenviar los puertos 80 y 443 a esta máquina.
+
+{$LONGBOX_HOST} {
+	encode gzip
+
+	# Lo junta `manage.py collectstatic`.
+	handle_path /static/* {
+		root * staticfiles
+		file_server
+	}
+
+	# Portadas y demás archivos subidos. Django no los sirve con DEBUG apagado.
+	handle_path /media/* {
+		root * media
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}

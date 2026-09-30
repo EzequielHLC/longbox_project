@@ -1,217 +1,167 @@
 {% extends "base_operativo.html" %}
+{% comment %}
+CU-CAT-INV — Consultar Inventario (`CO-162`). Es también el punto de entrada de
+las altas: las dos por lote pesan lo mismo, porque son los dos caminos por los
+que entra material al catálogo. Van las dos en el nivel 1 y las distingue el
+texto (`identidad_visual.md`, Botones).
+{% endcomment %}
 
 {% block titulo %}Inventario · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <h1 class="font-display text-3xl font-bold tracking-wide">Inventario</h1>
-    <p class="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-static">
-      Productos del catálogo · Solo consulta
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Inventario</h1>
+    <p>Productos del catálogo.</p>
   </div>
 
-  {% comment %}
-  Las dos altas pesan lo mismo: son los dos caminos por los que entra material
-  al catálogo, y ninguna es accesoria de la otra. Misma pieza y mismo tamaño,
-  distinto acento —cálido para lo nacional, frío para lo importado—, que es lo
-  que las distingue de un vistazo sin sugerir una jerarquía que no existe.
-  {% endcomment %}
-  <div class="flex flex-wrap items-center gap-7">
-    <div class="marco-boton">
-      <a href="{% url 'catalog:lote_nacional' %}" class="boton-primario">Nuevo lote nacional</a>
-    </div>
-    <div class="marco-boton">
-      <a href="{% url 'catalog:lote_importado' %}" class="boton-primario boton-primario--frio">
-        Nuevo lote importado
-      </a>
-    </div>
-    {% comment %}
-    El alta no editorial va como botón secundario y no como un tercer primario:
-    el límite del sistema visual son dos por pantalla, y además pesa distinto —
-    es el rubro secundario del negocio y se carga de a uno, no por lote.
-    {% endcomment %}
-    <a href="{% url 'catalog:producto_no_editorial_alta' %}" class="boton-seccion">Nuevo producto no editorial
+  <div class="fila">
+    <a href="{% url 'catalog:lote_nacional' %}" class="boton-primario">
+      {% include "_iconos.html" with icono="lote" %}<span>Nuevo lote nacional</span>
     </a>
+    <a href="{% url 'catalog:lote_importado' %}" class="boton-primario">
+      {% include "_iconos.html" with icono="importado" %}<span>Nuevo lote importado</span>
+    </a>
+    {% comment %}
+    El alta no editorial va en el nivel 2: es el rubro secundario del negocio y se
+    carga de a uno, no por lote.
+    {% endcomment %}
+    <a href="{% url 'catalog:producto_no_editorial_alta' %}" class="boton-seccion">
+      {% include "_iconos.html" with icono="agregar" %}<span>Nuevo producto no editorial</span>
+    </a>
+  </div>
+</header>
+
+{% comment %}
+Estado del inventario completo, no del recorte filtrado. Sólo pide atención
+cuando hay productos publicados sin unidades.
+{% endcomment %}
+<div class="cifras">
+  <div class="cifra">
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="catalogo" %}En el catálogo</span>
+    <span class="cifra__valor">{{ resumen.total }}</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="listo" %}Activos</span>
+    <span class="cifra__valor">{{ resumen.activos }}</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}En pre-venta</span>
+    <span class="cifra__valor">{{ resumen.pre_venta }}</span>
+  </div>
+  <div class="cifra{% if resumen.sin_stock %} cifra--atencion{% endif %}">
+    {% if resumen.sin_stock %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
+    <span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Activos sin stock</span>
+    <span class="cifra__valor">{{ resumen.sin_stock }}</span>
   </div>
 </div>
 
-{% comment %}
-Estado del inventario completo, no del recorte filtrado: es el tablero de la
-pantalla y tiene que decir lo mismo esté o no aplicado un filtro. El rojo
-aparece solo cuando hay productos publicados sin unidades, que es lo único de
-acá que pide una acción.
-{% endcomment %}
-<dl class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-  <div class="border-l-2 border-line bg-ash px-4 py-3">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">En el catálogo</dt>
-    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.total }}</dd>
-  </div>
-  <div class="border-l-2 border-line bg-ash px-4 py-3">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">Activos</dt>
-    <dd class="mt-1 font-display text-2xl font-bold">{{ resumen.activos }}</dd>
-  </div>
-  <div class="border-l-2 border-azure bg-ash px-4 py-3">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">En pre-venta</dt>
-    <dd class="mt-1 font-display text-2xl font-bold text-azure">{{ resumen.pre_venta }}</dd>
-  </div>
-  <div class="border-l-2 bg-ash px-4 py-3 {% if resumen.sin_stock %}border-signal{% else %}border-line{% endif %}">
-    <dt class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-      Activos sin stock
-    </dt>
-    <dd class="mt-1 font-display text-2xl font-bold {% if resumen.sin_stock %}text-signal{% else %}text-static{% endif %}">
-      {{ resumen.sin_stock }}
-    </dd>
-  </div>
-</dl>
+<section class="seccion" aria-labelledby="titulo-productos">
+  <div class="seccion__titulo"><h2 id="titulo-productos">Productos</h2></div>
 
-<form id="filtros" method="get" data-sin-capa
-      class="mb-4 flex flex-wrap items-end gap-4 border border-line bg-ash px-4 py-4">
-  <div class="grow">
-    <label for="q" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Buscar
-    </label>
-    <input type="text" id="q" name="q" value="{{ busqueda }}"
-           placeholder="Buscar por título, autor o editorial — atajo: /" autocomplete="off"
-           class="w-full min-w-[22rem]">
-  </div>
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}"
+             placeholder="Título, autor o editorial — atajo: /" autocomplete="off">
+    </div>
 
-  <div>
-    <label for="origen" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Origen
-    </label>
-    <select id="origen" name="origen" class="w-48">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in origenes %}
-        <option value="{{ valor }}" {% if origen_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label for="tipo" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Tipo
-    </label>
-    <select id="tipo" name="tipo" class="w-40">
-      <option value="">Todos</option>
-      {% for tipo in tipos %}
-        <option value="{{ tipo.pk }}" {% if tipo_elegido == tipo.pk %}selected{% endif %}>
-          {{ tipo.nombre }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  {% comment %}
-  Disponibilidad de stock: lo pide el paso 3 del CU, y es el filtro que más usa
-  el Cajero — la pregunta del mostrador es "¿lo tenés?", no "¿en qué estado
-  está?".
-  {% endcomment %}
-  <div>
-    <label for="stock" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Stock
-    </label>
-    <select id="stock" name="stock" class="w-36">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in disponibilidades %}
-        <option value="{{ valor }}" {% if disponibilidad_elegida == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  {% comment %}
-  El orden es un parámetro y no una constante porque las dos pantallas que usan
-  esta tabla quieren cosas distintas: CU-CAT-INV pide alfabético, y quien viene de
-  cargar un lote quiere ver lo último cargado. Con el desplegable, las dos se
-  atienden sin que ninguna gane.
-  {% endcomment %}
-  <div>
-    <label for="orden" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Orden
-    </label>
-    <select id="orden" name="orden" class="w-44">
-      <option value="alfabetico" {% if orden_elegido == "alfabetico" %}selected{% endif %}>
-        Alfabético
-      </option>
-      <option value="recientes" {% if orden_elegido == "recientes" %}selected{% endif %}>
-        Cargados último
-      </option>
-    </select>
-  </div>
-
-  {% comment %}
-  El filtro por etiqueta solo aparece si hay alguna con productos: es el único
-  eje que puede no aplicarle a ningún producto —ninguna es obligatoria— y un
-  desplegable vacío ocuparía lugar sin filtrar nada.
-
-  Las opciones van agrupadas con `<optgroup>`: es lo que evita que franquicias,
-  géneros y colecciones queden mezclados en una sola lista revuelta, que es
-  justamente el motivo por el que las etiquetas tienen grupo.
-  {% endcomment %}
-  {% if etiquetas %}
-    <div>
-      <label for="etiqueta" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-        Etiqueta
-      </label>
-      <select id="etiqueta" name="etiqueta" class="w-56">
-        <option value="">Todas</option>
-        {% regroup etiquetas by grupo as por_grupo %}
-        {% for bloque in por_grupo %}
-          <optgroup label="{{ bloque.grouper }}">
-            {% for etiqueta in bloque.list %}
-              <option value="{{ etiqueta.pk }}"
-                      {% if etiqueta_elegida == etiqueta.pk %}selected{% endif %}>
-                {{ etiqueta.nombre }}
-              </option>
-            {% endfor %}
-          </optgroup>
+    <div class="campo">
+      <label for="origen" class="etiqueta">Origen</label>
+      <select id="origen" name="origen">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in origenes %}
+          <option value="{{ valor }}" {% if origen_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
         {% endfor %}
       </select>
     </div>
-  {% endif %}
 
-  <div>
-    <label for="estado" class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static">
-      Estado
-    </label>
-    <select id="estado" name="estado" class="w-48">
-      <option value="">Todos</option>
-      {% for valor, etiqueta in estados %}
-        <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>
-          {{ etiqueta }}
-        </option>
-      {% endfor %}
-    </select>
+    <div class="campo">
+      <label for="tipo" class="etiqueta">Tipo</label>
+      <select id="tipo" name="tipo">
+        <option value="">Todos</option>
+        {% for tipo in tipos %}
+          <option value="{{ tipo.pk }}" {% if tipo_elegido == tipo.pk %}selected{% endif %}>{{ tipo.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% comment %}
+    Disponibilidad de stock: es el filtro que más usa el Cajero — la pregunta del
+    mostrador es «¿lo tenés?».
+    {% endcomment %}
+    <div class="campo">
+      <label for="stock" class="etiqueta">Stock</label>
+      <select id="stock" name="stock">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in disponibilidades %}
+          <option value="{{ valor }}" {% if disponibilidad_elegida == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% comment %}
+    Las etiquetas van agrupadas con `<optgroup>`: es lo que evita que franquicias,
+    géneros y colecciones queden mezclados en una sola lista.
+    {% endcomment %}
+    {% if etiquetas %}
+      <div class="campo">
+        <label for="etiqueta" class="etiqueta">Etiqueta</label>
+        <select id="etiqueta" name="etiqueta">
+          <option value="">Todas</option>
+          {% regroup etiquetas by grupo as por_grupo %}
+          {% for bloque in por_grupo %}
+            <optgroup label="{{ bloque.grouper }}">
+              {% for etiqueta in bloque.list %}
+                <option value="{{ etiqueta.pk }}" {% if etiqueta_elegida == etiqueta.pk %}selected{% endif %}>{{ etiqueta.nombre }}{% if not etiqueta.activa %} (inactiva){% endif %}</option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if estado_elegido == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% comment %}
+    El orden es un parámetro y no una constante: CU-CAT-INV pide alfabético, y
+    quien viene de cargar un lote quiere ver lo último cargado.
+    {% endcomment %}
+    <div class="campo">
+      <label for="orden" class="etiqueta">Orden</label>
+      <select id="orden" name="orden">
+        <option value="alfabetico" {% if orden_elegido == "alfabetico" %}selected{% endif %}>Alfabético</option>
+        <option value="recientes" {% if orden_elegido == "recientes" %}selected{% endif %}>Cargados último</option>
+      </select>
+    </div>
+
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+
+    {% comment %}
+    `?estado=` explícito y vacío significa «todos»: sin él la vista aplica su
+    valor por defecto y muestra sólo los Activos (paso 2 del CU).
+    {% endcomment %}
+    <a href="{% url 'catalog:producto_lista' %}?estado=" class="boton-texto">Ver todos</a>
+  </form>
+
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "catalog/_tabla_productos.html" %}
+    </div>
   </div>
-
-  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar
-  </button>
-
-  {% comment %}
-  `?estado=` explícito y vacío significa "todos", que no es lo mismo que no
-  mandar el parámetro: sin él la vista aplica su valor por defecto y muestra solo
-  los Activos (paso 2 del CU). Es la única forma de ver lo descatalogado.
-  {% endcomment %}
-  <a href="{% url 'catalog:producto_lista' %}?estado="
-     class="py-2 font-mono text-[0.7rem] uppercase tracking-wider text-static hover:text-screen">
-    Ver todos
-  </a>
-</form>
-
-<div class="relative">
-  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-    {% include "_loader.html" with clase="loader--chico" %}
-  </div>
-
-  <div id="tabla">
-    {% include "catalog/_tabla_productos.html" %}
-  </div>
-</div>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}

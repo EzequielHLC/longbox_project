@@ -15,8 +15,10 @@ un solo ciclo en procesarlo.
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.accounts.models import Usuario
@@ -464,6 +466,68 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
 
         messages.success(request, "Se descartó el correo. No va a procesarse.")
         return redirect("suppliers:correo_detalle", pk=self.object.pk)
+
+
+class ProcesarCorreoView(ProveedoresMixin, View):
+    """Base de las dos decisiones que disparan la extracción desde la ficha.
+
+    La extracción corre dentro de la petición, con el correo ya marcado *En
+    proceso* (consulta C-10, recomendación del plan 04). La pantalla muestra el
+    indicador de carga mientras tanto. Al terminar se vuelve a la ficha, que
+    presenta los borradores generados junto al contenido del que salieron, y un
+    mensaje con el resumen que pide el paso 6 de CU-PRV-COL.
+    """
+
+    http_method_names = ["post"]  # noqa: RUF012
+    operacion = None
+
+    def post(self, request, pk):
+        try:
+            resultado = self.operacion(pk, actor=request.user, ip=obtener_ip(request))
+        except CorreoProveedor.DoesNotExist as error:
+            raise Http404 from error
+        except services.CorreoYaResuelto as error:
+            messages.info(
+                request,
+                f"Otro Administrador ya resolvió este correo. Estado actual: {error}.",
+            )
+            return redirect("suppliers:correo_detalle", pk=pk)
+
+        correo = CorreoProveedor.objects.get(pk=pk)
+        if correo.estado == CorreoProveedor.FALLIDO:
+            messages.error(
+                request,
+                f"Falló el procesamiento. {correo.motivo} El correo queda en la cola "
+                "para volver a procesarlo.",
+            )
+        else:
+            messages.success(request, self._resumen(resultado))
+        return redirect("suppliers:correo_detalle", pk=pk)
+
+    @staticmethod
+    def _resumen(resultado):
+        generacion = resultado.generacion
+        if generacion is None:
+            return "Se procesó el correo. No generó borradores."
+        cuenta = generacion.resumen
+        con_reparos = sum(1 for borrador in generacion.creados if borrador.reparos)
+        return (
+            f"Se procesó el correo: {cuenta['generados']} borrador(es) generado(s), "
+            f"{cuenta['duplicados']} omitido(s) por existir ya en el catálogo y "
+            f"{con_reparos} con reparos."
+        )
+
+
+class AprobarCorreoView(ProcesarCorreoView):
+    """CU-PRV-COL pasos 4 a 6 — `CO-017 aprobarCorreoParaProcesamiento`."""
+
+    operacion = staticmethod(services.aprobar_correo)
+
+
+class ReprocesarCorreoView(ProcesarCorreoView):
+    """CU-PRV-COL A2 — `CO-019 reprocesarCorreo`."""
+
+    operacion = staticmethod(services.reprocesar_correo)
 
 
 # ---------------------------------------------------------------------------

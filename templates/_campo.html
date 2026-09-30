@@ -1,9 +1,7 @@
 {% load formularios %}
 {% comment %}
-Un campo de formulario: etiqueta, control y errores. Sirve para los dos modos
-del sistema visual porque no usa más que tokens compartidos —`mono` y `static`
-para la etiqueta, `signal` para el error—, que es exactamente la parte que los
-dos modos tienen en común.
+Un campo de formulario: etiqueta arriba, control, ayuda y errores. Sirve para
+los dos modos.
 
     {% include "_campo.html" with campo=form.email %}
 
@@ -14,39 +12,26 @@ Parámetros opcionales:
   compacto oculta la etiqueta (la deja para los lectores de pantalla) cuando el
            encabezado de la columna ya dice qué es el campo.
 
-Los obligatorios se marcan con un asterisco derivado de `field.required`: no hay
-forma de que la marca y la validación digan cosas distintas, porque salen del
-mismo dato.
+Los obligatorios se marcan con un asterisco derivado de `field.required`: la
+marca y la validación salen del mismo dato.
 
-Accesibilidad: cuando el campo tiene error se le marca `aria-invalid` y se lo
-enlaza con el texto del error por `aria-describedby`. Sin eso, un lector de
-pantalla anuncia el campo y no dice qué está mal: el rojo del borde no existe
-para quien no lo ve.
+El error no depende del color: el control lleva borde `--borde-fuerte` y
+`aria-invalid`, y el mensaje va debajo, en peso 600, precedido por «Error:».
+`aria-describedby` lo enlaza con el control para los lectores de pantalla.
 {% endcomment %}
-{% comment %}
-`min-w-0`: dentro de una grilla, una celda mide por omisión lo que mide su
-contenido, así que un campo con un número largo empuja la columna y se desborda
-de la caja que lo contiene en lugar de recortarse.
-{% endcomment %}
-<div class="min-w-0">
-  <label for="{{ campo.id_for_label }}"
-         class="mb-2 block font-mono text-[0.7rem] uppercase tracking-[0.15em] text-static
-                {% if compacto %}sr-only{% endif %}">
-    {{ campo.label }}{% if campo.field.required %}<span class="ml-0.5 text-signal" aria-hidden="true">*</span>{% endif %}
+<div class="campo">
+  <label for="{{ campo.id_for_label }}" class="etiqueta{% if compacto %} sr-only{% endif %}">
+    {{ campo.label }}{% if campo.field.required %}<span class="obligatorio" aria-hidden="true"> *</span>{% endif %}
   </label>
 
   {{ campo|con_estado_de_error }}
 
   {% firstof ayuda campo.field.help_text as texto_de_ayuda %}
   {% if texto_de_ayuda %}
-    <p id="{{ campo.auto_id }}_ayuda" class="mt-1.5 font-mono text-[0.65rem] leading-relaxed text-static">
-      {{ texto_de_ayuda }}
-    </p>
+    <div id="{{ campo.auto_id }}_ayuda" class="ayuda">{{ texto_de_ayuda }}</div>
   {% endif %}
 
   {% for error in campo.errors %}
-    {% comment %} `signal` acá sí: es un error de validación. {% endcomment %}
-    <p id="{{ campo.auto_id }}_error_{{ forloop.counter }}"
-       class="mt-2 border-l-2 border-signal pl-3 text-sm text-signal">{{ error }}</p>
+    <p id="{{ campo.auto_id }}_error_{{ forloop.counter }}" class="error-de-campo">Error: {{ error }}</p>
   {% endfor %}
 </div>

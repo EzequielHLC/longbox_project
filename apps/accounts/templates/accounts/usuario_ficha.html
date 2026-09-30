@@ -1,0 +1,58 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-USR-CON paso 6 — `CO-202 consultarFichaDeUsuario`. Ofrece sólo las acciones
+que el estado de la cuenta admite; las decide la vista, no la plantilla.
+{% endcomment %}
+
+{% block titulo %}{{ usuario_objetivo.get_full_name|default:usuario_objetivo.email }} · Longbox{% endblock %}
+{% block seccion %}Gestión de usuarios{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'accounts:usuario_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Usuarios del sistema" atras=1 %}</span>
+    <h1>{{ usuario_objetivo.get_full_name|default:"Sin nombre cargado" }}</h1>
+    <p class="datos">{{ usuario_objetivo.email }}</p>
+  </div>
+</header>
+
+<div class="dos-columnas">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Datos de la cuenta</h2></div>
+    {% include "accounts/_datos_de_cuenta.html" with cuenta=usuario_objetivo con_fechas=1 %}
+  </section>
+
+  <aside class="seccion" aria-labelledby="titulo-acciones">
+    <div class="seccion__titulo"><h2 id="titulo-acciones">Acciones</h2></div>
+    <ul class="lista-renglones" data-acciones-de-ficha>
+      {% if puede_modificar %}
+        <li><a href="{% url 'accounts:usuario_edicion' usuario_objetivo.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Modificar</span></a></li>
+      {% endif %}
+      {% if puede_dar_de_baja %}
+        <li><a href="{% url 'accounts:usuario_baja' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
+      {% endif %}
+      {% if puede_reenviar %}
+        <li>
+          <form method="post" action="{% url 'accounts:usuario_reenviar_activacion' usuario_objetivo.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="boton-texto">{% include "_iconos.html" with icono="correo" %}<span>Reenviar enlace de activación</span></button>
+          </form>
+        </li>
+      {% endif %}
+      {% if puede_eliminar %}
+        <li><a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Eliminar cuenta</span></a></li>
+      {% endif %}
+      {% if puede_reactivar %}
+        <li><a href="{% url 'accounts:usuario_reactivar' usuario_objetivo.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
+      {% endif %}
+    </ul>
+
+    {% if es_ultimo_administrador %}
+      <p class="texto-chico secundario">
+        Es la única cuenta Administrador activa: no se puede dar de baja.
+      </p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

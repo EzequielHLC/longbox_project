@@ -163,7 +163,7 @@ def _campo_importe(etiqueta, *, required=True, maximo=IMPORTE_MAXIMO, ayuda="", 
         min_value=Decimal("0.01") if minimo is None else minimo,
         max_value=maximo,
         help_text=ayuda,
-        # `inputmode` le pide al celular el teclado numérico y `_campos.html`
+        # `inputmode` le pide al celular el teclado numérico y la hoja de estilo
         # lo usa además para alinear los importes a la derecha.
         widget=forms.NumberInput(attrs={"step": "0.01", "inputmode": "decimal"}),
     )

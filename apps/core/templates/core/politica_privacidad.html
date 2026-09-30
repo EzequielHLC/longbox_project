@@ -13,30 +13,25 @@ consentimiento sea informado. Reemplazar el bloque marcado más abajo.
 {% block seccion %}Legales{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-3xl">
-
-  <p class="font-mono text-[0.65rem] uppercase tracking-[0.3em] text-signal">
-    利用規約 · Legales
-  </p>
-  <h1 class="mt-3 font-display text-4xl font-extrabold tracking-wide">
-    Política de privacidad
-  </h1>
-  <p class="mt-3 font-mono text-xs uppercase tracking-[0.15em] text-static">
-    Última actualización: pendiente
-  </p>
-
-  <div class="clip-panel mt-6 border border-line bg-panel p-5">
-    <p class="text-sm text-static">
-      Texto preliminar. El contenido definitivo de la política de privacidad se encuentra en
-      elaboración y será publicado en esta misma dirección.
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Política de privacidad</h1>
+    <p>Última actualización: pendiente</p>
   </div>
+</header>
 
-  {% comment %} ↓↓↓ Reemplazar desde acá ↓↓↓ {% endcomment %}
-  <div class="clip-panel mt-6 space-y-8 border border-line bg-ash p-8 text-sm leading-relaxed">
+<p class="mensaje">
+  {% include "_iconos.html" with icono="info" %}
+  <span>
+    Texto preliminar. El contenido definitivo de la política de privacidad se encuentra en
+    elaboración y será publicado en esta misma dirección.
+  </span>
+</p>
 
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl font-bold tracking-wide">1. Datos que se recogen</h2>
+{% comment %} ↓↓↓ Reemplazar desde acá ↓↓↓ {% endcomment %}
+<div class="contenido-markdown">
+  <section class="pila-3">
+      <h2>1. Datos que se recogen</h2>
       <p>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
         incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
@@ -48,25 +43,21 @@ consentimiento sea informado. Reemplazar el bloque marcado más abajo.
         officia deserunt mollit anim id est laborum.
       </p>
     </section>
-
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl font-bold tracking-wide">2. Para qué se usan</h2>
+  <section class="pila-3">
+      <h2>2. Para qué se usan</h2>
       <p>
         Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
         laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
         architecto beatae vitae dicta sunt explicabo.
       </p>
-      <ul class="ml-5 list-disc space-y-2 text-static">
+      <ul>
         <li>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</li>
         <li>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.</li>
         <li>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit.</li>
       </ul>
     </section>
-
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl font-bold tracking-wide">
-        3. Conservación y resguardo
-      </h2>
+  <section class="pila-3">
+      <h2>3. Conservación y resguardo</h2>
       <p>
         At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium
         voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint
@@ -77,31 +68,24 @@ consentimiento sea informado. Reemplazar el bloque marcado más abajo.
         fuga. Et harum quidem rerum facilis est et expedita distinctio.
       </p>
     </section>
-
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl font-bold tracking-wide">4. Derechos del titular</h2>
+  <section class="pila-3">
+      <h2>4. Derechos del titular</h2>
       <p>
         Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus
         id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor
         repellendus.
       </p>
     </section>
-
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl font-bold tracking-wide">5. Contacto</h2>
+  <section class="pila-3">
+      <h2>5. Contacto</h2>
       <p>
         Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
         eveniet ut et voluptates repudiandae sint et molestiae non recusandae.
       </p>
     </section>
-
-  </div>
-  {% comment %} ↑↑↑ Reemplazar hasta acá ↑↑↑ {% endcomment %}
-
-  <p class="mt-8 text-center font-mono text-xs uppercase tracking-[0.15em] text-static">
-    <a href="{% url 'accounts:registro_cliente' %}" class="text-screen hover:text-signal">
-      ← Volver al registro
-    </a>
-  </p>
 </div>
+{% comment %} ↑↑↑ Reemplazar hasta acá ↑↑↑ {% endcomment %}
+
+{% url 'accounts:registro_cliente' as url_registro %}
+<p>{% include "_boton_texto.html" with url=url_registro texto="Volver al registro" atras=1 %}</p>
 {% endblock %}

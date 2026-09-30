@@ -3,58 +3,49 @@
 La vuelta de la baja de CU-CAT-BAJ: la describe CU-CAT-REA, con CO-035 y CO-036.
 El motivo por el que existe está en la vista.
 
-No lleva `signal`: reactivar no destruye nada. Es la contraparte tranquila de la
-pantalla de baja, igual que en proveedores.
+Reactivar no destruye nada: el recuadro va con el borde común. Abandonar la
+pantalla sin confirmar es `CO-156 cancelarOperacion`.
 {% endcomment %}
 
 {% block titulo %}Reactivar {{ producto.titulo }} · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-2xl">
-  {% url 'catalog:producto_detalle' producto.pk as volver %}
-  {% include "_boton_texto.html" with url=volver texto="Volver a la ficha" atras=1 %}
+{% url 'catalog:producto_detalle' producto.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>Reactivar producto</h1>
+    <p>{{ producto.titulo }} · <span class="datos">{{ producto.codigo }}</span> · {{ producto.tipo }}</p>
+  </div>
+</header>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-wide">Reactivar producto</h1>
-  <p class="mt-2 text-sm text-static">
-    <span class="text-screen">{{ producto.titulo }}</span> ·
-    <span class="font-mono text-xs">{{ producto.codigo }}</span> · {{ producto.tipo }}
-  </p>
+{% if producto.estado != "descatalogado" %}
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está en el catálogo. No hay nada que confirmar.</span></p>
+{% else %}
+  <div class="panel formulario--angosto">
+    <div class="seccion__titulo"><h2>Qué implica reactivarlo</h2></div>
+    <ul class="lista-renglones">
+      <li><span>Vuelve al catálogo público y se puede vender.</span></li>
+      <li><span>Conserva su código, su stock, su precio y su historial.</span></li>
+      <li><span>Vuelve como <strong>Activo</strong>, no al estado que tenía antes de la baja.</span></li>
+    </ul>
 
-  {% if producto.estado != "descatalogado" %}
-    <p class="mt-6 border-l-2 border-line bg-panel px-4 py-3 text-sm text-static">
-      Este producto ya está en el catálogo. No hay nada que confirmar.
+    <dl class="datos-de-ficha">
+      <dt>Stock actual</dt><dd class="datos">{{ producto.stock }}</dd>
+      <dt>Precio</dt><dd class="datos">${{ producto.precio }}</dd>
+    </dl>
+    <p class="texto-chico secundario">
+      Si alguno quedó desactualizado, <a href="{% url 'catalog:producto_editar' producto.pk %}">corríjalo antes</a>.
     </p>
-  {% else %}
-    <div class="mt-6 border-l-2 border-azure bg-panel px-5 py-4">
-      <h2 class="font-display text-lg font-semibold tracking-wide">Qué implica reactivarlo</h2>
-      <ul class="mt-3 space-y-2 text-sm">
-        <li>Vuelve al catálogo público y se puede vender.</li>
-        <li>Conserva su código, su stock, su precio y su historial.</li>
-        <li>
-          Vuelve como <span class="text-screen">Activo</span>, no al estado que tenía
-          antes de la baja.
-        </li>
-      </ul>
-      <p class="mt-3 font-mono text-[0.65rem] leading-relaxed text-static">
-        Stock actual: <span class="text-screen">{{ producto.stock }}</span> ·
-        Precio: <span class="text-screen">${{ producto.precio }}</span>.
-        Si alguno quedó desactualizado,
-        <a href="{% url 'catalog:producto_editar' producto.pk %}"
-           class="text-screen underline hover:text-signal">corríjalo antes</a>.
-      </p>
-    </div>
 
-    <form method="post" class="mt-6 flex flex-wrap items-center gap-6 border-t border-line pt-6">
+    <form method="post" class="acciones">
       {% csrf_token %}
-      <div class="marco-boton">
-        <button type="submit" class="boton-primario">Confirmar reactivación</button>
-      </div>
+      <button type="submit" class="boton-primario">Confirmar reactivación</button>
       {% url 'catalog:producto_editar' producto.pk as editar_antes %}
       {% include "_boton_texto.html" with url=editar_antes texto="Editar antes de reactivar" %}
-      {% url 'catalog:producto_detalle' producto.pk as cancelar %}
-      {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
     </form>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
 {% endblock %}

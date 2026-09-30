@@ -1,114 +1,106 @@
 {% extends "base_operativo.html" %}
+{% comment %}
+CU-CAT-ALT — Registrar Alta de Producto No Editorial (`CO-028`, `CO-029`).
+{% endcomment %}
 
 {% block titulo %}Nuevo producto no editorial · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mb-6">
-  <p class="font-mono text-xs uppercase tracking-[0.15em] text-static">
-    <a href="{% url 'catalog:producto_lista' %}" class="hover:text-signal">Inventario</a>
-    · Alta
-  </p>
-  <h1 class="mt-1 font-display text-3xl font-bold tracking-wide">Nuevo producto no editorial</h1>
-  <p class="mt-1 text-sm text-static">
-    TCG, figuras, merchandising e insumos. Se cargan de a uno.
-  </p>
-</div>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'catalog:producto_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Inventario" atras=1 %}</span>
+    <h1>Nuevo producto no editorial</h1>
+    <p>TCG, figuras, merchandising e insumos. Se cargan de a uno.</p>
+  </div>
+</header>
 
 {% if not hay_categorias %}
-  <p class="mb-6 border-l-2 border-signal bg-ash px-4 py-3 text-sm">
-    Todavía no hay categorías no editoriales cargadas. Se administran desde
-    <a href="{% url 'catalog:parametros' %}" class="text-screen hover:text-signal">Parámetros
-    globales</a>.
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span>
+      <span class="mensaje__prefijo">Atención:</span>
+      Todavía no hay categorías no editoriales cargadas. Se administran desde
+      <a href="{% url 'catalog:parametros' %}">Parámetros globales</a>.
+    </span>
   </p>
 {% endif %}
 
 {% comment %}
-El duplicado se avisa dos veces y las dos hacen falta: acá abajo mientras se
-escribe el nombre —para no enterarse con el formulario entero cargado— y en el
-propio campo al guardar, que es lo que el servidor exige. Ver `A7`.
+El duplicado se avisa dos veces y las dos hacen falta: mientras se escribe el
+nombre —para no enterarse con el formulario entero cargado— y al guardar, que
+es lo que el servidor exige.
 {% endcomment %}
 {% if duplicado %}
-  <section class="mb-6 border-l-2 border-signal bg-ash px-4 py-4">
-    <h2 class="font-display text-lg font-semibold tracking-wide text-signal">
-      Ya existe un producto con este nombre y categoría
-    </h2>
-    <p class="mt-2 text-sm">
-      Coincide con
-      <a href="{% url 'catalog:producto_detalle' duplicado.pk %}"
-         class="text-screen underline hover:text-signal">{{ duplicado }}</a>
-      <span class="font-mono text-xs text-static">({{ duplicado.codigo }})</span>.
-      Si es el mismo,
-      <a href="{% url 'catalog:producto_detalle' duplicado.pk %}"
-         class="text-screen underline hover:text-signal">edite el existente</a>.
+  <div class="panel panel--atencion">
+    <h2 class="fila-2">{% include "_iconos.html" with icono="atencion" %}<span>Ya existe un producto con este nombre y categoría</span></h2>
+    <p>
+      Coincide con <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">{{ duplicado }}</a>
+      <span class="datos secundario">({{ duplicado.codigo }})</span>.
+      Si es el mismo, <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">edite el existente</a>.
       Si es otro producto, marque la confirmación de abajo.
     </p>
-  </section>
+  </div>
 {% endif %}
 
-<form method="post" enctype="multipart/form-data" novalidate>
+<form method="post" enctype="multipart/form-data" novalidate class="formulario">
   {% csrf_token %}
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <section class="border border-line bg-ash px-5 py-5">
-      <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Identificación</h2>
+  <div class="rejilla-2">
+    <fieldset class="grupo-de-campos">
+      <legend>Identificación</legend>
       {% include "_campo.html" with campo=form.titulo %}
       {% include "_campo.html" with campo=form.tipo %}
 
-      {% comment %}
-      El aviso en vivo cuelga del nombre y la categoría, que son los dos campos
-      de los que depende el choque.
-      {% endcomment %}
-      <div class="aviso-duplicado -mt-2 mb-4 border-l-2 border-line bg-panel px-3 py-2"
+      {# El aviso en vivo cuelga del nombre y la categoría, de los que depende el choque. #}
+      <div class="aviso-duplicado"
            data-aviso-duplicado
            data-url="{% url 'catalog:duplicados_no_editoriales' %}"
            data-campos="titulo,tipo"></div>
 
-      {% include "_campo.html" with campo=form.codigo %}
-      {% include "_campo.html" with campo=form.codigo_barras %}
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form.codigo %}
+        {% include "_campo.html" with campo=form.codigo_barras %}
+      </div>
       {% include "_campo.html" with campo=form.marca %}
-    </section>
+    </fieldset>
 
-    <section class="border border-line bg-ash px-5 py-5">
-      <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Precio y stock</h2>
-      {% include "_campo.html" with campo=form.precio %}
-      {% include "_campo.html" with campo=form.stock %}
+    <fieldset class="grupo-de-campos">
+      <legend>Precio y stock</legend>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form.precio %}
+        {% include "_campo.html" with campo=form.stock %}
+      </div>
 
       {% comment %}
       El estado no se ofrece: CU-CAT-ALT asigna exclusivamente Activo, y el modelo
-      rechaza Pre-venta para este rubro. No hay campo que mandar.
+      rechaza Pre-venta para este rubro.
       {% endcomment %}
-      <p class="mt-4 border-l-2 border-line bg-panel px-3 py-2 font-mono text-[0.65rem]
-                leading-relaxed text-static">
-        Se da de alta <span class="text-screen">Activo</span>. Este rubro no admite Pre-venta.
-      </p>
-    </section>
+      <p class="texto-chico secundario">Se da de alta <strong>Activo</strong>. Este rubro no admite Pre-venta.</p>
+    </fieldset>
   </div>
 
-  <section class="mt-6 border border-line bg-ash px-5 py-5">
-    <h2 class="mb-4 font-display text-lg font-semibold tracking-wide">Datos opcionales</h2>
+  <fieldset class="grupo-de-campos">
+    <legend>Datos opcionales</legend>
     {% include "_campo.html" with campo=form.portada %}
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}
-  </section>
+  </fieldset>
 
   {% comment %}
-  La confirmación solo se dibuja cuando hay un choque de verdad. Ofrecerla
-  siempre la convertiría en un clic automático, que es lo mismo que no tenerla —
-  el mismo motivo por el que la confirmación de cambio de correo no aparece en el
-  alta de proveedor.
+  La confirmación sólo se dibuja cuando hay un choque de verdad: ofrecerla siempre
+  la convertiría en un clic automático.
   {% endcomment %}
   {% if duplicado %}
-    <section class="mt-6 border-l-2 border-signal bg-ash px-5 py-4">
+    <div class="panel panel--atencion">
       {% include "_casilla.html" with campo=form.confirma_duplicado critico=1 %}
-    </section>
+    </div>
   {% endif %}
 
-  <div class="mt-6 flex flex-wrap items-center gap-7 border-t border-line pt-6">
-    <div class="marco-boton">
-      <button type="submit" class="boton-primario">Guardar producto</button>
-    </div>
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar producto</button>
     {% url 'catalog:producto_lista' as cancelar %}
     {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>

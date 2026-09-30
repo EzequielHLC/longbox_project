@@ -2,68 +2,63 @@
 {% comment %}
 Las etiquetas, en su propia pantalla.
 
-Vivían como una sección de Parámetros globales y ahí no daban abasto por una
-razón de escala: los otros catálogos de esa pantalla son cerrados y chicos —nueve
-tipos, siete formatos— y se tocan una vez por semestre. Las etiquetas son
-abiertas y crecen sin techo, y un catálogo que crece necesita buscador. Un
-buscador dentro de una pantalla con otras cinco secciones filtra la equivocada.
-
-Fichas y no tabla: una etiqueta es un nombre y un número de uso. Cuarenta filas
-de dos columnas ocupan una pantalla entera para decir lo que las fichas dicen en
-un párrafo.
+Las etiquetas son el único catálogo abierto del sistema y crecen sin techo: se
+operan buscando y no recorriendo. Se agrupan por grupo porque es como se piensan
+y como se eligen: nadie busca «una etiqueta», busca una franquicia o un género.
 {% endcomment %}
 
 {% block titulo %}Etiquetas · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-  <div>
-    <p class="font-mono text-xs uppercase tracking-[0.15em] text-static">
-      <a href="{% url 'catalog:parametros' %}" class="hover:text-signal">Parámetros globales</a>
-      · Etiquetas
-    </p>
-    <h1 class="mt-1 font-display text-3xl font-bold tracking-wide">Etiquetas</h1>
-    <p class="mt-1 text-sm text-static">
-      Describen el producto para encontrarlo. No entran en su identidad ni en su precio.
-    </p>
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'catalog:parametros' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
+    <h1>Etiquetas</h1>
+    <p>Describen el producto para encontrarlo. No entran en su identidad ni en su precio.</p>
   </div>
 
-  <div class="flex flex-wrap items-center gap-4">
-    <div class="marco-boton">
-      <a href="{% url 'catalog:etiqueta_crear' %}" class="boton-primario">Nueva etiqueta</a>
-    </div>
-    <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="boton-seccion">Nuevo grupo
+  <div class="fila">
+    <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="boton-seccion">
+      {% include "_iconos.html" with icono="agregar" %}<span>Nuevo grupo</span>
+    </a>
+    <a href="{% url 'catalog:etiqueta_crear' %}" class="boton-primario">
+      {% include "_iconos.html" with icono="agregar" %}<span>Nueva etiqueta</span>
     </a>
   </div>
-</div>
+</header>
 
 {% if sin_grupos %}
-  <p class="mb-6 border-l-2 border-signal bg-ash px-4 py-3 text-sm">
-    Toda etiqueta pertenece a un grupo, y todavía no hay ninguno.
-    <a href="{% url 'catalog:grupo_etiqueta_crear' %}" class="text-screen hover:text-signal">
-      Cree el primero</a> para poder cargar etiquetas.
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span>
+      <span class="mensaje__prefijo">Atención:</span>
+      toda etiqueta pertenece a un grupo, y todavía no hay ninguno.
+      <a href="{% url 'catalog:grupo_etiqueta_crear' %}">Cree el primero</a> para poder cargar etiquetas.
+    </span>
   </p>
 {% endif %}
 
-<form method="get" data-sin-capa id="filtros"
-      class="mb-6 flex flex-wrap items-center gap-4 border border-line bg-ash px-4 py-3">
-  <input type="text" name="q" value="{{ busqueda }}" placeholder="Buscar etiqueta…"
-         class="min-w-[14rem] flex-1" aria-label="Buscar etiqueta">
-  <button type="submit" class="boton-seccion boton-seccion--tenue">Buscar</button>
-  <span class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-static">
-    {{ total }} en total
-  </span>
-</form>
+<section class="seccion">
+  <form method="get" data-sin-capa id="filtros" class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ busqueda }}" placeholder="Buscar etiqueta — atajo: /">
+    </div>
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+    <span class="texto-chico secundario">{{ total }} en total</span>
+  </form>
 
-<div class="relative">
-  <div id="capa-tabla" class="absolute inset-0 z-10 hidden place-items-center bg-void/80">
-    {% include "_loader.html" with clase="loader--chico" %}
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "catalog/_tabla_etiquetas.html" %}
+    </div>
   </div>
-  <div id="tabla">
-    {% include "catalog/_tabla_etiquetas.html" %}
-  </div>
-</div>
+</section>
 
 {% include "_tabla_filtrable.html" %}
 {% endblock %}
