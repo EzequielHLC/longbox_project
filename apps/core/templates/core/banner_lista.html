@@ -1,0 +1,56 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CFG-BNC — Consultar Banners (CO-209).
+
+La galería en su orden, con miniatura y posición numerada, y la vista previa
+del carrusel tal como lo ve el cliente: es el mismo parcial que la portada, con
+las mismas imágenes ya procesadas.
+{% endcomment %}
+
+{% block titulo %}Banners · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Banners de la portada</h1>
+    <p>Se alternan en este orden, cada {{ intervalo }} segundo{{ intervalo|pluralize }}. El intervalo se cambia en Parámetros globales.</p>
+  </div>
+  <a href="{% url 'core:banner_crear' %}" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo banner</span></a>
+</header>
+
+{% if banners %}
+  <section class="seccion" aria-labelledby="titulo-galeria">
+    <div class="seccion__titulo"><h2 id="titulo-galeria">Galería</h2></div>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead><tr><th class="numero">Posición</th><th>Imagen</th><th>Cargado</th><th class="derecha">Acciones</th></tr></thead>
+        <tbody>
+          {% for banner in banners %}
+            <tr>
+              <td class="numero">{{ banner.numero }}</td>
+              <td><img src="{{ banner.imagen.url }}" alt="Banner {{ banner.numero }}" class="miniatura-banner"></td>
+              <td class="datos secundario">{{ banner.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="acciones-de-fila">
+                <a href="{% url 'core:banner_editar' banner.pk %}" class="boton-menor">Modificar</a>
+                <a href="{% url 'core:banner_baja' banner.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-vista-previa">
+    <div class="seccion__titulo"><h2 id="titulo-vista-previa">Vista previa del carrusel</h2></div>
+    {% include "_carrusel.html" with banners=banners intervalo=intervalo %}
+  </section>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="imagen" %}
+    <p>Todavía no hay banners. La portada se muestra sin carrusel.</p>
+    <a href="{% url 'core:banner_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Cargar el primero</span></a>
+  </div>
+{% endif %}
+{% endblock %}

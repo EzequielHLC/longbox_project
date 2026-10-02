@@ -1,40 +1,43 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-Confirmación de la baja de una fila de la tabla de precios. Es una de las pocas
-eliminaciones reales del sistema y se justifica porque una fila de precios no
-tiene historial propio: los productos ya cargados guardan su precio, y los que
-la referencian lo hacen con `SET_NULL`, así que ninguno se rompe.
+CU-PVP-TBB — Dar de Baja Combinación de Precio de Referencia.
+
+Esta pantalla es el informe de CO-050; el botón es CO-051. La fila se elimina
+porque no tiene historial propio: el registro de auditoría conserva la
+combinación y su último valor. Los productos conservan su precio, pierden el
+vínculo y no quedan con precio a mano.
 {% endcomment %}
 
-{% block titulo %}Eliminar precio de referencia · Longbox{% endblock %}
+{% block titulo %}Dar de baja combinación de precio · Longbox{% endblock %}
 {% block seccion %}Parámetros{% endblock %}
 
 {% block contenido %}
-{% url 'catalog:parametros' as volver %}
+{% url 'catalog:precio_lista' as volver %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
-    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
-    <h1>Eliminar precio de referencia</h1>
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Tabla de precios" atras=1 %}</span>
+    <h1>Dar de baja combinación de precio</h1>
+    <p>{{ precio.editorial }} · {{ precio.tipo }} · {{ precio.formato }} · <span class="datos">${{ precio.pvp }}</span></p>
   </div>
 </header>
 
 <div class="panel panel--atencion formulario--angosto">
-  <dl class="datos-de-ficha">
-    <dt>Editorial</dt><dd>{{ precio.editorial }}</dd>
-    <dt>Tipo</dt><dd>{{ precio.tipo }}</dd>
-    <dt>Formato</dt><dd>{{ precio.formato }}</dd>
-    <dt>Precio</dt><dd class="datos">${{ precio.pvp }}</dd>
-  </dl>
+  <div class="cifras">
+    <div class="cifra{% if vinculados %} cifra--atencion{% endif %}">
+      <span class="cifra__rotulo">Productos vinculados</span>
+      <span class="cifra__valor">{{ vinculados }}</span>
+    </div>
+  </div>
 
   <p>
-    Los productos ya cargados conservan su precio: lo que se pierde es el
-    pre-completado. A partir de ahora, cada alta de esta combinación va a pedir el precio
-    a mano hasta que se cargue una fila nueva.
+    Los productos vinculados conservan su precio y quedan sin fuente: los cambios de
+    precio futuros no los alcanzan. No quedan con precio fijado a mano, y se pueden volver
+    a vincular desde su ficha si la combinación se da de alta otra vez.
   </p>
 
   <form method="post" class="acciones">
     {% csrf_token %}
-    <button type="submit" class="boton-primario">Eliminar</button>
+    <button type="submit" class="boton-primario">Confirmar baja</button>
     {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
   </form>
 </div>

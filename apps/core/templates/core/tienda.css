@@ -1,0 +1,9 @@
+/* La identidad visual de la tienda (CU-CFG-VIS). Sólo las cuatro variables
+   `--tienda-*` del modo público y el fondo; el backoffice no las lee. */
+.modo-publico {
+  --tienda-primario: {{ identidad.color_primario }};
+  --tienda-secundario: {{ identidad.color_secundario }};
+  --tienda-acento: {{ identidad.color_acento }};
+  --tienda-fondo: {{ identidad.color_fondo }};
+{% if identidad.tipo_fondo == "imagen" and identidad.imagen_fondo %}  --tienda-fondo-imagen: url("{{ identidad.imagen_fondo.url }}");
+{% endif %}}

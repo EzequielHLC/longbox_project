@@ -235,3 +235,251 @@ de auditoría» (`CO-129`). Las entradas que ya existen no se reescriben: el log
 
 **Qué habría que cambiar.**
 `MODELO_DE_DOMINIO.md`, Área 7, nota de INC-06: agregar las once acciones nuevas de la tabla.
+
+---
+
+### B-17-006 · El reparo por un catálogo dado de baja se calcula al mirar el borrador
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-EDB`, `TPB`, `FMB`, `CO-140`, `CO-221`, `CO-148`, `CU-ALT-REV`
+**Estado:** Abierta
+
+**Qué apareció.**
+La baja de una editorial, un tipo o un formato puede llegar cuando ya hay borradores generados
+que los usan, y la reactivación posterior tiene que destrabarlos sin que nadie regenere el
+correo.
+
+**Qué dice la especificación.**
+> «Desde la baja, la editorial no se asigna a productos nuevos por ninguna vía: deja de ofrecerse
+> en los formularios, y un borrador que la hereda de su proveedor registra un reparo y no puede
+> confirmarse hasta cambiarla o reactivarla (CO-138).» (`CO-140`, Notas; igual en `CO-221` y `CO-148`)
+
+No dice cuándo se registra el reparo.
+
+**Qué se hizo.**
+El reparo no se guarda con el borrador: se calcula cada vez que se lo mira o se lo intenta
+confirmar. Aparece en «Datos descartados por el sistema» junto a los demás, nombra el catálogo y
+dice qué hacer. La confirmación, individual o en lote, lo excluye con el motivo «Tiene una
+editorial, un tipo o un formato dados de baja». Cambiar el dato en el borrador o reactivar el
+catálogo lo destraba en el acto.
+
+**Qué habría que cambiar.**
+`CO-140`, `CO-221` y `CO-148`, Notas: «registra un reparo» por «presenta un reparo mientras la
+entrada siga dada de baja».
+
+---
+
+### B-17-007 · La edición ofrece el valor actual aunque esté dado de baja
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CO-140`, `CO-221`, `CO-148`, `CO-045`, `CU-CAT-EDI`, `CU-PRV-MOD`, `CU-ALT-REV`
+**Estado:** Abierta
+
+**Qué apareció.**
+Los formularios de edición de producto, de proveedor y de borrador ofrecían sólo lo activo. Un
+producto con una editorial dada de baja no la encontraba entre las opciones: guardar cualquier
+otro cambio la perdía o hacía fallar el formulario. Con las etiquetas pasaba lo mismo, y se
+perdían en silencio.
+
+**Qué dice la especificación.**
+> «Las asociaciones ProductoEditorial → Editorial, Proveedor → Editorial y TablaPrecioReferencia →
+> Editorial se conservaron.» (`CO-140`, Postcondiciones)
+> «En la edición de un producto que la tiene asignada se presenta marcada y puede quitarse
+> (CO-030).» (`CO-045`, Notas)
+
+Para la editorial, el tipo y el formato: `Nada` sobre la edición.
+
+**Qué se hizo.**
+La edición ofrece lo activo **más el valor que el registro ya tiene**, esté como esté. Se puede
+conservar o cambiar por uno activo; no se puede elegir otro dado de baja. Es la regla de `CO-045`
+para las etiquetas, extendida a los tres catálogos que deciden.
+
+**Qué habría que cambiar.**
+`CO-140`, `CO-221` y `CO-148`, Notas: agregar que la edición del producto, del proveedor y del
+borrador presenta el valor dado de baja y permite conservarlo.
+
+---
+
+### B-17-008 · Las ofertas vigentes del informe de baja de tipo se informan como «No disponible»
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-TPB`, `CO-220`
+**Estado:** Abierta — recomendación del plan aplicada sin objeción (consulta C-12)
+
+**Qué apareció.**
+El informe de baja de un tipo cuenta las ofertas Programadas o Activas que lo referencian, y
+`Oferta` todavía no existe.
+
+**Qué dice la especificación.**
+> «Informar cuántos productos, filas de la tabla de precios, proveedores y ofertas Programadas o
+> Activas referencian el tipo antes de darlo de baja.» (`CO-220`, Responsabilidades)
+
+**Qué se hizo.**
+La cantidad de ofertas se presenta como «No disponible todavía», nunca como 0: un cero diría que
+se verificó que no hay ninguna. Es el mismo criterio que `CO-163` pide para los indicadores que
+dependen de módulos no construidos. Hasta que exista `Oferta`, la postcondición «Oferta → Tipo se
+conservaron» de `CO-221` no se puede ejercer.
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### B-17-009 · Desde la carga de un lote, el tipo nuevo es editorial y el formato nuevo se declara para el tipo elegido
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-TPA` A1, `CU-CFG-FMA` A1, `CO-141`, `CO-144`
+**Estado:** Abierta
+
+**Qué apareció.**
+El alta al vuelo desde la carga de un lote no tiene lugar para el formulario completo: se resuelve
+con el nombre y una pregunta de sí o no.
+
+**Qué dice la especificación.**
+> «El formato creado queda declarado para el tipo seleccionado en el formulario de carga, salvo
+> que se indique que aplica a todos los tipos.» (`CU-CFG-FMA`, A1)
+
+Sobre el rubro del tipo creado desde la carga: `Nada`.
+
+**Qué se hizo.**
+El tipo creado desde la carga de un lote toma el rubro editorial, que es el de la pantalla, y
+pregunta sólo si se clasifica por formato. El formato pregunta si aplica a todos; si no, queda
+declarado para el tipo elegido en la cabecera. Los dos pasan por el mismo formulario, la misma
+normalización y la misma auditoría que su pantalla propia.
+
+**Qué habría que cambiar.**
+`CU-CFG-TPA`, A1: «El tipo creado desde la carga de un lote es del rubro editorial».
+
+---
+
+### B-17-010 · Los formatos y tipos dados de baja no se desvinculan al editar la lista del otro lado
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CO-145`, `CO-146`
+**Estado:** Abierta
+
+**Qué apareció.**
+La declaración de formatos de un tipo sólo ofrece los formatos activos (`CO-146`, precondición), y
+la de tipos de un formato sólo los tipos activos que se clasifican por formato (`CO-145`). Uno
+dado de baja que ya estaba declarado no aparece en la lista, y guardarla lo habría desvinculado
+sin que nadie lo eligiera.
+
+**Qué dice la especificación.**
+> «(b) Se formaron las asociaciones Formato ↔ Tipo de la lista declarada y se rompieron las que
+> quedaron fuera.» (`CO-146`, Postcondiciones)
+> «Las asociaciones ProductoEditorial → Formato, TablaPrecioReferencia → Formato y Formato ↔ Tipo
+> se conservaron.» (`CO-148`, Postcondiciones)
+
+**Qué se hizo.**
+Lo dado de baja que ya estaba declarado se conserva al guardar la lista: «quedar fuera» se lee
+sobre lo que se ofrecía. Coincide con `CO-148`, que conserva Formato ↔ Tipo en la baja.
+
+**Qué habría que cambiar.**
+`CO-145` y `CO-146`, Notas: «Las combinaciones con un tipo o un formato dados de baja no se ofrecen
+y se conservan».
+
+---
+
+### B-17-011 · El logo no admite SVG: RNF-05 convierte toda imagen a WebP
+
+**Tipo:** Corrección · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-VIS` paso 2, `CO-131`, RNF-05
+**Estado:** Abierta — se aplicó la palabra del requisito (consulta C-08)
+
+**Qué apareció.**
+La guía de formato del logo recomienda PNG o SVG. RNF-05 pide convertir **toda** imagen que sube
+el Administrador a WebP, y un SVG es un dibujo vectorial que no se puede convertir sin
+rasterizarlo. Además, un SVG puede llevar guiones adentro y se mostraría en una pantalla pública.
+
+**Qué dice la especificación.**
+> «Logo de la tienda (carga de imagen, guía de formato: cuadrado o 2:1 horizontal, PNG o SVG
+> recomendado)» (`CU-CFG-VIS`, paso 2)
+> «El backend del sistema debe procesar automáticamente toda imagen que suba el Administrador
+> —portadas, imágenes de producto, identidad visual y banners—, realizando […] conversión al
+> formato WebP» (RNF-05)
+
+**Qué se hizo.**
+El logo, el fondo y los banners admiten JPG, PNG y WebP, y se guardan en WebP. Un SVG se rechaza
+con el problema específico («El formato SVG no se admite»), como pide la E2 de la ficha.
+
+**Qué habría que cambiar.**
+`CU-CFG-VIS`, paso 2: «PNG recomendado» en lugar de «PNG o SVG recomendado».
+
+---
+
+### B-17-012 · Tamaños máximos, calidad de compresión y lado mayor del fondo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** RNF-05, `CO-131`, `CO-132`, `CO-133`
+**Estado:** Abierta — el valor fijo de la calidad estaba anunciado en el plan 17, ambigüedad 10
+
+**Qué apareció.**
+Las excepciones de las imágenes hablan de un «tamaño máximo admitido» que nadie fija. RNF-05 pide
+una calidad «configurable» que `ConfiguracionSistema` no declara, y no dice qué lado mayor le
+corresponde a una imagen de fondo.
+
+**Qué dice la especificación.**
+> «redimensionado a unas dimensiones máximas configurables manteniendo la proporción (por defecto
+> 800 px en el lado mayor; para los banners, 1920 px) y compresión con nivel de calidad
+> configurable» (RNF-05)
+
+**Qué se hizo.**
+Peso máximo de lo que se sube: 10 MB para los banners y 5 MB para el resto, el mismo que ya
+tenían las portadas. Calidad WebP fija en 80. El logo se reduce a 800 px de lado mayor, y el fondo
+a 1920 px como los banners: ocupa la pantalla entera y a 800 px se vería pixelado.
+
+**Qué habría que cambiar.**
+RNF-05: declarar el peso máximo por tipo de imagen y el lado mayor del fondo de la tienda. Si la
+calidad tiene que ser configurable, `MODELO_DE_DOMINIO.md`, `ConfiguracionSistema`: agregar el
+parámetro.
+
+---
+
+### B-17-013 · La portada y las preguntas frecuentes de la tienda
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CO-132`, `CO-135`, `CU-CFG-BNC`, `CU-CFG-FAQ`
+**Estado:** Abierta — decisión del responsable el 2026-09-30 (consulta C-06)
+
+**Qué apareció.**
+Los contratos de los banners y de la FAQ dicen que el contenido «quedó publicado en la tienda», y
+ningún caso de uso declara la portada ni la página de preguntas frecuentes.
+
+**Qué dice la especificación.**
+> «(c) b.imagen quedó con la imagen procesada y b.posición con el valor siguiente al último de la
+> galería. El banner quedó publicado en la tienda.» (`CO-132`, Postcondiciones)
+
+**Qué se hizo.**
+La portada de la tienda muestra el carrusel, con el intervalo de los parámetros, cambio
+instantáneo y los controles «Anterior», «Siguiente» y «Pausar». La página de preguntas frecuentes
+muestra lo publicado y es pública: se lee sin iniciar sesión. La portada sigue siendo la de la
+cuenta de cliente, como hasta ahora.
+
+**Qué habría que cambiar.**
+`CU-CFG-BNC` y `CU-CFG-FAQ`, Comentarios: nombrar las dos pantallas públicas, o asignarlas a
+`CU-TDA-CAT`.
+
+---
+
+### B-17-014 · La vista previa de la FAQ es un envío que no guarda
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-FAQ` pasos 2 y 3, `CO-210`
+**Estado:** Abierta
+
+**Qué apareció.**
+La ficha pide alternar entre edición y vista previa del renderizado. El sistema no carga
+bibliotecas de terceros en el navegador, así que el Markdown no se puede renderizar ahí.
+
+**Qué dice la especificación.**
+> «El sistema presenta el editor Markdown con el contenido publicado y la alternancia entre modo
+> de edición y vista previa del renderizado.» (`CU-CFG-FAQ`, paso 2)
+
+**Qué se hizo.**
+El editor tiene un botón «Vista previa» que envía el texto al servidor, lo renderiza con la misma
+función que la tienda y lo muestra debajo, sin guardar ni auditar nada. «Descartar cambios» vuelve
+a cargar lo publicado.
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### Nota de cierre · 2026-10-02
+
+Las dos tandas del plan 17 quedaron construidas. Catálogos: editoriales, tipos y formatos con
+pantalla propia, baja con informe y reparo en los borradores. Contenido: FAQ, banners con el
+carrusel de la portada e identidad visual, con el procesamiento de imágenes de RNF-05. Queda:
+`CU-CFG-PAR` (secciones de módulos no construidos y Seguridad), `CU-CFG-LLM` sin verificar, las
+portadas de producto sin procesar (deuda del módulo 01) y las consultas C-20 y C-21.

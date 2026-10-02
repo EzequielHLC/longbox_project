@@ -8,12 +8,24 @@ columnas de números que se leen de arriba abajo.
 {% endcomment %}
 {% if productos %}
   <div class="pila-3">
-    <p class="texto-chico secundario">
-      {{ paginator.count }} producto{{ paginator.count|pluralize }}
-      {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or etiqueta_elegida %}
-        que coincide{{ paginator.count|pluralize }} con el filtro
+    <div class="fila-5">
+      <p class="texto-chico secundario">
+        {{ paginator.count }} producto{{ paginator.count|pluralize }}
+        {% if busqueda or estado_elegido or origen_elegido or tipo_elegido or editorial_elegida or etiqueta_elegida %}
+          que coincide{{ paginator.count|pluralize }} con el filtro
+        {% endif %}
+      </p>
+      {% comment %}
+      CU-CAT-INV A1: exportar el listado filtrado. Sólo el Administrador; el
+      servidor lo valida igual (`CO-037`). Vive en el fragmento para que los
+      filtros del enlace sean los de la tabla que se está viendo.
+      {% endcomment %}
+      {% if user.rol == "administrador" %}
+        <a href="{% url 'catalog:producto_exportar' %}?{{ filtros_aplicados }}" download class="boton-texto texto-chico">
+          {% include "_iconos.html" with icono="descargar" %}<span>Exportar listado (CSV)</span>
+        </a>
       {% endif %}
-    </p>
+    </div>
 
     <div class="tabla-desplazable">
       <table class="tabla">

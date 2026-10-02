@@ -123,6 +123,17 @@ class ConfiguracionSistema(models.Model):
         help_text="Para extraer datos conviene dejarla en 0.",
     )
 
+    # ------------------------------------------------------------------
+    # Tienda (CU-CFG-PAR, sección Tienda; B-17-003)
+    # ------------------------------------------------------------------
+
+    intervalo_carrusel = models.PositiveIntegerField(
+        "intervalo del carrusel (segundos)",
+        default=10,
+        validators=[MinValueValidator(1)],
+        help_text="Cada cuántos segundos la portada pasa al banner siguiente.",
+    )
+
     actualizado_en = models.DateTimeField("última modificación", auto_now=True)
     actualizado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -236,6 +247,21 @@ class RegistroAuditoria(models.Model):
     BORRADOR_CONFIRMADO = "borrador_confirmado"
     BORRADOR_RECHAZADO = "borrador_rechazado"
     SESION_REVISION_CERRADA = "sesion_revision_cerrada"
+    # B-17-005: un catálogo no es un parámetro (`CO-130`), y el contenido de
+    # la tienda no tenía ninguna acción aplicable.
+    ALTA_CATALOGO = "alta_catalogo"
+    MODIFICACION_CATALOGO = "modificacion_catalogo"
+    BAJA_CATALOGO = "baja_catalogo"
+    ALTA_PRECIO_REFERENCIA = "alta_precio_referencia"
+    MODIFICACION_PRECIO_REFERENCIA = "modificacion_precio_referencia"
+    BAJA_PRECIO_REFERENCIA = "baja_precio_referencia"
+    PUBLICACION_FAQ = "publicacion_faq"
+    MODIFICACION_IDENTIDAD_VISUAL = "modificacion_identidad_visual"
+    ALTA_BANNER = "alta_banner"
+    MODIFICACION_BANNER = "modificacion_banner"
+    BAJA_BANNER = "baja_banner"
+    EXPORTACION_INVENTARIO = "exportacion_inventario"
+    EXPORTACION_AUDITORIA = "exportacion_auditoria"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -266,6 +292,19 @@ class RegistroAuditoria(models.Model):
         (BORRADOR_CONFIRMADO, "Confirmación de un borrador de producto"),
         (BORRADOR_RECHAZADO, "Rechazo de un borrador de producto"),
         (SESION_REVISION_CERRADA, "Cierre de una sesión de revisión"),
+        (ALTA_CATALOGO, "Alta de catálogo"),
+        (MODIFICACION_CATALOGO, "Modificación de catálogo"),
+        (BAJA_CATALOGO, "Baja de catálogo"),
+        (ALTA_PRECIO_REFERENCIA, "Alta de precio de referencia"),
+        (MODIFICACION_PRECIO_REFERENCIA, "Modificación de precio de referencia"),
+        (BAJA_PRECIO_REFERENCIA, "Baja de precio de referencia"),
+        (PUBLICACION_FAQ, "Publicación de FAQ"),
+        (MODIFICACION_IDENTIDAD_VISUAL, "Modificación de identidad visual"),
+        (ALTA_BANNER, "Alta de banner"),
+        (MODIFICACION_BANNER, "Modificación de banner"),
+        (BAJA_BANNER, "Baja de banner"),
+        (EXPORTACION_INVENTARIO, "Exportación de inventario"),
+        (EXPORTACION_AUDITORIA, "Exportación del log de auditoría"),
     ]
 
     actor = models.ForeignKey(
@@ -358,3 +397,138 @@ class RegistroAuditoria(models.Model):
             ip=ip,
             detalle=detalle,
         )
+
+
+class InstanciaUnica(models.Model):
+    """P-14: conceptos de los que existe exactamente uno.
+
+    La clave se fuerza en cada guardado, igual que en `ConfiguracionSistema`:
+    si hubiera dos, nadie sabría cuál rige.
+    """
+
+    IDENTIFICADOR = 1
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        self.pk = self.IDENTIFICADOR
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise RegistroAuditoriaError(f"{self._meta.verbose_name} no se borra, se edita.")
+
+    @classmethod
+    def obtener(cls):
+        instancia, _ = cls.objects.get_or_create(pk=cls.IDENTIFICADOR)
+        return instancia
+
+
+class ContenidoFAQ(InstanciaUnica):
+    """La sección de preguntas frecuentes de la tienda (CU-CFG-FAQ, I-14).
+
+    Publicar reemplaza, no agrega. Se escribe en Markdown y se publica sin HTML
+    crudo (C-16): el Markdown escrito por el Administrador se muestra en una
+    pantalla pública, y el HTML crudo sería una vía para inyectar guiones.
+    """
+
+    contenido = models.TextField("contenido", blank=True)
+    actualizado_en = models.DateTimeField("actualizado en", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "contenido de la FAQ"
+        verbose_name_plural = "contenido de la FAQ"
+
+    def __str__(self):
+        return "Preguntas frecuentes"
+
+
+class IdentidadVisual(InstanciaUnica):
+    """Nombre, contacto y apariencia de la tienda pública (CU-CFG-VIS).
+
+    Los colores pintan sólo las cuatro variables `--tienda-*` del modo
+    público (C-07, `identidad_visual.md`); el backoffice no las lee nunca. Los
+    valores iniciales son los tokens: sin cambios, la tienda se ve igual que el
+    resto del sistema. El fondo puede ser una imagen (C-07).
+    """
+
+    COLOR = "color"
+    IMAGEN = "imagen"
+    TIPOS_DE_FONDO = [(COLOR, "Color sólido"), (IMAGEN, "Imagen")]  # noqa: RUF012
+
+    nombre_tienda = models.CharField("nombre de la tienda", max_length=80, default="Longbox")
+    correo_contacto = models.EmailField("correo de contacto", blank=True)
+    telefono = models.CharField("teléfono o WhatsApp", max_length=40, blank=True)
+    instagram = models.URLField("Instagram", blank=True)
+    facebook = models.URLField("Facebook", blank=True)
+    tiktok = models.URLField("TikTok", blank=True)
+    x_twitter = models.URLField("X / Twitter", blank=True)
+
+    logo = models.ImageField("logo", upload_to="identidad/", blank=True)
+    color_primario = models.CharField("color primario", max_length=7, default="#111111")
+    color_secundario = models.CharField("color secundario", max_length=7, default="#555555")
+    color_acento = models.CharField("color de acento", max_length=7, default="#111111")
+    tipo_fondo = models.CharField("fondo", max_length=10, choices=TIPOS_DE_FONDO, default=COLOR)
+    color_fondo = models.CharField("color de fondo", max_length=7, default="#FFFFFF")
+    imagen_fondo = models.ImageField("imagen de fondo", upload_to="identidad/", blank=True)
+
+    actualizado_en = models.DateTimeField("actualizada en", null=True, blank=True)
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="identidades_editadas",
+    )
+
+    class Meta:
+        verbose_name = "identidad visual"
+        verbose_name_plural = "identidad visual"
+
+    def __str__(self):
+        return self.nombre_tienda
+
+    @property
+    def configurada(self):
+        """Si el Administrador la guardó alguna vez. Hasta entonces rigen los tokens."""
+        return self.actualizado_en is not None
+
+    @property
+    def version(self):
+        """Cambia con cada guardado, para que el navegador no use la hoja vieja."""
+        return int(self.actualizado_en.timestamp()) if self.actualizado_en else 0
+
+    @property
+    def redes(self):
+        nombres = (
+            ("Instagram", self.instagram),
+            ("Facebook", self.facebook),
+            ("TikTok", self.tiktok),
+            ("X", self.x_twitter),
+        )
+        return [(nombre, url) for nombre, url in nombres if url]
+
+
+class Banner(models.Model):
+    """Una imagen de la galería de la portada (CU-CFG-BNA a BNC).
+
+    La posición se guarda desde 0 y se muestra desde 1 (plan 17, ambigüedad 7).
+    Las posiciones son siempre consecutivas: cada alta, cambio de lugar y baja
+    las reajusta en la misma transacción.
+    """
+
+    imagen = models.ImageField("imagen", upload_to="banners/")
+    posicion = models.PositiveIntegerField("posición")
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "banner"
+        verbose_name_plural = "banners"
+        ordering = ["posicion"]
+
+    def __str__(self):
+        return f"Banner {self.posicion + 1}"
+
+    @property
+    def numero(self):
+        return self.posicion + 1

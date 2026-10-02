@@ -27,7 +27,7 @@ pytestmark = pytest.mark.django_db
 
 # Cada catálogo con su formulario y los datos mínimos para que valide.
 CATALOGOS = [
-    (Tipo, TipoForm, {}, "tipo"),
+    (Tipo, TipoForm, {"clase": "editorial"}, "tipo"),
     (Formato, FormatoForm, {}, "formato"),
     (Editorial, EditorialForm, {}, "editorial"),
     (GrupoEtiqueta, GrupoEtiquetaForm, {}, "grupo"),

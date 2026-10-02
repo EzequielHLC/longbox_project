@@ -1103,6 +1103,32 @@ table { border-collapse: collapse; width: 100%; }
   font: var(--texto-chico) var(--fuente-interfaz);
 }
 
+/* Banners y logo en la administración: miniaturas con su filete. */
+.miniatura-banner {
+  display: block;
+  width: 12rem;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: var(--borde) var(--gris-linea);
+}
+.miniatura-banner--grande { width: 100%; max-width: var(--ancho-lectura); }
+.miniatura-logo {
+  display: block;
+  max-width: 8rem;
+  max-height: 4rem;
+  object-fit: contain;
+  border: var(--borde) var(--gris-linea);
+}
+
+/* La miniatura de la tienda en la identidad visual: lleva `modo-publico`,
+   así que lee las mismas variables que la tienda. */
+.vista-previa-tienda {
+  min-height: 14rem;
+  border: var(--borde) var(--gris-linea);
+}
+.vista-previa-tienda .columna-publica { padding: var(--esp-4); }
+
 /* Contenido Markdown publicado (FAQ) y textos largos. */
 .contenido-markdown {
   display: flex;

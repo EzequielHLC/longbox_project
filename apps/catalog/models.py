@@ -247,17 +247,25 @@ class Formato(models.Model):
         "medidas", max_length=120, blank=True, help_text="Por ejemplo: 12,8 × 18,2 cm."
     )
 
-    # **Vacío significa universal**, y el default va en esa dirección a
-    # propósito: si el vacío quisiera decir "en ninguno", olvidarse de declarar
-    # los tipos dejaría el formato invisible e inusable. Significando "en
-    # todos", olvidarse deja el comportamiento que había antes de existir este
-    # campo — el peor caso es no mejorar, no romper.
+    # Si se ofrece en todo tipo que se clasifica por formato (B-17-004). Fue
+    # una deducción —«sin tipos declarados es universal»— hasta que `CO-146`
+    # la volvió insostenible: declarar un formato universal desde un tipo lo
+    # habría convertido en particular sin que nadie lo decidiera. Es un
+    # atributo y se fija a propósito, igual que los contratos lo declaran.
+    aplica_a_todos = models.BooleanField(
+        "aplica a todos los tipos",
+        default=False,
+        help_text="Se ofrece en todo tipo que se clasifica por formato, sin declararlos.",
+    )
+
+    # Los tipos en los que se ofrece cuando no aplica a todos. Con
+    # `aplica_a_todos` en sí la lista queda vacía: `CO-145` rompe las
+    # asociaciones al pasar a universal, porque dejan de decir algo.
     tipos = models.ManyToManyField(
         "catalog.Tipo",
         blank=True,
         related_name="formatos",
-        verbose_name="tipos en los que aplica",
-        help_text="Sin declarar ninguno, el formato se ofrece para todos los tipos.",
+        verbose_name="tipos en los que se ofrece",
     )
 
     activo = models.BooleanField("activo", default=True)
@@ -276,11 +284,10 @@ class Formato(models.Model):
     def aplica_a(self, tipo):
         """Si este formato se ofrece para ese tipo de material.
 
-        Sin tipos declarados es universal, así que aplica a todos. Es la misma
-        regla que usa el desplegable del alta, en un solo lugar para que la
-        pantalla y la validación no puedan discrepar.
+        Es la misma regla que usa el desplegable del alta, en un solo lugar
+        para que la pantalla y la validación no puedan discrepar.
         """
-        return not self.tipos.exists() or self.tipos.filter(pk=tipo.pk).exists()
+        return self.aplica_a_todos or self.tipos.filter(pk=tipo.pk).exists()
 
 
 class TablaPrecioReferencia(models.Model):
@@ -1279,6 +1286,36 @@ class BorradorProducto(models.Model):
         if self.nace_en_pre_venta and not self.fecha_llegada:
             faltantes.append("fecha_llegada")
         return faltantes
+
+    @property
+    def catalogos_dados_de_baja(self):
+        """Los reparos por una editorial, un tipo o un formato dados de baja.
+
+        `CO-140`, `CO-221` y `CO-148`: desde la baja, la entrada no se asigna a
+        productos nuevos por ninguna vía, y un borrador que la tiene registra
+        un reparo y no se puede confirmar hasta cambiarla o reactivarla.
+
+        Se calculan al mirar y no se guardan con el borrador: la baja puede
+        llegar después de generado, y la reactivación tiene que destrabarlo
+        sin que nadie lo regenere.
+        """
+        reparos = []
+        if self.editorial_id and not self.editorial.activa:
+            reparos.append(
+                f"La editorial «{self.editorial}» está dada de baja: cámbiela o reactívela "
+                "antes de confirmar."
+            )
+        if self.tipo_id and not self.tipo.activo:
+            reparos.append(
+                f"El tipo «{self.tipo}» está dado de baja: cámbielo o reactívelo antes de "
+                "confirmar."
+            )
+        if self.formato_id and not self.formato.activo:
+            reparos.append(
+                f"El formato «{self.formato}» está dado de baja: cámbielo o reactívelo antes "
+                "de confirmar."
+            )
+        return reparos
 
     @property
     def confianzas_bajas_sin_revisar(self):

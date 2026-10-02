@@ -1,0 +1,75 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PVP-MAR — Configurar Margen de Ganancia Global de Importados.
+
+El valor vigente como porcentaje (CO-167), la simulación del impacto (CO-052) y
+la confirmación (CO-053). El impacto no depende del valor nuevo sino de qué
+importados tienen el precio vinculado, así que se muestra desde el principio.
+
+Sin importados, la precondición de CO-052 no se cumple y el cambio no se ofrece
+(consulta C-19).
+{% endcomment %}
+
+{% block titulo %}Margen de ganancia de importados · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:parametros' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
+    <h1>Margen de ganancia de importados</h1>
+    <p>Precio final = precio base × (1 + margen). El precio base no cambia: es el que quedó fijado en el alta con el CRE de su lote.</p>
+  </div>
+</header>
+
+<div class="cifras">
+  <div class="cifra">
+    <span class="cifra__rotulo">Margen vigente</span>
+    <span class="cifra__valor">{{ vigente }}</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__rotulo">Productos que se recalculan</span>
+    <span class="cifra__valor">{{ simulacion.a_recalcular }}</span>
+  </div>
+  <div class="cifra">
+    <span class="cifra__rotulo">Excluidos por precio a mano</span>
+    <span class="cifra__valor">{{ simulacion.excluidos_por_precio_manual }}</span>
+  </div>
+</div>
+<p class="texto-chico secundario">
+  Última modificación de la configuración: <span class="datos">{{ configuracion.actualizado_en|date:"d/m/Y H:i" }}</span>
+</p>
+
+{% if not hay_importados %}
+  <p class="mensaje" role="status">
+    {% include "_iconos.html" with icono="info" %}
+    <span>Todavía no hay productos importados. El margen se puede cambiar cuando exista al menos uno con precio base.</span>
+  </p>
+{% elif a_confirmar %}
+  <div class="panel panel--atencion formulario--angosto">
+    <div class="seccion__titulo"><h2>Confirmar el cambio</h2></div>
+    <p><strong>{{ vigente }} → {{ nuevo }}</strong></p>
+    {% if simulacion.no_afecta_a_ninguno %}
+      <p>Todos los importados tienen precio fijado a mano: la propagación no afecta a ninguno. El margen nuevo rige para las próximas altas de importados.</p>
+    {% else %}
+      <p>Se recalcula el precio final de {{ simulacion.a_recalcular }} producto{{ simulacion.a_recalcular|pluralize }} desde su precio base. {{ simulacion.excluidos_por_precio_manual }} con precio fijado a mano no cambia{{ simulacion.excluidos_por_precio_manual|pluralize:"n" }}.</p>
+    {% endif %}
+    <form method="post" class="acciones">
+      {% csrf_token %}
+      <input type="hidden" name="margen" value="{{ form.cleaned_data.margen|stringformat:'s' }}">
+      <button type="submit" name="confirmar" value="1" class="boton-primario">Confirmar y recalcular</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  </div>
+{% else %}
+  <form method="post" novalidate class="formulario formulario--angosto">
+    {% csrf_token %}
+    {% include "_campo.html" with campo=form.margen %}
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Continuar</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

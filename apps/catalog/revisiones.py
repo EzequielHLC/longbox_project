@@ -43,12 +43,14 @@ BLOQUEANTES_VACIOS = "bloqueantes_vacios"
 CONFIANZA_SIN_REVISAR = "confianza_sin_revisar"
 YA_EXISTE = "ya_existe"
 NO_ESTA_ABIERTO = "no_esta_abierto"
+CATALOGO_DADO_DE_BAJA = "catalogo_dado_de_baja"
 
 MOTIVOS = {
     BLOQUEANTES_VACIOS: "Le faltan campos obligatorios",
     CONFIANZA_SIN_REVISAR: "Tiene campos de confianza baja sin revisar",
     YA_EXISTE: "Mientras tanto se cargó al catálogo",
     NO_ESTA_ABIERTO: "Ya estaba resuelto",
+    CATALOGO_DADO_DE_BAJA: "Tiene una editorial, un tipo o un formato dados de baja",
 }
 
 
@@ -133,6 +135,11 @@ def confirmar(borrador, *, actor, ip=None, en_lote=False):
         faltantes = actual.campos_bloqueantes_vacios
         if faltantes:
             return Confirmacion(borrador=actual, motivo=BLOQUEANTES_VACIOS)
+
+        # `CO-140`, `CO-221`, `CO-148`: lo dado de baja no se asigna a un
+        # producto nuevo por ninguna vía, tampoco por la del correo.
+        if actual.catalogos_dados_de_baja:
+            return Confirmacion(borrador=actual, motivo=CATALOGO_DADO_DE_BAJA)
 
         if en_lote and actual.confianzas_bajas_sin_revisar:
             return Confirmacion(borrador=actual, motivo=CONFIANZA_SIN_REVISAR)

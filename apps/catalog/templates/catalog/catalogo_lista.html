@@ -1,0 +1,62 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Consulta de un catálogo de clasificación: CU-CFG-EDC, TPC y FMC, y CU-CAT-GRC.
+
+Incluye los dados de baja porque son los que la modificación permite
+reactivar. Las columnas propias de cada catálogo vienen de su parcial de filas;
+el encabezado, el filtro por estado y el vacío son los mismos para todos.
+{% endcomment %}
+
+{% block titulo %}{{ catalogo.plural|capfirst }} · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:parametros' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
+    <h1>{{ catalogo.plural|capfirst }}</h1>
+    {% if descripcion %}<p>{{ descripcion }}</p>{% endif %}
+  </div>
+  <a href="{{ catalogo.url_alta }}" class="boton-primario">
+    {% include "_iconos.html" with icono="agregar" %}<span>Nuev{% if catalogo.articulo == "la" %}a{% else %}o{% endif %} {{ catalogo.singular }}</span>
+  </a>
+</header>
+
+<form method="get" class="barra-de-herramientas">
+  <div class="campo">
+    <label for="estado" class="etiqueta">Estado</label>
+    <select id="estado" name="estado">
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+  {% if estado %}
+    <a href="{{ catalogo.url_lista }}" class="boton-texto">Ver todos</a>
+  {% endif %}
+</form>
+
+{% if registros %}
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      {% include plantilla_filas %}
+    </table>
+  </div>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="parametros" %}
+    <p>
+      {% if total %}
+        Ningún registro coincide con el filtro de estado.
+      {% else %}
+        Todavía no hay {{ catalogo.plural }} registrados.
+      {% endif %}
+    </p>
+    {% if not total %}
+      <a href="{{ catalogo.url_alta }}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Dar de alta</span></a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

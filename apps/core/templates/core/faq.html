@@ -1,0 +1,20 @@
+{% extends "base_publico.html" %}
+{% comment %}
+Las preguntas frecuentes, tal como el Administrador las publicó (CO-135). El
+Markdown se renderiza sin HTML crudo (C-16). Una FAQ publicada vacía deja la
+sección en blanco (CO-136).
+{% endcomment %}
+
+{% block titulo %}Preguntas frecuentes · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Preguntas frecuentes</h1>
+  </div>
+</header>
+
+{% if faq.contenido %}
+  <article class="contenido-markdown">{{ faq_html|safe }}</article>
+{% endif %}
+{% endblock %}

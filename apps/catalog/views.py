@@ -5,29 +5,29 @@ servidor (RNF-03). El sistema visual que les corresponde es el **modo
 operativo**: ninguna pantalla de este módulo es pública.
 """
 
+import csv
+
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
-from django.http import JsonResponse
+from django.db.models import Count, Q
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.accounts.models import Usuario
-from apps.catalog import revisiones, services
+from apps.catalog import catalogos, revisiones, services, tabla_de_precios
 from apps.catalog.forms import (
     BorradorForm,
     CabeceraLoteForm,
     CabeceraLoteImportadoForm,
     ConfiguracionForm,
     EditorialForm,
-    EtiquetaForm,
     FormatoForm,
-    GrupoEtiquetaForm,
     ModeloDeLenguajeForm,
-    PrecioReferenciaForm,
     ProductoEditorialForm,
     ProductoNoEditorialForm,
     RechazoDeBorradorForm,
@@ -36,6 +36,7 @@ from apps.catalog.forms import (
     formset_de_items,
 )
 from apps.catalog.models import (
+    EDITORIAL,
     NO_EDITORIAL,
     BorradorProducto,
     Editorial,
@@ -52,7 +53,7 @@ from apps.catalog.models import (
 from apps.core import cambios, cotizaciones
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
-from apps.core.utils import obtener_ip
+from apps.core.utils import celda_csv, obtener_ip
 from apps.suppliers.models import Proveedor
 
 MENSAJE_BORRADOR_YA_RESUELTO = "Este borrador ya fue confirmado o rechazado."
@@ -350,27 +351,49 @@ class CatalogoRapidoView(CatalogoAdminMixin, View):
     """
 
     form_class = None
-    etiqueta = ""
+    catalogo = None
+
+    def datos(self, request):
+        """Lo que se le pasa al formulario. Algunos catálogos completan algo."""
+        return request.POST
 
     def post(self, request):
-        formulario = self.form_class(request.POST)
+        formulario = self.form_class(self.datos(request))
         if not formulario.is_valid():
             return JsonResponse({"errores": formulario.errors.get("nombre", [])}, status=400)
 
-        creado = formulario.save()
-        RegistroAuditoria.registrar(
-            accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
-            actor=request.user,
-            objetivo=creado,
-            ip=obtener_ip(request),
-            detalle=(f"alta rápida de {self.etiqueta} «{creado.nombre}» desde la carga de un lote"),
+        # El mismo alta que la pantalla del catálogo, con su misma auditoría
+        # (A1 de `CU-CFG-EDA`): no hay dos caminos con reglas distintas.
+        creado = catalogos.registrar(
+            formulario, catalogo=self.catalogo, actor=request.user, ip=obtener_ip(request)
         )
         return JsonResponse({"id": creado.pk, "nombre": creado.nombre})
 
 
 class EditorialRapidaView(CatalogoRapidoView):
     form_class = EditorialForm
-    etiqueta = "editorial"
+    catalogo = catalogos.EDITORIALES
+
+
+class TipoRapidaView(CatalogoRapidoView):
+    """A1 de `CU-CFG-TPA`. La carga de un lote es de material editorial, así
+    que el rubro no se pregunta: es el de la pantalla."""
+
+    form_class = TipoForm
+    catalogo = catalogos.TIPOS
+
+    def datos(self, request):
+        datos = request.POST.copy()
+        datos["clase"] = EDITORIAL
+        return datos
+
+
+class FormatoRapidaView(CatalogoRapidoView):
+    """A1 de `CU-CFG-FMA`: el formato nuevo queda declarado para el tipo
+    elegido en la carga, salvo que se indique que aplica a todos."""
+
+    form_class = FormatoForm
+    catalogo = catalogos.FORMATOS
 
 
 def _entero(valor):
@@ -416,7 +439,7 @@ class ParametrosView(CatalogoAdminMixin, View):
 
     def _guardar_parametros(self, request):
         configuracion = ConfiguracionSistema.obtener()
-        anterior = (configuracion.margen_ganancia, configuracion.stock_inicial_por_defecto)
+        anterior = (configuracion.stock_inicial_por_defecto, configuracion.intervalo_carrusel)
         formulario = ConfiguracionForm(request.POST, instance=configuracion)
 
         if not formulario.is_valid():
@@ -431,19 +454,26 @@ class ParametrosView(CatalogoAdminMixin, View):
                 actor=request.user,
                 objetivo=configuracion,
                 ip=obtener_ip(request),
-                detalle=(
-                    f"margen: {anterior[0]} → {configuracion.margen_ganancia}; "
-                    f"stock por defecto: {anterior[1]} → "
-                    f"{configuracion.stock_inicial_por_defecto}"
-                ),
+                detalle="; ".join(
+                    f"{nombre}: {antes} → {despues}"
+                    for nombre, antes, despues in (
+                        (
+                            "stock por defecto",
+                            anterior[0],
+                            configuracion.stock_inicial_por_defecto,
+                        ),
+                        (
+                            "intervalo del carrusel (s)",
+                            anterior[1],
+                            configuracion.intervalo_carrusel,
+                        ),
+                    )
+                    if antes != despues
+                )
+                or "sin cambios",
             )
 
-        messages.success(
-            request,
-            "Se actualizaron los parámetros. El margen nuevo rige para las altas de "
-            "importados que se hagan de ahora en adelante; los productos ya cargados "
-            "conservan el margen con el que se dieron de alta.",
-        )
+        messages.success(request, "Se actualizaron los parámetros.")
         return redirect("catalog:parametros")
 
     def _guardar_modelo(self, request):
@@ -495,264 +525,50 @@ class ParametrosView(CatalogoAdminMixin, View):
         return redirect("catalog:parametros")
 
     def _contexto(self, request, formulario, form_modelo=None):
-        precios_de_referencia = TablaPrecioReferencia.objects.select_related(
-            "editorial", "tipo", "formato"
-        )
-
-        editorial = _entero(request.GET.get("editorial"))
-        if editorial:
-            precios_de_referencia = precios_de_referencia.filter(editorial_id=editorial)
-
         return {
             "configuracion": ConfiguracionSistema.obtener(),
             "form": formulario or ConfiguracionForm(instance=ConfiguracionSistema.obtener()),
             "form_modelo": form_modelo
             or ModeloDeLenguajeForm(instance=ConfiguracionSistema.obtener()),
-            "tipos": Tipo.objects.all(),
-            "formatos": Formato.objects.all(),
-            "editoriales": Editorial.objects.annotate(
-                cantidad_precios=Count("precios_de_referencia")
+            "editoriales": Editorial.objects.all(),
+            # Una editorial activa sin ninguna fila no tiene de dónde sacar el
+            # precio de un alta nacional: sus productos van con precio a mano.
+            "editoriales_sin_precios": Editorial.objects.filter(
+                activa=True, precios_de_referencia__isnull=True
             ),
-            "grupos": GrupoEtiqueta.objects.annotate(cantidad_etiquetas=Count("etiquetas")),
-            "etiquetas": Etiqueta.objects.select_related("grupo").annotate(
-                cantidad_productos=Count("productos")
+            # Los catálogos tienen pantalla propia (`CU-CFG-EDC`, `TPC`, `FMC`,
+            # `CU-CAT-GRC`); acá queda el acceso con lo que hay en cada uno.
+            "catalogos": [
+                (
+                    catalogos.TIPOS,
+                    "tipo",
+                    Tipo.objects.filter(activo=True).count(),
+                    Tipo.objects.count(),
+                ),
+                (
+                    catalogos.FORMATOS,
+                    "formato",
+                    Formato.objects.filter(activo=True).count(),
+                    Formato.objects.count(),
+                ),
+                (
+                    catalogos.EDITORIALES,
+                    "editorial",
+                    Editorial.objects.filter(activa=True).count(),
+                    Editorial.objects.count(),
+                ),
+                (
+                    catalogos.GRUPOS,
+                    "etiqueta",
+                    GrupoEtiqueta.objects.filter(activo=True).count(),
+                    GrupoEtiqueta.objects.count(),
+                ),
+            ],
+            "cantidad_de_precios": TablaPrecioReferencia.objects.count(),
+            "margen_vigente": tabla_de_precios.porcentaje(
+                ConfiguracionSistema.obtener().margen_ganancia
             ),
-            "precios": precios_de_referencia,
-            "editorial_elegida": editorial or "",
         }
-
-
-class EtiquetasView(CatalogoAdminMixin, ListView):
-    """Las etiquetas del catálogo, en su propia pantalla.
-
-    Estaban como una sección más de Parámetros globales, y ahí no daban abasto
-    por una razón de escala: los otros catálogos de esa pantalla son cerrados y
-    chicos —nueve tipos, siete formatos, un puñado de editoriales— y se tocan una
-    vez por semestre. Las etiquetas son abiertas y crecen sin techo: cada
-    franquicia, cada género y cada colección nueva suma una.
-
-    Un catálogo que crece necesita buscador, y un buscador dentro de una pantalla
-    que tiene otras cinco secciones filtra la pantalla equivocada.
-
-    Se agrupa por grupo porque es como se piensan y como se eligen: nadie busca
-    "una etiqueta", busca una franquicia o un género.
-    """
-
-    template_name = "catalog/etiquetas.html"
-    context_object_name = "grupos"
-
-    def get_queryset(self):
-        """Los grupos con sus etiquetas y el uso de cada una.
-
-        `prefetch_related` con un `Prefetch` propio y no `etiquetas.all()` en la
-        plantilla: sin él son tantas consultas como grupos, más una por etiqueta
-        para contarle los productos.
-        """
-        etiquetas = Etiqueta.objects.annotate(cantidad_productos=Count("productos")).order_by(
-            "nombre"
-        )
-        if self.busqueda:
-            etiquetas = etiquetas.filter(nombre__icontains=self.busqueda)
-
-        grupos = GrupoEtiqueta.objects.prefetch_related(
-            Prefetch("etiquetas", queryset=etiquetas, to_attr="etiquetas_visibles")
-        )
-        if self.busqueda:
-            # Un grupo sin coincidencias no se dibuja: con el buscador escrito,
-            # una lista de encabezados vacíos es ruido que hay que saltear.
-            grupos = grupos.filter(etiquetas__nombre__icontains=self.busqueda).distinct()
-        return grupos
-
-    @property
-    def busqueda(self):
-        return self.request.GET.get("q", "").strip()
-
-    def get_template_names(self):
-        if self.request.GET.get("parcial"):
-            return ["catalog/_tabla_etiquetas.html"]
-        return [self.template_name]
-
-    def get_context_data(self, **kwargs):
-        contexto = super().get_context_data(**kwargs)
-        contexto["busqueda"] = self.busqueda
-        contexto["total"] = Etiqueta.objects.count()
-        contexto["sin_grupos"] = not GrupoEtiqueta.objects.exists()
-        return contexto
-
-
-class ParametroFormularioMixin(CatalogoAdminMixin):
-    """Alta y edición de cualquiera de los catálogos de parámetros.
-
-    Los cinco formularios se comportan igual —guardar, auditar y volver— así
-    que comparten la vista y la plantilla. Lo único que cambia es el modelo, el
-    formulario y el título, que es exactamente lo que declara cada subclase.
-    """
-
-    template_name = "catalog/parametro_formulario.html"
-    success_url = reverse_lazy("catalog:parametros")
-    titulo = ""
-    descripcion = ""
-
-    def get_context_data(self, **kwargs):
-        contexto = super().get_context_data(**kwargs)
-        contexto["titulo"] = self.titulo
-        contexto["descripcion"] = self.descripcion
-        # Volver adonde se vino: los de etiqueta salen de su pantalla y el resto
-        # de parámetros. Sale del propio destino de guardado, así que no pueden
-        # discrepar.
-        contexto["volver_a"] = str(self.success_url)
-        return contexto
-
-    def form_valid(self, form):
-        with transaction.atomic():
-            respuesta = super().form_valid(form)
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
-                actor=self.request.user,
-                objetivo=self.object,
-                ip=obtener_ip(self.request),
-                detalle=f"{self.object._meta.verbose_name}: «{self.object}»",
-            )
-        messages.success(self.request, f"Se guardó «{self.object}».")
-        return respuesta
-
-
-class EditorialCrearView(ParametroFormularioMixin, CreateView):
-    model = Editorial
-    form_class = EditorialForm
-    titulo = "Nueva editorial"
-    descripcion = "Quién publica el material. Cada una tiene su propia tabla de precios."
-
-
-class EditorialEditarView(ParametroFormularioMixin, UpdateView):
-    model = Editorial
-    form_class = EditorialForm
-    titulo = "Editar editorial"
-    descripcion = (
-        "Desactivarla la saca de los desplegables de alta, pero conserva sus productos "
-        "y su historial."
-    )
-
-
-class GrupoEtiquetaCrearView(ParametroFormularioMixin, CreateView):
-    model = GrupoEtiqueta
-    form_class = GrupoEtiquetaForm
-    titulo = "Nuevo grupo de etiquetas"
-    descripcion = (
-        "El eje en el que describe una etiqueta. Cada grupo es un filtro aparte en la "
-        "tienda: sin ellos, franquicias y géneros quedarían mezclados en una sola caja."
-    )
-    success_url = reverse_lazy("catalog:etiquetas")
-
-
-class GrupoEtiquetaEditarView(ParametroFormularioMixin, UpdateView):
-    model = GrupoEtiqueta
-    form_class = GrupoEtiquetaForm
-    titulo = "Editar grupo de etiquetas"
-    descripcion = "Desactivarlo saca del alta a todas sus etiquetas, sin perder ninguna."
-    success_url = reverse_lazy("catalog:etiquetas")
-
-
-class EtiquetaCrearView(ParametroFormularioMixin, CreateView):
-    model = Etiqueta
-    form_class = EtiquetaForm
-    titulo = "Nueva etiqueta"
-    descripcion = (
-        "Describe el producto pero no lo identifica ni fija su precio: si algo decide "
-        "algo, es un campo, no una etiqueta."
-    )
-    success_url = reverse_lazy("catalog:etiquetas")
-
-
-class EtiquetaEditarView(ParametroFormularioMixin, UpdateView):
-    model = Etiqueta
-    form_class = EtiquetaForm
-    titulo = "Editar etiqueta"
-    descripcion = (
-        "Desactivarla la saca de los desplegables de alta, pero conserva sus productos "
-        "y su historial."
-    )
-    success_url = reverse_lazy("catalog:etiquetas")
-
-
-class TipoCrearView(ParametroFormularioMixin, CreateView):
-    model = Tipo
-    form_class = TipoForm
-    titulo = "Nuevo tipo de material"
-    descripcion = "Las dos banderas deciden qué campos muestra el alta de un producto de este tipo."
-
-
-class TipoEditarView(ParametroFormularioMixin, UpdateView):
-    model = Tipo
-    form_class = TipoForm
-    titulo = "Editar tipo de material"
-    descripcion = (
-        "Quitarle el formato lo saca de la tabla de precios: sus productos pasan a "
-        "cargarse con precio a mano."
-    )
-
-
-class FormatoCrearView(ParametroFormularioMixin, CreateView):
-    model = Formato
-    form_class = FormatoForm
-    titulo = "Nuevo formato"
-    descripcion = "El tamaño del tomo. El nombre es compartido; el precio cambia por editorial."
-
-
-class FormatoEditarView(ParametroFormularioMixin, UpdateView):
-    model = Formato
-    form_class = FormatoForm
-    titulo = "Editar formato"
-
-
-class PrecioCrearView(ParametroFormularioMixin, CreateView):
-    model = TablaPrecioReferencia
-    form_class = PrecioReferenciaForm
-    titulo = "Nuevo precio de referencia"
-    descripcion = (
-        "El precio de venta de una combinación de editorial, tipo y formato. Es el que "
-        "se pre-completa al cargar un lote nacional."
-    )
-
-
-class PrecioEditarView(ParametroFormularioMixin, UpdateView):
-    model = TablaPrecioReferencia
-    form_class = PrecioReferenciaForm
-    titulo = "Editar precio de referencia"
-    descripcion = (
-        "Cambiarlo acá no toca los productos ya cargados: la propagación automática "
-        "es parte del módulo de Precios, todavía no implementado."
-    )
-
-
-class PrecioEliminarView(CatalogoAdminMixin, DetailView):
-    """Baja de una fila de la tabla de precios.
-
-    Es de las pocas eliminaciones reales del sistema, y se justifica porque una
-    fila de precios no tiene historial propio: los productos ya cargados
-    guardan su precio, y los que la referencian lo hacen con `SET_NULL`, así
-    que ninguno se rompe ni pierde su valor al desaparecer la fila.
-    """
-
-    model = TablaPrecioReferencia
-    template_name = "catalog/precio_eliminar.html"
-    context_object_name = "precio"
-
-    def post(self, request, *args, **kwargs):
-        precio = self.get_object()
-        descripcion = str(precio)
-
-        with transaction.atomic():
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
-                actor=request.user,
-                ip=obtener_ip(request),
-                detalle=f"baja del precio de referencia «{descripcion}»",
-            )
-            precio.delete()
-
-        messages.success(request, f"Se eliminó el precio de referencia «{descripcion}».")
-        return redirect("catalog:parametros")
 
 
 class LoteResumenView(CatalogoAdminMixin, DetailView):
@@ -895,6 +711,10 @@ class ProductoListaView(InventarioMixin, ListView):
         if tipo:
             productos = productos.filter(tipo_id=tipo)
 
+        editorial = _entero(self.request.GET.get("editorial"))
+        if editorial:
+            productos = productos.filter(productoeditorial__editorial_id=editorial)
+
         # Las etiquetas no identifican un producto, pero son la forma natural de
         # recortar el catálogo: "todo lo de Marvel" cruza editoriales y tipos, y
         # ninguno de los otros filtros junta eso.
@@ -922,6 +742,10 @@ class ProductoListaView(InventarioMixin, ListView):
             origen if origen in dict(ProductoEditorial.ORIGEN_CHOICES) else ""
         )
         contexto["tipo_elegido"] = _entero(self.request.GET.get("tipo")) or ""
+        contexto["editorial_elegida"] = _entero(self.request.GET.get("editorial")) or ""
+        contexto["editoriales"] = Editorial.objects.all()
+        # A1: la exportación lleva los mismos filtros que la pantalla.
+        contexto["filtros_aplicados"] = self.request.GET.urlencode()
         contexto["etiqueta_elegida"] = _entero(self.request.GET.get("etiqueta")) or ""
         contexto["estados"] = Producto.ESTADO_CHOICES
         contexto["origenes"] = ProductoEditorial.ORIGEN_CHOICES
@@ -948,6 +772,82 @@ class ProductoListaView(InventarioMixin, ListView):
             pre_venta=Count("pk", filter=Q(estado=Producto.PRE_VENTA)),
             sin_stock=Count("pk", filter=Q(estado=Producto.ACTIVO, stock=0)),
         )
+
+
+class ProductoExportarView(CatalogoAdminMixin, ProductoListaView):
+    """CU-CAT-INV A1 — `CO-037 exportarInventario`.
+
+    Hereda la consulta del listado y no la reescribe: el archivo tiene que
+    traer exactamente las filas que la pantalla muestra con esos filtros, y dos
+    consultas escritas por separado terminan filtrando distinto.
+
+    Exclusiva del Administrador, validado en el servidor: el mixin del catálogo
+    va primero y le gana al del inventario, que también deja entrar al Cajero.
+
+    CSV porque es el formato de la otra exportación del sistema (`CO-129`). Con
+    BOM, para que la planilla de cálculo lea bien los acentos.
+    """
+
+    COLUMNAS = (  # noqa: RUF012
+        "Código",
+        "Título",
+        "Volumen",
+        "Tipo",
+        "Editorial",
+        "Formato",
+        "Origen",
+        "Estado",
+        "Stock",
+        "Precio",
+    )
+
+    def get(self, request, *args, **kwargs):
+        productos = self.get_queryset()
+
+        respuesta = HttpResponse(content_type="text/csv; charset=utf-8")
+        respuesta["Content-Disposition"] = (
+            f'attachment; filename="inventario-{timezone.localdate():%Y-%m-%d}.csv"'
+        )
+        respuesta.write("\ufeff")
+        escritor = csv.writer(respuesta)
+        escritor.writerow(self.COLUMNAS)
+        cantidad = 0
+        for producto in productos.iterator(chunk_size=500):
+            editorial = getattr(producto, "productoeditorial", None)
+            escritor.writerow(
+                celda_csv(valor)
+                for valor in [
+                    producto.codigo,
+                    producto.titulo,
+                    editorial.volumen if editorial and editorial.volumen else "",
+                    producto.tipo.nombre,
+                    editorial.editorial.nombre if editorial else "",
+                    editorial.formato.nombre if editorial and editorial.formato else "",
+                    editorial.get_origen_display() if editorial else "",
+                    producto.get_estado_display(),
+                    producto.stock,
+                    producto.precio,
+                ]
+            )
+            cantidad += 1
+
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.EXPORTACION_INVENTARIO,
+            actor=request.user,
+            ip=obtener_ip(request),
+            detalle=f"{cantidad} productos; filtros: {self._filtros_legibles()}",
+        )
+        return respuesta
+
+    def _filtros_legibles(self):
+        """Los filtros tal como se aplicaron, para el registro de auditoría."""
+        parametros = {
+            clave: valor
+            for clave, valor in self.request.GET.items()
+            if clave in ("q", "estado", "stock", "origen", "tipo", "editorial", "etiqueta", "orden")
+        }
+        parametros.setdefault("estado", self.ESTADO_POR_DEFECTO)
+        return ", ".join(f"{clave}={valor or 'todos'}" for clave, valor in parametros.items())
 
 
 class ProductoDetalleView(InventarioMixin, DetailView):
@@ -996,6 +896,7 @@ class ProductoDetalleView(InventarioMixin, DetailView):
         contexto["es_administrador"] = self.request.user.rol == Usuario.ADMINISTRADOR
         if contexto["es_administrador"]:
             contexto["historial"] = self._historial()
+            contexto["restauracion"] = tabla_de_precios.restauracion_de(self.object)
         return contexto
 
     def _historial(self):
@@ -1337,6 +1238,8 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
         contexto = super().get_context_data(**kwargs)
         contexto["duplicado"] = getattr(contexto["form"], "duplicado", None)
         contexto["es_editorial"] = self.object.clase == Producto.EDITORIAL
+        if contexto["es_editorial"]:
+            contexto["restauracion"] = tabla_de_precios.restauracion_de(self.object)
         return contexto
 
     def form_valid(self, form):

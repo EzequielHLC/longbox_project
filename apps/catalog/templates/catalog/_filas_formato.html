@@ -1,0 +1,24 @@
+{% comment %}
+CO-213: medidas, si aplica a todos los tipos, los tipos en los que se ofrece,
+estado y productos vinculados.
+{% endcomment %}
+<thead>
+  <tr><th>Nombre</th><th>Medidas</th><th>Se ofrece en</th><th class="numero">Productos</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+</thead>
+<tbody>
+  {% for formato in registros %}
+    <tr>
+      <td class="celda-principal">{{ formato.nombre }}</td>
+      <td class="datos secundario">{{ formato.descripcion|default:"—" }}</td>
+      <td>
+        {% if formato.aplica_a_todos %}
+          Todos los tipos
+        {% else %}
+          {% for tipo in formato.tipos.all %}{{ tipo.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="secundario">Ningún tipo</span>{% endfor %}
+        {% endif %}
+      </td>
+      <td class="numero">{{ formato.cantidad_productos }}</td>
+      {% include "catalog/_estado_y_acciones.html" with registro=formato activo=formato.activo %}
+    </tr>
+  {% endfor %}
+</tbody>

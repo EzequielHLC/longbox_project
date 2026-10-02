@@ -1,0 +1,97 @@
+{% extends "base_operativo.html" %}
+{% load catalogos %}
+{% comment %}
+CU-CAT-ETC — Consultar Etiquetas de un grupo (CO-165).
+
+Las etiquetas son el único catálogo abierto: crecen sin techo y se operan
+buscando, no recorriendo. Por eso se listan por grupo, paginadas, con búsqueda
+por texto y filtro por estado. Se dice el estado del grupo arriba: un grupo dado
+de baja no ofrece ninguna de sus etiquetas, aunque cada una conserve el suyo.
+{% endcomment %}
+
+{% block titulo %}Etiquetas de {{ grupo.nombre }} · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:etiquetas' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Grupos de etiquetas" atras=1 %}</span>
+    <h1>{{ grupo.nombre }}</h1>
+    <p>
+      Grupo <span class="marca-estado{% if not grupo.activo %} marca-estado--apagado{% endif %}">{% if grupo.activo %}Activo{% else %}Dado de baja{% endif %}</span>
+      · {{ total }} etiqueta{{ total|pluralize }}
+    </p>
+  </div>
+  {% if grupo.activo %}
+    <a href="{% url 'catalog:etiqueta_crear' %}?grupo={{ grupo.pk }}" class="boton-primario">
+      {% include "_iconos.html" with icono="agregar" %}<span>Nueva etiqueta</span>
+    </a>
+  {% endif %}
+</header>
+
+{% if not grupo.activo %}
+  <p class="mensaje" role="status">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span><span class="mensaje__prefijo">Atención:</span> el grupo está dado de baja: ninguna de
+    sus etiquetas se ofrece en los formularios. Para volver a usarlas, reactive primero el grupo.</span>
+  </p>
+{% endif %}
+
+<form method="get" class="barra-de-herramientas">
+  <div class="campo campo--principal">
+    <label for="q" class="etiqueta">Buscar</label>
+    <input type="text" id="q" name="q" value="{{ busqueda }}" placeholder="Nombre de la etiqueta" autocomplete="off">
+  </div>
+  <div class="campo">
+    <label for="estado" class="etiqueta">Estado</label>
+    <select id="estado" name="estado">
+      {% for valor, etiqueta in estados %}
+        <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="buscar" %}<span>Buscar</span></button>
+  {% if busqueda or estado %}
+    <a href="{% url 'catalog:grupo_etiquetas' grupo.pk %}" class="boton-texto">Limpiar filtros</a>
+  {% endif %}
+</form>
+
+{% if registros %}
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Etiqueta</th><th class="numero">Productos</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for etiqueta in registros %}
+          <tr>
+            <td class="celda-principal">{{ etiqueta.nombre }}</td>
+            <td class="numero">{{ etiqueta.cantidad_productos }}</td>
+            {% include "catalog/_estado_y_acciones.html" with registro=etiqueta activo=etiqueta.activa %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <div class="paginacion">
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      <span class="fila-5">
+        {% if page_obj.has_previous %}
+          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado }}&amp;page={{ page_obj.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado }}&amp;page={{ page_obj.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+        {% endif %}
+      </span>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="etiqueta" %}
+    <p>{% if total %}Ninguna etiqueta coincide con la búsqueda.{% else %}Este grupo todavía no tiene etiquetas.{% endif %}</p>
+  </div>
+{% endif %}
+{% endblock %}

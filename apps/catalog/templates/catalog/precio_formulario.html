@@ -1,0 +1,49 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PVP-TBA — Dar de Alta Combinación de Precio de Referencia (CO-049).
+
+Sólo se ofrece lo que puede formar una combinación posible. Si la combinación ya
+existe (E1), se enlaza la fila, desde donde se cambia su precio.
+{% endcomment %}
+
+{% block titulo %}Nueva combinación de precio · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:precio_lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Tabla de precios" atras=1 %}</span>
+    <h1>Nueva combinación de precio</h1>
+    <p>El alta no cambia el precio de ningún producto: es una fila nueva. Un producto nacional de esta combinación sin vínculo se vincula desde su ficha.</p>
+  </div>
+</header>
+
+{% if form.colision %}
+  <div class="mensaje" role="alert">
+    {% include "_iconos.html" with icono="error" %}
+    <span><span class="mensaje__prefijo">Error:</span>
+    la combinación ya está en la tabla a ${{ form.colision.pvp }}.
+    <a href="{% url 'catalog:precio_editar' form.colision.pk %}">Modificar su precio</a>.</span>
+  </div>
+{% elif form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  {% include "_campo.html" with campo=form.editorial %}
+  {% include "_campo.html" with campo=form.tipo ayuda="Sólo los del rubro editorial que se clasifican por formato." %}
+  {% include "_campo.html" with campo=form.formato ayuda="Tiene que estar declarado para el tipo o aplicar a todos." %}
+  {% include "_campo.html" with campo=form.pvp %}
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </div>
+</form>
+{% endblock %}

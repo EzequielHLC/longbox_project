@@ -77,6 +77,22 @@ class FormatoFactory(factory.django.DjangoModelFactory):
         django_get_or_create = BUSCAR_POR_NOMBRE
 
     nombre = factory.Sequence(lambda n: f"Formato {n}")
+    # Universal, como lo eran todos los formatos de prueba antes de que el
+    # alcance fuera un atributo (B-17-004). Para acotarlo: `formato_solo_para`.
+    aplica_a_todos = True
+
+
+def formato_solo_para(nombre, *tipos):
+    """Un formato que se ofrece sólo en los tipos dados.
+
+    Ajusta el existente si la fábrica lo encuentra por nombre —los formatos
+    sembrados por las migraciones nacen universales— en vez de crear otro.
+    """
+    formato = FormatoFactory(nombre=nombre)
+    formato.aplica_a_todos = False
+    formato.save(update_fields=["aplica_a_todos"])
+    formato.tipos.set(tipos)
+    return formato
 
 
 class PrecioReferenciaFactory(factory.django.DjangoModelFactory):

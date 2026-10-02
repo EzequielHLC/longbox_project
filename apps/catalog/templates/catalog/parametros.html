@@ -15,22 +15,46 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Parámetros globales</h1>
-    <p>Clasificación del catálogo, tabla de precios y valores por defecto del sistema.</p>
+    <p>Precios, catálogos de clasificación, modelo de lenguaje y valores por defecto del sistema.</p>
   </div>
 </header>
 
 <section class="seccion" aria-labelledby="titulo-calculo">
-  <div class="seccion__titulo"><h2 id="titulo-calculo">{% include "_iconos.html" with icono="precios" %}Cálculo de precios</h2></div>
+  <div class="seccion__titulo"><h2 id="titulo-calculo">{% include "_iconos.html" with icono="precios" %}Precios</h2></div>
   <p class="seccion__bajada">
-    El margen se aplica sobre el precio base de los productos importados. Cambiarlo rige
-    para las altas siguientes: cada producto conserva el margen con el que se cargó.
+    Cambiar un precio de referencia o el margen propaga el valor a los productos que lo
+    usan. Por eso cada uno tiene su pantalla, que informa el alcance antes de confirmar.
   </p>
+
+  <ul class="lista-renglones">
+    <li>
+      <a href="{% url 'catalog:margen' %}" class="fila-2">{% include "_iconos.html" with icono="importado" %}<span>Margen de ganancia de importados</span></a>
+      <span class="datos secundario">{{ margen_vigente }}</span>
+    </li>
+    <li>
+      <a href="{% url 'catalog:precio_lista' %}" class="fila-2">{% include "_iconos.html" with icono="precios" %}<span>Tabla de precios de referencia</span></a>
+      <span class="datos secundario">{{ cantidad_de_precios }} combinacion{{ cantidad_de_precios|pluralize:"es" }}</span>
+    </li>
+  </ul>
+
+  {% if editoriales_sin_precios %}
+    <p class="mensaje" role="status">
+      {% include "_iconos.html" with icono="atencion" %}
+      <span><span class="mensaje__prefijo">Atención:</span>
+      {% for editorial in editoriales_sin_precios %}{{ editorial.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      no tiene{{ editoriales_sin_precios|length|pluralize:"n" }} precios cargados: sus productos van con precio a mano.</span>
+    </p>
+  {% endif %}
+</section>
+
+<section class="seccion" aria-labelledby="titulo-borradores">
+  <div class="seccion__titulo"><h2 id="titulo-borradores">{% include "_iconos.html" with icono="parametros" %}Valores operativos</h2></div>
 
   <form method="post" novalidate class="formulario">
     {% csrf_token %}
     <div class="rejilla-2">
-      {% include "_campo.html" with campo=form.margen_ganancia %}
       {% include "_campo.html" with campo=form.stock_inicial_por_defecto %}
+      {% include "_campo.html" with campo=form.intervalo_carrusel %}
     </div>
 
     <div class="acciones">
@@ -86,189 +110,28 @@ credencial. Es configurable desde acá porque el sistema se demuestra desplegado
   </form>
 </section>
 
-<section class="seccion" aria-labelledby="titulo-tipos">
-  <div class="seccion__titulo">
-    <h2 id="titulo-tipos">{% include "_iconos.html" with icono="tipo" %}Tipos de material</h2>
-    <a href="{% url 'catalog:tipo_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo tipo</span></a>
-  </div>
-  <p class="seccion__bajada">
-    Qué clase de material es. Los tipos marcados por formato piden además el tamaño del
-    tomo al darlo de alta.
-  </p>
-
-  <div class="tabla-desplazable">
-    <table class="tabla">
-      <thead>
-        <tr><th>Nombre</th><th>Se clasifica por formato</th><th>Estado</th><th class="derecha">Acciones</th></tr>
-      </thead>
-      <tbody>
-        {% for tipo in tipos %}
-          <tr>
-            <td class="celda-principal">{{ tipo.nombre }}</td>
-            <td>{% if tipo.usa_formato %}Sí{% else %}<span class="secundario">No · precio a mano</span>{% endif %}</td>
-            <td><span class="marca-estado{% if not tipo.activo %} marca-estado--apagado{% endif %}">{% if tipo.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
-            <td class="acciones-de-fila"><a href="{% url 'catalog:tipo_editar' tipo.pk %}" class="boton-menor">Editar</a></td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="4" class="tabla-vacia">No hay tipos cargados. Sin al menos uno no se puede dar de alta ningún producto.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="seccion" aria-labelledby="titulo-formatos">
-  <div class="seccion__titulo">
-    <h2 id="titulo-formatos">{% include "_iconos.html" with icono="formato" %}Formatos</h2>
-    <a href="{% url 'catalog:formato_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo formato</span></a>
-  </div>
-  <p class="seccion__bajada">
-    El tamaño del tomo, que es lo que fija su precio. Sin tipos declarados, el formato se
-    ofrece para todos.
-  </p>
-
-  <div class="tabla-desplazable">
-    <table class="tabla">
-      <thead>
-        <tr><th>Nombre</th><th>Medidas</th><th>Se ofrece en</th><th>Estado</th><th class="derecha">Acciones</th></tr>
-      </thead>
-      <tbody>
-        {% for formato in formatos %}
-          <tr>
-            <td class="celda-principal">{{ formato.nombre }}</td>
-            <td class="datos secundario">{{ formato.descripcion|default:"—" }}</td>
-            {% comment %}
-            Sin tipos declarados el formato es universal, y decirlo con todas las
-            letras evita que se lea como «todavía no lo configuraron».
-            {% endcomment %}
-            <td>{% if formato.tipos.all %}{{ formato.tipos.all|join:", " }}{% else %}<span class="secundario">Todos</span>{% endif %}</td>
-            <td><span class="marca-estado{% if not formato.activo %} marca-estado--apagado{% endif %}">{% if formato.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
-            <td class="acciones-de-fila"><a href="{% url 'catalog:formato_editar' formato.pk %}" class="boton-menor">Editar</a></td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="tabla-vacia">No hay formatos cargados.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="seccion" aria-labelledby="titulo-editoriales">
-  <div class="seccion__titulo">
-    <h2 id="titulo-editoriales">{% include "_iconos.html" with icono="editorial" %}Editoriales</h2>
-    <a href="{% url 'catalog:editorial_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nueva editorial</span></a>
-  </div>
-  <p class="seccion__bajada">Quién publica el material editorial. También se agregan desde la carga de un lote.</p>
-
-  <div class="tabla-desplazable">
-    <table class="tabla">
-      <thead>
-        <tr><th>Nombre</th><th>Precios cargados</th><th>Estado</th><th class="derecha">Acciones</th></tr>
-      </thead>
-      <tbody>
-        {% for editorial in editoriales %}
-          <tr>
-            <td class="celda-principal">{{ editorial.nombre }}</td>
-            <td class="datos">
-              {{ editorial.cantidad_precios }}
-              {% if not editorial.cantidad_precios %}<span class="estado estado--atencion">· sus productos van con precio a mano</span>{% endif %}
-            </td>
-            <td><span class="marca-estado{% if not editorial.activa %} marca-estado--apagado{% endif %}">{% if editorial.activa %}Activa{% else %}Inactiva{% endif %}</span></td>
-            <td class="acciones-de-fila"><a href="{% url 'catalog:editorial_editar' editorial.pk %}" class="boton-menor">Editar</a></td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="4" class="tabla-vacia">No hay editoriales cargadas.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
 {% comment %}
-Las etiquetas tienen su propia pantalla: son el único catálogo abierto, y un
-catálogo que crece necesita buscador. Acá queda el acceso.
+Los catálogos de clasificación tienen pantalla propia, con su listado, su
+filtro por estado y la baja con informe (CU-CFG-EDC, TPC, FMC y CU-CAT-GRC). No
+son parámetros (CO-130): entran en la identidad del producto y en sus precios.
+Acá queda el acceso, con lo que hay en cada uno.
 {% endcomment %}
-<section class="seccion" aria-labelledby="titulo-etiquetas">
+<section class="seccion" aria-labelledby="titulo-catalogos">
   <div class="seccion__titulo">
-    <h2 id="titulo-etiquetas">{% include "_iconos.html" with icono="etiqueta" %}Etiquetas</h2>
-    <a href="{% url 'catalog:etiquetas' %}" class="boton-seccion"><span>Administrar etiquetas</span>{% include "_iconos.html" with icono="siguiente" %}</a>
+    <h2 id="titulo-catalogos">{% include "_iconos.html" with icono="catalogo" %}Catálogos de clasificación</h2>
   </div>
   <p class="seccion__bajada">
-    Sirven para buscar y agrupar productos: franquicia, genero, coleccion.
-    Un producto puede tener varias y ninguna es obligatoria.
+    Qué es cada producto, qué tamaño tiene, quién lo publica y cómo se lo encuentra.
   </p>
 
-  {% if grupos %}
-    <div class="fila-2">
-      {% for grupo in grupos %}
-        <a href="{% url 'catalog:etiquetas' %}" class="ficha{% if not grupo.activo %} secundario{% endif %}">
-          {{ grupo.nombre }} <span class="datos secundario">· {{ grupo.cantidad_etiquetas }}</span>
-          {% if not grupo.activo %}<span>· inactivo</span>{% endif %}
-        </a>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="secundario">Todavia no hay grupos de etiquetas cargados.</p>
-  {% endif %}
+  <ul class="lista-renglones">
+    {% for catalogo, icono, activos, total in catalogos %}
+      <li>
+        <a href="{{ catalogo.url_lista }}" class="fila-2">{% include "_iconos.html" with icono=icono %}<span>{{ catalogo.plural|capfirst }}</span></a>
+        <span class="datos secundario">{{ activos }} activo{{ activos|pluralize }} de {{ total }}</span>
+      </li>
+    {% endfor %}
+  </ul>
 </section>
 
-<section class="seccion" aria-labelledby="titulo-precios">
-  <div class="seccion__titulo">
-    <h2 id="titulo-precios">{% include "_iconos.html" with icono="precios" %}Tabla de precios de referencia</h2>
-    <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo precio</span></a>
-  </div>
-  <p class="seccion__bajada">
-    El precio de venta por editorial, tipo y formato. Es el que se pre-completa al cargar
-    un lote nacional.
-  </p>
-
-  <form method="get" class="barra-de-herramientas">
-    <div class="campo">
-      <label for="editorial" class="etiqueta">Editorial</label>
-      <select id="editorial" name="editorial">
-        <option value="">Todas</option>
-        {% for editorial in editoriales %}
-          <option value="{{ editorial.pk }}" {% if editorial_elegida == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
-    {% if editorial_elegida %}
-      <a href="{% url 'catalog:parametros' %}" class="boton-texto">Ver todas</a>
-    {% endif %}
-  </form>
-
-  <div class="tabla-desplazable">
-    <table class="tabla">
-      <thead>
-        <tr><th>Editorial</th><th>Tipo</th><th>Formato</th><th class="numero">Precio</th><th>Actualizado</th><th class="derecha">Acciones</th></tr>
-      </thead>
-      <tbody>
-        {% for precio in precios %}
-          <tr>
-            <td>{{ precio.editorial }}</td>
-            <td>{{ precio.tipo }}</td>
-            <td>{{ precio.formato }}</td>
-            <td class="numero">${{ precio.pvp }}</td>
-            <td class="datos sin-cortar secundario">{{ precio.actualizado_en|date:"d/m/Y H:i" }}</td>
-            <td class="acciones-de-fila">
-              <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">Editar</a>
-              <a href="{% url 'catalog:precio_eliminar' precio.pk %}" class="boton-menor boton-menor--critico">Eliminar</a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="6" class="tabla-vacia">
-              {% if editorial_elegida %}
-                Esta editorial no tiene precios cargados: sus productos se dan de alta con precio a mano.
-              {% else %}
-                No hay precios cargados. Sin ellos, cada alta nacional pide el precio a mano.
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
 {% endblock %}

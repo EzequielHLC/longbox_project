@@ -1,0 +1,27 @@
+{% comment %}
+CO-212: rubro, si se clasifica por formato, formatos declarados, estado y
+productos vinculados. Un formato que aplica a todos no figura en la lista de
+ningún tipo: se dice aparte (comentario de CU-CFG-TPC).
+{% endcomment %}
+<thead>
+  <tr><th>Nombre</th><th>Rubro</th><th>Por formato</th><th>Formatos declarados</th><th class="numero">Productos</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+</thead>
+<tbody>
+  {% for tipo in registros %}
+    <tr>
+      <td class="celda-principal">{{ tipo.nombre }}</td>
+      <td>{{ tipo.get_clase_display }}</td>
+      <td>{% if tipo.usa_formato %}Sí{% else %}<span class="secundario">No · precio en el alta</span>{% endif %}</td>
+      <td>
+        {% if tipo.usa_formato %}
+          {% for formato in tipo.formatos.all %}{% if not formato.aplica_a_todos %}{{ formato.nombre }}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}<span class="secundario">Ninguno</span>{% endfor %}
+          <span class="secundario texto-chico">· más los que aplican a todos</span>
+        {% else %}
+          <span class="secundario">—</span>
+        {% endif %}
+      </td>
+      <td class="numero">{{ tipo.cantidad_productos }}</td>
+      {% include "catalog/_estado_y_acciones.html" with registro=tipo activo=tipo.activo %}
+    </tr>
+  {% endfor %}
+</tbody>

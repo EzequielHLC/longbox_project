@@ -153,6 +153,32 @@ def test_el_selector_de_etiquetas_dibuja_el_select_real(client_admin):
 
 
 @pytest.mark.django_db
+def test_el_selector_de_etiquetas_trae_las_etiquetas_como_opciones(client_admin):
+    """El `<select>` salía vacío en el alta no editorial y en las dos ediciones:
+    el formulario le cambiaba el widget **después** de asignarle el queryset, y
+    el widget nuevo quedaba sin opciones. El selector decía «Ya están todas
+    elegidas» y no había forma de asignar ninguna etiqueta."""
+    from apps.catalog.tests.factories import (
+        EtiquetaFactory,
+        ProductoFactory,
+        ProductoNoEditorialFactory,
+    )
+
+    etiqueta = EtiquetaFactory(nombre="Marvel")
+    pantallas = [
+        reverse("catalog:producto_no_editorial_alta"),
+        reverse("catalog:producto_editar", args=[ProductoFactory().pk]),
+        reverse("catalog:producto_editar", args=[ProductoNoEditorialFactory().pk]),
+    ]
+
+    for url in pantallas:
+        contenido = client_admin.get(url).content.decode()
+        select = re.search(r'<select name="etiquetas"[^>]*>(.*?)</select>', contenido, re.S)
+        assert select, url
+        assert f'value="{etiqueta.pk}"' in select.group(1), url
+
+
+@pytest.mark.django_db
 def test_los_desplegables_son_los_nativos(client_admin):
     """El desplegable propio se retiró con el sistema visual anterior: sus
     únicas razones eran la tipografía y la paleta. El formulario dibuja el
@@ -183,9 +209,13 @@ CON_FILAS = {
     "_tabla_usuarios.html",
     "_tabla_proveedores.html",
     "_tabla_borradores.html",
-    "parametros.html",
+    "precio_lista.html",
     "lote_formulario.html",
     "lote_resumen.html",
+    "_estado_y_acciones.html",
+    "etiqueta_lista.html",
+    "auditoria_lista.html",
+    "banner_lista.html",
 }
 
 

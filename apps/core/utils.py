@@ -9,3 +9,16 @@ def obtener_ip(request):
     if request is None:
         return None
     return request.META.get("REMOTE_ADDR")
+
+
+def celda_csv(valor):
+    """Una celda de CSV que la planilla no pueda interpretar como fórmula.
+
+    Un texto que empieza con `=`, `+`, `-` o `@` se ejecutaría al abrir el
+    archivo (inyección de fórmulas). Se antepone un apóstrofo, que la planilla
+    muestra como texto (B-16-003). Lo usan las dos exportaciones del sistema.
+    """
+    texto = "" if valor is None else str(valor)
+    if texto[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + texto
+    return texto

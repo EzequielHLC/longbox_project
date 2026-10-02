@@ -31,7 +31,9 @@ TOKENS_DE_COLOR = {
 # Las plantillas del modo público pueden leer las variables de la tienda; las
 # del operativo, nunca (`TOKENS_VISUALES.md`, «El modo operativo no lee nunca
 # estas variables»).
-PLANTILLAS_CON_VARIABLES_DE_TIENDA = {"base_publico.html", "tienda.css"}
+# La vista previa de la identidad visual es una miniatura de la tienda con
+# `modo-publico`: su guion le cambia las variables mientras se escriben.
+PLANTILLAS_CON_VARIABLES_DE_TIENDA = {"base_publico.html", "tienda.css", "identidad_visual.html"}
 
 NOMBRES_DE_COLOR = (
     "black|white|red|green|blue|yellow|orange|purple|pink|brown|gray|grey|cyan|magenta|"

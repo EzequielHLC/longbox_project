@@ -53,6 +53,10 @@ esconderse con CSS.
     {% if es_administrador %}
       <ul class="lista-renglones">
         <li><a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Editar producto</span></a></li>
+        {% if restauracion.aplica %}
+          {# CO-031: sólo cuando hay un precio calculado al cual volver. #}
+          <li><a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado (${{ restauracion.precio_recalculado }})</span></a></li>
+        {% endif %}
         {% if producto.estado == "descatalogado" %}
           <li><a href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
         {% elif producto.estado != "cancelado_editorial" %}

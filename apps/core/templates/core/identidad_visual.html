@@ -1,0 +1,130 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CFG-VIS — Configurar Identidad Visual (CO-208, CO-131).
+
+Tres secciones: datos de la tienda, apariencia y fondo. Los colores pintan sólo
+las cuatro variables `--tienda-*` del modo público (C-07). La vista previa es una
+miniatura de la tienda con la clase `modo-publico`: el guion le cambia las
+variables a medida que se escriben los colores, sin guardar nada. «Descartar
+cambios» vuelve a cargar lo guardado (A1).
+{% endcomment %}
+
+{% block titulo %}Identidad visual · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Identidad visual de la tienda</h1>
+    <p>Nombre, contacto y colores de la tienda online. El backoffice no cambia.</p>
+  </div>
+</header>
+
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate class="formulario" data-identidad>
+  {% csrf_token %}
+
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Datos de la tienda</h2></div>
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.nombre_tienda %}
+      {% include "_campo.html" with campo=form.correo_contacto %}
+      {% include "_campo.html" with campo=form.telefono %}
+    </div>
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.instagram %}
+      {% include "_campo.html" with campo=form.facebook %}
+      {% include "_campo.html" with campo=form.tiktok %}
+      {% include "_campo.html" with campo=form.x_twitter %}
+    </div>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-apariencia">
+    <div class="seccion__titulo"><h2 id="titulo-apariencia">Apariencia</h2></div>
+    <div class="dos-columnas">
+      <div class="pila-3">
+        {% if identidad.logo %}
+          <img src="{{ identidad.logo.url }}" alt="Logo actual" class="miniatura-logo">
+        {% endif %}
+        {% include "_campo.html" with campo=form.logo_nuevo %}
+        <div class="rejilla-3">
+          {% include "_campo.html" with campo=form.color_primario %}
+          {% include "_campo.html" with campo=form.color_secundario %}
+          {% include "_campo.html" with campo=form.color_acento %}
+        </div>
+        <fieldset class="grupo-de-campos">
+          <legend>Fondo</legend>
+          {% for opcion in form.tipo_fondo %}
+            <label class="casilla">{{ opcion.tag }}<span>{{ opcion.choice_label }}</span></label>
+          {% endfor %}
+          {% include "_campo.html" with campo=form.color_fondo %}
+          {% if identidad.imagen_fondo %}
+            <img src="{{ identidad.imagen_fondo.url }}" alt="Imagen de fondo actual" class="miniatura-logo">
+          {% endif %}
+          {% include "_campo.html" with campo=form.fondo_nuevo %}
+        </fieldset>
+      </div>
+
+      <div class="pila-2">
+        <p class="etiqueta">Vista previa</p>
+        <div class="vista-previa-tienda modo-publico" data-vista-previa
+             {% if identidad.tipo_fondo == "imagen" and identidad.imagen_fondo %}data-fondo-imagen="{{ identidad.imagen_fondo.url }}"{% endif %}>
+          <div class="encabezado-publico"><div class="columna-publica"><span class="marca" data-vista-nombre>{{ identidad.nombre_tienda }}</span></div></div>
+          <div class="columna-publica pila-2">
+            <p>Así se lee el texto de la tienda.</p>
+            <p class="secundario">Texto secundario.</p>
+            <a href="#vista-previa">Un enlace</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar identidad visual</button>
+    <a href="{% url 'core:identidad_visual' %}" class="boton-texto">Descartar cambios</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const formulario = document.querySelector("[data-identidad]");
+    const vista = document.querySelector("[data-vista-previa]");
+    if (!formulario || !vista) return;
+
+    const variables = {
+      color_primario: "--tienda-primario",
+      color_secundario: "--tienda-secundario",
+      color_acento: "--tienda-acento",
+      color_fondo: "--tienda-fondo",
+    };
+    const hex = /^#[0-9a-fA-F]{6}$/;
+
+    function actualizar() {
+      for (const [campo, variable] of Object.entries(variables)) {
+        const valor = formulario.elements[campo]?.value.trim();
+        if (valor && hex.test(valor)) vista.style.setProperty(variable, valor);
+      }
+      const tipo = formulario.querySelector('[name="tipo_fondo"]:checked')?.value;
+      const imagen = vista.dataset.fondoImagen;
+      vista.style.setProperty(
+        "--tienda-fondo-imagen",
+        tipo === "imagen" && imagen ? `url("${imagen}")` : "none",
+      );
+      const nombre = formulario.elements.nombre_tienda?.value.trim();
+      if (nombre) vista.querySelector("[data-vista-nombre]").textContent = nombre;
+    }
+
+    formulario.addEventListener("input", actualizar);
+    formulario.addEventListener("change", actualizar);
+    actualizar();
+  })();
+</script>
+{% endblock %}

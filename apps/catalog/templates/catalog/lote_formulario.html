@@ -65,9 +65,24 @@ calculado, y se separa de lo que escribió la persona.
             {% include "_iconos.html" with icono="agregar" %}<span>Agregar editorial</span>
           </button>
         </div>
-        {% include "_campo.html" with campo=cabecera.tipo %}
-        <div data-campo="formato" class="min-0">
+        <div class="pila-2">
+          {% include "_campo.html" with campo=cabecera.tipo %}
+          <button type="button" data-catalogo-rapido="tipo"
+                  data-url="{% url 'catalog:tipo_rapido' %}" data-etiqueta="el tipo"
+                  data-preguntas='{"usa_formato": "¿El tipo nuevo se clasifica por formato (el tamaño fija el precio)?"}'
+                  class="boton-texto texto-chico">
+            {% include "_iconos.html" with icono="agregar" %}<span>Agregar tipo</span>
+          </button>
+        </div>
+        <div data-campo="formato" class="min-0 pila-2">
           {% include "_campo.html" with campo=cabecera.formato %}
+          <button type="button" data-catalogo-rapido="formato"
+                  data-url="{% url 'catalog:formato_rapido' %}" data-etiqueta="el formato"
+                  data-preguntas='{"aplica_a_todos": "¿El formato nuevo aplica a todos los tipos? Si responde que no, queda declarado para el tipo elegido."}'
+                  data-tipo-de="tipo"
+                  class="boton-texto texto-chico">
+            {% include "_iconos.html" with icono="agregar" %}<span>Agregar formato</span>
+          </button>
         </div>
       </div>
 

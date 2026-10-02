@@ -10,3 +10,15 @@ def sesion(request):
         "sesion_duracion_segundos": settings.SESSION_COOKIE_AGE,
         "sesion_aviso_previo_segundos": AVISO_PREVIO_SEGUNDOS,
     }
+
+
+def identidad_tienda(request):
+    """La identidad visual de la tienda, para la cáscara pública (CU-CFG-VIS).
+
+    Sólo cuando el Administrador la guardó alguna vez: hasta entonces la tienda
+    se dibuja con los tokens, sin hoja extra ni pie de contacto.
+    """
+    from apps.core.models import IdentidadVisual
+
+    identidad = IdentidadVisual.obtener()
+    return {"identidad_tienda": identidad if identidad.configurada else None}

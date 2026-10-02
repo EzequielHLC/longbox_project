@@ -23,6 +23,7 @@ from apps.catalog.tests.factories import (
     FormatoFactory,
     ProductoFactory,
     TipoFactory,
+    formato_solo_para,
 )
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.suppliers.models import CorreoProveedor
@@ -385,8 +386,7 @@ def test_un_formato_que_no_se_ofrece_para_ese_tipo_se_descarta(correo, tipo):
     """A20: un formato enviado a mano que no aplique se rechaza. Que venga del
     modelo en vez de del navegador no lo hace más confiable."""
     otro_tipo = TipoFactory(nombre="Cómic")
-    formato = FormatoFactory(nombre="Tapa dura")
-    formato.tipos.set([otro_tipo])
+    formato_solo_para("Tapa dura", otro_tipo)
 
     borrador = generar(correo, extraccion()).creados[0]
 

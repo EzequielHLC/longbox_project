@@ -1,0 +1,13 @@
+{% comment %}CO-211: estado y cantidad de productos vinculados a cada editorial.{% endcomment %}
+<thead>
+  <tr><th>Nombre</th><th class="numero">Productos</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+</thead>
+<tbody>
+  {% for editorial in registros %}
+    <tr>
+      <td class="celda-principal">{{ editorial.nombre }}</td>
+      <td class="numero">{{ editorial.cantidad_productos }}</td>
+      {% include "catalog/_estado_y_acciones.html" with registro=editorial activo=editorial.activa %}
+    </tr>
+  {% endfor %}
+</tbody>

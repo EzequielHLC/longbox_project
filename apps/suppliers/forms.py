@@ -10,7 +10,7 @@ import re
 from django import forms
 from django.db.models.functions import Lower
 
-from apps.catalog.forms import editoriales_activas, tipos_activos
+from apps.catalog.forms import con_el_actual, editoriales_activas, tipos_activos
 from apps.suppliers import muestras
 from apps.suppliers.models import Proveedor
 
@@ -79,9 +79,15 @@ class ProveedorForm(forms.ModelForm):
         # la consulta se rearma en cada instancia y no queda congelada en la
         # definición de la clase. Solo se ofrecen los activos: vincular un
         # proveedor a una editorial dada de baja dejaría borradores apuntando a
-        # algo que ya no aparece en ningún desplegable del alta.
-        self.fields["editorial"].queryset = editoriales_activas()
-        self.fields["tipo_por_defecto"].queryset = tipos_activos()
+        # algo que ya no aparece en ningún desplegable del alta. El que el
+        # proveedor ya tiene se ofrece igual: la baja de la editorial conserva
+        # la asociación (`CO-140`), y editar otro dato no debe romperla.
+        self.fields["editorial"].queryset = con_el_actual(
+            editoriales_activas(), self.instance.editorial_id
+        )
+        self.fields["tipo_por_defecto"].queryset = con_el_actual(
+            tipos_activos(), self.instance.tipo_por_defecto_id
+        )
 
         # El vacío significa algo, así que se dice. Es el mismo criterio con el
         # que la cabecera de un lote sin editorial anuncia "Mixto".

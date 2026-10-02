@@ -1,0 +1,95 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PVP-TBC — Consultar Tabla de Precios de Referencia (CO-166).
+
+La clave tiene tres componentes porque la misma editorial cobra distinto un
+manga que un cómic, y dentro del manga un B6 que un Tankōbon. Los filtros siguen
+a cómo llega una lista de precios, que es por editorial.
+{% endcomment %}
+
+{% block titulo %}Tabla de precios de referencia · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:parametros' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
+    <h1>Tabla de precios de referencia</h1>
+    <p>El precio de venta por editorial, tipo y formato. Es el que toman las altas nacionales y el que se propaga al cambiarlo.</p>
+  </div>
+  <a href="{% url 'catalog:precio_crear' %}" class="boton-primario">
+    {% include "_iconos.html" with icono="agregar" %}<span>Nueva combinación</span>
+  </a>
+</header>
+
+<form method="get" class="barra-de-herramientas">
+  <div class="campo">
+    <label for="editorial" class="etiqueta">Editorial</label>
+    <select id="editorial" name="editorial">
+      <option value="">Todas</option>
+      {% for editorial in editoriales %}
+        <option value="{{ editorial.pk }}" {% if filtros.editorial == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="tipo" class="etiqueta">Tipo</label>
+    <select id="tipo" name="tipo">
+      <option value="">Todos</option>
+      {% for tipo in tipos %}
+        <option value="{{ tipo.pk }}" {% if filtros.tipo == tipo.pk %}selected{% endif %}>{{ tipo.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="formato" class="etiqueta">Formato</label>
+    <select id="formato" name="formato">
+      <option value="">Todos</option>
+      {% for formato in formatos %}
+        <option value="{{ formato.pk }}" {% if filtros.formato == formato.pk %}selected{% endif %}>{{ formato.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+  {% if hay_filtros %}
+    <a href="{% url 'catalog:precio_lista' %}" class="boton-texto">Limpiar filtros</a>
+  {% endif %}
+</form>
+
+{% if precios %}
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Editorial</th><th>Tipo</th><th>Formato</th><th class="numero">Precio</th><th>Actualizado</th><th class="derecha">Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for precio in precios %}
+          <tr>
+            <td class="celda-principal">{{ precio.editorial }}</td>
+            <td>{{ precio.tipo }}</td>
+            <td>{{ precio.formato }}</td>
+            <td class="numero">${{ precio.pvp }}</td>
+            <td class="datos sin-cortar secundario">{{ precio.actualizado_en|date:"d/m/Y H:i" }}</td>
+            <td class="acciones-de-fila">
+              <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">Modificar precio</a>
+              <a href="{% url 'catalog:precio_eliminar' precio.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="precios" %}
+    {% if total %}
+      <p>Ninguna combinación cumple los filtros.</p>
+      <a href="{% url 'catalog:precio_lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% else %}
+      <p>La tabla todavía no tiene combinaciones. Sin ellas, cada alta nacional pide el precio a mano.</p>
+      <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Dar de alta una combinación</span></a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

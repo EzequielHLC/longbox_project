@@ -1,0 +1,50 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CO-031 restaurarPrecioCalculado — desde la ficha o la edición (CU-CAT-EDI A2).
+
+El precio recalculado se muestra antes de guardar, para que se vea a qué precio
+queda el producto antes de aceptar.
+{% endcomment %}
+
+{% block titulo %}Restaurar precio calculado · Longbox{% endblock %}
+{% block seccion %}Catálogo{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:producto_detalle' producto.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>Restaurar precio calculado</h1>
+    <p>{{ producto.titulo }} · <span class="datos">{{ producto.codigo }}</span></p>
+  </div>
+</header>
+
+{% if restauracion.aplica %}
+  <div class="panel formulario--angosto">
+    <div class="cifras">
+      <div class="cifra">
+        <span class="cifra__rotulo">Precio actual</span>
+        <span class="cifra__valor">${{ restauracion.precio_actual }}</span>
+      </div>
+      <div class="cifra">
+        <span class="cifra__rotulo">Precio calculado</span>
+        <span class="cifra__valor">${{ restauracion.precio_recalculado }}</span>
+      </div>
+    </div>
+    <p>
+      {% if restauracion.fila %}
+        Sale de la tabla de precios ({{ restauracion.fila.editorial }} · {{ restauracion.fila.tipo }} · {{ restauracion.fila.formato }}). El producto queda vinculado a esa fila y sigue sus cambios.
+      {% else %}
+        Sale del precio base almacenado y del margen global vigente. El producto vuelve a seguir los cambios de margen.
+      {% endif %}
+    </p>
+    <form method="post" class="acciones">
+      {% csrf_token %}
+      <button type="submit" class="boton-primario">Restaurar</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  </div>
+{% else %}
+  <p class="mensaje" role="status">{% include "_iconos.html" with icono="info" %}<span>{{ restauracion.motivo }}</span></p>
+{% endif %}
+{% endblock %}

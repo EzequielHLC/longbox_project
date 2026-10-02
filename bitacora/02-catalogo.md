@@ -142,3 +142,57 @@ permisivo que el que existe.
 
 **Qué se hizo.**
 Nada. **No hay trabajo de código**: el código ya aplica la regla que se adopta, en los cinco.
+
+---
+
+### B-02-003 · Las etiquetas de un grupo se paginan de a cincuenta
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CAT-ETC`, `CO-165`
+**Estado:** Abierta — anunciado en el plan 02, ambigüedad 3, sin objeción
+
+**Qué apareció.**
+El listado de etiquetas de un grupo tiene que paginarse y el contrato no dice el tamaño de
+página.
+
+**Qué dice la especificación.**
+> «El listado se presenta paginado y con búsqueda por texto.» (`CO-165`, Responsabilidades)
+
+**Qué se hizo.**
+Cincuenta por página, el tamaño que `CO-205` declara para el log de auditoría. La búsqueda y el
+filtro por estado se conservan al cambiar de página.
+
+**Qué habría que cambiar.**
+`CO-165`, Notas: «de a 50 etiquetas por página».
+
+---
+
+### B-02-004 · Los contratos sobre los filtros del catálogo público quedan parciales
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CO-039`, `CO-041`, `CO-043`, `CO-045`
+**Estado:** Abierta — recomendación del plan aplicada (consulta C-13)
+
+**Qué apareció.**
+Cuatro contratos de grupos y etiquetas afirman que algo «dejó de ofrecerse» o «volvió a
+ofrecerse» en los filtros del catálogo público, que no existe hasta `CU-TDA-CAT`.
+
+**Qué dice la especificación.**
+> «El grupo y sus etiquetas dejaron de ofrecerse en los formularios de alta y edición de producto
+> y en los filtros del catálogo público.» (`CO-041`, Postcondiciones)
+
+**Qué se hizo.**
+Las pruebas afirman sobre la única función que decide qué etiquetas se ofrecen, la que usan los
+formularios. Esa parte de la postcondición queda sin verificar hasta que el catálogo público
+exista y la use.
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### Nota de cierre · 2026-10-02
+
+Grupos y etiquetas se operan con la misma maquinaria que los catálogos del módulo 17: listado
+con filtro por estado, alta, modificación que reactiva y baja en dos tiempos. La pantalla de
+etiquetas pasó a ser dos (grupos, y etiquetas de un grupo). El inventario exporta a CSV y filtra
+por editorial. Queda: los filtros del catálogo público (B-02-004) y las pruebas de contrato de la
+edición, la baja y la reactivación de producto (`CO-030` a `CO-036`).

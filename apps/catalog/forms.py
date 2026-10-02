@@ -119,17 +119,37 @@ def etiquetas_activas():
     return Etiqueta.objects.filter(activa=True, grupo__activo=True).select_related("grupo")
 
 
+def con_el_actual(consulta, actual):
+    """Lo ofrecible más el valor que el registro ya tiene, aunque esté dado de baja.
+
+    La baja de un catálogo conserva lo que ya lo usa (`CO-140`, `CO-045`). Si la
+    edición ofreciera sólo lo activo, el valor actual no figuraría entre las
+    opciones y guardar cualquier otro cambio lo perdería —o rechazaría el
+    formulario— sin que nadie lo decidiera.
+    """
+    pks = [actual] if isinstance(actual, int) else [pk for pk in actual or [] if pk]
+    if not pks:
+        return consulta
+    return consulta | consulta.model.objects.filter(pk__in=pks)
+
+
+def _etiquetas_de(producto):
+    if not producto.pk:
+        return []
+    return list(producto.etiquetas.values_list("pk", flat=True))
+
+
 def formatos_para(tipo):
     """Los formatos que aplican a un tipo.
 
-    Un formato sin tipos declarados es universal —ver el modelo— así que entra
-    siempre. Sin tipo elegido se ofrecen todos: esconder opciones antes de saber
-    para qué son solo lograría que el campo parezca roto.
+    Un formato que aplica a todos los tipos entra siempre. Sin tipo elegido
+    se ofrecen todos: esconder opciones antes de saber para qué son solo
+    lograría que el campo parezca roto.
     """
     formatos = formatos_activos()
     if tipo is None:
         return formatos
-    return formatos.filter(models.Q(tipos__isnull=True) | models.Q(tipos=tipo)).distinct()
+    return formatos.filter(models.Q(aplica_a_todos=True) | models.Q(tipos=tipo)).distinct()
 
 
 def _validar_fecha_no_pasada(fecha):
@@ -928,13 +948,18 @@ class ProductoNoEditorialForm(forms.ModelForm):
         # es comodidad; la validación de verdad la hace el modelo en su `clean`,
         # con el mismo criterio de A20 — un valor enviado a mano no es más
         # confiable por venir de esta pantalla.
-        self.fields["tipo"].queryset = Tipo.objects.filter(
-            activo=True, clase=NO_EDITORIAL
+        self.fields["tipo"].queryset = con_el_actual(
+            Tipo.objects.filter(activo=True, clase=NO_EDITORIAL), self.instance.tipo_id
         ).order_by("nombre")
         self.fields["tipo"].empty_label = "Elegir categoría"
 
-        self.fields["etiquetas"].queryset = etiquetas_activas()
+        # El widget primero y el queryset después: asignar el queryset es lo que
+        # carga las opciones en el widget. Al revés, el widget nuevo queda sin
+        # ninguna y el selector dice que «ya están todas elegidas».
         self.fields["etiquetas"].widget = forms.SelectMultiple()
+        self.fields["etiquetas"].queryset = con_el_actual(
+            etiquetas_activas(), _etiquetas_de(self.instance)
+        )
 
         # Los cuatro obligatorios de CU-CAT-ALT paso 2, menos la imagen: no bloquea el
         # alta en ninguno de los dos rubros (A5 de `alta_editorial.md`, unificado
@@ -1045,11 +1070,21 @@ class ProductoEditorialForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["editorial"].queryset = editoriales_activas()
-        self.fields["tipo"].queryset = tipos_activos().filter(clase=EDITORIAL)
-        self.fields["formato"].queryset = formatos_activos()
-        self.fields["etiquetas"].queryset = etiquetas_activas()
+        # Lo activo más lo que el producto ya tiene: la baja de un catálogo
+        # conserva lo que ya lo usa, y editar otro dato no debe perderlo.
+        producto = self.instance
+        self.fields["editorial"].queryset = con_el_actual(
+            editoriales_activas(), producto.editorial_id
+        )
+        self.fields["tipo"].queryset = con_el_actual(
+            tipos_activos().filter(clase=EDITORIAL), producto.tipo_id
+        )
+        self.fields["formato"].queryset = con_el_actual(formatos_activos(), producto.formato_id)
+        # El widget antes que el queryset, que es el que le carga las opciones.
         self.fields["etiquetas"].widget = forms.SelectMultiple()
+        self.fields["etiquetas"].queryset = con_el_actual(
+            etiquetas_activas(), _etiquetas_de(producto)
+        )
 
         self.fields["isbn"].required = False
         self.fields["portada"].required = False
@@ -1149,7 +1184,16 @@ class ProductoEditorialForm(forms.ModelForm):
 
 
 class PrecioReferenciaForm(forms.ModelForm):
-    """Una fila de la tabla de precios, para la pantalla de parámetros."""
+    """`CO-049`: el alta de una combinación de la tabla de precios.
+
+    Ofrece sólo lo que puede formar una combinación posible (paso 2 de
+    `CU-PVP-TBA`): editoriales, tipos y formatos activos; como tipo, los del
+    rubro editorial que se clasifican por formato. La combinación es la
+    identidad de la fila y no se modifica: el precio se cambia con
+    `PrecioModificacionForm`.
+    """
+
+    INCOMPATIBLE = "No está activa o no puede formar parte de una combinación de la tabla."
 
     class Meta:
         model = TablaPrecioReferencia
@@ -1157,26 +1201,42 @@ class PrecioReferenciaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # La fila existente con la misma combinación (E1), para enlazarla.
+        self.colision = None
         self.fields["editorial"].queryset = editoriales_activas()
-        # Solo los tipos que se clasifican por formato pueden tener una fila:
-        # los demás no tienen con qué completar la clave.
-        self.fields["tipo"].queryset = tipos_activos().filter(usa_formato=True)
+        self.fields["tipo"].queryset = tipos_activos().filter(clase=EDITORIAL, usa_formato=True)
         self.fields["formato"].queryset = formatos_activos()
+        for nombre in ("editorial", "tipo", "formato"):
+            self.fields[nombre].error_messages["invalid_choice"] = self.INCOMPATIBLE
         self.fields["pvp"].widget.attrs.update({"step": "0.01", "inputmode": "decimal"})
 
     def clean(self):
-        """Una fila para una combinación que no existe es una fila muerta.
+        """E1 y E2 de `CU-PVP-TBA`.
 
-        Un formato que no aplica al tipo elegido —una grapa de manga— no va a
-        coincidir nunca con ningún producto, así que la fila queda ahí ocupando
-        lugar y confundiendo a quien la lea. Se rechaza al cargarla, que es el
-        único momento en que se puede corregir sin perder nada.
+        Una fila para una combinación imposible es una fila muerta: un formato
+        que no aplica al tipo no va a coincidir nunca con ningún producto. Se
+        rechaza al cargarla, que es el único momento en que se puede corregir
+        sin perder nada.
         """
         datos = super().clean()
-        tipo, formato = datos.get("tipo"), datos.get("formato")
+        editorial, tipo, formato = datos.get("editorial"), datos.get("tipo"), datos.get("formato")
         if tipo and formato and not formato.aplica_a(tipo):
-            self.add_error("formato", f"«{formato}» no se usa en {tipo}.")
+            self.add_error("formato", f"«{formato}» no se ofrece en {tipo}.")
+        if editorial and tipo and formato:
+            self.colision = TablaPrecioReferencia.objects.filter(
+                editorial=editorial, tipo=tipo, formato=formato
+            ).first()
+            if self.colision:
+                raise forms.ValidationError(
+                    "La combinación ya está en la tabla. Para cambiar su precio, modifíquela."
+                )
         return datos
+
+    def validate_unique(self):
+        # La colisión ya se informó con su enlace; la restricción de la base
+        # repetiría el mismo error con un texto genérico.
+        if self.colision is None:
+            super().validate_unique()
 
     def clean_pvp(self):
         pvp = self.cleaned_data["pvp"]
@@ -1185,8 +1245,46 @@ class PrecioReferenciaForm(forms.ModelForm):
         return pvp
 
 
+class PrecioModificacionForm(forms.Form):
+    """`CO-047`: el precio nuevo de una combinación, mayor que cero (I-09)."""
+
+    pvp = forms.DecimalField(
+        label="Precio de venta al público nuevo",
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        max_value=IMPORTE_MAXIMO,
+        widget=forms.NumberInput(attrs={"step": "0.01", "inputmode": "decimal"}),
+        error_messages={"min_value": "El precio tiene que ser mayor que cero."},
+    )
+
+
+class MargenForm(forms.Form):
+    """`CU-PVP-MAR`: el margen nuevo, escrito como porcentaje (`CO-167`).
+
+    Se guarda como proporción con cuatro decimales (0,4250), así que el
+    porcentaje admite dos (42,50 %). La conversión es exacta: es dividir un
+    `Decimal` por cien.
+    """
+
+    MAXIMO_PORCENTAJE = Decimal("1000")
+
+    margen = forms.DecimalField(
+        label="Margen nuevo (%)",
+        max_digits=6,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        max_value=MAXIMO_PORCENTAJE,
+        widget=forms.NumberInput(attrs={"step": "0.01", "inputmode": "decimal"}),
+        help_text="Sobre el precio base. 40 es un 40 %: el precio final es 1,40 veces el base.",
+    )
+
+    def proporcion(self):
+        return self.cleaned_data["margen"] / Decimal("100")
+
+
 class CatalogoNombradoForm(forms.ModelForm):
-    """Base de los catálogos que se identifican por su nombre y nada más.
+    """Base de los catálogos que se identifican por su nombre.
 
     La normalización no es cosmética: sin ella, en seis meses conviven "Ivrea",
     "ivrea " e "IVREA" como tres editoriales distintas, cada una con su tabla de
@@ -1194,22 +1292,46 @@ class CatalogoNombradoForm(forms.ModelForm):
     consulta los junte. Con las etiquetas pasa lo mismo entre "Universo DC",
     "universo dc" y "DC".
 
-    Está compartida y no copiada en cada formulario porque los dos catálogos se
-    pueden crear desde dos lugares —la pantalla de parámetros y el atajo de la
-    carga de un lote—: cuatro caminos de alta con la regla escrita cuatro veces
-    es la forma más segura de que uno quede más laxo que los otros y se convierta
-    en la puerta de entrada de los duplicados.
+    Está compartida y no copiada en cada formulario porque los catálogos se
+    pueden crear desde dos lugares —su propia pantalla y el atajo de la carga de
+    un lote—: varios caminos de alta con la regla escrita varias veces es la
+    forma más segura de que uno quede más laxo y se convierta en la puerta de
+    entrada de los duplicados.
+
+    **El estado no es un campo del formulario.** El alta nace activa, la
+    modificación sólo reactiva y la baja es un par con informe (R-17-002). La
+    casilla `reactivar` aparece sólo en lo que está dado de baja.
     """
 
     # Cada catálogo pone el suyo: el mensaje nombra al modelo y concuerda en
     # género, cosa que un texto genérico armado con `verbose_name` no hace.
     mensaje_repetido = "Ya existe un registro llamado «{nombre}»."
+    campo_estado = "activo"
 
-    def clean_nombre(self):
-        nombre = " ".join(self.cleaned_data["nombre"].split())
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # La entrada existente con la que choca el nombre, para que la pantalla
+        # la enlace con su estado (E1 de cada alta).
+        self.colision = None
+        if self.esta_dado_de_baja:
+            self.fields["reactivar"] = forms.BooleanField(
+                label="Reactivar",
+                required=False,
+                help_text="Vuelve a ofrecerse en los formularios.",
+            )
+
+    @property
+    def esta_dado_de_baja(self):
+        return bool(self.instance.pk) and not getattr(self.instance, self.campo_estado)
+
+    def _normalizar(self, nombre):
+        nombre = " ".join(nombre.split())
         if len(nombre) < NOMBRE_MINIMO:
             raise forms.ValidationError(f"El nombre necesita al menos {NOMBRE_MINIMO} caracteres.")
+        return nombre
 
+    def clean_nombre(self):
+        nombre = self._normalizar(self.cleaned_data["nombre"])
         existente = (
             self._meta.model.objects.annotate(normalizado=Lower("nombre"))
             .filter(normalizado=nombre.casefold())
@@ -1217,55 +1339,63 @@ class CatalogoNombradoForm(forms.ModelForm):
             .first()
         )
         if existente:
+            self.colision = existente
             raise forms.ValidationError(self.mensaje_repetido.format(nombre=existente.nombre))
         return nombre
 
 
 class EditorialForm(CatalogoNombradoForm):
-    """Alta de editorial, tanto desde parámetros como al vuelo desde un lote."""
+    """Alta y modificación de editorial (`CO-137`, `CO-138`), también al vuelo."""
 
     mensaje_repetido = "Ya existe una editorial llamada «{nombre}»."
+    campo_estado = "activa"
 
     class Meta:
         model = Editorial
-        fields = ["nombre", "activa"]
+        fields = ["nombre"]
 
 
 class GrupoEtiquetaForm(CatalogoNombradoForm):
-    """El eje en el que describe una etiqueta: franquicia, género, colección."""
+    """El eje en el que describe una etiqueta (`CO-038`, `CO-039`)."""
 
     mensaje_repetido = "Ya existe un grupo llamado «{nombre}»."
 
     class Meta:
         model = GrupoEtiqueta
-        fields = ["nombre", "activo"]
+        fields = ["nombre"]
 
 
-class EtiquetaForm(forms.ModelForm):
-    """Alta de etiqueta, tanto desde parámetros como al vuelo desde un lote.
+class EtiquetaForm(CatalogoNombradoForm):
+    """Alta y modificación de etiqueta (`CO-042`, `CO-043`).
 
-    No hereda de `CatalogoNombradoForm` porque su unicidad no es global sino
-    **por grupo**: "Terror" puede ser un género y también una colección, y son
-    dos etiquetas distintas. La normalización del nombre sí es la misma.
+    Su unicidad no es global sino **por grupo** (I-08): "Terror" puede ser un
+    género y también una colección. Por eso el chequeo de repetidos corre en
+    `clean()`, cuando ya se sabe en qué grupo queda.
     """
+
+    campo_estado = "activa"
 
     class Meta:
         model = Etiqueta
-        fields = ["nombre", "grupo", "activa"]
+        fields = ["nombre", "grupo"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["grupo"].queryset = GrupoEtiqueta.objects.filter(activo=True)
+        # El destino tiene que estar activo (`CO-043`). El grupo actual se
+        # ofrece igual aunque esté dado de baja: si no, corregir el nombre de
+        # una etiqueta de un grupo inactivo obligaría a moverla.
+        activos = models.Q(activo=True)
+        if self.instance.pk:
+            activos |= models.Q(pk=self.instance.grupo_id)
+        self.fields["grupo"].queryset = GrupoEtiqueta.objects.filter(activos)
+
+    def clean_nombre(self):
+        return self._normalizar(self.cleaned_data["nombre"])
 
     def clean(self):
         datos = super().clean()
-        nombre = " ".join((datos.get("nombre") or "").split())
-        grupo = datos.get("grupo")
+        nombre, grupo = datos.get("nombre"), datos.get("grupo")
         if not nombre or grupo is None:
-            return datos
-
-        if len(nombre) < NOMBRE_MINIMO:
-            self.add_error("nombre", f"El nombre necesita al menos {NOMBRE_MINIMO} caracteres.")
             return datos
 
         existente = (
@@ -1275,49 +1405,217 @@ class EtiquetaForm(forms.ModelForm):
             .first()
         )
         if existente:
+            self.colision = existente
             self.add_error(
                 "nombre", f"«{grupo}» ya tiene una etiqueta llamada «{existente.nombre}»."
             )
-        datos["nombre"] = nombre
+
+        # E3: una etiqueta no vuelve a ofrecerse dentro de un grupo que no se
+        # ofrece.
+        if datos.get("reactivar") and not grupo.activo:
+            self.add_error(
+                "reactivar",
+                f"El grupo «{grupo}» está dado de baja. Reactívelo primero, o mueva la "
+                "etiqueta a un grupo activo.",
+            )
         return datos
 
 
-class TipoForm(CatalogoNombradoForm):
-    """El rubro del material: manga, cómic, artbook, figura.
+def combinaciones_en_uso(tipo=None, formato=None):
+    """Cuántos productos y filas de precio usan una combinación de tipo y formato.
 
-    Se identifica por su nombre como el resto de los catálogos, y por eso hereda
-    la normalización en vez de repetirla. Acá importa más que en ningún otro:
-    `Tipo` entra en la clave de unicidad del producto **y** en la tabla de
-    precios de referencia, así que "Manga" y "manga" conviviendo no serían dos
-    filas repetidas sino dos rubros con dos grillas de precios distintas.
+    Es la regla que comparten `CO-142` E4, `CO-145` E3 y `CO-146` E5: el formato
+    forma parte de la clave de unicidad del producto (I-04) y de la terna de
+    precios (I-07), así que ninguna modificación puede dejar sin declarar una
+    combinación que algo ya usa.
+    """
+    productos = ProductoEditorial.objects.filter(formato__isnull=False)
+    filas = TablaPrecioReferencia.objects.all()
+    if tipo is not None:
+        productos, filas = productos.filter(tipo=tipo), filas.filter(tipo=tipo)
+    if formato is not None:
+        productos, filas = productos.filter(formato=formato), filas.filter(formato=formato)
+    return productos.count(), filas.count()
+
+
+def _que_la_usa(productos, filas):
+    partes = []
+    if productos:
+        partes.append(f"{productos} producto" + ("s" if productos != 1 else ""))
+    if filas:
+        partes.append(f"{filas} fila" + ("s" if filas != 1 else "") + " de precio")
+    return " y ".join(partes)
+
+
+class TipoForm(CatalogoNombradoForm):
+    """Alta y modificación de tipo de material (`CO-141`, `CO-142`), con la
+    declaración de sus formatos (`CO-146`).
+
+    Se identifica por su nombre como el resto de los catálogos. Acá importa más
+    que en ningún otro: `Tipo` entra en la clave de unicidad del producto **y**
+    en la tabla de precios de referencia.
+
+    Los formatos no son un campo del modelo —la relación la declara `Formato`—
+    así que se guardan aparte, con `formatos_elegidos()`, y se auditan como su
+    propia operación.
     """
 
     mensaje_repetido = "Ya existe un tipo llamado «{nombre}»."
 
+    formatos = forms.ModelMultipleChoiceField(
+        label="Formatos que se ofrecen en este tipo",
+        queryset=Formato.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Los formatos que aplican a todos los tipos no se declaran acá.",
+    )
+
     class Meta:
         model = Tipo
-        fields = ["nombre", "usa_formato", "activo"]
+        fields = ["nombre", "clase", "usa_formato"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A2 de `TPA` y `TPM`: sólo los activos que no aplican a todos.
+        self.fields["formatos"].queryset = Formato.objects.filter(activo=True, aplica_a_todos=False)
+        if self.instance.pk:
+            self.fields["formatos"].initial = list(
+                self.instance.formatos.filter(aplica_a_todos=False).values_list("pk", flat=True)
+            )
+
+    def _guardado(self):
+        """Lo que la base tiene hoy: `is_valid()` ya pisó la instancia."""
+        if not self.instance.pk:
+            return None
+        return Tipo.objects.get(pk=self.instance.pk)
+
+    def _conservados(self):
+        """Los formatos declarados que el formulario no ofrece: los dados de baja.
+
+        No se quitan por no aparecer en la lista. Quitarlos sería romper una
+        asociación que nadie eligió romper.
+        """
+        if not self.instance.pk:
+            return []
+        return list(
+            self.instance.formatos.exclude(pk__in=self.fields["formatos"].queryset.values("pk"))
+        )
+
+    def formatos_elegidos(self):
+        """La lista final de formatos del tipo, ya validada.
+
+        Un tipo que no se clasifica por formato no declara ninguno: si dejó de
+        clasificarse, sus formatos se desvinculan (`CO-142`).
+        """
+        if not self.cleaned_data.get("usa_formato"):
+            return []
+        return [*self.cleaned_data.get("formatos", []), *self._conservados()]
+
+    def clean(self):
+        datos = super().clean()
+        guardado = self._guardado()
+        if guardado is None:
+            return datos
+
+        # E2: el rubro decide la especialización del producto (PD-03).
+        clase = datos.get("clase")
+        if clase and clase != guardado.clase and guardado.productos.exists():
+            self.add_error(
+                "clase",
+                f"«{guardado}» tiene {guardado.productos.count()} productos: el rubro decide "
+                "de qué clase es cada uno y no puede cambiar.",
+            )
+
+        # E4: dejar de clasificarse por formato con combinaciones en uso.
+        if guardado.usa_formato and not datos.get("usa_formato"):
+            productos, filas = combinaciones_en_uso(tipo=guardado)
+            if productos or filas:
+                self.add_error(
+                    "usa_formato",
+                    f"No puede dejar de clasificarse por formato: hay {productos} productos "
+                    f"con formato asignado y {filas} filas de precio que lo combinan con un "
+                    "formato.",
+                )
+            return datos
+
+        # E5: quitar de la lista un formato cuya combinación está en uso.
+        if datos.get("usa_formato"):
+            elegidos = {formato.pk for formato in datos.get("formatos", [])}
+            quitados = guardado.formatos.filter(aplica_a_todos=False, activo=True).exclude(
+                pk__in=elegidos
+            )
+            en_uso = []
+            for formato in quitados:
+                usado = _que_la_usa(*combinaciones_en_uso(tipo=guardado, formato=formato))
+                if usado:
+                    en_uso.append(f"«{formato}» ({usado})")
+            if en_uso:
+                self.add_error(
+                    "formatos",
+                    "No se pueden quitar formatos en uso: " + ", ".join(en_uso) + ".",
+                )
+        return datos
 
 
 class FormatoForm(CatalogoNombradoForm):
-    """El tamaño del tomo y en qué tipos se ofrece.
+    """Alta y modificación de formato (`CO-144`, `CO-145`).
 
-    Dejar los tipos sin declarar es la opción válida y frecuente: significa que
-    el formato es universal. Es lo que hace que "Tapa dura" no haya que cargarla
-    tres veces, una por rubro, partiendo la tabla de precios.
+    «Aplica a todos los tipos» es un atributo y se elige (B-17-004). Al pasar a
+    sí, los tipos declarados se desvinculan: dejan de decir algo (A2 de `FMM`).
     """
 
     mensaje_repetido = "Ya existe un formato llamado «{nombre}»."
 
     class Meta:
         model = Formato
-        fields = ["nombre", "descripcion", "tipos", "activo"]
+        fields = ["nombre", "descripcion", "aplica_a_todos", "tipos"]
         widgets = {"tipos": forms.CheckboxSelectMultiple}  # noqa: RUF012
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["tipos"].queryset = tipos_activos()
+        # Los declarables: activos y que se clasifican por formato (`CO-144`).
+        self.fields["tipos"].queryset = tipos_activos().filter(usa_formato=True)
         self.fields["tipos"].required = False
+
+    def _conservados(self):
+        """Los tipos declarados que no se ofrecen, por estar dados de baja."""
+        if not self.instance.pk:
+            return []
+        return list(
+            Formato.objects.get(pk=self.instance.pk).tipos.exclude(
+                pk__in=self.fields["tipos"].queryset.values("pk")
+            )
+        )
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("aplica_a_todos"):
+            datos["tipos"] = []
+            return datos
+
+        elegidos = [*datos.get("tipos", []), *self._conservados()]
+        datos["tipos"] = elegidos
+
+        # E3: ningún tipo cuya combinación con el formato está en uso queda
+        # sin declarar.
+        if self.instance.pk:
+            declarados = {tipo.pk for tipo in elegidos}
+            usados = Tipo.objects.filter(
+                models.Q(productos__productoeditorial__formato=self.instance)
+                | models.Q(precios_de_referencia__formato=self.instance)
+            ).distinct()
+            faltan = []
+            for tipo in usados.exclude(pk__in=declarados):
+                usado = _que_la_usa(*combinaciones_en_uso(tipo=tipo, formato=self.instance))
+                faltan.append(f"{tipo} ({usado})")
+            if faltan:
+                self.add_error(
+                    "tipos",
+                    "Estos tipos usan el formato y tienen que seguir declarados: "
+                    + ", ".join(faltan)
+                    + ".",
+                )
+        return datos
 
 
 class ModeloDeLenguajeForm(forms.ModelForm):
@@ -1411,30 +1709,22 @@ class ModeloDeLenguajeForm(forms.ModelForm):
 
 
 class ConfiguracionForm(forms.ModelForm):
-    """Margen global y stock por defecto."""
+    """El stock por defecto de los borradores y el intervalo del carrusel.
+
+    El margen global ya no está acá: cambiarlo propaga precios y tiene su
+    propia pantalla con simulación y confirmación (`CU-CFG-PAR` A1, `CU-PVP-MAR`).
+    """
 
     class Meta:
         model = ConfiguracionSistema
-        fields = ["margen_ganancia", "stock_inicial_por_defecto"]
+        fields = ["stock_inicial_por_defecto", "intervalo_carrusel"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["margen_ganancia"].widget.attrs.update(
-            {"step": "0.01", "inputmode": "decimal", "min": "0", "max": "10"}
-        )
         self.fields["stock_inicial_por_defecto"].widget.attrs.update(
             {"inputmode": "numeric", "min": "0", "max": str(STOCK_MAXIMO)}
         )
-
-    def clean_margen_ganancia(self):
-        margen = self.cleaned_data["margen_ganancia"]
-        # Un margen de 10 es un 1000 %: casi siempre significa que alguien
-        # escribió el porcentaje en vez de la proporción.
-        if margen > 10:
-            raise forms.ValidationError(
-                "El margen se expresa como proporción, no como porcentaje: 0,40 es un 40 %."
-            )
-        return margen
+        self.fields["intervalo_carrusel"].widget.attrs.update({"inputmode": "numeric", "min": "1"})
 
     def clean_stock_inicial_por_defecto(self):
         stock = self.cleaned_data["stock_inicial_por_defecto"]
@@ -1479,12 +1769,15 @@ class BorradorForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Solo catálogos activos, igual que en el alta: ofrecer una editorial
-        # dada de baja dejaría el producto apuntando a algo que no aparece en
-        # ningún otro desplegable.
-        self.fields["editorial"].queryset = editoriales_activas()
-        self.fields["tipo"].queryset = tipos_activos()
-        self.fields["formato"].queryset = formatos_activos()
+        # Los catálogos activos, más el que el borrador ya trae aunque esté dado
+        # de baja: así se ve cuál es, y el reparo explica por qué no se puede
+        # confirmar hasta cambiarlo (`CO-140`, `CO-221`, `CO-148`).
+        borrador = self.instance
+        self.fields["editorial"].queryset = con_el_actual(
+            editoriales_activas(), borrador.editorial_id
+        )
+        self.fields["tipo"].queryset = con_el_actual(tipos_activos(), borrador.tipo_id)
+        self.fields["formato"].queryset = con_el_actual(formatos_activos(), borrador.formato_id)
 
         self.fields["volumen"].validators.append(MaxValueValidator(VOLUMEN_MAXIMO))
         self.fields["stock_inicial"].validators.append(MaxValueValidator(STOCK_MAXIMO))

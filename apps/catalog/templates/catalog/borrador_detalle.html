@@ -68,9 +68,12 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
   Los reparos después: es lo que el sistema le descartó al modelo, y conviene
   leerlo antes de mirar los campos, porque explica por qué alguno está vacío.
   {% endcomment %}
-  {% if borrador.reparos %}
+  {% if borrador.reparos or borrador.catalogos_dados_de_baja %}
     <section class="seccion">
       <div class="seccion__titulo"><h2>Datos descartados por el sistema</h2></div>
+      {% for reparo in borrador.catalogos_dados_de_baja %}
+        <p class="reparo"><strong>Reparo:</strong> {{ reparo }}</p>
+      {% endfor %}
       {% for reparo in borrador.reparos %}
         <p class="reparo"><strong>Reparo:</strong> {{ reparo }}</p>
       {% endfor %}

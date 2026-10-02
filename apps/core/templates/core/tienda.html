@@ -1,17 +1,27 @@
 {% extends "base_publico.html" %}
+{% comment %}
+La portada de la tienda: el carrusel de banners (CU-CFG-BNC) y el acceso a las
+preguntas frecuentes (CU-CFG-FAQ). El catálogo público es CU-TDA-CAT, de la
+etapa B.
+{% endcomment %}
 
-{% block titulo %}Tienda · Longbox{% endblock %}
+{% block titulo %}Tienda · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
 
 {% block contenido %}
+{% include "_carrusel.html" with banners=banners intervalo=intervalo %}
+
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Tienda online</h1>
-    <p>El catálogo de la tienda todavía no está disponible.</p>
+    <p class="secundario">El catálogo de la tienda todavía no está disponible.</p>
   </div>
 </header>
 
 <div class="vacio">
   {% include "_iconos.html" with icono="tienda" %}
   <p>Muy pronto vas a poder ver y comprar el catálogo desde acá.</p>
+  {% if hay_faq %}
+    <a href="{% url 'core:faq' %}" class="boton-texto">{% include "_iconos.html" with icono="faq" %}<span>Preguntas frecuentes</span></a>
+  {% endif %}
 </div>
 {% endblock %}

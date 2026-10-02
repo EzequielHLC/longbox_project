@@ -1,0 +1,16 @@
+{% comment %}
+CO-164: estado y cantidad de etiquetas de cada grupo. El nombre lleva a las
+etiquetas del grupo (CU-CAT-ETC), que es por donde se entra a operarlas.
+{% endcomment %}
+<thead>
+  <tr><th>Grupo</th><th class="numero">Etiquetas</th><th>Estado</th><th class="derecha">Acciones</th></tr>
+</thead>
+<tbody>
+  {% for grupo in registros %}
+    <tr>
+      <td class="celda-principal"><a href="{% url 'catalog:grupo_etiquetas' grupo.pk %}">{{ grupo.nombre }}</a></td>
+      <td class="numero">{{ grupo.cantidad_etiquetas }}</td>
+      {% include "catalog/_estado_y_acciones.html" with registro=grupo activo=grupo.activo %}
+    </tr>
+  {% endfor %}
+</tbody>

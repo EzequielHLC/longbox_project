@@ -1,0 +1,120 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-AUD-CON — Consultar el Log de Auditoría (CO-205).
+
+De la más reciente a la más antigua, de a 50. Los filtros se combinan; la
+exportación (CO-129) lleva los mismos y trae todas las entradas, no sólo la
+página. La consulta no se audita; la exportación sí.
+{% endcomment %}
+
+{% block titulo %}Auditoría · Longbox{% endblock %}
+{% block seccion %}Auditoría{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Log de auditoría</h1>
+    <p>Las operaciones del sistema, inmutables. Nadie puede modificar ni borrar una entrada.</p>
+  </div>
+  <a href="{% url 'core:auditoria_exportar' %}?{{ parametros }}" download class="boton-seccion">
+    {% include "_iconos.html" with icono="descargar" %}<span>Exportar (CSV)</span>
+  </a>
+</header>
+
+<form method="get" class="barra-de-herramientas">
+  <div class="campo campo--principal">
+    <label for="actor" class="etiqueta">Actor</label>
+    <input type="text" id="actor" name="actor" value="{{ filtros.actor }}" placeholder="Correo de la cuenta" autocomplete="off">
+  </div>
+  <div class="campo">
+    <label for="rol" class="etiqueta">Rol</label>
+    <select id="rol" name="rol">
+      <option value="">Todos</option>
+      {% for valor, etiqueta in roles %}
+        <option value="{{ valor }}" {% if filtros.rol == valor %}selected{% endif %}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="accion" class="etiqueta">Acción</label>
+    <select id="accion" name="accion">
+      <option value="">Todas</option>
+      {% for grupo, opciones in acciones %}
+        <optgroup label="{{ grupo }}">
+          {% for valor, etiqueta in opciones %}
+            <option value="{{ valor }}" {% if filtros.accion == valor %}selected{% endif %}>{{ etiqueta }}</option>
+          {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="entidad" class="etiqueta">Entidad</label>
+    <select id="entidad" name="entidad">
+      <option value="">Todas</option>
+      {% for tipo in entidades %}
+        <option value="{{ tipo.pk }}" {% if filtros.entidad == tipo.pk %}selected{% endif %}>{{ tipo.name|capfirst }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="desde" class="etiqueta">Desde</label>
+    <input type="date" id="desde" name="desde" value="{{ filtros.desde|date:'Y-m-d' }}">
+  </div>
+  <div class="campo">
+    <label for="hasta" class="etiqueta">Hasta</label>
+    <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta|date:'Y-m-d' }}">
+  </div>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+  {% if filtros.activos %}
+    <a href="{% url 'core:auditoria' %}" class="boton-texto">Limpiar filtros</a>
+  {% endif %}
+</form>
+<p class="texto-chico secundario">El rol es el que la cuenta tiene hoy: una cuenta eliminada no aparece en ningún rol, pero sí buscándola por su correo.</p>
+
+{% if entradas %}
+  <p class="texto-chico secundario">{{ paginator.count }} entrada{{ paginator.count|pluralize }}{% if filtros.activos %} con el filtro aplicado{% endif %}</p>
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Momento</th><th>Actor</th><th>Acción</th><th>Entidad</th><th class="derecha">Detalle</th></tr>
+      </thead>
+      <tbody>
+        {% for entrada in entradas %}
+          <tr>
+            <td class="datos sin-cortar">{{ entrada.ocurrido_en|date:"d/m/Y H:i:s" }}</td>
+            <td class="cortar-palabras">{{ entrada.actor_email|default:"Sistema" }}</td>
+            <td>{{ entrada.get_accion_display }}</td>
+            <td>{% if entrada.objetivo_tipo %}{{ entrada.objetivo_tipo.name|capfirst }} <span class="datos secundario">#{{ entrada.objetivo_pk }}</span>{% else %}<span class="secundario">—</span>{% endif %}</td>
+            <td class="acciones-de-fila"><a href="{% url 'core:auditoria_detalle' entrada.pk %}" class="boton-menor">Ver</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <div class="paginacion">
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      <span class="fila-5">
+        {% if page_obj.has_previous %}
+          <a href="?{{ parametros }}&amp;page={{ page_obj.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?{{ parametros }}&amp;page={{ page_obj.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+        {% endif %}
+      </span>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="auditoria" %}
+    {% if filtros.activos %}
+      <p>Ninguna entrada coincide con los filtros.</p>
+      <a href="{% url 'core:auditoria' %}" class="boton-texto">Limpiar filtros</a>
+    {% else %}
+      <p>Todavía no hay entradas en el log.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

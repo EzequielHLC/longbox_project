@@ -1,36 +1,45 @@
 {% comment %}
-Un campo de selección múltiple donde **no elegir nada significa "todos"**.
+Un campo de selección múltiple con dos modos: **todos** o **sólo algunos**.
 
-Con casillas eso no se comunicaba: siete casillas vacías se leen como "no aplica
-a ninguno", que es exactamente lo contrario. Acá el significado se dice: dos
-botones de opción nativos arriba, y las fichas sólo al acotar.
+Con casillas solas eso no se comunicaba: siete casillas vacías se leen como "no
+aplica a ninguno". Acá el significado se dice: dos botones de opción nativos
+arriba, y las fichas sólo al acotar.
 
-    {% include "_ambito.html" with campo=form.tipos universal="Todos los tipos" acotado="Solo estos tipos" %}
+    {% include "_ambito.html" with campo=form.tipos bandera=form.aplica_a_todos universal="Todos los tipos" acotado="Sólo estos tipos" %}
 
-El control real sigue siendo el del formulario. Las fichas marcan y desmarcan sus
-casillas; sin JavaScript quedan las casillas, que funcionan igual.
+**El modo es un dato, no una deducción** (B-17-004): con `bandera`, los botones de
+opción son el campo booleano real del formulario y viajan en el POST. Sin
+`bandera`, el modo se deduce de si hay alguna ficha marcada.
+
+Sin JavaScript se ven las dos cosas y funcionan igual.
 {% endcomment %}
-<div class="campo" data-ambito>
-  <p class="etiqueta">{{ campo.label }}</p>
+<div class="campo" data-ambito{% if bandera %} data-ambito-con-bandera{% endif %}>
+  <p class="etiqueta">{% if bandera %}{{ bandera.label|capfirst }}{% else %}{{ campo.label }}{% endif %}</p>
 
   <div class="ambito">
     <div class="fila-5" data-modos>
       <label class="casilla">
-        <input type="radio" name="ambito_{{ campo.html_name }}" value="universal" data-modo>
+        <input type="radio" name="{% if bandera %}{{ bandera.html_name }}{% else %}ambito_{{ campo.html_name }}{% endif %}"
+               value="{% if bandera %}true{% else %}universal{% endif %}" data-modo="universal"
+               {% if bandera and bandera.value %}checked{% endif %}>
         <span>{% firstof universal "Todos" %}</span>
       </label>
       <label class="casilla">
-        <input type="radio" name="ambito_{{ campo.html_name }}" value="acotado" data-modo>
+        <input type="radio" name="{% if bandera %}{{ bandera.html_name }}{% else %}ambito_{{ campo.html_name }}{% endif %}"
+               value="{% if bandera %}false{% else %}acotado{% endif %}" data-modo="acotado"
+               {% if bandera and not bandera.value %}checked{% endif %}>
         <span>{% firstof acotado "Solo algunos" %}</span>
       </label>
     </div>
 
-    <div class="ambito-opciones hidden" data-opciones>
+    <div class="ambito-opciones" data-opciones>
       {% for opcion in campo %}
         <label class="ficha-opcion">
           {{ opcion.tag }}
           <span>{{ opcion.data.label }}</span>
         </label>
+      {% empty %}
+        <p class="secundario">No hay opciones para elegir.</p>
       {% endfor %}
     </div>
   </div>
@@ -42,4 +51,9 @@ casillas; sin JavaScript quedan las casillas, que funcionan igual.
   {% for error in campo.errors %}
     <p class="error-de-campo">Error: {{ error }}</p>
   {% endfor %}
+  {% if bandera %}
+    {% for error in bandera.errors %}
+      <p class="error-de-campo">Error: {{ error }}</p>
+    {% endfor %}
+  {% endif %}
 </div>

@@ -1,0 +1,29 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CFG-BNB — Dar de Baja Banner (CO-134). El banner se elimina: no tiene
+historial propio, y el registro de auditoría deja constancia. Volver sin
+confirmar no cambia nada.
+{% endcomment %}
+
+{% block titulo %}Dar de baja banner · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+{% url 'core:banner_lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Banners" atras=1 %}</span>
+    <h1>Dar de baja el banner {{ banner.numero }}</h1>
+  </div>
+</header>
+
+<div class="panel panel--atencion formulario--angosto">
+  <img src="{{ banner.imagen.url }}" alt="Banner {{ banner.numero }}" class="miniatura-banner miniatura-banner--grande">
+  <p>Deja de mostrarse en la portada. Los demás conservan su orden. Para volver a publicarlo hay que cargar la imagen otra vez.</p>
+  <form method="post" class="acciones">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario">Confirmar baja</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

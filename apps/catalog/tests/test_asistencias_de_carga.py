@@ -14,7 +14,7 @@ import pytest
 from django.urls import reverse
 
 from apps.accounts.tests.factories import UsuarioFactory
-from apps.catalog.models import Editorial
+from apps.catalog.models import Editorial, Formato, Tipo
 from apps.catalog.tests.factories import (
     EditorialFactory,
     FormatoFactory,
@@ -136,9 +136,10 @@ def test_el_alta_rapida_rechaza_un_nombre_vacio(client_admin):
 def test_el_alta_rapida_queda_auditada(client_admin, administrador):
     client_admin.post(URL_EDITORIAL, {"nombre": "Ivrea", "activa": "on"})
 
-    registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.PARAMETRO_MODIFICADO)
+    # La misma acción que el alta desde su pantalla (A1 de `CU-CFG-EDA`).
+    registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.ALTA_CATALOGO)
     assert registro.actor == administrador
-    assert "alta rápida" in registro.detalle
+    assert "Ivrea" in registro.detalle
 
 
 def test_la_editorial_nueva_se_puede_usar_enseguida(client_admin):
@@ -183,3 +184,48 @@ def test_la_pantalla_recibe_las_banderas_de_cada_tipo(client_admin):
     # Y qué formatos aplican a cada uno, que es lo que recorta el desplegable.
     assert "formatos" in comic
     assert 'id="reglas-de-tipo"' in respuesta.content.decode()
+
+
+def test_el_alta_rapida_de_tipo_es_editorial_y_queda_auditada(client_admin):
+    """A1 de CU-CFG-TPA: desde la carga de un lote el rubro es el de la pantalla."""
+    respuesta = client_admin.post(
+        reverse("catalog:tipo_rapido"), {"nombre": "Fanzine", "usa_formato": "false"}
+    )
+
+    tipo = Tipo.objects.get(nombre="Fanzine")
+    assert respuesta.json() == {"id": tipo.pk, "nombre": "Fanzine"}
+    assert (tipo.clase, tipo.usa_formato, tipo.activo) == ("editorial", False, True)
+    assert RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.ALTA_CATALOGO, objetivo_pk=tipo.pk
+    ).exists()
+
+
+def test_el_alta_rapida_de_formato_lo_declara_para_el_tipo_de_la_carga(client_admin):
+    """A1 de CU-CFG-FMA: queda declarado para el tipo elegido, salvo que se
+    indique que aplica a todos."""
+    manga = TipoFactory(nombre="Manga de prueba", usa_formato=True)
+
+    client_admin.post(
+        reverse("catalog:formato_rapido"),
+        {"nombre": "A6 de prueba", "aplica_a_todos": "false", "tipos": manga.pk},
+    )
+    client_admin.post(
+        reverse("catalog:formato_rapido"),
+        {"nombre": "Tapa blanda de prueba", "aplica_a_todos": "true", "tipos": manga.pk},
+    )
+
+    acotado = Formato.objects.get(nombre="A6 de prueba")
+    universal = Formato.objects.get(nombre="Tapa blanda de prueba")
+    assert list(acotado.tipos.all()) == [manga] and not acotado.aplica_a_todos
+    assert universal.aplica_a_todos and not universal.tipos.exists()
+
+
+def test_el_alta_rapida_de_formato_rechaza_un_repetido(client_admin):
+    FormatoFactory(nombre="A6 de prueba")
+
+    respuesta = client_admin.post(
+        reverse("catalog:formato_rapido"), {"nombre": "a6 DE PRUEBA", "aplica_a_todos": "true"}
+    )
+
+    assert respuesta.status_code == 400
+    assert respuesta.json()["errores"]

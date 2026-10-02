@@ -3,12 +3,11 @@ El comportamiento de `_ambito.html`. Va una sola vez en la cáscara operativa.
 
 Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
 
-- **El modo se deduce del estado, no se guarda.** Si hay alguna casilla marcada
-  el campo arranca en "acotado"; si no, en "universal". Así no hace falta un
-  dato nuevo en el modelo para recordar algo que el propio contenido ya dice.
-- **Volver a "universal" desmarca todo.** Es lo que hace que el significado sea
-  verdadero: universal *es* la lista vacía, no un estado paralelo que conviva
-  con casillas marcadas que nadie ve.
+- **El modo de arranque.** Con `data-ambito-con-bandera` el modo es un dato del
+  formulario y se respeta el botón que venga marcado. Sin bandera se deduce:
+  si hay alguna ficha marcada arranca en "acotado", y si no en "universal".
+- **Volver a "universal" desmarca todo.** Las fichas marcadas que nadie ve no
+  dirían nada verdadero; el servidor, además, las descarta (`CO-145`).
 {% endcomment %}
 <script>
   (function () {
@@ -28,7 +27,7 @@ Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
       }
 
       for (const modo of modos) {
-        modo.addEventListener("change", () => mostrar(modo.value === "acotado"));
+        modo.addEventListener("change", () => mostrar(modo.dataset.modo === "acotado"));
       }
 
       // Marcar una ficha con el modo en "universal" no tendría a dónde ir: se
@@ -36,7 +35,7 @@ Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
       for (const casilla of casillas) {
         casilla.addEventListener("change", () => {
           if (casilla.checked) {
-            const acotado = raiz.querySelector('[data-modo][value="acotado"]');
+            const acotado = raiz.querySelector('[data-modo="acotado"]');
             if (acotado && !acotado.checked) {
               acotado.checked = true;
               mostrar(true);
@@ -45,8 +44,11 @@ Dos cosas, y ninguna toca lo que se envía salvo por las casillas reales:
         });
       }
 
-      const acotado = hayAlguna();
-      raiz.querySelector(`[data-modo][value="${acotado ? "acotado" : "universal"}"]`).checked = true;
+      const marcado = raiz.querySelector("[data-modo]:checked");
+      const acotado = raiz.hasAttribute("data-ambito-con-bandera") && marcado
+        ? marcado.dataset.modo === "acotado"
+        : hayAlguna();
+      raiz.querySelector(`[data-modo="${acotado ? "acotado" : "universal"}"]`).checked = true;
       mostrar(acotado);
     }
 

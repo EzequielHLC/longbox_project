@@ -16,6 +16,11 @@ texto (`identidad_visual.md`, Botones).
     <p>Productos del catálogo.</p>
   </div>
 
+  {% comment %}
+  Las altas son del Administrador: al Cajero no se le ofrecen caminos que le
+  responderían 403.
+  {% endcomment %}
+  {% if user.rol == "administrador" %}
   <div class="fila">
     <a href="{% url 'catalog:lote_nacional' %}" class="boton-primario">
       {% include "_iconos.html" with icono="lote" %}<span>Nuevo lote nacional</span>
@@ -31,6 +36,7 @@ texto (`identidad_visual.md`, Botones).
       {% include "_iconos.html" with icono="agregar" %}<span>Nuevo producto no editorial</span>
     </a>
   </div>
+  {% endif %}
 </header>
 
 {% comment %}
@@ -83,6 +89,16 @@ cuando hay productos publicados sin unidades.
         <option value="">Todos</option>
         {% for tipo in tipos %}
           <option value="{{ tipo.pk }}" {% if tipo_elegido == tipo.pk %}selected{% endif %}>{{ tipo.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="editorial" class="etiqueta">Editorial</label>
+      <select id="editorial" name="editorial">
+        <option value="">Todas</option>
+        {% for editorial in editoriales %}
+          <option value="{{ editorial.pk }}" {% if editorial_elegida == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}{% if not editorial.activa %} (inactiva){% endif %}</option>
         {% endfor %}
       </select>
     </div>

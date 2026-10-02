@@ -111,6 +111,7 @@ No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
       <li><a href="{% url 'catalog:producto_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Inventario</span></a></li>
       <li><a href="{% url 'suppliers:correo_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="correo" %}<span>Correos recibidos</span></a></li>
       <li><a href="{% url 'catalog:parametros' %}" class="boton-texto">{% include "_iconos.html" with icono="parametros" %}<span>Parámetros globales</span></a></li>
+      <li><a href="{% url 'core:auditoria' %}" class="boton-texto">{% include "_iconos.html" with icono="auditoria" %}<span>Log de auditoría</span></a></li>
     </ul>
 
     {% if cuentas.dados_de_baja %}

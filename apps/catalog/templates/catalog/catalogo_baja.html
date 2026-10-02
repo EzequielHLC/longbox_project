@@ -1,0 +1,52 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La baja de un catálogo, en dos tiempos: esta pantalla es la solicitud, con el
+informe de lo que referencia al registro (CO-139, CO-220, CO-147, CO-040,
+CO-044), y el botón es la confirmación (CO-140, CO-221, CO-148, CO-041, CO-045).
+
+Cancelar es volver sin enviar nada (CO-156): no cambia ni se audita.
+
+Lo que todavía no se puede contar se dice «No disponible», nunca 0: un cero
+diría que se verificó que no hay ninguno.
+{% endcomment %}
+
+{% block titulo %}Dar de baja {{ registro }} · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver_a texto="Volver al listado" atras=1 %}</span>
+    <h1>Dar de baja {{ catalogo.singular }}</h1>
+    <p>«{{ registro.nombre }}»</p>
+  </div>
+</header>
+
+<div class="panel panel--atencion">
+  <div class="seccion__titulo"><h2>Qué lo referencia</h2></div>
+  <p class="seccion__bajada">La baja conserva todas estas referencias: no modifica nada de lo que ya lo usa.</p>
+
+  <div class="cifras">
+    {% for referencia in informe %}
+      <div class="cifra">
+        <span class="cifra__rotulo">{{ referencia.etiqueta }}</span>
+        {% if referencia.disponible %}
+          <span class="cifra__valor">{{ referencia.cantidad }}</span>
+        {% else %}
+          <span class="cifra__nota">No disponible todavía.</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h3>Qué implica la baja</h3>
+  <p>{{ consecuencia }}</p>
+  <p class="secundario">Se puede revertir: la modificación permite reactivarlo.</p>
+
+  <form method="post" class="acciones">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario">Confirmar baja</button>
+    {% include "_boton_texto.html" with url=volver_a texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

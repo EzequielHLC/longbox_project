@@ -1,6 +1,8 @@
 from django.urls import path
 
 from apps.catalog import views
+from apps.catalog import views_catalogos as vc
+from apps.catalog import views_precios as vp
 
 app_name = "catalog"
 
@@ -8,6 +10,7 @@ urlpatterns = [
     # Inventario interno, solo lectura: el alta es por lote y la edición
     # pertenece al módulo de Catálogo, todavía no implementado.
     path("productos/", views.ProductoListaView.as_view(), name="producto_lista"),
+    path("productos/exportar/", views.ProductoExportarView.as_view(), name="producto_exportar"),
     path("productos/<int:pk>/", views.ProductoDetalleView.as_view(), name="producto_detalle"),
     # CU-CAT-EDI y CU-CAT-BAJ le agregan las acciones a la ficha que ya existe, en vez de
     # duplicar la pantalla: el listado y el detalle de CU-CAT-INV son el punto de
@@ -58,46 +61,95 @@ urlpatterns = [
         name="precio_referencia",
     ),
     path("editoriales/rapida/", views.EditorialRapidaView.as_view(), name="editorial_rapida"),
+    path("tipos/rapido/", views.TipoRapidaView.as_view(), name="tipo_rapido"),
+    path("formatos/rapido/", views.FormatoRapidaView.as_view(), name="formato_rapido"),
     # Parámetros globales.
     path("parametros/", views.ParametrosView.as_view(), name="parametros"),
-    # Las etiquetas salieron de la pantalla de parámetros: son el único catálogo
-    # abierto de los seis y necesitan buscador propio.
-    path("parametros/etiquetas/", views.EtiquetasView.as_view(), name="etiquetas"),
-    path(
-        "parametros/editoriales/nueva/",
-        views.EditorialCrearView.as_view(),
-        name="editorial_crear",
-    ),
+    # Los catálogos de clasificación: listado, alta, modificación y baja con
+    # informe, iguales para los cinco (`views_catalogos`).
+    path("parametros/editoriales/", vc.EditorialListaView.as_view(), name="editorial_lista"),
+    path("parametros/editoriales/nueva/", vc.EditorialCrearView.as_view(), name="editorial_crear"),
     path(
         "parametros/editoriales/<int:pk>/",
-        views.EditorialEditarView.as_view(),
+        vc.EditorialEditarView.as_view(),
         name="editorial_editar",
     ),
     path(
+        "parametros/editoriales/<int:pk>/baja/",
+        vc.EditorialBajaView.as_view(),
+        name="editorial_baja",
+    ),
+    path("parametros/tipos/", vc.TipoListaView.as_view(), name="tipo_lista"),
+    path("parametros/tipos/nuevo/", vc.TipoCrearView.as_view(), name="tipo_crear"),
+    path(
+        "parametros/tipos/<int:pk>/",
+        vc.TipoEditarView.as_view(),
+        name="tipo_editar",
+    ),
+    path(
+        "parametros/tipos/<int:pk>/baja/",
+        vc.TipoBajaView.as_view(),
+        name="tipo_baja",
+    ),
+    path("parametros/formatos/", vc.FormatoListaView.as_view(), name="formato_lista"),
+    path("parametros/formatos/nuevo/", vc.FormatoCrearView.as_view(), name="formato_crear"),
+    path(
+        "parametros/formatos/<int:pk>/",
+        vc.FormatoEditarView.as_view(),
+        name="formato_editar",
+    ),
+    path(
+        "parametros/formatos/<int:pk>/baja/",
+        vc.FormatoBajaView.as_view(),
+        name="formato_baja",
+    ),
+    # Las etiquetas se operan por grupo (`CO-165`): la lista de grupos es la
+    # entrada, y cada grupo tiene la de sus etiquetas.
+    path("parametros/etiquetas/", vc.GrupoListaView.as_view(), name="etiquetas"),
+    path(
         "parametros/grupos-de-etiqueta/nuevo/",
-        views.GrupoEtiquetaCrearView.as_view(),
+        vc.GrupoCrearView.as_view(),
         name="grupo_etiqueta_crear",
     ),
     path(
         "parametros/grupos-de-etiqueta/<int:pk>/",
-        views.GrupoEtiquetaEditarView.as_view(),
+        vc.GrupoEditarView.as_view(),
         name="grupo_etiqueta_editar",
     ),
-    path("parametros/etiquetas/nueva/", views.EtiquetaCrearView.as_view(), name="etiqueta_crear"),
+    path(
+        "parametros/grupos-de-etiqueta/<int:pk>/baja/",
+        vc.GrupoBajaView.as_view(),
+        name="grupo_etiqueta_baja",
+    ),
+    path(
+        "parametros/grupos-de-etiqueta/<int:pk>/etiquetas/",
+        vc.EtiquetasDeGrupoView.as_view(),
+        name="grupo_etiquetas",
+    ),
+    path("parametros/etiquetas/nueva/", vc.EtiquetaCrearView.as_view(), name="etiqueta_crear"),
     path(
         "parametros/etiquetas/<int:pk>/",
-        views.EtiquetaEditarView.as_view(),
+        vc.EtiquetaEditarView.as_view(),
         name="etiqueta_editar",
     ),
-    path("parametros/tipos/nuevo/", views.TipoCrearView.as_view(), name="tipo_crear"),
-    path("parametros/tipos/<int:pk>/", views.TipoEditarView.as_view(), name="tipo_editar"),
-    path("parametros/formatos/nuevo/", views.FormatoCrearView.as_view(), name="formato_crear"),
-    path("parametros/formatos/<int:pk>/", views.FormatoEditarView.as_view(), name="formato_editar"),
-    path("parametros/precios/nuevo/", views.PrecioCrearView.as_view(), name="precio_crear"),
-    path("parametros/precios/<int:pk>/", views.PrecioEditarView.as_view(), name="precio_editar"),
+    path(
+        "parametros/etiquetas/<int:pk>/baja/",
+        vc.EtiquetaBajaView.as_view(),
+        name="etiqueta_baja",
+    ),
+    # La tabla de precios de referencia y el margen global (módulo 03).
+    path("parametros/precios/", vp.PrecioListaView.as_view(), name="precio_lista"),
+    path("parametros/precios/nuevo/", vp.PrecioCrearView.as_view(), name="precio_crear"),
+    path("parametros/precios/<int:pk>/", vp.PrecioModificarView.as_view(), name="precio_editar"),
     path(
         "parametros/precios/<int:pk>/eliminar/",
-        views.PrecioEliminarView.as_view(),
+        vp.PrecioEliminarView.as_view(),
         name="precio_eliminar",
+    ),
+    path("parametros/margen/", vp.MargenView.as_view(), name="margen"),
+    path(
+        "productos/<int:pk>/restaurar-precio/",
+        vp.RestaurarPrecioView.as_view(),
+        name="producto_restaurar_precio",
     ),
 ]

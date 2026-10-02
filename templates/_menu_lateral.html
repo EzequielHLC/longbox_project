@@ -161,8 +161,53 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         </a>
       </details>
 
+      <details class="menu-grupo" {% if 'catalog:precio' in actual or actual == 'catalog:margen' %}open{% endif %}>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="precios" %}
+          <span>Precios</span>
+        </summary>
+        <a href="{% url 'catalog:precio_lista' %}"
+           class="menu-enlace menu-enlace--hijo {% if 'catalog:precio' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="precios" %}
+          <span>Tabla de precios</span>
+        </a>
+        <a href="{% url 'catalog:margen' %}"
+           class="menu-enlace menu-enlace--hijo {% if actual == 'catalog:margen' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="importado" %}
+          <span>Margen de importados</span>
+        </a>
+      </details>
+
+      <details class="menu-grupo" {% if actual == 'core:faq_editor' or 'core:banner' in actual or actual == 'core:identidad_visual' %}open{% endif %}>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="tienda" %}
+          <span>Tienda</span>
+        </summary>
+        <a href="{% url 'core:banner_lista' %}"
+           class="menu-enlace menu-enlace--hijo {% if 'core:banner' in actual %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="imagen" %}
+          <span>Banners</span>
+        </a>
+        <a href="{% url 'core:faq_editor' %}"
+           class="menu-enlace menu-enlace--hijo {% if actual == 'core:faq_editor' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="faq" %}
+          <span>Preguntas frecuentes</span>
+        </a>
+        <a href="{% url 'core:identidad_visual' %}"
+           class="menu-enlace menu-enlace--hijo {% if actual == 'core:identidad_visual' %}menu-enlace--actual{% endif %}">
+          {% include "_iconos.html" with icono="parametros" %}
+          <span>Identidad visual</span>
+        </a>
+      </details>
+
+      <a href="{% url 'core:auditoria' %}"
+         class="menu-enlace {% if 'core:auditoria' in actual %}menu-enlace--actual{% endif %}">
+        {% include "_iconos.html" with icono="auditoria" %}
+        <span>Auditoría</span>
+      </a>
+
       <a href="{% url 'catalog:parametros' %}"
-         class="menu-enlace {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual or 'catalog:precio' in actual %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual %}menu-enlace--actual{% endif %}">
         {% include "_iconos.html" with icono="parametros" %}
         <span>Parámetros globales</span>
       </a>
@@ -187,13 +232,10 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     llevan a ninguna parte y no deben poder enfocarse con el tabulador.
     {% endcomment %}
     <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="precios" %}<span>Precios</span>
-    </span>
-    <span class="menu-enlace menu-enlace--inactivo">
       {% include "_iconos.html" with icono="caja" %}<span>Ventas y caja</span>
     </span>
     <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="tienda" %}<span>Tienda online</span>
+      {% include "_iconos.html" with icono="tienda" %}<span>Catálogo de la tienda</span>
     </span>
     <span class="menu-enlace menu-enlace--inactivo">
       {% include "_iconos.html" with icono="devoluciones" %}<span>Devoluciones</span>
@@ -202,7 +244,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       {% include "_iconos.html" with icono="puntos" %}<span>Puntos</span>
     </span>
     <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="reportes" %}<span>Reportes y auditoría</span>
+      {% include "_iconos.html" with icono="reportes" %}<span>Reportes</span>
     </span>
 
     {% comment %}

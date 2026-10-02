@@ -1,0 +1,91 @@
+{% extends "base_operativo.html" %}
+{% load catalogos %}
+{% comment %}
+Alta y modificación de un catálogo de clasificación.
+
+El estado no es un campo: el alta nace activa, la modificación sólo reactiva
+(la casilla aparece únicamente en lo dado de baja) y la baja tiene su propia
+pantalla con el informe de impacto.
+
+Si el nombre choca con otro registro (E1 de cada alta), se enlaza el existente
+con su estado: si está dado de baja, desde ahí se lo reactiva.
+{% endcomment %}
+
+{% block titulo %}{{ titulo }} · Longbox{% endblock %}
+{% block seccion %}Parámetros{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver_a texto="Volver al listado" atras=1 %}</span>
+    <h1>{{ titulo }}{% if object %} · {{ object.nombre }}{% endif %}</h1>
+    {% if descripcion %}<p>{{ descripcion }}</p>{% endif %}
+  </div>
+</header>
+
+{% if colision %}
+  <div class="mensaje" role="alert">
+    {% include "_iconos.html" with icono="error" %}
+    <span>
+      <span class="mensaje__prefijo">Error:</span>
+      ya existe <a href="{{ colision_url }}">«{{ colision.nombre }}»</a>,
+      {% if colision_activa %}{{ catalogo.activo_texto|lower }}{% else %}{{ catalogo.inactivo_texto|lower }}: puede reactivarse desde su modificación{% endif %}.
+    </span>
+  </div>
+{% endif %}
+
+{% if form.esta_dado_de_baja %}
+  <p class="mensaje" role="status">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span><span class="mensaje__prefijo">Atención:</span> está dado de baja y no se ofrece en los
+    formularios. Marque «Reactivar» para que vuelva a ofrecerse.</span>
+  </p>
+{% endif %}
+
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+
+  {% for campo in form %}
+    {% if campo.name == "tipos" %}
+      {% include "_ambito.html" with campo=campo bandera=form.aplica_a_todos universal="Todos los tipos que se clasifican por formato" acotado="Sólo estos tipos" %}
+    {% elif campo.name == "aplica_a_todos" %}
+    {% elif campo.name == "formatos" %}
+      <div class="campo" data-formatos-del-tipo>
+        <p class="etiqueta">{{ campo.label }}</p>
+        {% if campo.field.queryset.exists %}
+          <div class="ambito-opciones">
+            {% for opcion in campo %}
+              <label class="ficha-opcion">{{ opcion.tag }}<span>{{ opcion.data.label }}</span></label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="secundario">No hay formatos que se declaren tipo por tipo: los activos aplican a todos.</p>
+        {% endif %}
+        {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+        {% for error in campo.errors %}<p class="error-de-campo">Error: {{ error }}</p>{% endfor %}
+      </div>
+    {% elif campo.field.widget.input_type == "checkbox" %}
+      {% include "_casilla.html" with campo=campo interruptor=1 %}
+    {% else %}
+      {% include "_campo.html" with campo=campo %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar</button>
+    {% include "_boton_texto.html" with url=volver_a texto="Cancelar" %}
+  </div>
+</form>
+
+{% if object and puede_dar_de_baja %}
+  {% comment %}
+  La modificación no da de baja: la baja informa antes su impacto. Desde acá
+  sólo se llega a esa pantalla.
+  {% endcomment %}
+  <section class="seccion">
+    <div class="seccion__titulo"><h2>Dar de baja</h2></div>
+    <p class="seccion__bajada">Deja de ofrecerse en los formularios y conserva lo que ya lo usa. Antes de confirmar se informa qué lo referencia.</p>
+    <a href="{{ catalogo|url_baja:object }}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Ir a la baja</span></a>
+  </section>
+{% endif %}
+{% endblock %}

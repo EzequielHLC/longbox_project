@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 
 from apps.core import georef
 from apps.core.mixins import RolRequeridoMixin
-from apps.core.models import RegistroAuditoria
+from apps.core.models import Banner, ConfiguracionSistema, ContenidoFAQ, RegistroAuditoria
 
 
 def localidades(request):
@@ -46,8 +46,20 @@ class PoliticaPrivacidadView(TemplateView):
 
 
 class TiendaView(RolRequeridoMixin, TemplateView):
+    """La portada de la tienda: el carrusel de banners (CU-CFG-BNC, C-06).
+
+    El catálogo público es `CU-TDA-CAT`, de la etapa B.
+    """
+
     template_name = "core/tienda.html"
     roles_permitidos = ("cliente",)
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["banners"] = Banner.objects.all()
+        contexto["intervalo"] = ConfiguracionSistema.obtener().intervalo_carrusel
+        contexto["hay_faq"] = bool(ContenidoFAQ.obtener().contenido)
+        return contexto
 
 
 class MostradorView(RolRequeridoMixin, TemplateView):

@@ -1,0 +1,33 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-AUD-CON paso 5 — el detalle de una entrada (CO-206).
+
+El modelo guarda los valores anterior y nuevo dentro del detalle, y se presenta
+tal como se registró: separarlos con un análisis de texto sería interpretar lo
+que el log dice, y el log no se interpreta.
+{% endcomment %}
+
+{% block titulo %}Entrada de auditoría · Longbox{% endblock %}
+{% block seccion %}Auditoría{% endblock %}
+
+{% block contenido %}
+{% url 'core:auditoria' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Log de auditoría" atras=1 %}</span>
+    <h1>{{ entrada.get_accion_display }}</h1>
+    <p class="datos">{{ entrada.ocurrido_en|date:"d/m/Y H:i:s" }}</p>
+  </div>
+</header>
+
+<dl class="datos-de-ficha formulario--angosto">
+  <dt>Momento</dt><dd class="datos">{{ entrada.ocurrido_en|date:"d/m/Y H:i:s" }}</dd>
+  <dt>Actor</dt><dd class="cortar-palabras">{{ entrada.actor_email|default:"Sistema" }}</dd>
+  <dt>Acción</dt><dd>{{ entrada.get_accion_display }}</dd>
+  <dt>Entidad</dt><dd>{% if entrada.objetivo_tipo %}{{ entrada.objetivo_tipo.name|capfirst }}{% else %}—{% endif %}</dd>
+  <dt>Identificador</dt><dd class="datos">{{ entrada.objetivo_pk|default:"—" }}</dd>
+  {% if entrada.objetivo_email %}<dt>Cuenta afectada</dt><dd class="cortar-palabras">{{ entrada.objetivo_email }}</dd>{% endif %}
+  <dt>Dirección IP</dt><dd class="datos">{{ entrada.ip|default:"—" }}</dd>
+  <dt>Detalle</dt><dd class="cortar-palabras">{{ entrada.detalle|default:"—"|linebreaksbr }}</dd>
+</dl>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CFG-FAQ — Publicar Contenido de FAQ (CO-210, CO-135, CO-136).
+
+La vista previa es un envío que no guarda nada. «Descartar cambios» vuelve a
+cargar lo publicado (A1). Publicar vacío pide confirmación explícita (A2).
+{% endcomment %}
+
+{% block titulo %}Preguntas frecuentes · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Preguntas frecuentes</h1>
+    <p>Lo que se publica acá reemplaza la sección de la tienda.
+      {% if faq.actualizado_en %}Publicada por última vez el <span class="datos">{{ faq.actualizado_en|date:"d/m/Y H:i" }}</span>.{% endif %}</p>
+  </div>
+  <a href="{% url 'core:faq' %}" class="boton-texto" target="_blank" rel="noopener">{% include "_iconos.html" with icono="ver" %}<span>Ver en la tienda</span></a>
+</header>
+
+{% if advertir_vacia %}
+  <div class="panel panel--atencion">
+    <p><strong>El contenido está vacío.</strong> La sección de preguntas frecuentes va a quedar en blanco para los clientes.</p>
+    <form method="post" class="acciones">
+      {% csrf_token %}
+      <input type="hidden" name="contenido" value="">
+      <button type="submit" name="confirmar_vacia" value="1" class="boton-primario">Publicar vacía</button>
+      <a href="{% url 'core:faq_editor' %}" class="boton-texto">Volver al editor</a>
+    </form>
+  </div>
+{% else %}
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    {% include "_campo.html" with campo=form.contenido %}
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Guardar y publicar</button>
+      <button type="submit" name="vista_previa" value="1" class="boton-seccion">{% include "_iconos.html" with icono="ver" %}<span>Vista previa</span></button>
+      <a href="{% url 'core:faq_editor' %}" class="boton-texto">Descartar cambios</a>
+    </div>
+  </form>
+
+  {% if vista_previa is not None %}
+    <section class="seccion" aria-labelledby="titulo-vista-previa">
+      <div class="seccion__titulo"><h2 id="titulo-vista-previa">Vista previa</h2></div>
+      <p class="seccion__bajada">Así se va a ver en la tienda. Todavía no está publicada.</p>
+      <article class="contenido-markdown panel">{{ vista_previa|safe }}</article>
+    </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

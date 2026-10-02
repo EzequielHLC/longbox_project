@@ -93,12 +93,17 @@ leer un informe de impacto.
           <div class="panel panel--atencion">
             <p class="texto-chico">
               El precio se recalcula solo cuando cambian el margen o la tabla de
-              referencia. Editarlo acá lo desvincula de forma permanente.
+              referencia. Editarlo acá lo desvincula: deja de seguir esos cambios
+              hasta que se restaure el precio calculado.
             </p>
             {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
           </div>
         {% else %}
           <p class="texto-chico secundario">Precio fijado a mano. No se recalcula con el margen ni con la tabla.</p>
+        {% endif %}
+        {% if restauracion.aplica %}
+          {# CU-CAT-EDI A2 — CO-031, con el precio recalculado a la vista antes de guardar. #}
+          <a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto texto-chico">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado (${{ restauracion.precio_recalculado }})</span></a>
         {% endif %}
       {% endif %}
 

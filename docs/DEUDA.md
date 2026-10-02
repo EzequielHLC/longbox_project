@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-09-30**.
+> **Tipo: Fotografía.** Tomada el **2026-10-02**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -32,17 +32,19 @@ al plan o a la sección donde está desarrollada.
 | C-11 | Margen global con cancelados y sin importados | Mandan los contratos: `CO-053` recalcula todo importado con precio vinculado, y sin importados la precondición de `CO-052` no se cumple | Pendiente de construir |
 | C-17 | `cancelarOperacion` en siete DSS | El responsable entregó los apartados corregidos en `.contexto-ia/dss/DSS.md-apartados-que-cambian.md`. **Falta incorporarlos a `DSS.md`**, que mantiene el responsable | — |
 | C-18 | PostgreSQL detenido | Levantado | — |
+| C-12 | Ofertas vigentes en el informe de baja de tipo | Recomendación del plan, sin objeción: «No disponible» | B-17-008 |
+| C-13 | Filtros del catálogo público en grupos y etiquetas | Recomendación del plan, sin objeción: quedan parciales hasta `CU-TDA-CAT` | B-02-004 |
+| C-14 | Formato de la exportación de inventario | Recomendación del plan, sin objeción: CSV | — |
+| C-15 | Filtros por acción y por rol en el log | Recomendación del plan, sin objeción: acciones agrupadas y rol actual | B-16-001, B-16-002 |
+| C-16 | Markdown de la FAQ | Recomendación del plan, sin objeción: sin HTML crudo | — |
 
 ### Siguen abiertas
 
 | # | Consulta | Dónde está | Qué desbloquea |
 | --- | --- | --- | --- |
-| C-12 | `CO-220` cuenta ofertas vigentes y `Oferta` no existe: ¿«No disponible»? | [Plan 17](planes/17-configuracion-del-sistema.md), ambigüedad 2 | `CU-CFG-TPB`. Se aplica la recomendación si no hay objeción |
-| C-13 | Los contratos sobre filtros del catálogo público quedan parciales hasta `CU-TDA-CAT` | [Plan 02](planes/02-catalogo.md), ambigüedad 1 | El estado de cierre de `CU-CAT-GRM`, `GRB`, `ETM` y `ETB` |
-| C-14 | ¿La exportación de inventario es CSV? | Plan 02, ambigüedad 2 | `CO-037` |
-| C-15 | Filtro por tipo de acción y por rol en el log | [Plan 16](planes/16-auditoria.md), ambigüedades 1 y 2 | Los filtros de `CU-AUD-CON` |
-| C-16 | ¿El Markdown de la FAQ se publica sin HTML crudo? | Plan 17, ambigüedad 9 | `CO-135` |
-| C-19 | **Nueva.** `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
+| C-19 | `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita. Construido así (B-03-003) | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
+| C-20 | **Nueva.** La portada de la tienda, con el carrusel, sigue siendo sólo para la cuenta de cliente; la página de preguntas frecuentes es pública. ¿La portada también tiene que verse sin iniciar sesión? | B-17-013 | El acceso de `core:tienda`, y con él `CU-TDA-CAT` |
+| C-21 | **Nueva.** El logo no admite SVG porque RNF-05 convierte toda imagen a WebP. ¿Se enmienda la guía de `CU-CFG-VIS` o se exceptúa el logo de RNF-05? | B-17-011 | La guía de formato del logo |
 
 ---
 
@@ -50,9 +52,7 @@ al plan o a la sección donde está desarrollada.
 
 | Ítem | Decisión pendiente | Qué bloquea | Desde |
 | --- | --- | --- | --- |
-| `ALLOWED_HOSTS` | **Decidido para la demostración**: hay CGNAT, así que se publica con un túnel de Cloudflare y el valor es `.trycloudflare.com`. Falta escribirlo en el `.env` de la máquina que sirve el sistema; con eso `check --deploy` sale limpio | El estado `Verificado` de los once casos de uso con todos sus contratos verificados | 2026-09-14 |
 | **P-05** · procesos periódicos | No existe forma de disparar las operaciones del Temporizador | `CO-016`, `CO-155`, `CU-ALT-TRA`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-PED-CMP`, `CU-STK-VEN`, `CO-096` de `CU-PED-OPC` y el vencimiento de ofertas (`CO-059`) | — |
-| **P-07** · alcance de `IdentidadVisual` | `CO-131` y la ficha de `CU-CFG-VIS` siguen diciendo que está abierta. `identidad_visual.md` la da por resuelta con cuatro variables. Es la consulta C-07 | `CU-CFG-VIS` | — |
 | Parámetros de seguridad | Resuelto en B-12-001; falta construirlo | La sección Seguridad de `CU-CFG-PAR` y la mitad de `CO-114` | — |
 | Pedido como dependencia raíz | Orden de construcción: `Pedido` no existe | Los módulos 07, 08, 09, 10, 14 y 18, más `CU-ALT-DEM`, `CU-ALT-CAN`, `CU-CLI-BAJ` y `CU-CLI-HIS`. **Nuevo:** también `CO-086` de `CU-AUT-INI`, vía `Carrito` | — |
 | `04_RESUMEN.md` | `MODELO_DE_DOMINIO.md` lo cita y el archivo no está en el repositorio | Saber cuáles son las «cuatro operaciones con contrato pausado» | 2026-09-14 |
@@ -84,15 +84,19 @@ ellos `TOKENS_VISUALES.md` e `identidad_visual.md`. En la consola de Windows hay
 
 | Atributo | Quién lo usa | Estado |
 | --- | --- | --- |
-| `ConfiguracionSistema` · intervalo del carrusel | Ficha de `CU-CFG-PAR` (sección Tienda), `CU-CFG-BNC` | Decidido. Se declara en la sección 5. Falta el valor inicial (C-05) |
-| `Formato` · aplica a todos los tipos | `CO-144`, `CO-145`, `CO-146`, `CO-049` y las fichas de formatos y tipos | Sin decidir (C-03) |
+| `ConfiguracionSistema` · intervalo del carrusel | Ficha de `CU-CFG-PAR` (sección Tienda), `CU-CFG-BNC` | Construido con 10 s (B-17-003). Falta la enmienda del modelo |
+| `Formato` · aplica a todos los tipos | `CO-144`, `CO-145`, `CO-146`, `CO-049` y las fichas de formatos y tipos | Construido como atributo (B-17-004). Falta la enmienda del modelo |
+
+**`CO-131` y la ficha de `CU-CFG-VIS` siguen diciendo que P-07 está abierta.** Se construyó con
+la respuesta a C-07: las cuatro variables `--tienda-*` y el fondo con imagen. Falta quitar la nota
+del documento.
 
 ---
 
 ## Conceptos especificados sin implementar
 
-Fuente: `MODELO_DE_DOMINIO.md` contrastado contra las clases del código. Sin cambios desde la
-fotografía anterior. Los 18 planificados:
+Fuente: `MODELO_DE_DOMINIO.md` contrastado contra las clases del código. `Banner`,
+`ContenidoFAQ` e `IdentidadVisual` se construyeron el 2026-10-02. Quedan 15:
 
 | Concepto | Área | Módulo que lo introduce | Conceptos que dependen de él |
 | --- | --- | --- | --- |
@@ -111,14 +115,12 @@ fotografía anterior. Los 18 planificados:
 | `LineaPropuestaRestock` | A4 Pipeline | 05 Restock | — |
 | `SuscripcionReposicion` | A3 Producto | 05 Restock | — |
 | `Oferta` | A2 Clasificación | 03 Pricing | — |
-| `Banner` | A7 Parámetros | 17 Configuración del Sistema | — |
-| `ContenidoFAQ` | A7 Parámetros | 17 Configuración del Sistema | — |
-| `IdentidadVisual` | A7 Parámetros | 17 Configuración del Sistema | — |
 
-**Un requisito no funcional sin ninguna implementación: RNF-05.** Ninguna imagen se procesa hoy:
-ni conversión a WebP, ni redimensionado, ni descarte del original. Alcanza a las portadas de
-`CU-ALT-NAC`, `IMP`, `REV`, `CU-CAT-ALT` y `EDI`, y a las imágenes de `CU-CFG-VIS` y de los
-banners. El plan 17 lo construye para banners y logo; las portadas siguen como deuda.
+**RNF-05 está construido a medias.** `core/imagenes.py` convierte a WebP, acota el lado mayor y
+no conserva el original para los banners, el logo y el fondo de la tienda. **Las portadas de
+producto siguen sin procesarse**: `CU-ALT-NAC`, `IMP`, `REV`, `CU-CAT-ALT` y `EDI` guardan el
+archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y no un parámetro
+(B-17-012).
 
 ---
 
@@ -126,23 +128,24 @@ banners. El plan 17 lo construye para banners y logo; las portadas siguen como d
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 200 de 219.** De los 19 que tienen prueba, 18 están verificados y 1 es parcial
-(`CO-114`, B-12-001). Todos son de los módulos 12 y 13. Las 98 pruebas de contrato apuntan a
-contratos vigentes y con la misma operación: la reestructuración del documento no invalidó
-ninguna.
+**Faltan 141 de 219.** 78 tienen al menos una prueba que lleva su código. Los que tienen
+prueba y no cierran del todo son ocho: `CO-114` (B-12-001), `CO-048` y `CO-053` (carritos,
+B-03-001), `CO-221` (ofertas, B-17-008), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en su parte
+sobre los filtros del catálogo público (B-02-004).
 
-`CO-156 cancelarOperacion` pasó de quince a **veintidós** casos de uso que lo referencian. Tiene
-prueba en tres.
+`CO-156 cancelarOperacion` lo referencian veintidós casos de uso. Tiene prueba en catorce:
+`CU-USR-BAJ`, `REA`, `ELI`, `CU-CAT-BAJ`, `REA`, `GRB`, `ETB`, `CU-CFG-EDB`, `TPB`, `FMB`,
+`CU-PVP-TBM`, `TBB`, `MAR` y `CU-PRV-REA`/`BAJ`.
 
-`CO-202` y `CO-195` siguen sin prueba porque no hay ficha que ejercer. Las dos se construyen en
-esta sesión.
+Los contratos sin prueba que más pesan son los de las altas de lote (`CO-001` a `CO-010`): la
+funcionalidad está construida y probada por pantalla, pero ninguna prueba lleva su código.
 
 ---
 
 ## Invariantes declaradas sin garantía en la base
 
-Relevadas el 2026-09-22. El código no cambió desde entonces. `migrate --check` no pudo correr hoy
-(C-18).
+Relevadas el 2026-09-22. Las migraciones de esta sesión no agregan restricciones: un campo
+booleano en `Formato`, un entero en `ConfiguracionSistema` y tres tablas nuevas sin unicidades.
 
 | Invariante | Dónde vive hoy | La respeta cualquier escritura |
 | --- | --- | --- |
@@ -170,9 +173,9 @@ Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` 
 | `apps/core/views.py::PoliticaPrivacidadView` | Publica la política que el registro obliga a aceptar | Ningún contrato declara su publicación ni qué pasa cuando cambia |
 | `apps/core/integraciones.py` | Única puerta HTTP, con caché, servicio en vivo y respaldo local | La degradación está declarada sólo para cotizaciones (`CO-155`) |
 
-**La baja de tipo de material sale de esta tabla.** Ahora tiene contrato: `CO-220` y `CO-221`. El
-código se sigue apartando, porque es una casilla y no el par con informe. Eso ya no es código sin
-contrato sino un caso de uso `Parcial` (`CU-CFG-TPB` en ESTADO).
+**Las dos pantallas públicas del contenido de la tienda** (la portada con el carrusel y la página
+de preguntas frecuentes) se construyeron dentro de `CU-CFG-BNC` y `CU-CFG-FAQ` por decisión del
+responsable (C-06). Ningún caso de uso las declara todavía (B-17-013).
 
 ### Las tareas de consola quedan fuera del modelo de casos de uso
 
@@ -184,20 +187,26 @@ alcance sigue pendiente.
 
 ## Entradas de bitácora
 
-| Bitácora | Total | Abiertas | Tipos | Resueltas el |
-| --- | ---: | ---: | --- | --- |
-| `bitacora/01-alta-editorial.md` | 2 | 0 | 2 agregados | 2026-09-22 |
-| `bitacora/02-catalogo.md` | 2 | 0 | 1 agregado, 1 corrección | 2026-09-22 |
-| `bitacora/04-proveedores.md` | 3 | 0 | 3 agregados | 2026-09-22 |
-| `bitacora/11-cuenta-de-cliente.md` | 1 | 0 | 1 agregado | 2026-09-22 |
-| `bitacora/12-autenticacion.md` | 3 | 0 | 2 desvíos, 1 agregado | 2026-09-22 |
-| `bitacora/13-gestion-de-usuarios.md` | 5 | 0 | 2 agregados, 2 desvíos, 1 corrección | 2026-09-22 |
-| `bitacora/17-configuracion-del-sistema.md` | 2 | 0 | 1 agregado, 1 desvío | 2026-09-22 |
-| `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección | 2026-09-22 |
-| **Total** | **19** | **0** | | |
+| Bitácora | Total | Abiertas | Tipos |
+| --- | ---: | ---: | --- |
+| `bitacora/00-estilo-preliminar.md` | 4 | 0 | 3 agregados, 1 desvío pedido por el responsable |
+| `bitacora/01-alta-editorial.md` | 2 | 0 | 2 agregados |
+| `bitacora/02-catalogo.md` | 4 | 2 | 3 agregados, 1 corrección |
+| `bitacora/03-pricing.md` | 5 | 4 | 5 agregados |
+| `bitacora/04-proveedores.md` | 5 | 0 | 4 agregados, 1 desvío |
+| `bitacora/11-cuenta-de-cliente.md` | 1 | 0 | 1 agregado |
+| `bitacora/12-autenticacion.md` | 3 | 0 | 1 agregado, 1 corrección, 1 desvío |
+| `bitacora/13-gestion-de-usuarios.md` | 5 | 0 | 2 agregados, 1 corrección, 2 desvíos |
+| `bitacora/16-auditoria.md` | 3 | 3 | 3 agregados |
+| `bitacora/17-configuracion-del-sistema.md` | 14 | 10 | 11 agregados, 2 correcciones, 1 desvío |
+| `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección |
+| **Total** | **47** | **19** | |
 
-Sin entradas nuevas: esta sesión todavía no escribió código. Las siete enmiendas pendientes de la
-fotografía anterior siguen pendientes. Ninguna llegó al documento reestructurado:
+«Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
+pendiente, o que espera la respuesta a una consulta (C-19 a C-21). Ninguna entrada abierta es
+código sin terminar.
+
+**Enmiendas pendientes al documento**, además de las de cada entrada abierta:
 
 | Enmienda pendiente | De dónde sale |
 | --- | --- |
@@ -208,6 +217,10 @@ fotografía anterior siguen pendientes. Ninguna llegó al documento reestructura
 | `CO-125`: pierde la cita a I-14 | R-13-004 |
 | `CO-149`: de dónde sale el contenido de diagnóstico | R-17-001 |
 | `EnlaceActivacion` y `TokenRecuperacion` pasan a `<<construido>>` | B-12-003 |
+| `Banner`, `ContenidoFAQ` e `IdentidadVisual` pasan a `<<construido>>`; `Formato` gana «aplica a todos los tipos»; `ConfiguracionSistema` gana el intervalo del carrusel | B-17-003, B-17-004 |
+| Las once acciones de auditoría nuevas en la nota de INC-06 | B-17-005 |
+| `TOKENS_VISUALES.md` e `identidad_visual.md`: la densidad del modo operativo y los componentes nuevos | B-00-004 |
+| El DSS de los siete casos de uso con `cancelarOperacion` | C-17, archivo entregado por el responsable |
 
 ---
 
@@ -217,5 +230,7 @@ fotografía anterior siguen pendientes. Ninguna llegó al documento reestructura
   entero. Por ejemplo, `CO-120` sigue diciendo «Activa o Pendiente», `CO-125` sigue citando I-14
   y los dos conceptos de enlace siguen `<<planificado>>`.
 - **El chequeo de consistencia compara nombres, no significados.**
-- **Las invariantes no se volvieron a relevar**: el código no cambió, y la base no estaba
-  disponible para confirmar las restricciones.
+- **Las invariantes no se volvieron a relevar.** La única escritura nueva que pasa por fuera de
+  los validadores es la propagación de precios (`update()` y `bulk_update()`), y sus valores
+  salen de formularios que exigen precio mayor que cero y de la fórmula del margen.
+- **Las pantallas nuevas se probaron por la suite**, no a mano en un navegador.

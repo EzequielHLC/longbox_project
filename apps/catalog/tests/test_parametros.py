@@ -21,6 +21,7 @@ from apps.catalog.tests.factories import (
     PrecioReferenciaFactory,
     ProductoFactory,
     TipoFactory,
+    formato_solo_para,
 )
 from apps.catalog.tests.helpers_lote import URL_PARAMETROS
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
@@ -88,18 +89,21 @@ def test_franquicia_sirve_para_los_dos_rubros():
 # ---------------------------------------------------------------------------
 
 
-def test_la_pantalla_muestra_los_catalogos(client_admin):
-    """Se administran acá y no desde el admin de Django: es la pantalla que
-    tiene el diseño del sistema y la que usa el personal."""
-    PrecioReferenciaFactory(editorial=EditorialFactory(nombre="Ivrea"))
-
+def test_la_pantalla_enlaza_los_catalogos_y_los_precios(client_admin):
+    """Cada catálogo y la tabla de precios tienen su pantalla (`CU-CFG-EDC`,
+    `TPC`, `FMC`, `CU-CAT-GRC`, `CU-PVP-TBC`); el margen también, porque
+    cambiarlo propaga precios (`CU-CFG-PAR` A1). Acá queda el acceso."""
     contenido = client_admin.get(URL_PARAMETROS).content.decode()
 
-    assert "Tipos de material" in contenido
-    assert "Formatos" in contenido
-    assert "Editoriales" in contenido
-    assert "Tabla de precios de referencia" in contenido
-    assert "Ivrea" in contenido
+    for ruta in (
+        "catalog:tipo_lista",
+        "catalog:formato_lista",
+        "catalog:editorial_lista",
+        "catalog:etiquetas",
+        "catalog:precio_lista",
+        "catalog:margen",
+    ):
+        assert reverse(ruta) in contenido, ruta
 
 
 def test_las_etiquetas_se_administran_en_su_propia_pantalla(client_admin):
@@ -113,13 +117,13 @@ def test_las_etiquetas_se_administran_en_su_propia_pantalla(client_admin):
     assert "Universo DC" not in contenido
 
 
-def test_la_tabla_de_precios_se_puede_filtrar_por_editorial(client_admin):
-    una = PrecioReferenciaFactory(editorial=EditorialFactory(nombre="Ivrea"))
-    PrecioReferenciaFactory(editorial=EditorialFactory(nombre="Ovni Press"))
+def test_el_margen_ya_no_se_edita_desde_parametros(client_admin):
+    """`CU-CFG-PAR` A1: el panel enlaza a `CU-PVP-MAR` en vez de editarlo."""
+    margen = ConfiguracionSistema.obtener().margen_ganancia
 
-    respuesta = client_admin.get(URL_PARAMETROS, {"editorial": una.editorial.pk})
+    client_admin.post(URL_PARAMETROS, {"margen_ganancia": "0.99", "stock_inicial_por_defecto": "4"})
 
-    assert list(respuesta.context["precios"]) == [una]
+    assert ConfiguracionSistema.obtener().margen_ganancia == margen
 
 
 def test_se_avisa_cuando_una_editorial_no_tiene_precios(client_admin):
@@ -176,47 +180,24 @@ def test_la_configuracion_no_se_borra():
         configuracion.delete()
 
 
-def test_guardar_el_margen_lo_deja_vigente_y_auditado(client_admin, administrador):
+def test_guardar_el_stock_por_defecto_lo_deja_vigente_y_auditado(client_admin, administrador):
     respuesta = client_admin.post(
-        URL_PARAMETROS, {"margen_ganancia": "0.55", "stock_inicial_por_defecto": "4"}
+        URL_PARAMETROS, {"stock_inicial_por_defecto": "4", "intervalo_carrusel": "10"}
     )
 
     assert respuesta.status_code == 302
     configuracion = ConfiguracionSistema.obtener()
-    assert configuracion.margen_ganancia == Decimal("0.5500")
     assert configuracion.stock_inicial_por_defecto == 4
     assert configuracion.actualizado_por == administrador
 
     registro = RegistroAuditoria.objects.filter(
         accion=RegistroAuditoria.PARAMETRO_MODIFICADO
     ).latest("ocurrido_en")
-    assert "margen" in registro.detalle
-
-
-def test_un_margen_escrito_como_porcentaje_es_rechazado(client_admin):
-    """40 en vez de 0,40 es el error más fácil de cometer, y multiplicaría por
-    cuarenta el precio de todos los importados."""
-    respuesta = client_admin.post(
-        URL_PARAMETROS, {"margen_ganancia": "40", "stock_inicial_por_defecto": "1"}
-    )
-
-    assert respuesta.status_code == 200
-    assert respuesta.context["form"].errors["margen_ganancia"]
-
-
-def test_un_margen_negativo_es_rechazado(client_admin):
-    respuesta = client_admin.post(
-        URL_PARAMETROS, {"margen_ganancia": "-0.2", "stock_inicial_por_defecto": "1"}
-    )
-
-    assert respuesta.status_code == 200
-    assert respuesta.context["form"].errors["margen_ganancia"]
+    assert "stock por defecto" in registro.detalle
 
 
 def test_un_stock_por_defecto_absurdo_es_rechazado(client_admin):
-    respuesta = client_admin.post(
-        URL_PARAMETROS, {"margen_ganancia": "0.4", "stock_inicial_por_defecto": "999999"}
-    )
+    respuesta = client_admin.post(URL_PARAMETROS, {"stock_inicial_por_defecto": "999999"})
 
     assert respuesta.status_code == 200
     assert respuesta.context["form"].errors["stock_inicial_por_defecto"]
@@ -228,9 +209,7 @@ def test_un_stock_por_defecto_absurdo_es_rechazado(client_admin):
 
 
 def test_se_puede_dar_de_alta_una_editorial(client_admin):
-    respuesta = client_admin.post(
-        reverse("catalog:editorial_crear"), {"nombre": "Ivrea", "activa": "on"}
-    )
+    respuesta = client_admin.post(reverse("catalog:editorial_crear"), {"nombre": "Ivrea"})
 
     assert respuesta.status_code == 302
     assert Editorial.objects.filter(nombre="Ivrea").exists()
@@ -239,9 +218,7 @@ def test_se_puede_dar_de_alta_una_editorial(client_admin):
 def test_el_nombre_de_la_editorial_se_normaliza(client_admin):
     """Sin esto, en seis meses conviven tres editoriales con el mismo nombre y
     los productos quedan repartidos entre las tres."""
-    client_admin.post(
-        reverse("catalog:editorial_crear"), {"nombre": "  Ovni   Press  ", "activa": "on"}
-    )
+    client_admin.post(reverse("catalog:editorial_crear"), {"nombre": "  Ovni   Press  "})
 
     assert Editorial.objects.get().nombre == "Ovni Press"
 
@@ -250,9 +227,7 @@ def test_el_nombre_de_la_editorial_se_normaliza(client_admin):
 def test_una_editorial_repetida_es_rechazada(client_admin, repetido):
     EditorialFactory(nombre="Ivrea")
 
-    respuesta = client_admin.post(
-        reverse("catalog:editorial_crear"), {"nombre": repetido, "activa": "on"}
-    )
+    respuesta = client_admin.post(reverse("catalog:editorial_crear"), {"nombre": repetido})
 
     assert respuesta.status_code == 200
     assert respuesta.context["form"].errors["nombre"]
@@ -266,7 +241,7 @@ def test_se_puede_dar_de_alta_un_tipo_con_su_bandera(client_admin):
     bandera habría valido siempre `True`."""
     respuesta = client_admin.post(
         reverse("catalog:tipo_crear"),
-        {"nombre": "Fanzine", "usa_formato": "on", "activo": "on"},
+        {"nombre": "Fanzine", "clase": "editorial", "usa_formato": "on"},
     )
 
     assert respuesta.status_code == 302
@@ -278,7 +253,7 @@ def test_se_puede_editar_un_formato(client_admin):
 
     client_admin.post(
         reverse("catalog:formato_editar", args=[formato.pk]),
-        {"nombre": "B6", "descripcion": "12,8 × 18,2 cm", "activo": "on"},
+        {"nombre": "B6", "descripcion": "12,8 × 18,2 cm"},
     )
 
     formato.refresh_from_db()
@@ -286,9 +261,9 @@ def test_se_puede_editar_un_formato(client_admin):
 
 
 def test_el_alta_de_un_parametro_queda_auditada(client_admin, administrador):
-    client_admin.post(reverse("catalog:editorial_crear"), {"nombre": "Ivrea", "activa": "on"})
+    client_admin.post(reverse("catalog:editorial_crear"), {"nombre": "Ivrea"})
 
-    registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.PARAMETRO_MODIFICADO)
+    registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.ALTA_CATALOGO)
     assert registro.actor == administrador
     assert "Ivrea" in registro.detalle
 
@@ -407,7 +382,7 @@ def test_se_puede_dar_de_alta_una_etiqueta(client_admin):
 
     respuesta = client_admin.post(
         reverse("catalog:etiqueta_crear"),
-        {"nombre": "Shonen", "grupo": grupo.pk, "activa": "on"},
+        {"nombre": "Shonen", "grupo": grupo.pk},
     )
 
     assert respuesta.status_code == 302
@@ -419,7 +394,7 @@ def test_el_nombre_de_la_etiqueta_se_normaliza(client_admin):
 
     client_admin.post(
         reverse("catalog:etiqueta_crear"),
-        {"nombre": "  Novela   gráfica  ", "grupo": grupo.pk, "activa": "on"},
+        {"nombre": "  Novela   gráfica  ", "grupo": grupo.pk},
     )
 
     assert Etiqueta.objects.filter(nombre="Novela gráfica").exists()
@@ -431,7 +406,7 @@ def test_una_etiqueta_repetida_en_el_mismo_grupo_es_rechazada(client_admin):
 
     respuesta = client_admin.post(
         reverse("catalog:etiqueta_crear"),
-        {"nombre": "universo dc", "grupo": grupo.pk, "activa": "on"},
+        {"nombre": "universo dc", "grupo": grupo.pk},
     )
 
     assert respuesta.status_code == 200
@@ -448,7 +423,7 @@ def test_el_mismo_nombre_en_otro_grupo_si_se_puede(client_admin):
 
     respuesta = client_admin.post(
         reverse("catalog:etiqueta_crear"),
-        {"nombre": "Terror", "grupo": coleccion.pk, "activa": "on"},
+        {"nombre": "Terror", "grupo": coleccion.pk},
     )
 
     assert respuesta.status_code == 302
@@ -460,7 +435,7 @@ def test_una_etiqueta_de_una_letra_es_rechazada(client_admin):
     grupo = GrupoEtiqueta.objects.get(nombre="Género")
 
     respuesta = client_admin.post(
-        reverse("catalog:etiqueta_crear"), {"nombre": "S", "grupo": grupo.pk, "activa": "on"}
+        reverse("catalog:etiqueta_crear"), {"nombre": "S", "grupo": grupo.pk}
     )
 
     assert respuesta.status_code == 200
@@ -470,9 +445,7 @@ def test_una_etiqueta_de_una_letra_es_rechazada(client_admin):
 def test_una_etiqueta_sin_grupo_es_rechazada(client_admin):
     """El grupo es lo que la hace filtrable: sin él no se sabe en qué faceta de
     la tienda tendría que aparecer."""
-    respuesta = client_admin.post(
-        reverse("catalog:etiqueta_crear"), {"nombre": "Shonen", "activa": "on"}
-    )
+    respuesta = client_admin.post(reverse("catalog:etiqueta_crear"), {"nombre": "Shonen"})
 
     assert respuesta.status_code == 200
     assert respuesta.context["form"].errors["grupo"]
@@ -484,19 +457,19 @@ def test_el_alta_de_etiqueta_queda_auditada(client_admin):
 
     client_admin.post(
         reverse("catalog:etiqueta_crear"),
-        {"nombre": "Shonen", "grupo": grupo.pk, "activa": "on"},
+        {"nombre": "Shonen", "grupo": grupo.pk},
     )
 
-    registro = RegistroAuditoria.objects.filter(
-        accion=RegistroAuditoria.PARAMETRO_MODIFICADO
-    ).latest("ocurrido_en")
+    registro = RegistroAuditoria.objects.filter(accion=RegistroAuditoria.ALTA_CATALOGO).latest(
+        "ocurrido_en"
+    )
     assert "Shonen" in registro.detalle
 
 
 def test_se_puede_dar_de_alta_un_grupo_de_etiquetas(client_admin):
     respuesta = client_admin.post(
         reverse("catalog:grupo_etiqueta_crear"),
-        {"nombre": "Formato de lectura", "activo": "on"},
+        {"nombre": "Formato de lectura"},
     )
 
     assert respuesta.status_code == 302
@@ -506,7 +479,7 @@ def test_se_puede_dar_de_alta_un_grupo_de_etiquetas(client_admin):
 def test_un_grupo_repetido_es_rechazado(client_admin):
     respuesta = client_admin.post(
         reverse("catalog:grupo_etiqueta_crear"),
-        {"nombre": "género", "activo": "on"},
+        {"nombre": "género"},
     )
 
     assert respuesta.status_code == 200
@@ -526,11 +499,9 @@ def test_solo_el_administrador_administra_etiquetas(client, rol_sin_permiso):
 # ---------------------------------------------------------------------------
 
 
-def test_un_formato_sin_tipos_declarados_es_universal():
-    """El vacío significa "en todos" y no "en ninguno": olvidarse de declararlos
-    deja el comportamiento anterior a que el campo existiera, no un formato
-    invisible."""
-    formato = FormatoFactory(nombre="Tapa dura")
+def test_un_formato_que_aplica_a_todos_es_universal():
+    """«Aplica a todos los tipos» es un atributo (B-17-004), no una lista vacía."""
+    formato = FormatoFactory(nombre="Tapa dura", aplica_a_todos=True)
 
     assert formato.aplica_a(Tipo.objects.get(nombre="Manga"))
     assert formato.aplica_a(Tipo.objects.get(nombre="Cómic"))
@@ -539,8 +510,7 @@ def test_un_formato_sin_tipos_declarados_es_universal():
 def test_un_formato_con_tipos_declarados_solo_aplica_a_esos():
     manga = Tipo.objects.get(nombre="Manga")
     comic = Tipo.objects.get(nombre="Cómic")
-    grapa = FormatoFactory(nombre="Grapa")
-    grapa.tipos.add(comic)
+    grapa = formato_solo_para("Grapa", comic)
 
     assert grapa.aplica_a(comic)
     assert not grapa.aplica_a(manga)
@@ -551,10 +521,8 @@ def test_el_alta_solo_ofrece_los_formatos_del_tipo_elegido(client_admin):
     pantalla que más campos pide."""
     manga = Tipo.objects.get(nombre="Manga")
     comic = Tipo.objects.get(nombre="Cómic")
-    tankobon = FormatoFactory(nombre="Tankōbon")
-    tankobon.tipos.add(manga)
-    grapa = FormatoFactory(nombre="Grapa")
-    grapa.tipos.add(comic)
+    tankobon = formato_solo_para("Tankōbon", manga)
+    grapa = formato_solo_para("Grapa", comic)
     universal = FormatoFactory(nombre="Tapa dura")
 
     respuesta = client_admin.get(reverse("catalog:lote_nacional"))
@@ -569,8 +537,7 @@ def test_un_precio_de_referencia_con_un_formato_que_no_aplica_es_rechazado(clien
     """Una fila para una combinación imposible es una fila muerta: no va a
     coincidir nunca con ningún producto y confunde a quien la lea."""
     manga = Tipo.objects.get(nombre="Manga")
-    grapa = FormatoFactory(nombre="Grapa")
-    grapa.tipos.add(Tipo.objects.get(nombre="Cómic"))
+    grapa = formato_solo_para("Grapa", Tipo.objects.get(nombre="Cómic"))
     editorial = EditorialFactory(nombre="Ivrea")
 
     respuesta = client_admin.post(

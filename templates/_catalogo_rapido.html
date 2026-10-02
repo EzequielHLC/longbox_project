@@ -13,6 +13,12 @@ Contrato: cualquier botón de la pantalla con
                                           desplegables se agrega la opción nueva.
   data-url="…"                            la vista que la crea.
   data-etiqueta="la editorial"            cómo nombrarla al preguntar y al fallar.
+  data-preguntas='{"campo": "¿…?"}'       opcional: preguntas de sí o no que
+                                          viajan como `true`/`false`.
+  data-tipo-de="tipo"                     opcional: el desplegable de tipo cuyo
+                                          valor viaja como `tipos` (A1 de
+                                          CU-CFG-FMA: el formato nuevo queda
+                                          declarado para el tipo de la carga).
 
 El parcial no sabe nada de ninguna editorial ni de ninguna etiqueta en
 particular: agregar un catálogo más es poner un botón, no tocar este archivo.
@@ -37,12 +43,20 @@ evitar.
       const etiqueta = boton.dataset.etiqueta || campo;
       if (!campo || !url) return;
 
-      const nombre = window.prompt(`Nombre de ${etiqueta} nueva:`);
+      const genero = etiqueta.startsWith("la ") ? "a" : "o";
+      const titulo = etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
+      const nombre = window.prompt(`${titulo} nuev${genero}: escriba el nombre`);
       if (!nombre) return;
 
       const cuerpo = new FormData();
       cuerpo.append("nombre", nombre);
-      cuerpo.append("activa", "on");
+      for (const [nombreCampo, pregunta] of Object.entries(JSON.parse(boton.dataset.preguntas || "{}"))) {
+        cuerpo.append(nombreCampo, window.confirm(pregunta) ? "true" : "false");
+      }
+      if (boton.dataset.tipoDe) {
+        const tipo = boton.closest("form")?.querySelector(`select[name="${boton.dataset.tipoDe}"]`);
+        if (tipo?.value) cuerpo.append("tipos", tipo.value);
+      }
 
       let datos;
       try {

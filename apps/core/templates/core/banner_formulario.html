@@ -1,0 +1,44 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-CFG-BNA (CO-132) y CU-CFG-BNM (CO-133).
+
+La imagen se procesa al enviarla (RNF-05). Si no cumple, se informa el problema
+específico y no se registra ningún cambio, tampoco el de posición.
+{% endcomment %}
+
+{% block titulo %}{{ titulo }} · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+{% url 'core:banner_lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Banners" atras=1 %}</span>
+    <h1>{{ titulo }}</h1>
+  </div>
+</header>
+
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if banner %}
+  <img src="{{ banner.imagen.url }}" alt="Imagen actual del banner {{ banner.numero }}" class="miniatura-banner miniatura-banner--grande">
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  {% include "_campo.html" with campo=form.imagen %}
+  {% if form.numero %}
+    {% include "_campo.html" with campo=form.numero %}
+  {% endif %}
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </div>
+</form>
+{% endblock %}
