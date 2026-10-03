@@ -165,6 +165,11 @@ CAMPOS_DE_IDENTIDAD = (
     ("color_acento", "color de acento"),
     ("tipo_fondo", "fondo"),
     ("color_fondo", "color de fondo"),
+    ("descripcion_tienda", "descripción de la tienda"),
+    ("portada_antetitulo", "antetítulo de la portada"),
+    ("portada_titulo", "título de la portada"),
+    ("portada_bajada", "bajada de la portada"),
+    ("ticker_mensajes", "mensajes del ticker"),
 )
 
 

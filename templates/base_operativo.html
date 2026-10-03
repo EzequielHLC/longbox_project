@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% comment %}
-Cáscara del **modo operativo**: las pantallas que el personal usa muchas veces
-por día. Columna de alto completo con el menú lateral y el área de trabajo a
-todo el ancho, en densidad compacta (`identidad_visual.md`, Modo operativo).
+Cáscara del **modo operativo** (Mostrador): las pantallas que el personal usa
+muchas veces por día. Siempre superficie noche, columna de alto completo con el
+menú lateral y el área de trabajo a todo el ancho, en densidad compacta
+(`identidad_visual.md`, Modo operativo).
 
 No lee nunca las variables `--tienda-*`: la identidad configurable de la
 tienda no alcanza al backoffice.
@@ -16,7 +17,7 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-
   {% include "_ambito_guion.html" %}
 {% endblock %}
 
-{% block clase_body %}modo-operativo{% endblock %}
+{% block clase_body %}modo-operativo superficie-noche{% endblock %}
 
 {% block cuerpo_inicio %}
 {% comment %}
@@ -72,7 +73,7 @@ pantalla.
     </button>
     {# La marca lleva al inicio de cada rol, no a una pantalla que le daría 403. #}
     <a href="{% if user.rol == 'cajero' %}{% url 'core:mostrador' %}{% else %}{% url 'core:panel' %}{% endif %}" class="marca">
-      {% include "_iconos.html" with icono="libro" %}<span>Longbox</span>
+      <span>Longbox</span>
     </a>
     <span class="seccion-actual">{% block seccion %}Backoffice{% endblock %}</span>
   </div>
@@ -80,8 +81,10 @@ pantalla.
     <div class="fila-5">
       <span class="cuenta">
         {% include "_iconos.html" with icono="usuario" %}
-        <span>{{ user.email }} · {{ user.get_rol_display }}</span>
+        <span>{{ user.email }}</span>
       </span>
+      {# El rol en texto, dentro de un rótulo (`identidad_visual.md`, Encabezado). #}
+      <span class="rol">{{ user.get_rol_display }}</span>
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
         {# Nivel 4: salir es navegación, no una acción de la pantalla. #}

@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CO-031 restaurarPrecioCalculado — desde la ficha o la edición (CU-CAT-EDI A2).
 
@@ -24,11 +25,11 @@ queda el producto antes de aceptar.
     <div class="cifras">
       <div class="cifra">
         <span class="cifra__rotulo">Precio actual</span>
-        <span class="cifra__valor">${{ restauracion.precio_actual }}</span>
+        <span class="cifra__valor">{{ restauracion.precio_actual|pesos }}</span>
       </div>
       <div class="cifra">
         <span class="cifra__rotulo">Precio calculado</span>
-        <span class="cifra__valor">${{ restauracion.precio_recalculado }}</span>
+        <span class="cifra__valor">{{ restauracion.precio_recalculado|pesos }}</span>
       </div>
     </div>
     <p>

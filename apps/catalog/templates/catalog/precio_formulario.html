@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CU-PVP-TBA — Dar de Alta Combinación de Precio de Referencia (CO-049).
 
@@ -20,16 +21,16 @@ existe (E1), se enlaza la fila, desde donde se cambia su precio.
 </header>
 
 {% if form.colision %}
-  <div class="mensaje" role="alert">
+  <div class="mensaje mensaje--error" role="alert">
     {% include "_iconos.html" with icono="error" %}
     <span><span class="mensaje__prefijo">Error:</span>
-    la combinación ya está en la tabla a ${{ form.colision.pvp }}.
+    la combinación ya está en la tabla a {{ form.colision.pvp|pesos }}.
     <a href="{% url 'catalog:precio_editar' form.colision.pk %}">Modificar su precio</a>.</span>
   </div>
 {% elif form.non_field_errors %}
   <ul class="mensajes">
     {% for error in form.non_field_errors %}
-      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
     {% endfor %}
   </ul>
 {% endif %}

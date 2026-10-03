@@ -1,0 +1,100 @@
+{% extends "base_publico.html" %}
+{% comment %}
+CU-TDA-CAT — Consultar Catálogo Público (CO-176).
+
+Vista por defecto: Activos con stock, de lo más nuevo a lo más viejo, de a 24.
+Los filtros se combinan y viajan en la dirección, así la ficha puede volver al
+catálogo conservándolos (paso 7). Sin resultados (E1), se ofrece limpiarlos.
+{% endcomment %}
+
+{% block titulo %}Catálogo · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block secciones %}
+<section class="seccion-publica seccion-publica--trama superficie-noche" aria-labelledby="titulo-catalogo">
+  <div class="columna-publica">
+    <div class="titulo-seccion">
+      <p class="antetitulo">Catálogo</p>
+      <h1 id="titulo-catalogo">Toda la tienda</h1>
+    </div>
+
+    <form method="get" class="filtros-tienda" role="search">
+      <div class="campo abarca-2">
+        <label for="q" class="etiqueta">Buscar</label>
+        <input type="search" id="q" name="q" value="{{ filtros.busqueda }}" placeholder="Título, autor o editorial">
+      </div>
+      <div class="campo">
+        <label for="tipo" class="etiqueta">Tipo de material</label>
+        <select id="tipo" name="tipo">
+          <option value="">Todos</option>
+          {% for tipo in tipos %}<option value="{{ tipo.pk }}" {% if filtros.tipo == tipo.pk %}selected{% endif %}>{{ tipo.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="editorial" class="etiqueta">Editorial</label>
+        <select id="editorial" name="editorial">
+          <option value="">Todas</option>
+          {% for editorial in editoriales %}<option value="{{ editorial.pk }}" {% if filtros.editorial == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="etiqueta" class="etiqueta">Franquicia, género o colección</label>
+        <select id="etiqueta" name="etiqueta">
+          <option value="">Todas</option>
+          {% regroup etiquetas by grupo as por_grupo %}
+          {% for bloque in por_grupo %}
+            <optgroup label="{{ bloque.grouper }}">
+              {% for etiqueta in bloque.list %}<option value="{{ etiqueta.pk }}" {% if filtros.etiqueta == etiqueta.pk %}selected{% endif %}>{{ etiqueta.nombre }}</option>{% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="estado" class="etiqueta">Estado</label>
+        <select id="estado" name="estado">
+          {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="desde" class="etiqueta">Precio desde</label>
+        <input type="number" id="desde" name="desde" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_desde|default_if_none:'' }}">
+      </div>
+      <div class="campo">
+        <label for="hasta" class="etiqueta">Precio hasta</label>
+        <input type="number" id="hasta" name="hasta" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_hasta|default_if_none:'' }}">
+      </div>
+      <div class="fila">
+        <button type="submit" class="boton-seccion">{% include "_iconos.html" with icono="buscar" %}<span>Filtrar</span></button>
+        {% if filtros.activos %}<a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Limpiar filtros</a>{% endif %}
+      </div>
+    </form>
+  </div>
+</section>
+
+<div class="union-cinta" aria-hidden="true"></div>
+
+<section class="seccion-publica superficie-papel" aria-label="Resultados">
+  <div class="columna-publica">
+    <p class="antetitulo" role="status">{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</p>
+
+    {% if productos %}
+      {% include "core/_estanteria.html" with productos=productos volver=parametros %}
+
+      {% if pagina.has_other_pages %}
+        <div class="paginacion">
+          <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+          <span class="fila-5">
+            {% if pagina.has_previous %}<a href="?{{ parametros }}&amp;page={{ pagina.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>{% endif %}
+            {% if pagina.has_next %}<a href="?{{ parametros }}&amp;page={{ pagina.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>{% endif %}
+          </span>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="vacio">
+        {% include "_iconos.html" with icono="buscar" %}
+        <p>Ningún producto coincide con los filtros.</p>
+        <a href="{% url 'core:tienda_catalogo' %}" class="boton-seccion">Limpiar filtros</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

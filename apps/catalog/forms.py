@@ -36,6 +36,7 @@ from apps.catalog.models import (
     Etiqueta,
     Formato,
     GrupoEtiqueta,
+    ImagenProducto,
     LoteAlta,
     Producto,
     ProductoEditorial,
@@ -45,6 +46,7 @@ from apps.catalog.models import (
 )
 from apps.catalog.services import precio_de_referencia
 from apps.core import cotizaciones
+from apps.core import imagenes as imagenes_util
 from apps.core.models import ConfiguracionSistema
 
 # Texto exacto que la documentación de casos de uso exige mostrar al editar el
@@ -137,6 +139,21 @@ def _etiquetas_de(producto):
     if not producto.pk:
         return []
     return list(producto.etiquetas.values_list("pk", flat=True))
+
+
+def formato_con_medidas(formato):
+    """Cómo se ofrece un formato en un desplegable: con sus medidas.
+
+    «B6» solo obliga a recordar qué tamaño era; «B6 · 12,8 × 18,2 cm» se elige
+    mirando el tomo que se tiene en la mano.
+    """
+    return f"{formato.nombre} · {formato.descripcion}" if formato.descripcion else formato.nombre
+
+
+def mostrar_medidas(campo):
+    """Hace que un campo de formato (simple o múltiple) muestre las medidas."""
+    campo.label_from_instance = formato_con_medidas
+    return campo
 
 
 def formatos_para(tipo):
@@ -251,6 +268,7 @@ class CabeceraLoteForm(forms.Form):
         self.fields["editorial"].queryset = editoriales_activas()
         self.fields["tipo"].queryset = tipos_activos()
         self.fields["formato"].queryset = formatos_activos()
+        mostrar_medidas(self.fields["formato"])
         self.fields["etiquetas"].queryset = etiquetas_activas()
 
     def clean(self):
@@ -501,6 +519,7 @@ class ItemLoteForm(forms.Form):
         # esconde las opciones, pero un valor enviado a mano tiene que morir
         # acá, no dibujarse distinto allá.
         self.fields["formato"].queryset = formatos_para(self._tipo_que_rige())
+        mostrar_medidas(self.fields["formato"])
 
     def _tipo_que_rige(self):
         """El tipo del ítem o, si no lo declara, el de la cabecera.
@@ -889,7 +908,67 @@ CHOQUE_DE_EDICION = (
 )
 
 
-class ProductoNoEditorialForm(forms.ModelForm):
+class VariasImagenesWidget(forms.ClearableFileInput):
+    """Un `input[type=file]` que acepta varios archivos de una vez."""
+
+    allow_multiple_selected = True
+
+
+class CampoVariasImagenes(forms.FileField):
+    """Cero o más archivos; devuelve siempre una lista."""
+
+    widget = VariasImagenesWidget
+
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+        archivos = data if isinstance(data, (list, tuple)) else [data]
+        return [super(CampoVariasImagenes, self).clean(archivo, initial) for archivo in archivos]
+
+
+class GaleriaFormMixin:
+    """Las imágenes adicionales del producto (B-01-003), en el alta y la edición.
+
+    Se procesan al validar (RNF-05): si una no cumple, el formulario entero no
+    es válido y se dice cuál falló. Lo que llega a la vista ya es WebP.
+    """
+
+    def _armar_galeria(self):
+        if self.instance.pk and self.instance.imagenes.exists():
+            self.fields["quitar_imagenes"] = forms.ModelMultipleChoiceField(
+                label="Quitar imágenes",
+                queryset=self.instance.imagenes.all(),
+                required=False,
+                widget=forms.CheckboxSelectMultiple,
+            )
+        self.fields["imagenes_nuevas"] = CampoVariasImagenes(
+            label="Imágenes adicionales",
+            required=False,
+            help_text=(
+                f"Hasta {ImagenProducto.MAXIMO} además de la portada: contratapa, interior, "
+                "detalles. JPG, PNG o WebP; se guardan en WebP."
+            ),
+        )
+        self.fields["imagenes_nuevas"].widget.attrs["accept"] = "image/jpeg,image/png,image/webp"
+
+    def clean_imagenes_nuevas(self):
+        archivos = self.cleaned_data.get("imagenes_nuevas") or []
+        existentes = self.instance.imagenes.count() if self.instance.pk else 0
+        quitadas = len(self.cleaned_data.get("quitar_imagenes") or [])
+        if existentes - quitadas + len(archivos) > ImagenProducto.MAXIMO:
+            raise forms.ValidationError(
+                f"Un producto admite hasta {ImagenProducto.MAXIMO} imágenes adicionales."
+            )
+        procesadas = []
+        for archivo in archivos:
+            try:
+                procesadas.append(imagenes_util.procesar(archivo))
+            except imagenes_util.ImagenInvalida as error:
+                raise forms.ValidationError(f"«{archivo.name}»: {error}") from error
+        return procesadas
+
+
+class ProductoNoEditorialForm(GaleriaFormMixin, forms.ModelForm):
     """Alta de TCG, figura, merchandising o insumo (CU-CAT-ALT).
 
     **Es de a uno, no por lote**, a diferencia del alta editorial. No es una
@@ -943,6 +1022,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._armar_galeria()
 
         # Solo categorías del rubro, y solo activas. El recorte del desplegable
         # es comodidad; la validación de verdad la hace el modelo en su `clean`,
@@ -1014,7 +1094,7 @@ class ProductoNoEditorialForm(forms.ModelForm):
         return datos
 
 
-class ProductoEditorialForm(forms.ModelForm):
+class ProductoEditorialForm(GaleriaFormMixin, forms.ModelForm):
     """Edición de un tomo ya cargado (CU-CAT-EDI).
 
     **No existe un alta editorial de a uno**: el material editorial entra por
@@ -1069,6 +1149,7 @@ class ProductoEditorialForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._armar_galeria()
 
         # Lo activo más lo que el producto ya tiene: la baja de un catálogo
         # conserva lo que ya lo usa, y editar otro dato no debe perderlo.
@@ -1080,6 +1161,7 @@ class ProductoEditorialForm(forms.ModelForm):
             tipos_activos().filter(clase=EDITORIAL), producto.tipo_id
         )
         self.fields["formato"].queryset = con_el_actual(formatos_activos(), producto.formato_id)
+        mostrar_medidas(self.fields["formato"])
         # El widget antes que el queryset, que es el que le carga las opciones.
         self.fields["etiquetas"].widget = forms.SelectMultiple()
         self.fields["etiquetas"].queryset = con_el_actual(
@@ -1206,6 +1288,7 @@ class PrecioReferenciaForm(forms.ModelForm):
         self.fields["editorial"].queryset = editoriales_activas()
         self.fields["tipo"].queryset = tipos_activos().filter(clase=EDITORIAL, usa_formato=True)
         self.fields["formato"].queryset = formatos_activos()
+        mostrar_medidas(self.fields["formato"])
         for nombre in ("editorial", "tipo", "formato"):
             self.fields[nombre].error_messages["invalid_choice"] = self.INCOMPATIBLE
         self.fields["pvp"].widget.attrs.update({"step": "0.01", "inputmode": "decimal"})
@@ -1478,6 +1561,7 @@ class TipoForm(CatalogoNombradoForm):
         super().__init__(*args, **kwargs)
         # A2 de `TPA` y `TPM`: sólo los activos que no aplican a todos.
         self.fields["formatos"].queryset = Formato.objects.filter(activo=True, aplica_a_todos=False)
+        mostrar_medidas(self.fields["formatos"])
         if self.instance.pk:
             self.fields["formatos"].initial = list(
                 self.instance.formatos.filter(aplica_a_todos=False).values_list("pk", flat=True)
@@ -1778,6 +1862,7 @@ class BorradorForm(forms.ModelForm):
         )
         self.fields["tipo"].queryset = con_el_actual(tipos_activos(), borrador.tipo_id)
         self.fields["formato"].queryset = con_el_actual(formatos_activos(), borrador.formato_id)
+        mostrar_medidas(self.fields["formato"])
 
         self.fields["volumen"].validators.append(MaxValueValidator(VOLUMEN_MAXIMO))
         self.fields["stock_inicial"].validators.append(MaxValueValidator(STOCK_MAXIMO))

@@ -43,7 +43,7 @@ No lleva columna de acciones: la pantalla es de consulta (ver `ClienteListaView`
                 {% endif %}
               </td>
               <td>
-                <span class="marca-estado{% if cliente.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span>
+                <span class="marca-estado{% if cliente.estado == 'activo' %} marca-estado--ok{% elif cliente.estado == 'pendiente_activacion' %} marca-estado--atencion{% else %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span>
               </td>
               <td class="datos sin-cortar secundario">{{ cliente.date_joined|date:"d/m/Y" }}</td>
               {% comment %}

@@ -8,13 +8,12 @@ sección en blanco (CO-136).
 {% block titulo %}Preguntas frecuentes · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
 
 {% block contenido %}
-<header class="encabezado-de-pantalla">
-  <div class="encabezado-de-pantalla__textos">
-    <h1>Preguntas frecuentes</h1>
-  </div>
-</header>
+<div class="titulo-seccion">
+  <p class="antetitulo">Ayuda</p>
+  <h1>Preguntas frecuentes</h1>
+</div>
 
 {% if faq.contenido %}
-  <article class="contenido-markdown">{{ faq_html|safe }}</article>
+  <article class="globo contenido-markdown">{{ faq_html|safe }}</article>
 {% endif %}
 {% endblock %}

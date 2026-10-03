@@ -31,13 +31,16 @@ segundo estado que pueda desincronizarse del primero.
       select.setAttribute("tabindex", "-1");
 
       // Cada opción del select, con su grupo, para no volver a leer el DOM en
-      // cada tecla.
-      const opciones = Array.from(select.options).map((option) => {
-        const partes = option.textContent.split("·");
-        const grupo = partes.length > 1 ? partes[0].trim() : "";
-        const nombre = partes.length > 1 ? partes.slice(1).join("·").trim() : option.textContent.trim();
-        return { option, grupo, nombre, buscable: normalizar(option.textContent) };
-      });
+      // cada tecla. Se vuelve a leer sólo cuando el alta al vuelo agrega una.
+      function leerOpciones() {
+        return Array.from(select.options).map((option) => {
+          const partes = option.textContent.split("·");
+          const grupo = partes.length > 1 ? partes[0].trim() : "";
+          const nombre = partes.length > 1 ? partes.slice(1).join("·").trim() : option.textContent.trim();
+          return { option, grupo, nombre, buscable: normalizar(option.textContent) };
+        });
+      }
+      let opciones = leerOpciones();
 
       let resaltado = -1;
 
@@ -188,8 +191,121 @@ segundo estado que pueda desincronizarse del primero.
         }
       });
 
+      raiz.addEventListener("etiquetas:recargar", () => {
+        opciones = leerOpciones();
+        pintarFichas();
+        if (!lista.classList.contains("hidden")) pintarLista();
+      });
+
       pintarFichas();
     }
+
+    // -----------------------------------------------------------------------
+    // Alta al vuelo de una etiqueta, y de su grupo si hace falta (B-02-005).
+    //
+    // Un diálogo nativo con el nombre y el grupo; el grupo puede ser uno
+    // nuevo. Lo resuelve del otro lado el mismo formulario que la pantalla de
+    // etiquetas, con su normalización y su auditoría. La etiqueta nueva se
+    // agrega a todos los selectores de etiquetas de la pantalla —y al molde de
+    // los ítems del lote— y queda elegida en el que se pidió.
+    // -----------------------------------------------------------------------
+    let dialogo = null;
+
+    function armarDialogo() {
+      dialogo = document.createElement("dialog");
+      dialogo.className = "dialogo";
+      dialogo.innerHTML = `
+        <form method="dialog" class="formulario pila-3" novalidate>
+          <h2>Nueva etiqueta</h2>
+          <div class="campo">
+            <label class="etiqueta" for="etiqueta-rapida-nombre">Nombre</label>
+            <input type="text" id="etiqueta-rapida-nombre" name="nombre" autocomplete="off">
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="etiqueta-rapida-grupo">Grupo</label>
+            <select id="etiqueta-rapida-grupo" name="grupo"></select>
+          </div>
+          <div class="campo" data-grupo-nuevo hidden>
+            <label class="etiqueta" for="etiqueta-rapida-grupo-nuevo">Nombre del grupo nuevo</label>
+            <input type="text" id="etiqueta-rapida-grupo-nuevo" name="grupo_nuevo" autocomplete="off">
+          </div>
+          <p class="error-de-campo" data-errores hidden></p>
+          <div class="acciones">
+            <button type="submit" class="boton-primario" value="crear">Crear y elegir</button>
+            <button type="submit" class="boton-texto" value="cancelar">Cancelar</button>
+          </div>
+        </form>`;
+      document.body.append(dialogo);
+
+      const grupo = dialogo.querySelector("[name=grupo]");
+      grupo.addEventListener("change", () => {
+        dialogo.querySelector("[data-grupo-nuevo]").hidden = grupo.value !== "nuevo";
+      });
+      return dialogo;
+    }
+
+    async function abrirAltaRapida(boton) {
+      const caja = dialogo || armarDialogo();
+      const formulario = caja.querySelector("form");
+      const errores = caja.querySelector("[data-errores]");
+      const grupo = caja.querySelector("[name=grupo]");
+      formulario.reset();
+      errores.hidden = true;
+      caja.querySelector("[data-grupo-nuevo]").hidden = true;
+
+      const respuesta = await fetch(boton.dataset.url, { headers: { Accept: "application/json" } });
+      const { grupos } = await respuesta.json();
+      grupo.innerHTML = "";
+      for (const dato of grupos) grupo.add(new Option(dato.nombre, dato.id));
+      grupo.add(new Option("Grupo nuevo…", "nuevo"));
+      if (!grupos.length) {
+        grupo.value = "nuevo";
+        caja.querySelector("[data-grupo-nuevo]").hidden = false;
+      }
+
+      formulario.onsubmit = async (evento) => {
+        if (evento.submitter?.value !== "crear") return;
+        evento.preventDefault();
+        const cuerpo = new FormData(formulario);
+        const csrf = document.querySelector('[name="csrfmiddlewaretoken"]')?.value;
+        const envio = await fetch(boton.dataset.url, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrf },
+          body: cuerpo,
+        });
+        const datos = await envio.json();
+        if (!envio.ok) {
+          errores.textContent = "Error: " + Object.values(datos.errores || {}).flat().join(" ");
+          errores.hidden = false;
+          return;
+        }
+
+        const selectores = 'select[name="etiquetas"], select[name$="-etiquetas"]';
+        const molde = document.getElementById("molde-item");
+        for (const raiz of [document, molde?.content].filter(Boolean)) {
+          for (const select of raiz.querySelectorAll(selectores)) {
+            select.add(new Option(datos.texto, datos.id));
+          }
+        }
+        const propio = boton.closest("[data-selector-etiquetas]");
+        const elegido = propio?.querySelector("select");
+        if (elegido) elegido.querySelector(`option[value="${datos.id}"]`).selected = true;
+        for (const raiz of document.querySelectorAll("[data-selector-etiquetas]")) {
+          raiz.dispatchEvent(new CustomEvent("etiquetas:recargar"));
+        }
+        caja.close();
+      };
+
+      caja.showModal();
+      caja.querySelector("[name=nombre]").focus();
+    }
+
+    document.addEventListener("click", (evento) => {
+      const boton = evento.target.closest("[data-etiqueta-rapida]");
+      if (!boton) return;
+      evento.preventDefault();
+      abrirAltaRapida(boton);
+    });
 
     function mejorarSelectores(raiz) {
       const contenedor = raiz || document;

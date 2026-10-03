@@ -19,7 +19,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.accounts.models import Usuario
-from apps.catalog import catalogos, revisiones, services, tabla_de_precios
+from apps.catalog import catalogos, galeria, revisiones, services, tabla_de_precios
 from apps.catalog.forms import (
     BorradorForm,
     CabeceraLoteForm,
@@ -275,15 +275,21 @@ class ProductoNoEditorialAltaView(CatalogoAdminMixin, CreateView):
     def form_valid(self, form):
         with transaction.atomic():
             producto = form.save()
+            agregadas, _ = galeria.actualizar(
+                producto, nuevas=form.cleaned_data.get("imagenes_nuevas") or []
+            )
+            detalle = (
+                f"«{producto.titulo}» ({producto.tipo}) · código {producto.codigo} · "
+                f"${producto.precio} · stock inicial {producto.stock}"
+            )
+            if agregadas:
+                detalle += f" · {galeria.describir(agregadas, 0)}"
             RegistroAuditoria.registrar(
                 RegistroAuditoria.ALTA_PRODUCTO_NO_EDITORIAL,
                 actor=self.request.user,
                 ip=obtener_ip(self.request),
                 objetivo=producto,
-                detalle=(
-                    f"«{producto.titulo}» ({producto.tipo}) · código {producto.codigo} · "
-                    f"${producto.precio} · stock inicial {producto.stock}"
-                ),
+                detalle=detalle,
             )
 
         self.object = producto
@@ -916,9 +922,18 @@ class ProductoDetalleView(InventarioMixin, DetailView):
             ContentType.objects.get_for_model(modelo)
             for modelo in (Producto, ProductoEditorial, ProductoNoEditorial)
         ]
-        return RegistroAuditoria.objects.filter(
-            objetivo_tipo__in=tipos, objetivo_pk=self.object.pk
-        ).select_related("actor")[:25]
+        del_producto = Q(objetivo_tipo__in=tipos, objetivo_pk=self.object.pk)
+
+        # **El alta por lote se audita sobre el lote**, una entrada por lote y no
+        # por ítem (CU-ALT-NAC paso 8). Sin sumarla, el historial de un tomo
+        # cargado por lote empezaba en su primera modificación, como si hubiera
+        # aparecido solo.
+        lote = getattr(self.object, "lote_id", None)
+        if lote:
+            del_producto |= Q(
+                objetivo_tipo=ContentType.objects.get_for_model(LoteAlta), objetivo_pk=lote
+            )
+        return RegistroAuditoria.objects.filter(del_producto).select_related("actor")[:25]
 
 
 class BorradorListaView(CatalogoAdminMixin, ListView):
@@ -1243,25 +1258,40 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
         return contexto
 
     def form_valid(self, form):
-        # Se lee de la base **antes** de guardar: `form.instance` ya viene con
-        # los valores nuevos aplicados, así que compararlo contra sí mismo no
-        # daría ninguna diferencia.
+        # El «antes» se lee de la base y **antes** de guardar. Leerlo después
+        # —como se hacía— daba lo mismo para los campos simples, pero no para
+        # las etiquetas: la relación se consulta en vivo, así que el «antes»
+        # ya traía las nuevas y el cambio no se registraba nunca.
+        campos = self._campos_auditados(self.object)
         anterior = type(self.object).objects.get(pk=self.object.pk)
+        antes = {etiqueta: leer(anterior) for etiqueta, leer in campos.items()}
 
         with transaction.atomic():
             producto = form.save()
-            lo_que_cambio = cambios.entre(anterior, producto, self._campos_auditados(producto))
-            if lo_que_cambio:
+            agregadas, quitadas = galeria.actualizar(
+                producto,
+                nuevas=form.cleaned_data.get("imagenes_nuevas") or [],
+                quitar=form.cleaned_data.get("quitar_imagenes") or [],
+            )
+            lo_que_cambio = {
+                etiqueta: (antes[etiqueta], leer(producto))
+                for etiqueta, leer in campos.items()
+                if antes[etiqueta] != leer(producto)
+            }
+            partes = [cambios.describir(lo_que_cambio)] if lo_que_cambio else []
+            if agregadas or quitadas:
+                partes.append(galeria.describir(agregadas, quitadas))
+            if partes:
                 RegistroAuditoria.registrar(
                     RegistroAuditoria.MODIFICACION_PRODUCTO,
                     actor=self.request.user,
                     ip=obtener_ip(self.request),
                     objetivo=producto,
-                    detalle=f"{producto.codigo} · {cambios.describir(lo_que_cambio)}",
+                    detalle=f"{producto.codigo} · " + "; ".join(partes),
                 )
 
         self.object = producto
-        if lo_que_cambio:
+        if partes:
             messages.success(self.request, f"Se actualizó «{producto.titulo}».")
         else:
             # Guardar sin haber tocado nada no es un error, pero decir "se
@@ -1274,10 +1304,10 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
     def _campos_auditados(producto):
         """Qué se registra en el log, con su par anterior → nuevo.
 
-        Los comunes primero y los del rubro después. No entra todo el modelo a
-        propósito: un log con la portada y la descripción completa adentro deja
-        de poder leerse, y lo que importa reconstruir es qué cambió de la
-        identidad, del precio y del stock.
+        Los comunes primero y los del rubro después. La sinopsis no entra
+        entera —un log con párrafos adentro deja de poder leerse—: se dice
+        cuántos caracteres tiene, y el texto completo se compara aparte para
+        no perder un cambio que no altere el largo.
         """
         auditados = {
             "título": lambda p: p.titulo,
@@ -1286,6 +1316,10 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             "stock": lambda p: str(p.stock),
             "código de barras": lambda p: p.codigo_barras or "sin declarar",
             "solo adultos": lambda p: "sí" if p.solo_adultos else "no",
+            "etiquetas": lambda p: ", ".join(e.nombre for e in p.etiquetas.order_by("nombre"))
+            or "ninguna",
+            "portada": lambda p: p.portada.name.rsplit("/", 1)[-1] if p.portada else "pendiente",
+            "descripción": _sinopsis,
         }
         if producto.clase == Producto.EDITORIAL:
             auditados.update(
@@ -1295,12 +1329,36 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                     "editorial": lambda p: str(p.editorial),
                     "formato": lambda p: str(p.formato) if p.formato else "sin formato",
                     "autor": lambda p: p.autor or "sin declarar",
+                    "fecha de llegada": lambda p: (
+                        f"{p.fecha_llegada:%d/%m/%Y}" if p.fecha_llegada else "sin fecha"
+                    ),
                     "precio fijado a mano": lambda p: "sí" if p.precio_manual else "no",
                 }
             )
         else:
             auditados["marca"] = lambda p: p.marca or "sin marca"
         return auditados
+
+
+class _Sinopsis(str):
+    """El texto de la sinopsis que se compara entero y se muestra resumido."""
+
+    def __new__(cls, texto):
+        objeto = super().__new__(cls, f"{len(texto)} caracteres" if texto else "vacía")
+        objeto.texto = texto
+        return objeto
+
+    def __eq__(self, otro):
+        return isinstance(otro, _Sinopsis) and self.texto == otro.texto
+
+    def __ne__(self, otro):
+        return not self == otro
+
+    __hash__ = str.__hash__
+
+
+def _sinopsis(producto):
+    return _Sinopsis(producto.descripcion or "")
 
 
 class ProductoBajaView(CatalogoAdminMixin, DetailView):

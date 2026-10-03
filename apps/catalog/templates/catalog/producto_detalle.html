@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% load l10n %}
 {% comment %}
 Ficha del producto (`CO-163 consultarFichaDeProducto`). La abren el listado del
@@ -32,7 +33,7 @@ esconderse con CSS.
   {% if producto.esta_en_pre_venta %}
     <span class="calculado" title="calculado">{{ producto.get_estado_display }}</span>
   {% else %}
-    <span class="marca-estado{% if producto.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
+    <span class="marca-estado{% if producto.estado == 'activo' %} marca-estado--ok{% elif producto.estado == 'pre_venta' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
   {% endif %}
 </header>
 
@@ -49,13 +50,25 @@ esconderse con CSS.
         <span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span>
       </div>
     {% endif %}
+    {% with adicionales=producto.imagenes.all %}
+      {% if adicionales %}
+        {# B-01-003: las imágenes que acompañan a la portada. #}
+        <div class="galeria-producto" aria-label="Imágenes adicionales">
+          {% for imagen in adicionales %}
+            <a href="{{ imagen.imagen.url }}" class="galeria-producto__item" target="_blank" rel="noopener">
+              <img src="{{ imagen.imagen.url }}" alt="Imagen adicional {{ forloop.counter }} de {{ producto.titulo }}">
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
     {% if es_administrador %}
       <ul class="lista-renglones">
         <li><a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Editar producto</span></a></li>
         {% if restauracion.aplica %}
           {# CO-031: sólo cuando hay un precio calculado al cual volver. #}
-          <li><a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado (${{ restauracion.precio_recalculado }})</span></a></li>
+          <li><a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado ({{ restauracion.precio_recalculado|pesos }})</span></a></li>
         {% endif %}
         {% if producto.estado == "descatalogado" %}
           <li><a href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
@@ -71,7 +84,7 @@ esconderse con CSS.
       <div class="seccion__titulo"><h2 id="titulo-datos">Datos</h2></div>
       <dl class="datos-de-ficha">
         <dt>Precio</dt>
-        <dd class="texto-cifra">${{ producto.precio }}</dd>
+        <dd class="texto-cifra">{{ producto.precio|pesos }}</dd>
 
         <dt>Stock</dt>
         <dd>
@@ -114,20 +127,20 @@ esconderse con CSS.
         <div class="seccion__titulo"><h2 id="titulo-composicion">Composición del precio</h2></div>
         <dl class="datos-de-ficha">
           <dt>Costo en origen</dt>
-          <dd class="datos">${{ producto.costo_origen }}{% if producto.lote.tiene_conversion %} <span class="secundario">{{ producto.lote.moneda_origen }}</span>{% endif %}</dd>
+          <dd class="datos">{{ producto.costo_origen|pesos }}{% if producto.lote.tiene_conversion %} <span class="secundario">{{ producto.lote.moneda_origen }}</span>{% endif %}</dd>
 
           <dt>Costo relativo de envío</dt>
           <dd><span class="calculado" title="calculado">{{ producto.lote.cre|unlocalize|default:"—" }}</span></dd>
 
           <dt>Precio base</dt>
-          <dd><span class="calculado" title="calculado">${{ producto.precio_base }}</span></dd>
+          <dd><span class="calculado" title="calculado">{{ producto.precio_base|pesos }}</span></dd>
 
           <dt>Margen al alta</dt>
           <dd><span class="calculado" title="calculado">{{ producto.lote.margen_aplicado|unlocalize|default:"—" }}</span></dd>
         </dl>
 
         {% if producto.lote.tiene_conversion %}
-          <p class="texto-chico secundario">Convertido al alta con 1 {{ producto.lote.moneda_origen }} = ${{ producto.lote.cotizacion }}.</p>
+          <p class="texto-chico secundario">Convertido al alta con 1 {{ producto.lote.moneda_origen }} = {{ producto.lote.cotizacion|pesos }}.</p>
         {% endif %}
 
         {% if producto.precio_manual %}

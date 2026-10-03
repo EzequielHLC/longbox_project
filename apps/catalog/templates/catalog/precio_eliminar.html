@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CU-PVP-TBB — Dar de Baja Combinación de Precio de Referencia.
 
@@ -17,7 +18,7 @@ vínculo y no quedan con precio a mano.
   <div class="encabezado-de-pantalla__textos">
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Tabla de precios" atras=1 %}</span>
     <h1>Dar de baja combinación de precio</h1>
-    <p>{{ precio.editorial }} · {{ precio.tipo }} · {{ precio.formato }} · <span class="datos">${{ precio.pvp }}</span></p>
+    <p>{{ precio.editorial }} · {{ precio.tipo }} · {{ precio.formato }} · <span class="datos">{{ precio.pvp|pesos }}</span></p>
   </div>
 </header>
 

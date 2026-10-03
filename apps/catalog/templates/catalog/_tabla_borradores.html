@@ -1,3 +1,4 @@
+{% load moneda %}
 {% comment %}
 La cola de borradores. Es el parcial que refresca el buscador en vivo, y también
 el cuerpo del formulario de confirmación en lote — por eso las casillas viven acá
@@ -46,7 +47,7 @@ dicen con su palabra; sólo el incompleto va en peso 600.
             </td>
             <td class="datos{% if not borrador.isbn %} secundario{% endif %}">{{ borrador.isbn|default:"—" }}</td>
             <td class="secundario">{{ borrador.proveedor }}</td>
-            <td class="numero">{% if borrador.precio != None %}${{ borrador.precio }}{% else %}<span class="estado estado--atencion">Falta</span>{% endif %}</td>
+            <td class="numero">{% if borrador.precio != None %}{{ borrador.precio|pesos }}{% else %}<span class="estado estado--atencion">Falta</span>{% endif %}</td>
             <td class="numero">{{ borrador.stock_inicial }}</td>
             {# El estado lo derivó el sistema de la fecha anunciada: valor calculado. #}
             <td>
@@ -56,9 +57,9 @@ dicen con su palabra; sólo el incompleto va en peso 600.
               {% if borrador.estado == "incompleto" %}
                 <span class="marca-estado marca-estado--atencion">Incompleto</span>
               {% elif borrador.confianzas_bajas_sin_revisar %}
-                <span class="marca-estado">Confianza baja</span>
+                <span class="marca-estado marca-estado--dato">Confianza baja</span>
               {% else %}
-                <span class="marca-estado marca-estado--apagado">Listo</span>
+                <span class="marca-estado marca-estado--ok">Listo</span>
               {% endif %}
             </td>
             <td class="acciones-de-fila">

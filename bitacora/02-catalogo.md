@@ -196,3 +196,27 @@ con filtro por estado, alta, modificación que reactiva y baja en dos tiempos. L
 etiquetas pasó a ser dos (grupos, y etiquetas de un grupo). El inventario exporta a CSV y filtra
 por editorial. Queda: los filtros del catálogo público (B-02-004) y las pruebas de contrato de la
 edición, la baja y la reactivación de producto (`CO-030` a `CO-036`).
+
+---
+
+### B-02-005 · Alta al vuelo de etiquetas y grupos desde las altas de producto
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CAT-ETA`, `CU-CAT-GRA`, `CO-038`, `CO-042`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-02
+
+**Qué apareció.**
+Al cargar un producto con una franquicia o un género que todavía no existe, había que abandonar
+el alta para crear la etiqueta.
+
+**Qué dice la especificación.**
+Las fichas de `CU-CAT-ETA` y `CU-CAT-GRA` no tienen un flujo alternativo de alta desde otro
+formulario, a diferencia de `CU-CFG-EDA` A1.
+
+**Qué se hizo.**
+Junto a cada selector de etiquetas, «Nueva etiqueta o grupo» abre un diálogo con el nombre y el
+grupo, que puede ser uno nuevo. Pasa por los mismos formularios, la misma normalización y la misma
+auditoría que las pantallas de grupos y etiquetas; si la etiqueta no se puede crear, tampoco queda
+el grupo. La etiqueta nueva queda elegida.
+
+**Qué habría que cambiar.**
+`CU-CAT-ETA` y `CU-CAT-GRA`: agregar un A1 «alta desde otro formulario», como el de `CU-CFG-EDA`.

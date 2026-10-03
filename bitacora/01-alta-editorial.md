@@ -145,3 +145,77 @@ son contratos que falten escribir sino comportamiento deliberadamente fuera del 
 Nada en el código de la ingesta. La cuarta tarea de la lista —el alta del primer Administrador— se
 construye en el bloque 2 como consecuencia del retiro del admin de Django, y queda registrada en
 `bitacora/13-gestion-de-usuarios.md`.
+
+---
+
+### B-01-003 · Un producto admite imágenes adicionales además de su portada
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `Producto`, `CU-CAT-ALT`, `CU-CAT-EDI`, `CU-CAT-INV`, RNF-05
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-02
+
+**Qué apareció.**
+El responsable pidió poder subir más de una imagen por producto.
+
+**Qué dice la especificación.**
+> «imagen : archivo «marcador "imagen pendiente" si falta»» (`MODELO_DE_DOMINIO.md`, `Producto`)
+
+RNF-05 habla de «portadas, imágenes de producto» en plural, sin declarar cuántas.
+
+**Qué se hizo.**
+La portada sigue siendo **la** imagen del producto, con su marcador «imagen pendiente»: ningún
+contrato cambia. Se suma una galería de hasta 8 imágenes adicionales, que se cargan en el alta no
+editorial y en la edición, se pueden quitar de a una, se procesan con RNF-05 (WebP, 800 px) y se
+ven en la ficha. Agregarlas o quitarlas queda en el historial del producto. La carga de lotes no
+las ofrece.
+
+**Qué habría que cambiar.**
+`MODELO_DE_DOMINIO.md`, Área 3: agregar `ImagenProducto` (imagen, posición) con `Producto` 1 —
+0..8. `CO-030`, parámetros: «imágenes adicionales?».
+
+---
+
+### B-01-004 · El historial del producto incluye su alta por lote y todo lo que la edición cambia
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CAT-INV` paso 6, `CO-030`, `CO-163`
+**Estado:** Abierta
+
+**Qué apareció.**
+El historial de un tomo cargado por lote empezaba en su primera modificación: el alta se audita
+sobre el lote, una entrada por lote. Además, una edición que sólo cambiaba etiquetas, sinopsis,
+portada o fecha de llegada se guardaba pero no dejaba entrada, y la pantalla decía «No había
+cambios para guardar».
+
+**Qué dice la especificación.**
+> «Se creó una entrada en el registro de auditoría con acción «Modificación de producto», el actor y
+> el momento de la operación» (`CO-030`, Postcondiciones)
+
+Sobre qué campos se registran y qué muestra el historial de la ficha: `Nada`.
+
+**Qué se hizo.**
+La ficha suma al historial la entrada del alta del lote del que salió el producto. La edición
+registra también etiquetas, sinopsis (por su largo, comparando el texto entero), portada, fecha de
+llegada e imágenes adicionales. Los valores del detalle van entre comillas angulares, como el
+resto del log.
+
+**Qué habría que cambiar.**
+`CU-CAT-INV` paso 6: el historial de la ficha incluye el alta del lote de origen.
+
+---
+
+### B-01-005 · Los desplegables de formato muestran las medidas
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-ALT-NAC`, `CU-ALT-IMP`, `CU-CAT-EDI`, `CU-ALT-REV`, `CU-PVP-TBA`, `CU-CFG-TPM`
+**Estado:** Abierta — pedido del responsable el 2026-10-02
+
+**Qué apareció.**
+Elegir un formato por su nombre obliga a recordar qué tamaño era.
+
+**Qué dice la especificación.**
+`Nada.`
+
+**Qué se hizo.**
+Todo desplegable o lista de formatos los ofrece como «B6 · 12,8 × 18,2 cm» cuando el formato tiene
+medidas cargadas.
+
+**Qué habría que cambiar.**
+Nada.

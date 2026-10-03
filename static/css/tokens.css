@@ -1,0 +1,319 @@
+/* =====================================================================
+   VIÑETA NOCTURNA · tokens.css
+   Fuente de verdad: .contexto-ia/TOKENS_VISUALES.md
+   Criterio de uso:  .contexto-ia/identidad_visual.md
+
+   Capas:
+     1. Fuentes (autoalojadas)
+     2. Primitivos   → valores crudos. Ninguna regla de componente los usa directo.
+     3. Escalas      → tipografía, espacio, forma, movimiento, texturas.
+     4. Superficies  → .superficie-noche / .superficie-papel definen los
+                       semánticos (--fondo, --texto, --acento…). Los componentes
+                       sólo leen semánticos: así funcionan sobre cualquier fondo.
+     5. Modos        → .modo-publico / .modo-operativo.
+     6. Movimiento reducido.
+   ===================================================================== */
+
+
+/* ---------------------------------------------------------------------
+   1. FUENTES · autoalojadas en static/fuentes/ (ver RECURSOS_VISUALES.md)
+   --------------------------------------------------------------------- */
+@font-face {
+  font-family: "Archivo";
+  src: url("../fuentes/archivo-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Archivo";
+  src: url("../fuentes/archivo-italic-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fuentes/jetbrains-mono-variable.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bangers";
+  src: url("../fuentes/bangers-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+:root {
+  /* -------------------------------------------------------------------
+     2. PRIMITIVOS DE COLOR
+     ------------------------------------------------------------------- */
+  /* Neutros oscuros: de fondo a borde */
+  --noche:        #0A0A0C;
+  --asfalto:      #141418;
+  --hormigon:     #1D1D23;
+  --cable:        #2F2F37;
+  --control:      #6E6E78;
+  /* Neutros claros */
+  --humo:         #9A9AA5;
+  --tiza:         #D4D4DA;
+  --hueso:        #F2EFE8;
+  --blanco:       #FFFFFF;
+  --grafito:      #4A4A52;
+  --linea-papel:  #CFCBC2;
+  /* Acento */
+  --senal:        #FF6A13;
+  --senal-vivo:   #FF8A3D;
+  --senal-hondo:  #B23E00;
+  /* Funcionales (siempre acompañados de texto) */
+  --alarma:       #FF4D5E;
+  --alarma-hondo: #C4162A;
+  --ok:           #B6F23C;
+  --dato:         #5CC8FF;
+
+  /* -------------------------------------------------------------------
+     3a. TIPOGRAFÍA
+     ------------------------------------------------------------------- */
+  --fuente-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --fuente-interfaz: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-datos: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --fuente-grito: "Bangers", "Impact", "Arial Black", sans-serif;
+
+  --ancho-apretado: 68%;
+  --ancho-condensado: 78%;
+  --ancho-semi: 88%;
+  --ancho-normal: 100%;
+
+  /* Escala pública (fluida) */
+  --pub-mega:     clamp(3rem, 1.6rem + 6.4vw, 7.5rem);
+  --pub-titulo-1: clamp(2.25rem, 1.5rem + 3.2vw, 3.75rem);
+  --pub-titulo-2: clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem);
+  --pub-titulo-3: 1.375rem;
+  --pub-cuerpo:   1.0625rem;
+  --pub-chico:    0.875rem;
+  --pub-rotulo:   0.75rem;
+  --pub-grito:    clamp(1.5rem, 1.1rem + 1.6vw, 2.5rem);
+
+  /* Escala operativa (fija) */
+  --op-titulo-1: 1.625rem;
+  --op-titulo-2: 1.25rem;
+  --op-titulo-3: 1rem;
+  --op-base:     0.9375rem;
+  --op-chico:    0.8125rem;
+  --op-rotulo:   0.6875rem;
+  --op-cifra:    2.125rem;
+  --op-dato:     0.8125rem;
+
+  --tracking-rotulo: 0.12em;
+  --tracking-titulo: -0.01em;
+
+  /* -------------------------------------------------------------------
+     3b. ESPACIO (base 4)
+     ------------------------------------------------------------------- */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+  --esp-7: 48px;
+  --esp-8: 64px;
+  --esp-9: 96px;
+
+  --ancho-lectura: 68ch;
+  --ancho-escaparate: 1280px;
+  --ancho-menu: 248px;
+  --ancho-menu-plegado: 64px;
+  --alto-encabezado-op: 56px;
+
+  /* -------------------------------------------------------------------
+     3c. FORMA
+     ------------------------------------------------------------------- */
+  --trazo: 1px solid;
+  --trazo-fuerte: 2px solid;
+  --trazo-grueso: 3px solid;
+  --radio: 0;
+  --corte: 12px;
+  --corte-chico: 6px;
+  --sesgo: -8deg;
+  --sesgo-suave: -4deg;
+  --giro-sticker: -6deg;
+
+  /* Polígonos: esquina superior derecha e inferior izquierda cortadas */
+  --forma-corte: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte),
+                         100% 100%, var(--corte) 100%, 0 calc(100% - var(--corte)));
+  --forma-corte-chico: polygon(0 0, calc(100% - var(--corte-chico)) 0, 100% var(--corte-chico),
+                               100% 100%, var(--corte-chico) 100%, 0 calc(100% - var(--corte-chico)));
+  --forma-diagonal-abajo: polygon(0 0, 100% 0, 100% calc(100% - 4vw), 0 100%);
+  --forma-diagonal-arriba: polygon(0 4vw, 100% 0, 100% 100%, 0 100%);
+
+  /* Sombras: siempre duras, sin desenfoque. El color sale de --golpe */
+  --sombra-golpe-1: 3px 3px 0 var(--golpe);
+  --sombra-golpe-2: 6px 6px 0 var(--golpe);
+  --sombra-golpe-3: 10px 10px 0 var(--golpe);
+
+  /* -------------------------------------------------------------------
+     3d. MOVIMIENTO
+     ------------------------------------------------------------------- */
+  --dur-1: 90ms;   /* color, subrayado */
+  --dur-2: 160ms;  /* presión de botón, desplazamiento corto */
+  --dur-3: 260ms;  /* paneles, menús, fichas */
+  --dur-4: 420ms;  /* transición de vista, barridos */
+  --dur-5: 700ms;  /* entrada de portada (sólo público) */
+
+  --curva-golpe:   cubic-bezier(0.16, 1, 0.3, 1);     /* sale rápido, frena seco */
+  --curva-entrada: cubic-bezier(0.7, 0, 0.84, 0);     /* para lo que se va */
+  --curva-resorte: cubic-bezier(0.34, 1.56, 0.64, 1); /* stickers, fichas */
+  --curva-cuadro:  steps(3, end);                     /* glitch, cuadros de animación */
+
+  --escalonado: 45ms;  /* retraso entre elementos de una lista que entra */
+
+  /* -------------------------------------------------------------------
+     3e. TEXTURAS (sin imágenes externas)
+     ------------------------------------------------------------------- */
+  --trama-puntos: radial-gradient(circle, var(--trama-color) 1.1px, transparent 1.5px) 0 0 / 8px 8px;
+  --trama-puntos-grande: radial-gradient(circle, var(--trama-color) 2.2px, transparent 2.8px) 0 0 / 14px 14px;
+  --trama-rayas: repeating-linear-gradient(0deg, var(--trama-color) 0 1px, transparent 1px 4px);
+  --cinta: repeating-linear-gradient(-45deg, var(--senal) 0 14px, var(--noche) 14px 28px);
+  --grano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --desvanecer-trama: linear-gradient(to bottom, #000 0%, transparent 85%);
+
+  /* -------------------------------------------------------------------
+     Identidad configurable (CU-CFG-VIS). Sólo las lee .modo-publico.
+     ------------------------------------------------------------------- */
+  --tienda-fondo:      var(--noche);
+  --tienda-primario:   var(--senal);
+  --tienda-secundario: var(--humo);
+  --tienda-acento:     var(--senal);
+  --tienda-sobre-primario: var(--noche); /* lo calcula el sistema, ver identidad_visual.md */
+}
+
+
+/* ---------------------------------------------------------------------
+   4. SUPERFICIES · definen los semánticos
+   --------------------------------------------------------------------- */
+:root,
+.superficie-noche {
+  --fondo: var(--noche);
+  --fondo-2: var(--asfalto);
+  --fondo-3: var(--hormigon);
+  --texto: var(--tiza);
+  --texto-fuerte: var(--blanco);
+  --texto-2: var(--humo);
+  --linea: var(--cable);
+  --borde-control: var(--control);
+  --acento: var(--senal);
+  --acento-vivo: var(--senal-vivo);
+  --acento-texto: var(--senal);
+  --sobre-acento: var(--noche);
+  --foco: var(--senal);
+  --golpe: var(--senal);
+  --error: var(--alarma);
+  --sobre-error: var(--noche);
+  --acento-suave: color-mix(in srgb, var(--senal) 14%, transparent);
+  --trama-color: rgb(255 255 255 / 0.07);
+  --grano-opacidad: 0.06;
+  color-scheme: dark;
+}
+
+.superficie-papel {
+  --fondo: var(--hueso);
+  --fondo-2: var(--blanco);
+  --fondo-3: #E7E3DA;
+  --texto: var(--noche);
+  --texto-fuerte: var(--noche);
+  --texto-2: var(--grafito);
+  --linea: var(--linea-papel);
+  --borde-control: var(--control);
+  --acento: var(--senal);
+  --acento-vivo: var(--senal);
+  --acento-texto: var(--senal-hondo);
+  --sobre-acento: var(--noche);
+  --foco: var(--noche);
+  --golpe: var(--noche);
+  --error: var(--alarma-hondo);
+  --sobre-error: var(--blanco);
+  --acento-suave: color-mix(in srgb, var(--senal) 22%, transparent);
+  --trama-color: rgb(10 10 12 / 0.16);
+  --grano-opacidad: 0.04;
+  color-scheme: light;
+}
+
+.superficie-noche,
+.superficie-papel {
+  background-color: var(--fondo);
+  color: var(--texto);
+}
+
+
+/* ---------------------------------------------------------------------
+   5. MODOS
+   --------------------------------------------------------------------- */
+.modo-publico {
+  font-family: var(--fuente-interfaz);
+  font-size: var(--pub-cuerpo);
+  line-height: 1.6;
+}
+/* Sólo el público lee la identidad configurable */
+.modo-publico .superficie-noche,
+.modo-publico.superficie-noche {
+  --fondo: var(--tienda-fondo);
+  --texto-2: var(--tienda-secundario);
+  --acento: var(--tienda-acento);
+  --acento-texto: var(--tienda-acento);
+  --golpe: var(--tienda-acento);
+}
+
+.modo-operativo {
+  font-family: var(--fuente-interfaz);
+  font-size: var(--op-base);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ---------------------------------------------------------------------
+   Base común
+   --------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--senal);
+  color: var(--noche);
+}
+
+/* Transición entre páginas (MPA). Mejora progresiva: sin soporte, navega normal */
+@view-transition { navigation: auto; }
+
+
+/* ---------------------------------------------------------------------
+   6. MOVIMIENTO REDUCIDO · obligatorio, no opcional
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0.01ms;
+    --dur-2: 0.01ms;
+    --dur-3: 0.01ms;
+    --dur-4: 0.01ms;
+    --dur-5: 0.01ms;
+    --escalonado: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  @view-transition { navigation: none; }
+}

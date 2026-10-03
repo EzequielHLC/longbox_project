@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% load l10n %}
 {% comment %}
 Carga de un lote editorial, nacional o importado (CU-ALT-NAC, CU-ALT-IMP).
@@ -50,7 +51,7 @@ calculado, y se separa de lo que escribió la persona.
     {% if cabecera.non_field_errors %}
       <ul class="mensajes">
         {% for error in cabecera.non_field_errors %}
-          <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+          <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
         {% endfor %}
       </ul>
     {% endif %}
@@ -123,6 +124,22 @@ calculado, y se separa de lo que escribió la persona.
           </div>
         </div>
 
+        {% comment %}
+        B-03-006: las cotizaciones de referencia de todas las monedas, con su
+        fecha. La que se usa en el cálculo es la del campo de arriba.
+        {% endcomment %}
+        {% if cotizaciones.valores %}
+          <dl class="cotizaciones-de-referencia">
+            {% for moneda, valor in cotizaciones.valores.items %}
+              <div><dt>1 {{ moneda }}</dt><dd class="datos">{{ valor|pesos }}</dd></div>
+            {% endfor %}
+          </dl>
+          <p class="ayuda">
+            Cotizaciones de referencia{% if cotizaciones.fecha %} del <span class="datos">{{ cotizaciones.fecha|date:"d/m/Y" }}</span>{% endif %}.
+            Escriba la que pagó si es otra.
+          </p>
+        {% endif %}
+
         <div class="rejilla-2">
           {% include "_campo.html" with campo=cabecera.costo_envio_total %}
           {% include "_campo.html" with campo=cabecera.valor_compra_total %}
@@ -163,7 +180,7 @@ calculado, y se separa de lo que escribió la persona.
     {% if formset.non_form_errors %}
       <ul class="mensajes">
         {% for error in formset.non_form_errors %}
-          <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+          <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
         {% endfor %}
       </ul>
     {% endif %}

@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
 
-from apps.core import georef
+from apps.core import georef, views_tienda
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import Banner, ConfiguracionSistema, ContenidoFAQ, RegistroAuditoria
 
@@ -59,6 +59,9 @@ class TiendaView(RolRequeridoMixin, TemplateView):
         contexto["banners"] = Banner.objects.all()
         contexto["intervalo"] = ConfiguracionSistema.obtener().intervalo_carrusel
         contexto["hay_faq"] = bool(ContenidoFAQ.obtener().contenido)
+        llegados = views_tienda.recien_llegados()
+        contexto["recien_llegados"] = llegados
+        contexto["destacado"] = next((p for p in llegados if p.portada), None)
         return contexto
 
 

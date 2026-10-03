@@ -19,28 +19,32 @@ Recibe `campo` (un `ModelMultipleChoiceField` sobre `Etiqueta`).
 <div class="campo" data-selector-etiquetas>
   <p class="etiqueta">{{ campo.label }}</p>
 
-  {% if campo.field.queryset.exists %}
-    {{ campo }}
+  {% comment %}
+  El control se dibuja aunque todavía no haya etiquetas: el alta al vuelo le
+  agrega opciones, y sin el `<select>` no habría dónde.
+  {% endcomment %}
+  {{ campo }}
 
-    <div class="selector-etiquetas">
-      <div class="selector-etiquetas__fichas" data-fichas>
-        <input type="text" data-buscador class="selector-etiquetas__buscador"
-               placeholder="Buscar etiqueta…"
-               autocomplete="off" role="combobox" aria-expanded="false"
-               aria-autocomplete="list" aria-label="{{ campo.label }}">
-      </div>
-
-      <div class="selector-etiquetas__lista hidden" data-lista role="listbox"></div>
+  <div class="selector-etiquetas">
+    <div class="selector-etiquetas__fichas" data-fichas>
+      <input type="text" data-buscador class="selector-etiquetas__buscador"
+             placeholder="Buscar etiqueta…"
+             autocomplete="off" role="combobox" aria-expanded="false"
+             aria-autocomplete="list" aria-label="{{ campo.label }}">
     </div>
 
-    {% if campo.help_text %}
-      <p class="ayuda">{{ campo.help_text }}</p>
-    {% endif %}
-  {% else %}
-    <p class="panel texto-chico">
-      No hay etiquetas cargadas. Se administran desde
-      <a href="{% url 'catalog:etiquetas' %}">Etiquetas</a>.
-    </p>
+    <div class="selector-etiquetas__lista hidden" data-lista role="listbox"></div>
+  </div>
+
+  {% if user.rol == "administrador" %}
+    <button type="button" class="boton-texto texto-chico" data-etiqueta-rapida
+            data-url="{% url 'catalog:etiqueta_rapida' %}">
+      {% include "_iconos.html" with icono="agregar" %}<span>Nueva etiqueta o grupo</span>
+    </button>
+  {% endif %}
+
+  {% if campo.help_text %}
+    <p class="ayuda">{{ campo.help_text }}</p>
   {% endif %}
 
   {% for error in campo.errors %}

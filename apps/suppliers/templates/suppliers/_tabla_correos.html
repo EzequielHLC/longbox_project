@@ -37,7 +37,7 @@ de nada que esté fuera de él.
               hay que revisar: los dos van marcados en peso 600 y borde fuerte.
               {% endcomment %}
               <td>
-                <span class="marca-estado{% if correo.estado == 'pendiente' or correo.estado == 'fallido' %} marca-estado--atencion{% elif correo.estado == 'descartado' %} marca-estado--apagado{% endif %}">{{ correo.get_estado_display }}</span>
+                <span class="marca-estado{% if correo.estado == 'pendiente' or correo.estado == 'fallido' %} marca-estado--atencion{% elif correo.estado == 'descartado' %} marca-estado--apagado{% elif correo.estado == 'procesado' %} marca-estado--ok{% endif %}">{{ correo.get_estado_display }}</span>
               </td>
             </tr>
           {% endfor %}

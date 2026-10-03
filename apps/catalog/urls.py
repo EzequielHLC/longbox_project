@@ -63,6 +63,7 @@ urlpatterns = [
     path("editoriales/rapida/", views.EditorialRapidaView.as_view(), name="editorial_rapida"),
     path("tipos/rapido/", views.TipoRapidaView.as_view(), name="tipo_rapido"),
     path("formatos/rapido/", views.FormatoRapidaView.as_view(), name="formato_rapido"),
+    path("etiquetas/rapida/", vc.EtiquetaRapidaView.as_view(), name="etiqueta_rapida"),
     # Parámetros globales.
     path("parametros/", views.ParametrosView.as_view(), name="parametros"),
     # Los catálogos de clasificación: listado, alta, modificación y baja con

@@ -183,7 +183,7 @@ def test_apagar_el_procesamiento_queda_auditado(client_admin):
     assert proveedor.procesa_novedades is False
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.MODIFICACION_PROVEEDOR)
     assert "procesamiento de novedades" in registro.detalle
-    assert "'sí' → 'no'" in registro.detalle
+    assert "«sí» → «no»" in registro.detalle
 
 
 def test_cambiar_la_editorial_queda_auditado_con_los_dos_valores(client_admin):
@@ -206,7 +206,7 @@ def test_cambiar_la_editorial_queda_auditado_con_los_dos_valores(client_admin):
     )
 
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.MODIFICACION_PROVEEDOR)
-    assert "editorial: 'varias' → 'Ivrea'" in registro.detalle
+    assert "editorial: «varias» → «Ivrea»" in registro.detalle
 
 
 # ---------------------------------------------------------------------------

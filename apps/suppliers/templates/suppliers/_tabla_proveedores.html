@@ -50,7 +50,7 @@ estado y cantidad de productos vinculados.
               </td>
               <td class="secundario">{{ proveedor.nombre_contacto|default:"—" }}</td>
               <td>
-                <span class="marca-estado{% if not proveedor.esta_activo %} marca-estado--apagado{% endif %}">{{ proveedor.get_estado_display }}</span>
+                <span class="marca-estado{% if proveedor.esta_activo %} marca-estado--ok{% else %} marca-estado--apagado{% endif %}">{{ proveedor.get_estado_display }}</span>
               </td>
               <td class="numero">{{ proveedor.cantidad_productos }}</td>
               <td class="acciones-de-fila">

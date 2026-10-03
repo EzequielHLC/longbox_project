@@ -1,0 +1,94 @@
+{% extends "base_publico.html" %}
+{% load moneda %}
+{% comment %}
+CU-TDA-CAT pasos 5 a 7 — la ficha pública de un producto (CO-177).
+
+La acción depende del estado: Disponible → «Agregar al carrito»; Agotado →
+«Avisarme cuando haya stock»; Pre-venta → «Reservar» con la fecha estimada.
+Inician casos de uso que todavía no existen (CU-TDA-CRA, CU-RST-SUS): se
+muestran deshabilitadas, con una línea que dice por qué (plan 07, ambigüedad 3).
+{% endcomment %}
+
+{% block titulo %}{{ producto.titulo }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block secciones %}
+<section class="seccion-publica superficie-noche" aria-labelledby="titulo-producto">
+  <div class="columna-publica">
+    <span class="miga">
+      <a href="{% url 'core:tienda_catalogo' %}{% if volver %}?{{ volver }}{% endif %}" class="boton-texto boton-texto--atras"><span aria-hidden="true">←</span>&nbsp;<span>Volver al catálogo</span></a>
+    </span>
+
+    <div class="ficha-publica">
+      <div class="pila-5">
+        <div class="ficha-publica__portada">
+          {% if producto.portada %}
+            <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}">
+          {% else %}
+            <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+          {% endif %}
+        </div>
+        {% if producto.imagenes.all %}
+          <div class="galeria-producto" aria-label="Más imágenes">
+            {% for imagen in producto.imagenes.all %}
+              <a href="{{ imagen.imagen.url }}" class="galeria-producto__item" target="_blank" rel="noopener">
+                <img src="{{ imagen.imagen.url }}" alt="Imagen {{ forloop.counter }} de {{ producto.titulo }}">
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="pila-5">
+        <div class="pila-3">
+          <p class="antetitulo">{{ producto.tipo.nombre }}</p>
+          <h1 id="titulo-producto">{{ producto.titulo }}{% if editorial.volumen %} #{{ editorial.volumen }}{% endif %}</h1>
+          {% if producto.estado_publico == "pre_venta" %}
+            <span class="rotulo-estado rotulo-estado--en-linea rotulo-estado--pre-venta"><span>Pre-venta</span></span>
+          {% elif producto.estado_publico == "agotado" %}
+            <span class="rotulo-estado rotulo-estado--en-linea rotulo-estado--sin-stock">Sin stock</span>
+          {% else %}
+            <span class="rotulo-estado rotulo-estado--en-linea rotulo-estado--disponible">Disponible</span>
+          {% endif %}
+        </div>
+
+        <p class="ficha-publica__precio">{{ producto.precio|pesos }}</p>
+
+        <div class="pila-2">
+          {% if producto.estado_publico == "pre_venta" %}
+            <button type="button" class="boton-primario" disabled aria-describedby="accion-proximamente">Reservar</button>
+            {% if editorial.fecha_llegada %}<p>Llegada estimada: <span class="datos">{{ editorial.fecha_llegada|date:"d/m/Y" }}</span></p>{% endif %}
+          {% elif producto.estado_publico == "agotado" %}
+            <button type="button" class="boton-seccion" disabled aria-describedby="accion-proximamente">Avisarme cuando haya stock</button>
+          {% else %}
+            <button type="button" class="boton-primario" disabled aria-describedby="accion-proximamente">Agregar al carrito</button>
+          {% endif %}
+          <p id="accion-proximamente" class="texto-chico secundario">Disponible próximamente.</p>
+        </div>
+
+        <dl class="datos-de-ficha">
+          {% if editorial %}
+            {% if editorial.autor %}<dt>Autor</dt><dd>{{ editorial.autor }}</dd>{% endif %}
+            <dt>Editorial</dt><dd>{{ editorial.editorial.nombre }}</dd>
+            {% if editorial.formato %}<dt>Formato</dt><dd>{{ editorial.formato.nombre }}{% if editorial.formato.descripcion %} · <span class="datos">{{ editorial.formato.descripcion }}</span>{% endif %}</dd>{% endif %}
+            {% if editorial.isbn %}<dt>ISBN</dt><dd class="datos">{{ editorial.isbn }}</dd>{% endif %}
+          {% elif producto.productonoeditorial.marca %}
+            <dt>Marca</dt><dd>{{ producto.productonoeditorial.marca }}</dd>
+          {% endif %}
+          {% regroup producto.etiquetas.all by grupo as por_grupo %}
+          {% for bloque in por_grupo %}
+            <dt>{{ bloque.grouper.nombre }}</dt>
+            <dd>{% for etiqueta in bloque.list %}<a href="{% url 'core:tienda_catalogo' %}?etiqueta={{ etiqueta.pk }}&amp;estado=todos">{{ etiqueta.nombre }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</dd>
+          {% endfor %}
+        </dl>
+
+        {% if producto.descripcion %}
+          <div class="pila-2">
+            <p class="antetitulo">Sinopsis</p>
+            <p class="lectura">{{ producto.descripcion|linebreaksbr }}</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -39,18 +39,18 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     {% endcomment %}
     {% if user.rol == 'administrador' %}
       <a href="{% url 'core:panel' %}"
-         class="menu-enlace {% if actual == 'core:panel' %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if actual == 'core:panel' %}menu-enlace--actual{% endif %}" {% if actual == 'core:panel' %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="panel" %}
         <span>Panel</span>
       </a>
     {% elif user.rol == 'cajero' %}
       <a href="{% url 'core:mostrador' %}"
-         class="menu-enlace {% if actual == 'core:mostrador' %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if actual == 'core:mostrador' %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="caja" %}
         <span>Mostrador</span>
       </a>
       <a href="{% url 'catalog:producto_lista' %}"
-         class="menu-enlace {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:producto' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="inventario" %}
         <span>Inventario</span>
       </a>
@@ -71,13 +71,13 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
 
         <a href="{% url 'accounts:usuario_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'accounts:usuario' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'accounts:usuario' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:usuario' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="personal" %}
           <span>Usuarios del sistema</span>
         </a>
         <a href="{% url 'accounts:cliente_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'accounts:cliente' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'accounts:cliente' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:cliente' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="clientes" %}
           <span>Clientes</span>
         </a>
@@ -96,19 +96,19 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
 
         <a href="{% url 'catalog:producto_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:producto' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="inventario" %}
           <span>Inventario</span>
         </a>
         <a href="{% url 'catalog:lote_nacional' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if actual == 'catalog:lote_nacional' %}menu-enlace--actual{% endif %}">
+                  {% if actual == 'catalog:lote_nacional' %}menu-enlace--actual{% endif %}" {% if actual == 'catalog:lote_nacional' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="lote" %}
           <span>Nuevo lote nacional</span>
         </a>
         <a href="{% url 'catalog:lote_importado' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if actual == 'catalog:lote_importado' %}menu-enlace--actual{% endif %}">
+                  {% if actual == 'catalog:lote_importado' %}menu-enlace--actual{% endif %}" {% if actual == 'catalog:lote_importado' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="importado" %}
           <span>Nuevo lote importado</span>
         </a>
@@ -120,7 +120,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% endcomment %}
         <a href="{% url 'catalog:borrador_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if actual == 'catalog:borrador_lista' %}menu-enlace--actual{% endif %}">
+                  {% if actual == 'catalog:borrador_lista' %}menu-enlace--actual{% endif %}" {% if actual == 'catalog:borrador_lista' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="borradores" %}
           <span>Revisar borradores</span>
         </a>
@@ -139,13 +139,13 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
 
         <a href="{% url 'suppliers:proveedor_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'suppliers:proveedor' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'suppliers:proveedor' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:proveedor' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="proveedores" %}
           <span>Padrón</span>
         </a>
         <a href="{% url 'suppliers:correo_lista' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'suppliers:correo' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'suppliers:correo' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:correo' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="lote" %}
           <span>Correos recibidos</span>
         </a>
@@ -155,7 +155,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% endcomment %}
         <a href="{% url 'suppliers:diagnostico_llm' %}"
            class="menu-enlace menu-enlace--hijo
-                  {% if 'suppliers:diagnostico' in actual %}menu-enlace--actual{% endif %}">
+                  {% if 'suppliers:diagnostico' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:diagnostico' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="parametros" %}
           <span>Diagnóstico del modelo</span>
         </a>
@@ -167,12 +167,12 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
           <span>Precios</span>
         </summary>
         <a href="{% url 'catalog:precio_lista' %}"
-           class="menu-enlace menu-enlace--hijo {% if 'catalog:precio' in actual %}menu-enlace--actual{% endif %}">
+           class="menu-enlace menu-enlace--hijo {% if 'catalog:precio' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:precio' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="precios" %}
           <span>Tabla de precios</span>
         </a>
         <a href="{% url 'catalog:margen' %}"
-           class="menu-enlace menu-enlace--hijo {% if actual == 'catalog:margen' %}menu-enlace--actual{% endif %}">
+           class="menu-enlace menu-enlace--hijo {% if actual == 'catalog:margen' %}menu-enlace--actual{% endif %}" {% if actual == 'catalog:margen' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="importado" %}
           <span>Margen de importados</span>
         </a>
@@ -184,30 +184,35 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
           <span>Tienda</span>
         </summary>
         <a href="{% url 'core:banner_lista' %}"
-           class="menu-enlace menu-enlace--hijo {% if 'core:banner' in actual %}menu-enlace--actual{% endif %}">
+           class="menu-enlace menu-enlace--hijo {% if 'core:banner' in actual %}menu-enlace--actual{% endif %}" {% if 'core:banner' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="imagen" %}
           <span>Banners</span>
         </a>
         <a href="{% url 'core:faq_editor' %}"
-           class="menu-enlace menu-enlace--hijo {% if actual == 'core:faq_editor' %}menu-enlace--actual{% endif %}">
+           class="menu-enlace menu-enlace--hijo {% if actual == 'core:faq_editor' %}menu-enlace--actual{% endif %}" {% if actual == 'core:faq_editor' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="faq" %}
           <span>Preguntas frecuentes</span>
         </a>
         <a href="{% url 'core:identidad_visual' %}"
-           class="menu-enlace menu-enlace--hijo {% if actual == 'core:identidad_visual' %}menu-enlace--actual{% endif %}">
+           class="menu-enlace menu-enlace--hijo {% if actual == 'core:identidad_visual' %}menu-enlace--actual{% endif %}" {% if actual == 'core:identidad_visual' %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="parametros" %}
           <span>Identidad visual</span>
+        </a>
+        {# El catálogo público (CU-TDA-CAT), tal como lo ve el cliente. #}
+        <a href="{% url 'core:tienda_catalogo' %}" class="menu-enlace menu-enlace--hijo" target="_blank" rel="noopener">
+          {% include "_iconos.html" with icono="ver" %}
+          <span>Ver la tienda</span>
         </a>
       </details>
 
       <a href="{% url 'core:auditoria' %}"
-         class="menu-enlace {% if 'core:auditoria' in actual %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if 'core:auditoria' in actual %}menu-enlace--actual{% endif %}" {% if 'core:auditoria' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="auditoria" %}
         <span>Auditoría</span>
       </a>
 
       <a href="{% url 'catalog:parametros' %}"
-         class="menu-enlace {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual %}menu-enlace--actual{% endif %}">
+         class="menu-enlace {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:parametro' in actual or 'catalog:tipo' in actual or 'catalog:formato' in actual or 'catalog:editorial' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="parametros" %}
         <span>Parámetros globales</span>
       </a>
@@ -218,7 +223,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       {% endcomment %}
       <a href="{% url 'catalog:etiquetas' %}"
          class="menu-enlace menu-enlace--hijo
-                {% if 'catalog:etiqueta' in actual or 'catalog:grupo' in actual %}menu-enlace--actual{% endif %}">
+                {% if 'catalog:etiqueta' in actual or 'catalog:grupo' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:etiqueta' in actual or 'catalog:grupo' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="parametros" %}
         <span>Etiquetas</span>
       </a>
@@ -233,9 +238,6 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     {% endcomment %}
     <span class="menu-enlace menu-enlace--inactivo">
       {% include "_iconos.html" with icono="caja" %}<span>Ventas y caja</span>
-    </span>
-    <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="tienda" %}<span>Catálogo de la tienda</span>
     </span>
     <span class="menu-enlace menu-enlace--inactivo">
       {% include "_iconos.html" with icono="devoluciones" %}<span>Devoluciones</span>

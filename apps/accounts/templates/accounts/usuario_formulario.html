@@ -15,7 +15,7 @@
 {% if form.non_field_errors %}
   <ul class="mensajes">
     {% for error in form.non_field_errors %}
-      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
     {% endfor %}
   </ul>
 {% endif %}

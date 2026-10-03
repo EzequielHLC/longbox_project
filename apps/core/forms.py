@@ -11,6 +11,7 @@ from django import forms
 from django.core.validators import MaxValueValidator
 
 from apps.core import imagenes
+from apps.core.contraste import MINIMO_TEXTO, contraste
 from apps.core.models import Banner, IdentidadVisual
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
@@ -115,10 +116,40 @@ class IdentidadVisualForm(forms.ModelForm):
             "color_acento",
             "tipo_fondo",
             "color_fondo",
+            "descripcion_tienda",
+            "portada_antetitulo",
+            "portada_titulo",
+            "portada_bajada",
+            "ticker_mensajes",
         ]
-        widgets = {"tipo_fondo": forms.RadioSelect}  # noqa: RUF012
+        widgets = {  # noqa: RUF012
+            "tipo_fondo": forms.RadioSelect,
+            "ticker_mensajes": forms.Textarea(attrs={"rows": 4}),
+        }
 
     COLORES = ("color_primario", "color_secundario", "color_acento", "color_fondo")
+    TEXTOS_CON_VALOR_INICIAL = (
+        "descripcion_tienda",
+        "portada_antetitulo",
+        "portada_titulo",
+        "portada_bajada",
+    )
+
+    def _texto_o_inicial(self, campo):
+        valor = " ".join((self.cleaned_data.get(campo) or "").split())
+        return valor or IdentidadVisual._meta.get_field(campo).default
+
+    def clean_descripcion_tienda(self):
+        return self._texto_o_inicial("descripcion_tienda")
+
+    def clean_portada_antetitulo(self):
+        return self._texto_o_inicial("portada_antetitulo")
+
+    def clean_portada_titulo(self):
+        return self._texto_o_inicial("portada_titulo")
+
+    def clean_portada_bajada(self):
+        return self._texto_o_inicial("portada_bajada")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -126,6 +157,10 @@ class IdentidadVisualForm(forms.ModelForm):
         # de la primera configuración.
         self.fields["correo_contacto"].required = True
         self.fields["nombre_tienda"].required = True
+        # Los textos del escaparate (B-17-015) no se pueden dejar en blanco:
+        # vacíos, vuelven a su valor inicial.
+        for campo in self.TEXTOS_CON_VALOR_INICIAL:
+            self.fields[campo].required = False
         for campo in self.COLORES:
             self.fields[campo].widget.attrs.update(
                 {"placeholder": "#RRGGBB", "maxlength": 7, "data-color-tienda": campo}
@@ -167,6 +202,17 @@ class IdentidadVisualForm(forms.ModelForm):
 
     def clean(self):
         datos = super().clean()
+        # `identidad_visual.md`: el texto secundario y el acento tienen que
+        # leerse sobre el fondo, con 4,5:1 como mínimo.
+        fondo = datos.get("color_fondo")
+        for campo, nombre in (("color_secundario", "secundario"), ("color_acento", "de acento")):
+            color = datos.get(campo)
+            if fondo and color and contraste(color, fondo) < MINIMO_TEXTO:
+                self.add_error(
+                    campo,
+                    f"El color {nombre} no se lee sobre el fondo: el contraste es "
+                    f"{contraste(color, fondo):.1f}:1 y el mínimo es 4,5:1.",
+                )
         con_imagen = datos.get("fondo_nuevo") or self.instance.imagen_fondo
         if (
             datos.get("tipo_fondo") == IdentidadVisual.IMAGEN

@@ -483,3 +483,32 @@ pantalla propia, baja con informe y reparo en los borradores. Contenido: FAQ, ba
 carrusel de la portada e identidad visual, con el procesamiento de imágenes de RNF-05. Queda:
 `CU-CFG-PAR` (secciones de módulos no construidos y Seguridad), `CU-CFG-LLM` sin verificar, las
 portadas de producto sin procesar (deuda del módulo 01) y las consultas C-20 y C-21.
+
+---
+
+### B-17-015 · Los textos de la portada y del pie se escriben desde la identidad visual
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-CFG-VIS`, `CO-131`, `CO-208`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-02
+
+**Qué apareció.**
+El título grande de la portada («Historietas de noche»), su antetítulo, la bajada, los mensajes del
+ticker y la descripción del pie estaban escritos en la plantilla. El responsable pidió poder
+cambiarlos desde la administración.
+
+**Qué dice la especificación.**
+> «Datos de la tienda: Nombre de la tienda (texto libre); Email de contacto público; Teléfono o
+> WhatsApp de contacto (opcional); Enlace a Instagram, Facebook, TikTok, X/Twitter» (`CU-CFG-VIS`,
+> paso 2)
+
+Sobre los textos de la portada: `Nada`.
+
+**Qué se hizo.**
+La identidad visual suma una sección «Portada y pie» con el antetítulo, el título, la bajada, los
+mensajes del ticker (uno por renglón) y la descripción del pie. Un texto que se deja vacío vuelve a
+su valor inicial. Sin mensajes, el ticker anuncia los títulos de lo último que llegó. Los cambios
+se auditan con la misma acción y el detalle anterior y nuevo.
+
+**Qué habría que cambiar.**
+`CU-CFG-VIS`, paso 2: agregar la sección «Portada y pie». `MODELO_DE_DOMINIO.md`,
+`IdentidadVisual`: los cinco atributos.

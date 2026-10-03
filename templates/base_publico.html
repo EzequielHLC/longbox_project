@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% comment %}
-Cáscara del **modo público**: tienda, registro, inicio de sesión y demás
-pantallas de cara al cliente. Una columna centrada de ancho `--ancho-lectura`
-(`identidad_visual.md`, Modo público).
+Cáscara del **modo público** (Escaparate): tienda, registro, inicio de sesión y
+demás pantallas de cara al cliente (`identidad_visual.md`, Modo público).
+
+Apila secciones a todo el ancho que alternan superficie noche y papel, como
+páginas de una revista. Las pantallas comunes llenan `contenido` y quedan en una
+columna sobre noche; las de la tienda pisan `secciones` y arman las suyas.
 
 Es la única cáscara que lee las variables `--tienda-*`. Sus valores iniciales
-son los tokens grises; cuando el Administrador guarda una identidad visual
+están en `tokens.css`; cuando el Administrador guarda una identidad visual
 (CU-CFG-VIS), llegan desde la hoja que arma `core:tienda_css`.
-
-Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-INI).
 {% endcomment %}
 
 {% block cabecera_extra %}
@@ -19,64 +20,95 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-
   {% include "_ver_contrasena.html" %}
 {% endblock %}
 
-{% block clase_body %}modo-publico{% endblock %}
-{% comment %}
-Las pantallas públicas pueden seguir declarando `{% block seccion %}`: esta
-cáscara no lo dibuja, porque el encabezado muestra la navegación de la tienda.
-{% endcomment %}
+{% block clase_body %}modo-publico superficie-noche{% endblock %}
 
 {% block encabezado %}
-<header class="encabezado-publico">
+{% with actual=request.resolver_match.view_name %}
+<header class="encabezado-publico" data-encabezado-publico>
   <div class="columna-publica">
-    <a href="{% url 'core:tienda' %}" class="marca">
-      {% if identidad_tienda.logo %}
-        <img src="{{ identidad_tienda.logo.url }}" alt="">
-      {% else %}
-        {% include "_iconos.html" with icono="libro" %}
-      {% endif %}
+    {# La portada es de la cuenta de cliente (C-20); el resto entra al catálogo. #}
+    <a href="{% if user.rol == 'cliente' %}{% url 'core:tienda' %}{% else %}{% url 'core:tienda_catalogo' %}{% endif %}" class="marca{% if identidad_tienda.logo %} marca--con-logo{% endif %}">
+      {% if identidad_tienda.logo %}<img src="{{ identidad_tienda.logo.url }}" alt="">{% endif %}
       <span>{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
     </a>
     <nav aria-label="Tienda">
       {% block navegacion_publica %}
-        <a href="{% url 'core:tienda' %}">{% include "_iconos.html" with icono="tienda" %}<span>Tienda</span></a>
+        {% if user.rol == "cliente" %}
+          <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
+        {% endif %}
+        <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
+        <a href="{% url 'core:faq' %}" {% if actual == 'core:faq' %}aria-current="page"{% endif %}>Preguntas frecuentes</a>
         {% if user.is_authenticated %}
           {% comment %}
           El correo va como texto y no como enlace: el Cliente todavía no tiene
-          panel propio (CU-CLI-DAT). Cerrar sesión es un POST (CU-AUT-FIN), así
-          que va en un formulario y no en un enlace.
+          panel propio (CU-CLI-DAT). Cerrar sesión es un POST (CU-AUT-FIN).
           {% endcomment %}
           <span class="cuenta-publica">{% include "_iconos.html" with icono="usuario" %}<span>{{ user.email }}</span></span>
           <form method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
-            <button type="submit" class="boton-texto">{% include "_iconos.html" with icono="salir" %}<span>Cerrar sesión</span></button>
+            <button type="submit" class="boton-texto">Cerrar sesión</button>
           </form>
         {% else %}
-          <a href="{% url 'accounts:login' %}">{% include "_iconos.html" with icono="usuario" %}<span>Ingresar</span></a>
+          <a href="{% url 'accounts:login' %}" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>Ingresar</a>
         {% endif %}
       {% endblock %}
     </nav>
   </div>
 </header>
+{% endwith %}
 {% endblock %}
 
 {% block layout %}
-<main class="columna-publica contenido-publico">
-  {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
-  {% block contenido %}{% endblock %}
+<main class="contenido-publico">
+  {% block secciones %}
+    <div class="columna-publica columna-publica--angosta">
+      {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
+      {% block contenido %}{% endblock %}
+    </div>
+  {% endblock %}
 </main>
 
-{% if identidad_tienda %}
-<footer class="pie-publico">
-  <div class="columna-publica pila-2">
-    <p>{{ identidad_tienda.correo_contacto }}{% if identidad_tienda.telefono %} · {{ identidad_tienda.telefono }}{% endif %}</p>
-    {% if identidad_tienda.redes %}
-      <ul class="fila">
-        {% for nombre, url in identidad_tienda.redes %}
-          <li><a href="{{ url }}" rel="noopener">{{ nombre }}</a></li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+<footer class="pie-publico superficie-noche">
+  <div class="pie-publico__cinta" aria-hidden="true"></div>
+  <div class="columna-publica pila-5">
+    <div class="rejilla-3">
+      <div class="pila-2">
+        <span class="marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
+        <p>{{ textos_tienda.descripcion_tienda }}</p>
+      </div>
+      {% if identidad_tienda %}
+        <div class="pila-2">
+          <p class="antetitulo">Contacto</p>
+          <p class="datos">{{ identidad_tienda.correo_contacto }}</p>
+          {% if identidad_tienda.telefono %}<p class="datos">{{ identidad_tienda.telefono }}</p>{% endif %}
+        </div>
+        {% if identidad_tienda.redes %}
+          <div class="pila-2">
+            <p class="antetitulo">Redes</p>
+            <ul class="pila-1">
+              {% for nombre, url in identidad_tienda.redes %}
+                <li><a href="{{ url }}" rel="noopener">{{ nombre }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
   </div>
 </footer>
-{% endif %}
+
+<script>
+  // El encabezado se esconde al bajar y vuelve al subir
+  // (`identidad_visual.md`, Encabezado).
+  (function () {
+    const encabezado = document.querySelector("[data-encabezado-publico]");
+    if (!encabezado) return;
+    let anterior = window.scrollY;
+    window.addEventListener("scroll", function () {
+      const actual = window.scrollY;
+      encabezado.classList.toggle("encabezado-publico--oculto", actual > anterior && actual > 80);
+      anterior = actual;
+    }, { passive: true });
+  })();
+</script>
 {% endblock %}

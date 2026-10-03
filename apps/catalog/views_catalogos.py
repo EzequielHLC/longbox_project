@@ -17,8 +17,10 @@ Exclusivas del Administrador, validado del lado del servidor (RNF-03).
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.catalog import catalogos
@@ -496,3 +498,53 @@ class EtiquetaBajaView(CatalogoBajaView):
         "Deja de ofrecerse en los formularios de producto. Los productos que la tienen la "
         "conservan, y en su edición aparece marcada para poder quitarla."
     )
+
+
+class EtiquetaRapidaView(CatalogoAdminMixin, View):
+    """Alta de una etiqueta —y de su grupo, si es nuevo— sin salir del alta (B-02-005).
+
+    `GET` devuelve los grupos activos para el diálogo. `POST` crea con los
+    mismos formularios y la misma auditoría que las pantallas de grupos y
+    etiquetas (`CO-038`, `CO-042`): el atajo no puede ser más laxo que ellas.
+    Si la etiqueta no se puede crear, tampoco queda creado el grupo.
+    """
+
+    def get(self, request):
+        grupos = GrupoEtiqueta.objects.filter(activo=True).order_by("nombre")
+        return JsonResponse({"grupos": [{"id": g.pk, "nombre": g.nombre} for g in grupos]})
+
+    def post(self, request):
+        ip = obtener_ip(request)
+        with transaction.atomic():
+            datos = request.POST.copy()
+            if datos.get("grupo") == "nuevo":
+                grupo_form = GrupoEtiquetaForm({"nombre": datos.get("grupo_nuevo", "")})
+                if not grupo_form.is_valid():
+                    return JsonResponse(
+                        {"errores": {"grupo_nuevo": grupo_form.errors.get("nombre", [])}},
+                        status=400,
+                    )
+                grupo = catalogos.registrar(
+                    grupo_form, catalogo=catalogos.GRUPOS, actor=request.user, ip=ip
+                )
+                datos["grupo"] = str(grupo.pk)
+
+            formulario = EtiquetaForm(datos)
+            if not formulario.is_valid():
+                transaction.set_rollback(True)
+                return JsonResponse({"errores": formulario.errors}, status=400)
+            etiqueta = catalogos.registrar(
+                formulario,
+                catalogo=catalogos.ETIQUETAS,
+                actor=request.user,
+                ip=ip,
+                campos_auditados=(("grupo__nombre", "grupo"),),
+            )
+        return JsonResponse(
+            {
+                "id": etiqueta.pk,
+                "nombre": etiqueta.nombre,
+                "grupo": etiqueta.grupo.nombre,
+                "texto": str(etiqueta),
+            }
+        )

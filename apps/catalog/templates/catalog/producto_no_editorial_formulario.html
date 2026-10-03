@@ -84,6 +84,7 @@ es lo que el servidor exige.
   <fieldset class="grupo-de-campos">
     <legend>Datos opcionales</legend>
     {% include "_campo.html" with campo=form.portada %}
+    {% include "catalog/_galeria_campos.html" with form=form %}
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}

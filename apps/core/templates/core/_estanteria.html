@@ -1,0 +1,17 @@
+{% comment %}
+La grilla de viñetas. Cada tarjeta entra una sola vez al aparecer en pantalla,
+con el retraso escalonado de su lugar (máximo ocho); el guion sólo le pasa el
+índice como variable `--i`, sin estilos escritos en el marcado.
+{% endcomment %}
+<div class="estanteria" data-estanteria>
+  {% for producto in productos %}
+    {% include "core/_tarjeta_producto.html" with producto=producto volver=volver %}
+  {% endfor %}
+</div>
+<script>
+  (function () {
+    for (const tarjeta of document.querySelectorAll("[data-estanteria] [data-indice]")) {
+      tarjeta.style.setProperty("--i", tarjeta.dataset.indice);
+    }
+  })();
+</script>

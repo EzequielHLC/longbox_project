@@ -448,8 +448,8 @@ class IdentidadVisual(InstanciaUnica):
 
     Los colores pintan sólo las cuatro variables `--tienda-*` del modo
     público (C-07, `identidad_visual.md`); el backoffice no las lee nunca. Los
-    valores iniciales son los tokens: sin cambios, la tienda se ve igual que el
-    resto del sistema. El fondo puede ser una imagen (C-07).
+    valores iniciales son los de Viñeta Nocturna (`TOKENS_VISUALES.md`,
+    Identidad configurable). El fondo puede ser una imagen (C-07).
     """
 
     COLOR = "color"
@@ -465,12 +465,45 @@ class IdentidadVisual(InstanciaUnica):
     x_twitter = models.URLField("X / Twitter", blank=True)
 
     logo = models.ImageField("logo", upload_to="identidad/", blank=True)
-    color_primario = models.CharField("color primario", max_length=7, default="#111111")
-    color_secundario = models.CharField("color secundario", max_length=7, default="#555555")
-    color_acento = models.CharField("color de acento", max_length=7, default="#111111")
+    color_primario = models.CharField("color primario", max_length=7, default="#FF6A13")
+    color_secundario = models.CharField("color secundario", max_length=7, default="#9A9AA5")
+    color_acento = models.CharField("color de acento", max_length=7, default="#FF6A13")
     tipo_fondo = models.CharField("fondo", max_length=10, choices=TIPOS_DE_FONDO, default=COLOR)
-    color_fondo = models.CharField("color de fondo", max_length=7, default="#FFFFFF")
+    color_fondo = models.CharField("color de fondo", max_length=7, default="#0A0A0C")
     imagen_fondo = models.ImageField("imagen de fondo", upload_to="identidad/", blank=True)
+
+    # Los textos de la portada y del pie (B-17-015). Son anuncios del
+    # escaparate: los decide el negocio, no el código.
+    descripcion_tienda = models.CharField(
+        "descripción de la tienda",
+        max_length=200,
+        default="Comiquería. Historietas, manga, libros y coleccionables.",
+        help_text="Se lee en el pie de todas las pantallas de la tienda.",
+    )
+    portada_antetitulo = models.CharField(
+        "antetítulo de la portada", max_length=60, default="Nuevo en tienda"
+    )
+    portada_titulo = models.CharField(
+        "título de la portada",
+        max_length=60,
+        default="Historietas de noche",
+        help_text="El título grande de la portada. Corto se lee mejor.",
+    )
+    portada_bajada = models.CharField(
+        "bajada de la portada",
+        max_length=200,
+        default=(
+            "Manga, cómic, libros y coleccionables. "
+            "Lo que llega, lo que se viene y lo que se agota."
+        ),
+    )
+    ticker_mensajes = models.TextField(
+        "mensajes del ticker",
+        blank=True,
+        help_text=(
+            "Un mensaje por renglón. Vacío, la franja muestra los títulos de lo último que llegó."
+        ),
+    )
 
     actualizado_en = models.DateTimeField("actualizada en", null=True, blank=True)
     actualizado_por = models.ForeignKey(
@@ -497,6 +530,20 @@ class IdentidadVisual(InstanciaUnica):
     def version(self):
         """Cambia con cada guardado, para que el navegador no use la hoja vieja."""
         return int(self.actualizado_en.timestamp()) if self.actualizado_en else 0
+
+    @property
+    def sobre_primario(self):
+        """El texto sobre el primario: noche o blanco, el que dé más contraste.
+
+        No es configurable (`TOKENS_VISUALES.md`): el sistema lo elige.
+        """
+        from apps.core.contraste import mas_legible
+
+        return mas_legible(self.color_primario, ("#0A0A0C", "#FFFFFF"))
+
+    @property
+    def mensajes_del_ticker(self):
+        return [linea.strip() for linea in self.ticker_mensajes.splitlines() if linea.strip()]
 
     @property
     def redes(self):

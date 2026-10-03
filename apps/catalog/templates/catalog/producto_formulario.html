@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CU-CAT-EDI — Editar Producto.
 
@@ -103,7 +104,7 @@ leer un informe de impacto.
         {% endif %}
         {% if restauracion.aplica %}
           {# CU-CAT-EDI A2 — CO-031, con el precio recalculado a la vista antes de guardar. #}
-          <a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto texto-chico">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado (${{ restauracion.precio_recalculado }})</span></a>
+          <a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto texto-chico">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado ({{ restauracion.precio_recalculado|pesos }})</span></a>
         {% endif %}
       {% endif %}
 
@@ -119,6 +120,7 @@ leer un informe de impacto.
       {% endif %}
       {% include "_campo.html" with campo=form.portada %}
     </div>
+    {% include "catalog/_galeria_campos.html" with form=form %}
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}

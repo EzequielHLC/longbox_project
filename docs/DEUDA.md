@@ -43,7 +43,7 @@ al plan o a la sección donde está desarrollada.
 | # | Consulta | Dónde está | Qué desbloquea |
 | --- | --- | --- | --- |
 | C-19 | `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita. Construido así (B-03-003) | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
-| C-20 | **Nueva.** La portada de la tienda, con el carrusel, sigue siendo sólo para la cuenta de cliente; la página de preguntas frecuentes es pública. ¿La portada también tiene que verse sin iniciar sesión? | B-17-013 | El acceso de `core:tienda`, y con él `CU-TDA-CAT` |
+| C-20 | La portada de la tienda, con el carrusel, sigue siendo sólo para la cuenta de cliente. El catálogo y la ficha ya son públicos (`CO-176`), y la FAQ también. ¿La portada tiene que verse sin iniciar sesión? | B-17-013, B-07-002 | El acceso de `core:tienda` |
 | C-21 | **Nueva.** El logo no admite SVG porque RNF-05 convierte toda imagen a WebP. ¿Se enmienda la guía de `CU-CFG-VIS` o se exceptúa el logo de RNF-05? | B-17-011 | La guía de formato del logo |
 
 ---
@@ -128,7 +128,7 @@ archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y n
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 141 de 219.** 78 tienen al menos una prueba que lleva su código. Los que tienen
+**Faltan 139 de 219.** 80 tienen al menos una prueba que lleva su código. Los que tienen
 prueba y no cierran del todo son ocho: `CO-114` (B-12-001), `CO-048` y `CO-053` (carritos,
 B-03-001), `CO-221` (ofertas, B-17-008), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en su parte
 sobre los filtros del catálogo público (B-02-004).
@@ -189,18 +189,19 @@ alcance sigue pendiente.
 
 | Bitácora | Total | Abiertas | Tipos |
 | --- | ---: | ---: | --- |
-| `bitacora/00-estilo-preliminar.md` | 4 | 0 | 3 agregados, 1 desvío pedido por el responsable |
-| `bitacora/01-alta-editorial.md` | 2 | 0 | 2 agregados |
-| `bitacora/02-catalogo.md` | 4 | 2 | 3 agregados, 1 corrección |
-| `bitacora/03-pricing.md` | 5 | 4 | 5 agregados |
+| `bitacora/00-estilo-preliminar.md` | 6 | 2 | 5 agregados, 1 desvío |
+| `bitacora/01-alta-editorial.md` | 5 | 3 | 5 agregados |
+| `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
+| `bitacora/03-pricing.md` | 6 | 5 | 6 agregados |
 | `bitacora/04-proveedores.md` | 5 | 0 | 4 agregados, 1 desvío |
+| `bitacora/07-tienda-online.md` | 2 | 2 | 2 agregados |
 | `bitacora/11-cuenta-de-cliente.md` | 1 | 0 | 1 agregado |
 | `bitacora/12-autenticacion.md` | 3 | 0 | 1 agregado, 1 corrección, 1 desvío |
 | `bitacora/13-gestion-de-usuarios.md` | 5 | 0 | 2 agregados, 1 corrección, 2 desvíos |
 | `bitacora/16-auditoria.md` | 3 | 3 | 3 agregados |
 | `bitacora/17-configuracion-del-sistema.md` | 14 | 10 | 11 agregados, 2 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección |
-| **Total** | **47** | **19** | |
+| **Total** | **56** | **28** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19 a C-21). Ninguna entrada abierta es
@@ -221,6 +222,8 @@ código sin terminar.
 | Las once acciones de auditoría nuevas en la nota de INC-06 | B-17-005 |
 | `TOKENS_VISUALES.md` e `identidad_visual.md`: la densidad del modo operativo y los componentes nuevos | B-00-004 |
 | El DSS de los siete casos de uso con `cancelarOperacion` | C-17, archivo entregado por el responsable |
+| `ImagenProducto` en el Área 3 del modelo | B-01-003 |
+| `TOKENS_VISUALES.md`: el fondo de imagen de la tienda | B-00-006 |
 
 ---
 

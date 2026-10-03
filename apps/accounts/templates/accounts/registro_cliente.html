@@ -19,7 +19,7 @@ el operativo del backoffice.
 {% if form.non_field_errors %}
   <ul class="mensajes">
     {% for error in form.non_field_errors %}
-      <li class="mensaje" role="alert"><span class="mensaje__prefijo">Error:</span> {{ error }}</li>
+      <li class="mensaje mensaje--error" role="alert"><span class="mensaje__prefijo">Error:</span> {{ error }}</li>
     {% endfor %}
   </ul>
 {% endif %}

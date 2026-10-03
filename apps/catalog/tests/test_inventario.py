@@ -10,7 +10,6 @@ from decimal import Decimal
 import pytest
 from django.db import IntegrityError
 from django.urls import reverse
-from django.utils.formats import localize
 
 from apps.accounts.tests.factories import UsuarioFactory
 from apps.catalog.models import Producto, ProductoEditorial
@@ -170,9 +169,9 @@ def test_la_ficha_de_un_importado_muestra_la_composicion_del_precio(client_admin
 
     contenido = respuesta.content.decode()
     assert "Composición del precio" in contenido
-    # El dinero sale con el formato local (es-AR, coma decimal); el CRE, sin
-    # localizar, porque es un factor de cálculo y no un importe.
-    assert localize(Decimal("1100.00")) in contenido
+    # El dinero sale como lo escribe la guía visual («$ 1.100», punto de miles);
+    # el CRE, sin localizar, porque es un factor de cálculo y no un importe.
+    assert "$ 1.100" in contenido
     assert "0.100000" in contenido
 
 

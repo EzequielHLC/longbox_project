@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Longbox{% endblock %}</title>
   {% comment %}
-  Una sola hoja para todo el sistema, con los tokens de
-  `.contexto-ia/TOKENS_VISUALES.md` declarados como variables. Se sirve desde
-  `static/`: la interfaz no pide nada a ningún servidor ajeno para dibujarse.
+  Viñeta Nocturna: primero los tokens (`tokens.css`, copia de
+  `.contexto-ia/tokens.css`) y después los componentes, que sólo leen sus
+  semánticos. Todo se sirve desde `static/`, fuentes incluidas: la interfaz no
+  pide nada a ningún servidor ajeno para dibujarse.
   {% endcomment %}
+  <link rel="preload" href="{% static 'fuentes/archivo-variable.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/longbox.css' %}">
   {# Cada modo agrega acá lo suyo: guiones de componentes, la identidad de la tienda. #}
   {% block cabecera_extra %}{% endblock %}
@@ -44,7 +47,7 @@
         <span class="mensaje__prefijo">Atención:</span>
         la sesión está por expirar por inactividad (<span id="aviso-sesion-restante"></span>).
       </p>
-      <button id="aviso-sesion-extender" type="button" class="boton-seccion">
+      <button id="aviso-sesion-extender" type="button" class="boton-seccion boton-seccion--tenue">
         Mantener la sesión activa
       </button>
     </div>

@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 78 |
-| Sin ninguna | 141 |
-| Pruebas de contrato en la suite | 251 |
+| Con al menos una prueba que lleva su código | 80 |
+| Sin ninguna | 139 |
+| Pruebas de contrato en la suite | 260 |
 
 ---
 
@@ -193,7 +193,7 @@ es otra puerta y su número también vive ahí.
 
 ### `07-tienda-online.md` — 07 Tienda Online
 
-12 contratos · 0 con prueba · 12 sin.
+12 contratos · 2 con prueba · 10 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -203,8 +203,8 @@ es otra puerta y su número también vive ahí.
 | `CO-088` | confirmarPedido | — | — |
 | `CO-090` | declararDatosDeInvitado | — | — |
 | `CO-091` | confirmarPedidoDeInvitado | — | — |
-| `CO-176` | consultarCatalogoPublico | — | — |
-| `CO-177` | consultarFichaPublicaDeProducto | — | — |
+| `CO-176` | consultarCatalogoPublico | 6 | `apps/core/tests/test_contratos_07_tienda.py` |
+| `CO-177` | consultarFichaPublicaDeProducto | 3 | `apps/core/tests/test_contratos_07_tienda.py` |
 | `CO-178` | consultarCarrito | — | — |
 | `CO-179` | procederAlPago | — | — |
 | `CO-180` | iniciarCheckout | — | — |
@@ -778,6 +778,21 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-167` · consultarMargenGlobal**
 
 - `test_CO167_consultar_margen_lo_expresa_como_porcentaje` — `apps/catalog/tests/test_contratos_03_pricing.py`
+
+**`CO-176` · consultarCatalogoPublico**
+
+- `test_CO176_E1_sin_resultados_ofrece_limpiar_los_filtros` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO176_busqueda_tipo_editorial_etiqueta_y_precio` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO176_descatalogados_cancelados_y_para_adultos_no_se_ven_bajo_ningun_filtro` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO176_los_filtros_de_estado` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO176_por_defecto_activos_con_stock_de_lo_mas_nuevo_a_lo_mas_viejo` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO176_se_pagina_de_a_24` — `apps/core/tests/test_contratos_07_tienda.py`
+
+**`CO-177` · consultarFichaPublicaDeProducto**
+
+- `test_CO177_la_ficha_ofrece_la_accion_de_su_estado` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO177_un_producto_no_visible_responde_404` — `apps/core/tests/test_contratos_07_tienda.py`
+- `test_CO177_volver_conserva_los_filtros` — `apps/core/tests/test_contratos_07_tienda.py`
 
 **`CO-194` · consultarCuentasDeCliente**
 

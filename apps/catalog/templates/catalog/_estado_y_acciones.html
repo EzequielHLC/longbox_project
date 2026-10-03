@@ -8,7 +8,7 @@ la modificación (`CO-138`, `CO-142`, `CO-145`, `CO-039`, `CO-043`).
     {% include "catalog/_estado_y_acciones.html" with registro=editorial activo=editorial.activa %}
 {% endcomment %}
 <td>
-  <span class="marca-estado{% if not activo %} marca-estado--apagado{% endif %}">{% if activo %}{{ catalogo.activo_texto }}{% else %}{{ catalogo.inactivo_texto }}{% endif %}</span>
+  <span class="marca-estado{% if activo %} marca-estado--ok{% else %} marca-estado--apagado{% endif %}">{% if activo %}{{ catalogo.activo_texto }}{% else %}{{ catalogo.inactivo_texto }}{% endif %}</span>
 </td>
 <td class="acciones-de-fila">
   <a href="{{ catalogo|url_editar:registro }}" class="boton-menor">{% if activo %}Modificar{% else %}Modificar o reactivar{% endif %}</a>

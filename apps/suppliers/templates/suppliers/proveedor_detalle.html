@@ -17,7 +17,7 @@ acciones viven en esta pantalla y no repartidas por el listado.
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Proveedores" atras=1 %}</span>
     <h1>{{ proveedor.razon_social }}</h1>
     <p class="fila">
-      <span class="marca-estado{% if not proveedor.esta_activo %} marca-estado--apagado{% endif %}">{{ proveedor.get_estado_display }}</span>
+      <span class="marca-estado{% if proveedor.esta_activo %} marca-estado--ok{% else %} marca-estado--apagado{% endif %}">{{ proveedor.get_estado_display }}</span>
       <span class="texto-chico">
         Alta: <span class="datos">{{ proveedor.creado_en|date:"d/m/Y" }}</span> ·
         Última modificación: <span class="datos">{{ proveedor.actualizado_en|date:"d/m/Y H:i" }}</span>
@@ -131,7 +131,7 @@ acciones viven en esta pantalla y no repartidas por el listado.
               <td class="celda-principal"><a href="{% url 'catalog:producto_detalle' producto.pk %}">{{ producto.titulo }}</a></td>
               <td class="datos">{{ producto.especifico.volumen|default:"—" }}</td>
               <td class="secundario">{% if producto.es_editorial %}{{ producto.especifico.editorial }}{% else %}—{% endif %}</td>
-              <td><span class="marca-estado">{{ producto.get_estado_display }}</span></td>
+              <td><span class="marca-estado{% if producto.estado == 'activo' %} marca-estado--ok{% elif producto.estado == 'pre_venta' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span></td>
               <td class="numero">{{ producto.stock }}</td>
             </tr>
           {% endfor %}

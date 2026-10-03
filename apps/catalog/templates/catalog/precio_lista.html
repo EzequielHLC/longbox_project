@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CU-PVP-TBC — Consultar Tabla de Precios de Referencia (CO-166).
 
@@ -47,7 +48,7 @@ a cómo llega una lista de precios, que es por editorial.
     <select id="formato" name="formato">
       <option value="">Todos</option>
       {% for formato in formatos %}
-        <option value="{{ formato.pk }}" {% if filtros.formato == formato.pk %}selected{% endif %}>{{ formato.nombre }}</option>
+        <option value="{{ formato.pk }}" {% if filtros.formato == formato.pk %}selected{% endif %}>{{ formato.nombre }}{% if formato.descripcion %} · {{ formato.descripcion }}{% endif %}</option>
       {% endfor %}
     </select>
   </div>
@@ -58,10 +59,19 @@ a cómo llega una lista de precios, que es por editorial.
 </form>
 
 {% if precios %}
+  {% comment %}
+  B-03-006: las equivalencias son de referencia, a la cotización del día. El
+  precio que se cobra es el de la columna en pesos.
+  {% endcomment %}
+  <p class="texto-chico secundario">
+    Equivalencias de referencia{% if cotizaciones.fecha %}, cotización del <span class="datos">{{ cotizaciones.fecha|date:"d/m/Y" }}</span>{% endif %}.
+    {% if cotizaciones.desactualizada %}<strong>La cotización tiene varios días: puede no reflejar el cambio actual.</strong>{% endif %}
+    Se cobra el precio en pesos.
+  </p>
   <div class="tabla-desplazable">
     <table class="tabla">
       <thead>
-        <tr><th>Editorial</th><th>Tipo</th><th>Formato</th><th class="numero">Precio</th><th>Actualizado</th><th class="derecha">Acciones</th></tr>
+        <tr><th>Editorial</th><th>Tipo</th><th>Formato</th><th class="numero">Precio</th><th class="numero">Equivalencias</th><th>Actualizado</th><th class="derecha">Acciones</th></tr>
       </thead>
       <tbody>
         {% for precio in precios %}
@@ -69,7 +79,10 @@ a cómo llega una lista de precios, que es por editorial.
             <td class="celda-principal">{{ precio.editorial }}</td>
             <td>{{ precio.tipo }}</td>
             <td>{{ precio.formato }}</td>
-            <td class="numero">${{ precio.pvp }}</td>
+            <td class="numero">{{ precio.pvp|pesos }}</td>
+            <td class="numero datos secundario texto-chico">
+              {% for equivalencia in precio.equivalencias %}<span class="sin-cortar">{{ equivalencia.simbolo }} {{ equivalencia.valor }}</span>{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}
+            </td>
             <td class="datos sin-cortar secundario">{{ precio.actualizado_en|date:"d/m/Y H:i" }}</td>
             <td class="acciones-de-fila">
               <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">Modificar precio</a>

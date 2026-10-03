@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 La ficha de un correo de la cola: qué llegó, qué se extrajo y qué se hace
 (CU-PRV-COL, `CO-158 abrirFichaDeCorreo`).
@@ -23,7 +24,7 @@ correo no está listo para procesarse.
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Cola de correos" atras=1 %}</span>
     <h1>{{ correo.asunto|default:"Sin asunto" }}</h1>
     <p class="fila">
-      <span class="marca-estado{% if correo.estado == 'pendiente' or correo.estado == 'fallido' %} marca-estado--atencion{% elif correo.estado == 'descartado' %} marca-estado--apagado{% endif %}">{{ correo.get_estado_display }}</span>
+      <span class="marca-estado{% if correo.estado == 'pendiente' or correo.estado == 'fallido' %} marca-estado--atencion{% elif correo.estado == 'descartado' %} marca-estado--apagado{% elif correo.estado == 'procesado' %} marca-estado--ok{% endif %}">{{ correo.get_estado_display }}</span>
       <a href="{% url 'suppliers:proveedor_detalle' correo.proveedor.pk %}">{{ correo.proveedor }}</a>
     </p>
   </div>
@@ -211,7 +212,7 @@ las dos cosas a la vista. Confirmar y rechazar son CU-ALT-REV.
 
             <dl class="tarjeta__datos">
               <div><dt>ISBN</dt><dd{% if not borrador.isbn %} class="secundario"{% endif %}>{{ borrador.isbn|default:"—" }}</dd></div>
-              <div><dt>Precio</dt><dd{% if borrador.precio == None %} class="fuerte"{% endif %}>{% if borrador.precio != None %}${{ borrador.precio }}{% else %}Falta{% endif %}</dd></div>
+              <div><dt>Precio</dt><dd{% if borrador.precio == None %} class="fuerte"{% endif %}>{% if borrador.precio != None %}{{ borrador.precio|pesos }}{% else %}Falta{% endif %}</dd></div>
               <div><dt>Formato</dt><dd>{{ borrador.formato|default:"—" }}</dd></div>
               {% comment %}
               El estado no lo eligió nadie: lo derivó el sistema de la fecha

@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 La vuelta de la baja de CU-CAT-BAJ: la describe CU-CAT-REA, con CO-035 y CO-036.
 El motivo por el que existe está en la vista.
@@ -33,7 +34,7 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
 
     <dl class="datos-de-ficha">
       <dt>Stock actual</dt><dd class="datos">{{ producto.stock }}</dd>
-      <dt>Precio</dt><dd class="datos">${{ producto.precio }}</dd>
+      <dt>Precio</dt><dd class="datos">{{ producto.precio|pesos }}</dd>
     </dl>
     <p class="texto-chico secundario">
       Si alguno quedó desactualizado, <a href="{% url 'catalog:producto_editar' producto.pk %}">corríjalo antes</a>.

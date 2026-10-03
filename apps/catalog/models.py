@@ -1035,6 +1035,31 @@ class ProductoNoEditorial(Producto):
         return ("nombre", " ".join(self.titulo.split()).lower(), self.tipo_id)
 
 
+class ImagenProducto(models.Model):
+    """Una imagen adicional del producto, además de su portada (B-01-003).
+
+    La portada sigue siendo **la** imagen del producto que declaran los
+    contratos —la que lleva el marcador «imagen pendiente» si falta—. Estas son
+    las vistas que la acompañan: contratapa, interior, detalle de una figura.
+    Se procesan con RNF-05 antes de guardarse, igual que los banners.
+    """
+
+    MAXIMO = 8
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="imagenes")
+    imagen = models.ImageField("imagen", upload_to="productos/")
+    posicion = models.PositiveIntegerField("posición")
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "imagen adicional"
+        verbose_name_plural = "imágenes adicionales"
+        ordering = ["posicion", "pk"]
+
+    def __str__(self):
+        return f"Imagen {self.posicion + 1} de {self.producto}"
+
+
 class BorradorProductoQuerySet(models.QuerySet):
     def pendientes(self):
         """Los que esperan una decisión del Administrador (CU-ALT-REV paso 1)."""

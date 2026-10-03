@@ -1,0 +1,33 @@
+{% load moneda %}
+{% comment %}
+Una viñeta de la estantería (`identidad_visual.md`, Estantería y tarjeta).
+
+Portada a 2:3 con sus colores, título, editorial, precio y el rótulo de estado
+sesgado sobre la portada: «Disponible», «Pre-venta» o «Sin stock». Sin ofertas
+todavía, ningún precio sale tachado.
+
+    {% include "core/_tarjeta_producto.html" with producto=producto volver=parametros %}
+{% endcomment %}
+<a href="{% url 'core:tienda_producto' producto.pk %}{% if volver %}?volver={{ volver|urlencode }}{% endif %}"
+   class="tarjeta-producto{% if producto.estado_publico == 'agotado' %} tarjeta-producto--sin-stock{% endif %}"
+   data-indice="{{ producto.indice|default:0 }}">
+  <div class="tarjeta-producto__portada">
+    {% if producto.estado_publico == "pre_venta" %}
+      <span class="rotulo-estado rotulo-estado--pre-venta"><span>Pre-venta</span></span>
+    {% elif producto.estado_publico == "agotado" %}
+      <span class="rotulo-estado rotulo-estado--sin-stock">Sin stock</span>
+    {% else %}
+      <span class="rotulo-estado rotulo-estado--disponible">Disponible</span>
+    {% endif %}
+    {% if producto.portada %}
+      <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy" data-portada="{{ producto.pk }}">
+    {% else %}
+      <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+    {% endif %}
+  </div>
+  <div class="tarjeta-producto__cuerpo">
+    <span class="tarjeta-producto__titulo">{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</span>
+    <span class="tarjeta-producto__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
+    <span class="tarjeta-producto__precio">{{ producto.precio|pesos }}</span>
+  </div>
+</a>

@@ -1,3 +1,4 @@
+{% load moneda %}
 {% comment %}
 Fragmento de la tabla del inventario. Se renderiza incrustado en
 `producto_lista.html` y también solo, cuando el buscador lo pide con
@@ -53,14 +54,11 @@ columnas de números que se leen de arriba abajo.
               <td class="secundario sin-cortar">{{ producto.especifico.formato|default:"—" }}</td>
               <td>
                 {% comment %}
-                Pre-venta es un estado derivado de la fecha de llegada: se marca como
-                valor calculado. Descatalogado y cancelado van apagados.
+                Rótulos funcionales, como «Últimos ingresos» en la guía: Activo en
+                lima, Pre-venta —estado derivado de la fecha— en celeste, el resto
+                apagado.
                 {% endcomment %}
-                {% if producto.estado == 'pre_venta' %}
-                  <span class="calculado" title="calculado">{{ producto.get_estado_display }}</span>
-                {% else %}
-                  <span class="marca-estado{% if producto.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
-                {% endif %}
+                <span class="marca-estado{% if producto.estado == 'activo' %} marca-estado--ok{% elif producto.estado == 'pre_venta' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
               </td>
               <td class="numero">
                 {% if producto.estado == 'activo' and not producto.stock %}
@@ -69,7 +67,7 @@ columnas de números que se leen de arriba abajo.
                   {{ producto.stock }}
                 {% endif %}
               </td>
-              <td class="numero">${{ producto.precio }}</td>
+              <td class="numero">{{ producto.precio|pesos }}</td>
             </tr>
           {% endfor %}
         </tbody>

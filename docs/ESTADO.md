@@ -14,7 +14,12 @@ enlazan a éste.
 Cuarta fotografía. **Se cerró la etapa A del plan de la sesión**: catálogos de clasificación
 (módulo 17, tanda 1), grupos, etiquetas y exportación del inventario (módulo 02), tabla de
 precios y margen (módulo 03), consulta del log (módulo 16) y contenido de la tienda (módulo 17,
-tanda 2). La etapa B (catálogo público, carrito, ofertas) no se empezó.
+tanda 2). De la etapa B se construyó el catálogo público (`CU-TDA-CAT`, plan 07); el carrito y
+las ofertas no se empezaron.
+
+**El estilo cambió.** El responsable reemplazó el estilo preliminar plano por **Viñeta Nocturna**
+(`TOKENS_VISUALES.md`, `identidad_visual.md`, `tokens.css`). Se aplicó a todo el sistema con los
+mismos nombres de clase; lo que el documento describe y todavía no está, en B-00-005.
 
 **Lo que más se movió.** La baja de los cinco catálogos dejó de ser una casilla del formulario:
 es un par informe y confirmación, y la modificación sólo corrige y reactiva. Los precios ya no
@@ -31,15 +36,15 @@ efecto sobre algo que todavía no existe: los filtros del catálogo público (`C
 | Casos de uso especificados | 103 |
 | Verificados | 37 |
 | Construidos, sin verificar | 9 |
-| Parciales | 17 |
+| Parciales | 18 |
 | En curso | 0 |
-| Pendientes | 40 |
+| Pendientes | 39 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **78**, de los cuales **70 verificados**
+Contratos de operación especificados: **219**. Con prueba: **80**, de los cuales **72 verificados**
 y **8 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`, `CO-048`, `CO-053`,
-`CO-221`). Sin prueba: **141**. El detalle por contrato está en
-[pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 251 pruebas de contrato.
+`CO-221`). Sin prueba: **139**. El detalle por contrato está en
+[pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 260 pruebas de contrato.
 
 ### Cómo leer la columna «Contratos»
 
@@ -129,7 +134,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-TDA-CAT` | Pendiente | 0 / 3 | `TiendaView` es una pantalla de relleno: sólo fija el control de acceso del rol Cliente. |
+| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con filtros por texto, tipo, editorial, etiqueta, precio y estado, de a 24; ficha pública con galería y la acción según estado. `Parcial`: las acciones inician `CU-TDA-CRA` y `CU-RST-SUS`, que no existen, y se muestran deshabilitadas (B-07-002); sin `Oferta` no hay precio tachado. Plan 07 |
 | `CU-TDA-CRC` | Pendiente | 0 / 3 | No existe `Carrito`. |
 | `CU-TDA-CRA` | Pendiente | 0 / 1 | Ídem. |
 | `CU-TDA-CRM` | Pendiente | 0 / 1 | Ídem. |
@@ -260,29 +265,29 @@ Medición del **2026-10-02**, con PostgreSQL levantado, sobre el repositorio ent
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1644 pasan**, 0 fallos, 6 min 52 s |
-| **Contratos** | **70 de 219 verificados**, 8 parciales, 141 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (5676 sentencias, 183 sin cubrir) |
+| Suite de pruebas | **1698 pasan**, 0 fallos, 7 min 8 s |
+| **Contratos** | **72 de 219 verificados**, 8 parciales, 139 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **97 %** (5982 sentencias, 190 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 169 archivos sin cambios |
+| Formato | `black --check .`: 174 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos |
 | Configuración de despliegue | `check --deploy` con la configuración de producción y el `.env` de esta máquina (`ALLOWED_HOSTS=.trycloudflare.com`): **sin advertencias** |
 
-**Las dos verificaciones a mano.** Las migraciones `catalog.0020` y `core.0018`/`0019` aplicaron
-sobre la base de desarrollo, y todas las pantallas nuevas responden sobre esos datos.
-`makemigrations --check` no detecta cambios. Las migraciones no agregan restricciones de
-unicidad.
+**Las dos verificaciones a mano.** Las migraciones de hoy (`catalog.0020`, `0021`; `core.0018` a
+`0021`) aplicaron sobre la base de desarrollo, y las pantallas nuevas se recorrieron sobre esos
+datos. `makemigrations --check` no detecta cambios. Ninguna agrega restricciones de unicidad.
 
-**La prueba del estilo preliminar pasa**, con las pantallas nuevas incluidas. La vista previa de
-la identidad visual es la única plantilla operativa que toca las variables `--tienda-*`, sobre una
-miniatura con `modo-publico`.
+**La prueba del estilo es ahora `test_estilo_vineta.py`**: `tokens.css` idéntico al del
+responsable, fuentes autoalojadas presentes, ningún color ni radio en los componentes, sombras sin
+desenfoque, sólo animaciones del catálogo, movimiento reducido declarado, las variables de la
+tienda sólo en el público y el sticker fuera del mostrador.
 
 ---
 
 ## Lo que esta fotografía no cubre
 
-- **Las pantallas nuevas se recorrieron con el cliente de pruebas sobre la base de desarrollo**,
-  no a mano en un navegador. El carrusel y la vista previa de la identidad visual tienen guion:
+- **Las pantallas se revisaron con capturas de Chrome sin interfaz** (portada, catálogo y ficha
+  de la tienda, panel, carga de lotes), no a mano en un navegador interactivo. El carrusel y la vista previa de la identidad visual tienen guion:
   sus pruebas verifican que los controles estén, no su comportamiento en el navegador.
 - **Las pantallas se revisaron con capturas**, no a mano en un navegador interactivo: panel,
   inventario, ficha de producto, ficha de correo, parámetros e inicio de sesión. El resto se

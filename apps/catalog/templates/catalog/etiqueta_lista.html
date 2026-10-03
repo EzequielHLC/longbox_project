@@ -19,7 +19,7 @@ de baja no ofrece ninguna de sus etiquetas, aunque cada una conserve el suyo.
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Grupos de etiquetas" atras=1 %}</span>
     <h1>{{ grupo.nombre }}</h1>
     <p>
-      Grupo <span class="marca-estado{% if not grupo.activo %} marca-estado--apagado{% endif %}">{% if grupo.activo %}Activo{% else %}Dado de baja{% endif %}</span>
+      Grupo <span class="marca-estado{% if grupo.activo %} marca-estado--ok{% else %} marca-estado--apagado{% endif %}">{% if grupo.activo %}Activo{% else %}Dado de baja{% endif %}</span>
       · {{ total }} etiqueta{{ total|pluralize }}
     </p>
   </div>

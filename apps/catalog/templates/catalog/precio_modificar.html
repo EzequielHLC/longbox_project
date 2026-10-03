@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% comment %}
 CU-PVP-TBM — Modificar Precio de Referencia.
 
@@ -24,7 +25,7 @@ La combinación es la identidad de la fila y no se modifica.
 </header>
 
 <dl class="datos-de-ficha formulario--angosto">
-  <dt>Precio vigente</dt><dd class="datos">${{ fila.pvp }}</dd>
+  <dt>Precio vigente</dt><dd class="datos">{{ fila.pvp|pesos }}</dd>
   <dt>Última actualización</dt><dd class="datos">{{ fila.actualizado_en|date:"d/m/Y H:i" }}</dd>
 </dl>
 
@@ -43,7 +44,7 @@ La combinación es la identidad de la fila y no se modifica.
     <div class="cifras">
       <div class="cifra">
         <span class="cifra__rotulo">Precio nuevo</span>
-        <span class="cifra__valor">${{ nuevo }}</span>
+        <span class="cifra__valor">{{ nuevo|pesos }}</span>
       </div>
       <div class="cifra{% if informe %} cifra--atencion{% endif %}">
         <span class="cifra__rotulo">Productos que se actualizan</span>
@@ -51,7 +52,7 @@ La combinación es la identidad de la fila y no se modifica.
       </div>
     </div>
     {% if informe %}
-      <p>Los productos vinculados a esta combinación pasan a ${{ nuevo }}. Los que tienen precio fijado a mano y los cancelados por la editorial no cambian. Los pedidos ya confirmados no se modifican.</p>
+      <p>Los productos vinculados a esta combinación pasan a {{ nuevo|pesos }}. Los que tienen precio fijado a mano y los cancelados por la editorial no cambian. Los pedidos ya confirmados no se modifican.</p>
     {% else %}
       <p>Ningún producto está vinculado a esta combinación: la modificación sólo afecta a la tabla.</p>
     {% endif %}

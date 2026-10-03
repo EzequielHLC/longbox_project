@@ -32,7 +32,7 @@ cuenta. Las operaciones pertenecen a su titular.
       <dd class="datos">{{ cliente.telefono|default:"—" }}</dd>
 
       <dt>Estado</dt>
-      <dd><span class="marca-estado{% if cliente.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span></dd>
+      <dd><span class="marca-estado{% if cliente.estado == 'activo' %} marca-estado--ok{% elif cliente.estado == 'pendiente_activacion' %} marca-estado--atencion{% else %} marca-estado--apagado{% endif %}">{{ cliente.get_estado_display }}</span></dd>
 
       <dt>Registro</dt>
       <dd class="datos">{{ cliente.date_joined|date:"d/m/Y H:i" }}</dd>

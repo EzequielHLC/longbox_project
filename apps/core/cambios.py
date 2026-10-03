@@ -6,8 +6,8 @@ exactamente lo mismo: comparar campo por campo y dejar el par anterior→nuevo e
 el log.
 
 **El par completo, no solo el estado final.** Un registro que dice "rol:
-administrador" no permite reconstruir nada; uno que dice "rol: 'cajero' →
-'administrador'" sí. Es la diferencia entre una bitácora y una foto.
+administrador" no permite reconstruir nada; uno que dice "rol: «cajero» →
+«administrador»" sí. Es la diferencia entre una bitácora y una foto.
 
 Qué campos se auditan lo decide cada módulo, porque depende del CU: se pasa un
 diccionario `{etiqueta: cómo leerla}` y no se deduce del modelo. Deducirlo
@@ -31,7 +31,11 @@ def entre(anterior, nuevo, campos):
 
 
 def describir(cambios):
-    """El texto que va al `detalle` del registro."""
+    """El texto que va al `detalle` del registro.
+
+    Entre comillas angulares, como el resto del log: las comillas simples de
+    Python se leían como parte del valor.
+    """
     return "; ".join(
-        f"{etiqueta}: '{anterior}' → '{nuevo}'" for etiqueta, (anterior, nuevo) in cambios.items()
+        f"{etiqueta}: «{anterior}» → «{nuevo}»" for etiqueta, (anterior, nuevo) in cambios.items()
     )

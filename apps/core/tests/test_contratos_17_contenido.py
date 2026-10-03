@@ -315,7 +315,7 @@ DATOS_VALIDOS = {
 def test_CO208_consultar_identidad_presenta_los_valores_actuales(client_admin):
     respuesta = client_admin.get(reverse("core:identidad_visual"))
 
-    assert respuesta.context["form"].initial["color_primario"] == "#111111"
+    assert respuesta.context["form"].initial["color_primario"] == "#FF6A13"
 
 
 def test_CO131_actualizar_identidad_aplica_a_la_tienda_y_audita_lo_anterior(
@@ -328,7 +328,7 @@ def test_CO131_actualizar_identidad_aplica_a_la_tienda_y_audita_lo_anterior(
     assert identidad.color_primario == "#1A2B3C"
     registro = auditorias(RegistroAuditoria.MODIFICACION_IDENTIDAD_VISUAL).get()
     assert registro.actor == administrador
-    assert "color primario: «#111111» → «#1A2B3C»" in registro.detalle
+    assert "color primario: «#FF6A13» → «#1A2B3C»" in registro.detalle
     hoja = client.get(reverse("core:tienda_css")).content.decode()
     assert "--tienda-primario: #1A2B3C;" in hoja
     assert "--tienda-acento: #AA0000;" in hoja

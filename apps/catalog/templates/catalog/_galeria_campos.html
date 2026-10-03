@@ -1,0 +1,20 @@
+{% comment %}
+Las imágenes adicionales del producto (B-01-003), debajo de la portada. En la
+edición se ven las que ya tiene, cada una con su casilla para quitarla.
+
+    {% include "catalog/_galeria_campos.html" with form=form %}
+{% endcomment %}
+{% if form.quitar_imagenes %}
+  <div class="campo">
+    <p class="etiqueta">{{ form.quitar_imagenes.label }}</p>
+    <div class="galeria-producto">
+      {% for opcion in form.quitar_imagenes %}
+        <label class="galeria-producto__item">
+          <img src="{{ opcion.data.value.instance.imagen.url }}" alt="Imagen adicional {{ forloop.counter }}">
+          <span class="casilla">{{ opcion.tag }}<span>Quitar</span></span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% include "_campo.html" with campo=form.imagenes_nuevas %}

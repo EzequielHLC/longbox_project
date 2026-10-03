@@ -1,27 +1,118 @@
 {% extends "base_publico.html" %}
 {% comment %}
-La portada de la tienda: el carrusel de banners (CU-CFG-BNC) y el acceso a las
-preguntas frecuentes (CU-CFG-FAQ). El catálogo público es CU-TDA-CAT, de la
-etapa B.
+La portada de la tienda (`identidad_visual.md` y la guía `Viñeta Nocturna.html`:
+Portada, Ticker, Estantería): escena noche en diagonal con el título y la
+portada destacada, el ticker inclinado, el carrusel de banners (CU-CFG-BNC) y la
+estantería de recién llegados sobre papel, que entra en diagonal.
+
+El antetítulo, el título, la bajada y los mensajes del ticker los escribe el
+Administrador en la identidad visual (B-17-015). Los datos —precios, estados—
+siguen la voz del sistema.
 {% endcomment %}
 
 {% block titulo %}Tienda · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
 
-{% block contenido %}
-{% include "_carrusel.html" with banners=banners intervalo=intervalo %}
+{% block secciones %}
+<section class="portada-tienda superficie-noche" aria-labelledby="titulo-portada">
+  <div class="columna-publica">
+    <div class="portada-tienda__textos">
+      <p class="antetitulo">— {{ textos_tienda.portada_antetitulo }}</p>
+      <h1 id="titulo-portada" class="titulo-mega titulo-glitch" data-texto="{{ textos_tienda.portada_titulo }}" data-glitch>{{ textos_tienda.portada_titulo }}</h1>
+      <p class="portada-tienda__bajada">{{ textos_tienda.portada_bajada }}</p>
+      <div class="portada-tienda__acciones">
+        <a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Ver el catálogo</a>
+        <a href="{% url 'core:tienda_catalogo' %}?estado=pre_venta" class="boton-seccion">Pre-ventas</a>
+      </div>
+    </div>
 
-<header class="encabezado-de-pantalla">
-  <div class="encabezado-de-pantalla__textos">
-    <h1>Tienda online</h1>
-    <p class="secundario">El catálogo de la tienda todavía no está disponible.</p>
+    {% if destacado %}
+      <a href="{% url 'core:tienda_producto' destacado.pk %}" class="portada-tienda__destacada" aria-label="{{ destacado.titulo }}">
+        <span class="sticker" aria-hidden="true">{% if destacado.estado_publico == "pre_venta" %}¡PRE-VENTA!{% else %}¡NUEVO!{% endif %}</span>
+        <img src="{{ destacado.portada.url }}" alt="Portada de {{ destacado.titulo }}">
+      </a>
+    {% endif %}
   </div>
-</header>
+</section>
 
-<div class="vacio">
-  {% include "_iconos.html" with icono="tienda" %}
-  <p>Muy pronto vas a poder ver y comprar el catálogo desde acá.</p>
-  {% if hay_faq %}
-    <a href="{% url 'core:faq' %}" class="boton-texto">{% include "_iconos.html" with icono="faq" %}<span>Preguntas frecuentes</span></a>
+{% comment %}
+El ticker repite sus mensajes dos veces para que el bucle no tenga corte; la
+segunda vuelta no la leen los lectores de pantalla. Se detiene con el puntero,
+con el foco y con «Pausar»; con movimiento reducido no corre.
+{% endcomment %}
+{% with mensajes=textos_tienda.mensajes_del_ticker %}
+  {% if mensajes or recien_llegados %}
+    <div class="ticker" data-ticker>
+      <div class="ticker__pista">
+        {% if mensajes %}
+          {% for mensaje in mensajes %}<span>{{ mensaje }}</span>{% endfor %}
+          {% for mensaje in mensajes %}<span aria-hidden="true">{{ mensaje }}</span>{% endfor %}
+        {% else %}
+          {% for producto in recien_llegados %}<span>Llegó {{ producto.titulo }}</span>{% endfor %}
+          {% for producto in recien_llegados %}<span aria-hidden="true">Llegó {{ producto.titulo }}</span>{% endfor %}
+        {% endif %}
+      </div>
+      <button type="button" class="ticker__pausa" data-ticker-pausa aria-pressed="false">Pausar</button>
+    </div>
   {% endif %}
-</div>
+{% endwith %}
+
+{% if banners %}
+  <section class="seccion-publica superficie-noche" aria-label="Novedades">
+    <div class="columna-publica">
+      {% include "_carrusel.html" with banners=banners intervalo=intervalo %}
+    </div>
+  </section>
+{% endif %}
+
+<section class="seccion-publica seccion-publica--diagonal superficie-papel" aria-labelledby="titulo-llegados">
+  <div class="columna-publica">
+    {% include "_mensajes.html" %}
+    <div class="fila fila-entre fila-abajo">
+      <div class="titulo-seccion">
+        <p class="antetitulo">Estantería</p>
+        <h2 id="titulo-llegados">Recién llegados</h2>
+      </div>
+      <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Todo el catálogo →</a>
+    </div>
+
+    {% if recien_llegados %}
+      {% include "core/_estanteria.html" with productos=recien_llegados %}
+    {% else %}
+      <div class="vacio">
+        {% include "_iconos.html" with icono="tienda" %}
+        <p>Todavía no hay productos disponibles en la tienda.</p>
+      </div>
+    {% endif %}
+
+    {% if hay_faq %}
+      <a href="{% url 'core:faq' %}" class="boton-texto">Preguntas frecuentes →</a>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  (function () {
+    // El glitch del título: una vez al cargar y otra al pasar el puntero.
+    const titulo = document.querySelector("[data-glitch]");
+    if (titulo) {
+      const glitch = function () {
+        titulo.classList.remove("glitcheando");
+        void titulo.offsetWidth;
+        titulo.classList.add("glitcheando");
+      };
+      window.setTimeout(glitch, 650);
+      titulo.addEventListener("mouseenter", glitch);
+    }
+    // «Pausar» detiene el ticker sin depender del puntero.
+    const ticker = document.querySelector("[data-ticker]");
+    const pausa = document.querySelector("[data-ticker-pausa]");
+    if (ticker && pausa) {
+      pausa.addEventListener("click", function () {
+        const pausado = ticker.classList.toggle("ticker--pausado");
+        pausa.setAttribute("aria-pressed", pausado ? "true" : "false");
+        pausa.textContent = pausado ? "Seguir" : "Pausar";
+      });
+    }
+  })();
+</script>
 {% endblock %}

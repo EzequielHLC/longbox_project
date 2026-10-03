@@ -38,7 +38,7 @@ E2 de CU-PRV-ALT: el conflicto se informa con enlace a la ficha del existente;
 el enlace es lo que convierte el aviso en algo accionable.
 {% endcomment %}
 {% if conflicto %}
-  <div class="mensaje" role="alert">
+  <div class="mensaje mensaje--error" role="alert">
     {% include "_iconos.html" with icono="error" %}
     <span>
       <span class="mensaje__prefijo">Error:</span>
@@ -52,7 +52,7 @@ el enlace es lo que convierte el aviso en algo accionable.
 {% if form.non_field_errors %}
   <ul class="mensajes">
     {% for error in form.non_field_errors %}
-      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
     {% endfor %}
   </ul>
 {% endif %}

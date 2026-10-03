@@ -24,7 +24,7 @@ plantilla. Lo que todavía no se puede calcular se dice «No disponible», nunca
 {% if producto.estado == "descatalogado" %}
   <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está fuera del catálogo. No hay nada que confirmar.</span></p>
 {% elif producto.estado == "cancelado_editorial" %}
-  <p class="mensaje" role="alert">
+  <p class="mensaje mensaje--error" role="alert">
     {% include "_iconos.html" with icono="error" %}
     <span>
       <span class="mensaje__prefijo">Error:</span>

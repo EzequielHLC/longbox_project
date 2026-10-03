@@ -15,7 +15,7 @@ confirmaciones de baja, reactivación y eliminación, y la ficha de usuario.
   <dd>{{ cuenta.get_rol_display }}</dd>
 
   <dt>Estado</dt>
-  <dd><span class="marca-estado{% if cuenta.estado != 'activo' %} marca-estado--apagado{% endif %}">{{ cuenta.get_estado_display }}</span></dd>
+  <dd><span class="marca-estado{% if cuenta.estado == 'activo' %} marca-estado--ok{% elif cuenta.estado == 'pendiente_activacion' %} marca-estado--atencion{% else %} marca-estado--apagado{% endif %}">{{ cuenta.get_estado_display }}</span></dd>
 
   {% if con_fechas %}
     <dt>Alta</dt>

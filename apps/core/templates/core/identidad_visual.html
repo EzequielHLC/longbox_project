@@ -23,7 +23,7 @@ cambios» vuelve a cargar lo guardado (A1).
 {% if form.non_field_errors %}
   <ul class="mensajes">
     {% for error in form.non_field_errors %}
-      <li class="mensaje" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
     {% endfor %}
   </ul>
 {% endif %}
@@ -44,6 +44,21 @@ cambios» vuelve a cargar lo guardado (A1).
       {% include "_campo.html" with campo=form.tiktok %}
       {% include "_campo.html" with campo=form.x_twitter %}
     </div>
+  </section>
+
+  {% comment %}
+  Los textos del escaparate (B-17-015): el antetítulo, el título grande y la
+  bajada de la portada, los mensajes del ticker y la descripción del pie.
+  {% endcomment %}
+  <section class="seccion" aria-labelledby="titulo-portada">
+    <div class="seccion__titulo"><h2 id="titulo-portada">Portada y pie</h2></div>
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.portada_antetitulo %}
+      {% include "_campo.html" with campo=form.portada_titulo %}
+    </div>
+    {% include "_campo.html" with campo=form.portada_bajada %}
+    {% include "_campo.html" with campo=form.ticker_mensajes %}
+    {% include "_campo.html" with campo=form.descripcion_tienda %}
   </section>
 
   <section class="seccion" aria-labelledby="titulo-apariencia">

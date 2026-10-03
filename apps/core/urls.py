@@ -3,6 +3,7 @@ from django.urls import path
 from apps.core import views
 from apps.core import views_auditoria as auditoria
 from apps.core import views_contenido as contenido
+from apps.core import views_tienda as tienda
 
 app_name = "core"
 
@@ -16,6 +17,9 @@ urlpatterns = [
     # Datos geográficos para el autocompletado del registro (CU-CLI-ALT).
     path("datos/localidades/", views.localidades, name="localidades"),
     path("tienda/", views.TiendaView.as_view(), name="tienda"),
+    # CU-TDA-CAT — catálogo público y ficha, sin sesión (CO-176, CO-177).
+    path("tienda/catalogo/", tienda.CatalogoPublicoView.as_view(), name="tienda_catalogo"),
+    path("tienda/producto/<int:pk>/", tienda.FichaPublicaView.as_view(), name="tienda_producto"),
     path("tienda/preguntas-frecuentes/", contenido.FaqPublicaView.as_view(), name="faq"),
     path("tienda/identidad.css", contenido.TiendaCssView.as_view(), name="tienda_css"),
     # El contenido de la tienda (CU-CFG-FAQ, BN*, VIS).

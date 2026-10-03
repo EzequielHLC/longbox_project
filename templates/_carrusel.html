@@ -2,9 +2,10 @@
 El carrusel de banners de la portada (CU-CFG-BNC; `identidad_visual.md`,
 Carrusel de banners).
 
-Cambia de imagen con el intervalo de CU-CFG-PAR, **de forma instantánea**: sin
-deslizamiento ni fundido. «Anterior», «Siguiente» y «Pausar» son `.boton-texto`,
-porque un contenido que cambia solo debe poder detenerse.
+Cambia con el intervalo de CU-CFG-PAR. La imagen nueva se revela con un
+barrido diagonal. «Anterior», «Siguiente» y «Pausar» son `.boton-texto`, más
+indicadores cuadrados (el actual, relleno acento). Se detiene al pasar el
+puntero, al tomar foco y con movimiento reducido (ahí el cambio es sólo manual).
 
     {% include "_carrusel.html" with banners=banners intervalo=intervalo %}
 
@@ -14,13 +15,18 @@ vista previa es exactamente lo que ve el cliente.
 {% endcomment %}
 {% if banners %}
 <section class="carrusel" data-carrusel data-intervalo="{{ intervalo }}" aria-roledescription="carrusel" aria-label="Novedades">
-  {% for banner in banners %}
-    <img src="{{ banner.imagen.url }}" alt="Banner {{ forloop.counter }} de {{ banners|length }}" class="carrusel__imagen" data-diapositiva>
-  {% endfor %}
+  <div class="pila-3" data-marco>
+    {% for banner in banners %}
+      <img src="{{ banner.imagen.url }}" alt="Banner {{ forloop.counter }} de {{ banners|length }}" class="carrusel__imagen" data-diapositiva>
+    {% endfor %}
+  </div>
   {% if banners|length > 1 %}
     <div class="carrusel__controles" data-controles hidden>
       <button type="button" class="boton-texto" data-anterior>{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></button>
-      <span class="datos" data-contador aria-live="polite">1 de {{ banners|length }}</span>
+      <span class="carrusel__indicadores" aria-hidden="true">
+        {% for banner in banners %}<span data-indicador></span>{% endfor %}
+      </span>
+      <span class="datos sr-only" data-contador aria-live="polite">1 de {{ banners|length }}</span>
       <button type="button" class="boton-texto" data-pausar aria-pressed="false">{% include "_iconos.html" with icono="pausar" %}<span>Pausar</span></button>
       <button type="button" class="boton-texto" data-siguiente><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</button>
     </div>
@@ -28,43 +34,58 @@ vista previa es exactamente lo que ve el cliente.
 </section>
 <script>
   (function () {
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     for (const raiz of document.querySelectorAll("[data-carrusel]:not([data-listo])")) {
       raiz.dataset.listo = "1";
       const diapositivas = Array.from(raiz.querySelectorAll("[data-diapositiva]"));
       const controles = raiz.querySelector("[data-controles]");
       if (diapositivas.length < 2 || !controles) continue;
 
+      const marco = raiz.querySelector("[data-marco]");
+      marco.className = "carrusel__marco";
+      const indicadores = Array.from(raiz.querySelectorAll("[data-indicador]"));
       const contador = raiz.querySelector("[data-contador]");
       const pausar = raiz.querySelector("[data-pausar]");
       const segundos = Math.max(1, parseInt(raiz.dataset.intervalo, 10) || 10);
       let actual = 0;
       let reloj = null;
+      let pausadoAMano = false;
 
-      function mostrar(indice) {
+      function mostrar(indice, conBarrido) {
         actual = (indice + diapositivas.length) % diapositivas.length;
-        diapositivas.forEach((imagen, i) => { imagen.hidden = i !== actual; });
+        diapositivas.forEach((imagen, i) => {
+          imagen.hidden = i !== actual;
+          imagen.classList.toggle("carrusel__imagen--entra", i === actual && conBarrido && !reducido);
+        });
+        indicadores.forEach((cuadro, i) => cuadro.setAttribute("aria-current", i === actual ? "true" : "false"));
         contador.textContent = `${actual + 1} de ${diapositivas.length}`;
       }
 
       function arrancar() {
-        reloj = window.setInterval(() => mostrar(actual + 1), segundos * 1000);
-        pausar.setAttribute("aria-pressed", "false");
-        pausar.querySelector("span").textContent = "Pausar";
+        if (reducido || reloj || pausadoAMano) return;
+        reloj = window.setInterval(() => mostrar(actual + 1, true), segundos * 1000);
       }
 
       function detener() {
         window.clearInterval(reloj);
         reloj = null;
-        pausar.setAttribute("aria-pressed", "true");
-        pausar.querySelector("span").textContent = "Reanudar";
       }
 
-      raiz.querySelector("[data-anterior]").addEventListener("click", () => mostrar(actual - 1));
-      raiz.querySelector("[data-siguiente]").addEventListener("click", () => mostrar(actual + 1));
-      pausar.addEventListener("click", () => (reloj ? detener() : arrancar()));
+      raiz.querySelector("[data-anterior]").addEventListener("click", () => mostrar(actual - 1, true));
+      raiz.querySelector("[data-siguiente]").addEventListener("click", () => mostrar(actual + 1, true));
+      pausar.addEventListener("click", () => {
+        pausadoAMano = !pausadoAMano;
+        pausar.setAttribute("aria-pressed", pausadoAMano ? "true" : "false");
+        pausar.querySelector("span").textContent = pausadoAMano ? "Reanudar" : "Pausar";
+        pausadoAMano ? detener() : arrancar();
+      });
+      raiz.addEventListener("mouseenter", detener);
+      raiz.addEventListener("mouseleave", arrancar);
+      raiz.addEventListener("focusin", detener);
+      raiz.addEventListener("focusout", arrancar);
 
       controles.hidden = false;
-      mostrar(0);
+      mostrar(0, false);
       arrancar();
     }
   })();

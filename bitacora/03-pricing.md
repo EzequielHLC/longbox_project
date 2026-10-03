@@ -136,3 +136,26 @@ del guardado de la edición: restaurar no guarda otros cambios a medio escribir.
 La tabla de precios y el margen tienen pantallas propias con informe de alcance antes de
 propagar, y `CO-031` permite volver al precio calculado. Queda: la propagación a carritos y las
 ofertas, que esperan a `Carrito` y `Oferta` (B-03-001), y la respuesta a C-19.
+
+---
+
+### B-03-006 · Equivalencias del precio en otras monedas, como referencia
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-PVP-TBC`, `CU-ALT-IMP`
+**Estado:** Abierta — pedido del responsable el 2026-10-02
+
+**Qué apareció.**
+El responsable pidió ver cotizaciones en varias monedas en la tabla de precios y en la carga de
+importados.
+
+**Qué dice la especificación.**
+`Nada.` Las cotizaciones sólo aparecen como sugerencia editable de la carga de importados.
+
+**Qué se hizo.**
+La tabla de precios muestra, junto al precio en pesos, su equivalencia en dólares, euros y yenes a
+la cotización de referencia del día, con la fecha y un aviso si está desactualizada. La carga de
+importados muestra la cotización de referencia de las tres monedas. Es sólo informativo: se
+cobra el precio en pesos y el cálculo usa la cotización que el Administrador escribe.
+
+**Qué habría que cambiar.**
+`CU-PVP-TBC` paso 2: «con su equivalencia de referencia en las monedas de importación».

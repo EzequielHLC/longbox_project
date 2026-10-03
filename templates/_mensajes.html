@@ -8,7 +8,7 @@ tiene tres tipos, no cuatro.
 {% if messages %}
   <ul class="mensajes">
     {% for message in messages %}
-      <li class="mensaje" {% if message.tags == 'error' %}role="alert"{% else %}role="status"{% endif %}>
+      <li class="mensaje{% if message.tags == 'success' %} mensaje--listo{% elif message.tags == 'error' %} mensaje--error{% endif %}" {% if message.tags == 'error' %}role="alert"{% else %}role="status"{% endif %}>
         {% if message.tags == 'success' %}{% include "_iconos.html" with icono="listo" %}{% elif message.tags == 'error' %}{% include "_iconos.html" with icono="error" %}{% else %}{% include "_iconos.html" with icono="atencion" %}{% endif %}
         <span><span class="mensaje__prefijo">{% if message.tags == 'success' %}Listo:{% elif message.tags == 'error' %}Error:{% else %}Atención:{% endif %}</span>
         {{ message }}</span>

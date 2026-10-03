@@ -182,3 +182,27 @@ def resumen_para_pantalla():
 
 def guardar_respaldo(datos):
     integraciones.guardar_respaldo(RUTA_RESPALDO, datos)
+
+
+SIMBOLOS = {"USD": "US$", "EUR": "€", "JPY": "¥"}
+
+
+def equivalencias(importe_en_pesos, valores=None):
+    """Lo que vale un importe en pesos en cada moneda extranjera, como referencia.
+
+    Es sólo informativo (B-03-006): el precio sigue siendo en pesos. Se divide
+    por la cotización de referencia del día —no por la que el Administrador
+    pagó en un lote, que es otra— y se redondea a centavos, salvo el yen, que
+    no tiene. Una moneda sin cotización conocida no se informa.
+    """
+    if valores is None:
+        valores = obtener_cotizaciones().get("valores", {})
+    resultado = []
+    for moneda in MONEDAS_EXTRANJERAS:
+        cotizacion = _a_decimal(valores.get(moneda))
+        if not cotizacion or cotizacion <= 0:
+            continue
+        paso = Decimal("1") if moneda == "JPY" else Decimal("0.01")
+        valor = (Decimal(importe_en_pesos) / cotizacion).quantize(paso)
+        resultado.append({"moneda": moneda, "simbolo": SIMBOLOS[moneda], "valor": valor})
+    return resultado

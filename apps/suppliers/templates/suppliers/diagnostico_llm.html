@@ -272,7 +272,7 @@ objeto, y adentro por si salió bien.
         <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>No se extrajo ningún producto. Sólo los correos de novedades los producen.</span></p>
       {% endif %}
     {% else %}
-      <div class="mensaje" role="alert">
+      <div class="mensaje mensaje--error" role="alert">
         {% include "_iconos.html" with icono="error" %}
         <span>
           <span class="mensaje__prefijo">Error:</span>

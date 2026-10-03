@@ -22,6 +22,7 @@ from apps.catalog import tabla_de_precios
 from apps.catalog.forms import MargenForm, PrecioModificacionForm, PrecioReferenciaForm
 from apps.catalog.models import Editorial, Formato, ProductoEditorial, TablaPrecioReferencia, Tipo
 from apps.catalog.views import CatalogoAdminMixin, _entero
+from apps.core import cotizaciones
 from apps.core.models import ConfiguracionSistema
 from apps.core.utils import obtener_ip
 
@@ -54,8 +55,13 @@ class PrecioListaView(CatalogoAdminMixin, ListView):
                 "editoriales": Editorial.objects.all(),
                 "tipos": Tipo.objects.filter(usa_formato=True),
                 "formatos": Formato.objects.all(),
+                "cotizaciones": cotizaciones.resumen_para_pantalla(),
             }
         )
+        # B-03-006: el PVP en otras monedas, a la cotización de referencia.
+        valores = contexto["cotizaciones"]["valores"]
+        for precio in contexto["precios"]:
+            precio.equivalencias = cotizaciones.equivalencias(precio.pvp, valores)
         return contexto
 
 

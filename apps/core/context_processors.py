@@ -21,4 +21,9 @@ def identidad_tienda(request):
     from apps.core.models import IdentidadVisual
 
     identidad = IdentidadVisual.obtener()
-    return {"identidad_tienda": identidad if identidad.configurada else None}
+    return {
+        # La hoja de colores, el logo y el contacto sólo cuando se configuró.
+        "identidad_tienda": identidad if identidad.configurada else None,
+        # Los textos del escaparate siempre: tienen valores iniciales propios.
+        "textos_tienda": identidad,
+    }

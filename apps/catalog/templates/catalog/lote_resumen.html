@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load moneda %}
 {% load l10n %}
 {% comment %}
 Resultado de una carga en lote (CU-ALT-NAC paso 9, CU-ALT-IMP paso 11).
@@ -55,7 +56,7 @@ acción, y sólo si hubo alguno.
       <dt>Margen vigente al alta</dt>
       <dd><span class="calculado" title="calculado">{{ lote.margen_aplicado|unlocalize }}</span></dd>
       <dt>Cotización</dt>
-      <dd class="datos">{% if lote.tiene_conversion %}1 {{ lote.moneda_origen }} = ${{ lote.cotizacion }}{% else %}En pesos{% endif %}</dd>
+      <dd class="datos">{% if lote.tiene_conversion %}1 {{ lote.moneda_origen }} = {{ lote.cotizacion|pesos }}{% else %}En pesos{% endif %}</dd>
     </dl>
   </section>
 {% endif %}
@@ -121,11 +122,11 @@ acción, y sólo si hubo alguno.
                 {% if producto.esta_en_pre_venta %}
                   <span class="calculado" title="calculado">{{ producto.get_estado_display }}</span>
                 {% else %}
-                  <span class="marca-estado">{{ producto.get_estado_display }}</span>
+                  <span class="marca-estado{% if producto.estado == 'activo' %} marca-estado--ok{% elif producto.estado == 'pre_venta' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ producto.get_estado_display }}</span>
                 {% endif %}
               </td>
               <td class="numero">{{ producto.stock }}</td>
-              <td class="numero">${{ producto.precio }}{% if producto.precio_manual %} <span class="secundario">· a mano</span>{% endif %}</td>
+              <td class="numero">{{ producto.precio|pesos }}{% if producto.precio_manual %} <span class="secundario">· a mano</span>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>
