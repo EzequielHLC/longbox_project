@@ -1,0 +1,52 @@
+{% load correo %}{% comment %}
+La cáscara de todos los correos del sistema (B-00-008).
+
+Tablas y estilos en línea porque es lo único que todos los clientes de correo
+respetan. Los estilos salen de `apps/core/templatetags/correo.py`.
+{% endcomment %}<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>{% block asunto %}{{ tienda.nombre_tienda }}{% endblock %}</title>
+</head>
+<body style="{% estilo 'cuerpo' %}" bgcolor="{% color 'noche' %}">
+<div style="{% estilo 'preencabezado' %}">{% block preencabezado %}{% endblock %}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{% color 'noche' %}" style="{% estilo 'fondo' %}">
+  <tr>
+    <td align="center" style="{% estilo 'marco' %}">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="{% estilo 'columna' %}">
+        <tr>
+          <td style="{% estilo 'celda-marca' %}">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="{% estilo 'marca' %}"><span style="{% estilo 'rombo' %}">&#9670;</span>&nbsp;{{ tienda.nombre_tienda }}</td>
+                <td style="{% estilo 'rotulo' %}">{% block rotulo %}{% endblock %}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td>{% include "correo/_cinta.html" %}</td>
+        </tr>
+        <tr>
+          <td style="{% estilo 'panel' %}" bgcolor="{% color 'asfalto' %}">
+            <p style="{% estilo 'antetitulo' %}">&mdash; {% block antetitulo %}{% endblock %}</p>
+            <h1 style="{% estilo 'titulo' %}">{% block titulo %}{% endblock %}</h1>
+            {% block contenido %}{% endblock %}
+          </td>
+        </tr>
+        <tr>
+          <td style="{% estilo 'pie' %}">
+            {{ tienda.nombre_tienda }}{% if tienda.correo_contacto %} &middot; {{ tienda.correo_contacto }}{% endif %}<br>
+            {% block pie %}Este correo lo envió el sistema de forma automática.{% endblock %}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

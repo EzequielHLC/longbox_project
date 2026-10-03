@@ -71,4 +71,7 @@ def test_ninguna_linea_del_cuerpo_queda_partida(client_admin):
     client_admin.post(URL_ALTA, DATOS_DE_ALTA, HTTP_HOST=HOST_LARGO)
 
     lineas = mensaje_enviado(mail.outbox[0]).splitlines()
-    assert not [linea for linea in lineas if linea.endswith("=")]
+    # El separador entre la versión de texto y la HTML (`--===…==`) también
+    # termina en `=`, y no es una línea partida.
+    partidas = [linea for linea in lineas if linea.endswith("=") and not linea.startswith("--")]
+    assert not partidas

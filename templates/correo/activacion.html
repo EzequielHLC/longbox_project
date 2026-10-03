@@ -1,0 +1,14 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-USR-ALT, CO-120 / CO-122 / CO-124. El texto es el de `accounts/activacion_email.txt`.{% endcomment %}
+{% block preencabezado %}Su cuenta está creada: establezca su contraseña para empezar a usarla.{% endblock %}
+{% block rotulo %}Cuenta de personal{% endblock %}
+{% block antetitulo %}Activación de cuenta{% endblock %}
+{% block titulo %}Bienvenido/a al mostrador{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ usuario.get_full_name|default:usuario.email }}</span>:</p>
+<p style="{% estilo 'parrafo' %}">Se ha creado una cuenta a su nombre en el sistema, con el rol de <span style="{% estilo 'destacado' %}">{{ usuario.get_rol_display }}</span>. Para comenzar a utilizarla, establezca su contraseña.</p>
+{% include "correo/_boton.html" with url=enlace texto="Establecer contraseña" %}
+<p style="{% estilo 'secundario' %}">El enlace vence en {{ vigencia_horas }} horas y puede utilizarse una sola vez. Si recibió más de un correo como este, sólo es válido el último: los anteriores quedaron invalidados.</p>
+<p style="{% estilo 'secundario' %}">Si no esperaba recibir este mensaje, comuníquelo al administrador del sistema.</p>
+{% endblock %}

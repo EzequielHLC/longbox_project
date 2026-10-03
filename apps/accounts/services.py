@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.sessions.models import Session
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -19,7 +20,7 @@ from django.utils.http import urlsafe_base64_encode
 from apps.accounts.models import EnlaceActivacion, IntentoFallido
 from apps.accounts.tokens import token_de_activacion
 from apps.core import cambios
-from apps.core.mail import enviar_correo
+from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.models import RegistroAuditoria
 
 Usuario = get_user_model()
@@ -97,6 +98,10 @@ def _notificar_bloqueo(email, ip):
             "Longbox"
         ),
         destinatarios=[usuario.email],
+        html=cuerpo_html(
+            "correo/bloqueo.html",
+            {"usuario": usuario, "minutos": settings.LOGIN_BLOQUEO_MINUTOS},
+        ),
     )
 
 
@@ -188,10 +193,15 @@ def enviar_enlace_de_activacion(usuario, request):
         "domain": sitio.domain,
         "vigencia_horas": settings.VIGENCIA_ENLACE_ACTIVACION // 3600,
     }
+    ruta = reverse(
+        "accounts:activar_cuenta", kwargs={"uidb64": contexto["uid"], "token": contexto["token"]}
+    )
+    contexto["enlace"] = f"{contexto['protocol']}://{contexto['domain']}{ruta}"
     enviar_correo(
         asunto=render_to_string("accounts/activacion_subject.txt", contexto).strip(),
         cuerpo=render_to_string("accounts/activacion_email.txt", contexto),
         destinatarios=[usuario.email],
+        html=cuerpo_html("correo/activacion.html", contexto),
     )
 
 
@@ -214,10 +224,12 @@ def enviar_bienvenida(usuario, request):
         "protocol": "https" if request.is_secure() else "http",
         "domain": sitio.domain,
     }
+    contexto["enlace"] = f"{contexto['protocol']}://{sitio.domain}{reverse('accounts:login')}"
     enviar_correo(
         asunto=render_to_string("accounts/bienvenida_subject.txt", contexto).strip(),
         cuerpo=render_to_string("accounts/bienvenida_email.txt", contexto),
         destinatarios=[usuario.email],
+        html=cuerpo_html("correo/bienvenida.html", contexto),
     )
 
 

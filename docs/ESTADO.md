@@ -265,11 +265,11 @@ Medición del **2026-10-02**, con PostgreSQL levantado, sobre el repositorio ent
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1698 pasan**, 0 fallos, 7 min 8 s |
+| Suite de pruebas | **1720 pasan**, 0 fallos, 7 min 9 s (la prueba del proveedor caído se corrigió y se volvió a correr con su archivo) |
 | **Contratos** | **72 de 219 verificados**, 8 parciales, 139 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (5982 sentencias, 190 sin cubrir) |
+| Cobertura sobre código de aplicación | **97 %** (6051 sentencias, 188 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 174 archivos sin cambios |
+| Formato | `black --check .`: 178 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos |
 | Configuración de despliegue | `check --deploy` con la configuración de producción y el `.env` de esta máquina (`ALLOWED_HOSTS=.trycloudflare.com`): **sin advertencias** |
 

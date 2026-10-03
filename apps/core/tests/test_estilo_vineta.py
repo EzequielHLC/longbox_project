@@ -75,13 +75,19 @@ def _sin_comentarios(texto):
     return re.sub(r"/\*.*?\*/", "", texto, flags=re.S)
 
 
+# Los correos son la excepción documentada (B-00-008): un cliente de correo no
+# lee hojas ni variables, y el estilo tiene que ir en línea. Sus reglas propias
+# están en `test_correo.py`.
+CORREOS = RAIZ / "templates" / "correo"
+
+
 def _plantillas():
     carpetas = [RAIZ / "templates", *sorted((RAIZ / "apps").glob("*/templates"))]
     return sorted(
         ruta
         for carpeta in carpetas
         for ruta in carpeta.rglob("*")
-        if ruta.suffix in {".html", ".css"}
+        if ruta.suffix in {".html", ".css"} and CORREOS not in ruta.parents
     )
 
 

@@ -17,7 +17,7 @@ y se sigue con los demás proveedores.
 import logging
 from dataclasses import dataclass
 
-from apps.core.mail import enviar_correo
+from apps.core.mail import cuerpo_html, enviar_correo
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +84,10 @@ def asunto_de(proveedor):
 def cuerpo_de(proveedor, lineas):
     """El texto del pedido.
 
-    Va en texto plano y no en HTML a propósito: es un pedido comercial que
-    alguien del otro lado va a leer y probablemente copiar a su sistema, y el
-    texto plano se lee igual en cualquier cliente de correo.
+    El texto plano va siempre: es un pedido comercial que alguien del otro lado
+    va a leer y probablemente copiar a su sistema, y se lee igual en cualquier
+    cliente de correo. La versión HTML de `html_de` viaja como alternativa
+    (B-00-008).
     """
     contacto = proveedor.nombre_contacto or proveedor.razon_social
     unidades = sum(linea.cantidad for linea in lineas)
@@ -104,6 +105,19 @@ def cuerpo_de(proveedor, lineas):
             "",
             "Longbox",
         ]
+    )
+
+
+def html_de(proveedor, lineas):
+    """La alternativa con el estilo del sistema: el mismo pedido, en tabla."""
+    return cuerpo_html(
+        "correo/pedido_proveedor.html",
+        {
+            "proveedor": proveedor,
+            "contacto": proveedor.nombre_contacto or proveedor.razon_social,
+            "lineas": lineas,
+            "unidades": sum(linea.cantidad for linea in lineas),
+        },
     )
 
 
@@ -129,6 +143,7 @@ def enviar_pedido(proveedor, lineas):
                 asunto_de(proveedor),
                 cuerpo_de(proveedor, resultado.lineas),
                 [proveedor.correo_comercial],
+                html=html_de(proveedor, resultado.lineas),
             )
         except OSError as fallo:
             # `OSError` cubre lo que levanta `smtplib` ante un servidor caído o

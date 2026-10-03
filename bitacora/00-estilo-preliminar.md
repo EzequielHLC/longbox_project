@@ -203,3 +203,38 @@ de tarjeta es `--pub-titulo-3`, como manda `TOKENS_VISUALES.md`.
 **Qué habría que cambiar.**
 `identidad_visual.md`, Indicadores: nombrar los colores de cada rótulo de estado y el formato
 «$ 18.500» de los importes, que hoy sólo muestra la maqueta.
+
+---
+
+### B-00-008 · Los correos salen por SMTP, con copia en la consola y con el estilo del sistema
+
+**Tipo:** Agregado · **Fecha:** 2026-10-02 · **Alcance:** `CU-USR-ALT`, `CU-CLI-ALT`, `CU-AUT-INI`,
+`CU-AUT-REC`, `CU-RST-PED`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-02
+
+**Qué apareció.**
+Los cinco correos del sistema (activación, bienvenida, aviso de bloqueo, recuperación de contraseña
+y pedido a proveedor) se imprimían en la consola y no salían. El responsable pidió que se envíen
+de verdad, que la copia en la consola siga, y que el correo tenga el estilo visual del sistema.
+
+**Qué dice la especificación.**
+Las fichas dicen que el sistema «envía un correo»; sobre su formato visual: `Nada`.
+
+**Qué se hizo.**
+- **Envío:** el backend `apps.core.mail.CorreoConCopia` imprime la copia (cabeceras y texto plano,
+  donde están los enlaces) y después manda por SMTP. Sin `EMAIL_HOST` el correo queda sólo en la
+  consola. Un fallo del servidor levanta, así el pedido a proveedor sigue reintentando tres veces.
+  La configuración pasó a `base.py`, con un tiempo de espera de 15 s.
+- **Dos versiones:** cada correo lleva el texto plano de siempre y una alternativa HTML con el
+  mismo enlace. El cliente de correo elige cuál mostrar.
+- **Estilo:** fondo noche, panel asfalto con borde duro en naranja, rombo y nombre de la tienda,
+  cinta de peligro en celdas, botón naranja con texto noche, antetítulo en mono y aviso de bloqueo
+  con prefijo en alarma. El pedido va en tabla, con ISBN en mono y total.
+- **Excepción a la regla de estilos:** los correos son las únicas plantillas con `style=`, porque un
+  cliente de correo no lee hojas, variables, `clip-path` ni degradés. Los estilos salen todos de
+  `apps/core/templatetags/correo.py` y una prueba verifica que sus colores sean los de
+  `tokens.css`. Las fuentes no viajan: Archivo y JetBrains Mono se usan si el lector las tiene.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: una sección «Correo» con la adaptación de arriba. Las fichas que envían
+correo pueden remitir a ella.

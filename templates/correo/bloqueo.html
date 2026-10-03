@@ -1,0 +1,13 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-AUT-INI, excepción de intentos fallidos. El texto plano está en `apps/accounts/services.py`.{% endcomment %}
+{% block preencabezado %}Varios intentos fallidos: el acceso quedó bloqueado {{ minutos }} minutos.{% endblock %}
+{% block rotulo %}Seguridad{% endblock %}
+{% block antetitulo %}Acceso bloqueado{% endblock %}
+{% block titulo %}Pausa de {{ minutos }} minutos{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ usuario.get_full_name|default:usuario.email }}</span>:</p>
+<p style="{% estilo 'aviso' %}"><span style="{% estilo 'aviso-prefijo' %}">Bloqueo:</span> se detectaron varios intentos fallidos de inicio de sesión en su cuenta, y el acceso quedó bloqueado durante {{ minutos }} minutos.</p>
+<p style="{% estilo 'parrafo' %}">Si los intentos fueron suyos, aguarde ese lapso y vuelva a ingresar.</p>
+<p style="{% estilo 'secundario' %}">Si no reconoce esta actividad, se recomienda cambiar la contraseña apenas recupere el acceso.</p>
+{% endblock %}

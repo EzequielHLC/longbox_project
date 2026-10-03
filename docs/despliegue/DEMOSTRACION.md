@@ -52,14 +52,24 @@ ALLOWED_HOSTS=.trycloudflare.com
 # Ruta NoIP, en su lugar:
 # ALLOWED_HOSTS=longbox.ddns.net
 
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+# Correo real, con copia en la ventana de `servir`. Con Gmail: verificación en
+# dos pasos y una contraseña de aplicación; el remitente es la misma cuenta.
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=la.cuenta@gmail.com
+EMAIL_HOST_PASSWORD=la-contraseña-de-aplicación
+DEFAULT_FROM_EMAIL=Longbox <la.cuenta@gmail.com>
 ```
 
 - `ALLOWED_HOSTS` lo lee sólo la configuración de producción; desarrollo sigue igual.
 - Los orígenes de confianza del CSRF se derivan solos: `.trycloudflare.com` pasa a
   `https://*.trycloudflare.com`.
-- Con el correo de consola, los enlaces de activación y de recuperación aparecen en la ventana
-  de `servir`.
+- Cada correo sale por SMTP y además queda copiado en la ventana de `servir`, con el enlace de
+  activación o de recuperación a la vista. Sin `EMAIL_HOST`, el correo queda sólo en esa ventana
+  y una línea lo avisa. Un servidor que rechaza el envío también queda anotado ahí.
+- **Los pedidos a proveedores salen de verdad** al `correo_comercial` de cada ficha. Antes de
+  cerrar una sesión de revisión en la demostración, conviene que esos correos sean propios.
 - `SECRET_KEY` tiene que ser propia de esta instalación (ver `.env.example`).
 
 ### C. Preparar
@@ -81,7 +91,13 @@ Administrador con `python manage.py crear_administrador_inicial`.
 
 ## Ruta 1 · Túnel de Cloudflare
 
-Tres ventanas, desde la raíz del repositorio:
+**Con doble clic en `demostracion.bat`**, en la raíz del repositorio, se hace todo lo de esta
+ruta. Revisa que estén el entorno virtual, Caddy, `cloudflared`, el `.env` y los puertos 8000 y
+8080 libres. Corre el paso C y abre las tres ventanas de abajo. Muestra la dirección pública y la
+copia al portapapeles. Una tecla en su ventana cierra las tres; cerrarla con la cruz las deja
+corriendo.
+
+A mano son tres ventanas, desde la raíz del repositorio:
 
 ```powershell
 # Ventana 1 — Django
@@ -190,4 +206,7 @@ externo (el túnel, Caddy, NoIP):
 - Ruta NoIP con `ALLOWED_HOSTS` de prueba: 200 con `X-Forwarded-Proto: https`, redirección a
   HTTPS sin él.
 
-No se probó todavía: Caddy y `cloudflared` no están instalados en esta máquina.
+No se probó todavía el tramo externo. El 2026-10-02 quedaron instalados Caddy 2.11.4 y
+`cloudflared` 2026.9.3; `caddy validate` acepta `Caddyfile.tunel`, y de `demostracion.bat` se
+probaron la extracción de la dirección pública sobre un registro de ejemplo y el `check --deploy`,
+no el arranque completo.

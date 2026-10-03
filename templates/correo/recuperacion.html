@@ -1,0 +1,14 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-AUT-REC. El texto es el de `accounts/password_reset_email.txt`.{% endcomment %}
+{% block preencabezado %}Enlace para establecer una nueva contraseña. Vence en 30 minutos.{% endblock %}
+{% block rotulo %}Seguridad{% endblock %}
+{% block antetitulo %}Restablecimiento de contraseña{% endblock %}
+{% block titulo %}Nueva contraseña{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ user.get_full_name|default:user.email }}</span>:</p>
+<p style="{% estilo 'parrafo' %}">Se recibió una solicitud para restablecer la contraseña de su cuenta. Para establecer una nueva, use el botón:</p>
+{% include "correo/_boton.html" with url=enlace texto="Elegir contraseña" %}
+<p style="{% estilo 'secundario' %}">El enlace vence en 30 minutos y puede utilizarse una sola vez.</p>
+<p style="{% estilo 'secundario' %}">Si no solicitó este cambio, ignore este mensaje: su contraseña actual sigue vigente.</p>
+{% endblock %}

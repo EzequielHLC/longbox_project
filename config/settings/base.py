@@ -175,7 +175,19 @@ PASSWORD_RESET_TIMEOUT = VIGENCIA_ENLACE_ACTIVACION
 LOGIN_INTENTOS_MAXIMOS = 5
 LOGIN_BLOQUEO_MINUTOS = 15
 
-DEFAULT_FROM_EMAIL = "no-responder@longbox.local"
+# Correo saliente (B-00-008). Sale por SMTP y deja una copia en la consola del
+# servidor. Sin `EMAIL_HOST` no hay a dónde mandar y el correo queda sólo en la
+# consola, como antes. Con Gmail: smtp.gmail.com, 587, TLS y una contraseña de
+# aplicación; el remitente tiene que ser la misma cuenta.
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="apps.core.mail.CorreoConCopia")
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+# Un servidor que no responde no puede colgar la pantalla que espera el envío.
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=15, cast=int)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-responder@longbox.local")
 
 
 # Alta Editorial (Módulo 01 — CU-ALT-NAC, CU-ALT-IMP)

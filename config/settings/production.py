@@ -66,17 +66,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Django sino el proxy, igual que `media/`.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Correo saliente: enlaces de activación y de recuperación. Sin configurar,
-# Django intenta un SMTP en localhost y el envío falla. Para una demostración
-# sin servidor de correo, `EMAIL_BACKEND` puede apuntar al de consola y los
-# enlaces aparecen en la ventana del servidor.
-EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = config("EMAIL_HOST", default="localhost")
-EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
-EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-responder@longbox.local")
+# El correo saliente se configura en base.py, igual que en desarrollo.
 
 # Con DEBUG apagado un error 500 no deja rastro en ningún lado. Esto lo manda a
 # la ventana del servidor, que en una demostración es lo único que se mira.

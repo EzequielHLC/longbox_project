@@ -1,0 +1,14 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-CLI-ALT, paso 5. El texto es el de `accounts/bienvenida_email.txt`.{% endcomment %}
+{% block preencabezado %}Su cuenta de cliente ya está activa.{% endblock %}
+{% block rotulo %}Cuenta de cliente{% endblock %}
+{% block antetitulo %}Cuenta activa{% endblock %}
+{% block titulo %}Ya tiene lugar en la tienda{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ usuario.get_full_name|default:usuario.email }}</span>:</p>
+<p style="{% estilo 'parrafo' %}">Su cuenta de cliente fue creada correctamente y ya se encuentra activa. Puede iniciar sesión con este correo y la contraseña que eligió al registrarse.</p>
+{% include "correo/_boton.html" with url=enlace texto="Iniciar sesión" %}
+<p style="{% estilo 'secundario' %}">Si olvida su contraseña, puede restablecerla desde «¿Olvidó su contraseña?» en la pantalla de inicio de sesión.</p>
+<p style="{% estilo 'secundario' %}">Si usted no solicitó esta cuenta, responda este mensaje: alguien pudo haber usado su dirección por error.</p>
+{% endblock %}

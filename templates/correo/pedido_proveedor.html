@@ -1,0 +1,31 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-RST-PED. El texto plano de `apps/suppliers/pedidos.py` viaja junto a esta versión.{% endcomment %}
+{% block asunto %}Pedido de reposición — {{ proveedor.razon_social }}{% endblock %}
+{% block preencabezado %}{{ lineas|length }} título(s), {{ unidades }} unidad(es).{% endblock %}
+{% block rotulo %}Pedido{% endblock %}
+{% block antetitulo %}Pedido de reposición{% endblock %}
+{% block titulo %}{{ proveedor.razon_social }}{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ contacto }}</span>:</p>
+<p style="{% estilo 'parrafo' %}">Por medio del presente le solicitamos la reposición de los siguientes títulos:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="{% estilo 'tabla' %}">
+  <tr>
+    <th style="{% estilo 'th' %}">ISBN</th>
+    <th style="{% estilo 'th' %}">Título</th>
+    <th style="{% estilo 'th-cifra' %}">Unidades</th>
+  </tr>
+  {% for linea in lineas %}
+  <tr>
+    <td style="{% estilo 'td-dato' %}">{{ linea.isbn|default:"—" }}</td>
+    <td style="{% estilo 'td' %}">{{ linea.titulo }}{% if linea.volumen %} &middot; vol. {{ linea.volumen }}{% endif %}</td>
+    <td style="{% estilo 'td-cifra' %}">{{ linea.cantidad }}</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td colspan="3" style="{% estilo 'total' %}">Total: {{ lineas|length }} título(s) &middot; {{ unidades }} unidad(es)</td>
+  </tr>
+</table>
+<p style="{% estilo 'parrafo' %}">Quedamos a la espera de su confirmación.</p>
+{% endblock %}
+{% block pie %}Pedido generado por el sistema de gestión. Puede responder este correo para confirmarlo.{% endblock %}

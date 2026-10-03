@@ -7,6 +7,7 @@ from django.contrib.auth.forms import (
 )
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
+from django.urls import reverse
 
 from apps.accounts import services
 from apps.accounts.models import (
@@ -15,7 +16,7 @@ from apps.accounts.models import (
     provincia_del_codigo_postal,
 )
 from apps.core import georef, paises
-from apps.core.mail import enviar_correo
+from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.utils import obtener_ip
 
 Usuario = get_user_model()
@@ -200,7 +201,21 @@ class FormularioRecuperarContrasena(PasswordResetForm):
         # cabecera con salto de línea permite inyectar cabeceras falsas.
         asunto = "".join(render_to_string(subject_template_name, context).splitlines())
         cuerpo = render_to_string(email_template_name, context)
-        enviar_correo(asunto=asunto, cuerpo=cuerpo, destinatarios=[to_email], remitente=from_email)
+        ruta = reverse(
+            "accounts:password_reset_confirm",
+            kwargs={"uidb64": context["uid"], "token": context["token"]},
+        )
+        html = cuerpo_html(
+            "correo/recuperacion.html",
+            {**context, "enlace": f"{context['protocol']}://{context['domain']}{ruta}"},
+        )
+        enviar_correo(
+            asunto=asunto,
+            cuerpo=cuerpo,
+            destinatarios=[to_email],
+            remitente=from_email,
+            html=html,
+        )
 
 
 class FormularioUsuarioPersonal(forms.ModelForm):
