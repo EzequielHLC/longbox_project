@@ -72,3 +72,139 @@ Las acciones de la ficha («Agregar al carrito», «Avisarme cuando haya stock»
 
 - `CU-TDA-CRC`, `CRA`, `CRM`, `CRB`, `CMP`, `INV`: etapa B.
 - El precio tachado por oferta: cuando exista `Oferta`.
+
+---
+---
+
+# Plan — `07` Tienda Online · segunda parte: carrito
+
+**Estado del plan:** Aprobado el 2026-10-03, con las recomendaciones de la sección 3 · **Fecha:** 2026-10-03
+
+Segunda parte del plan del módulo. La primera, de arriba, está aprobada y no se toca. Ésta cubre
+el carrito. Va **antes** que las ofertas (plan 03, segunda parte): los contratos de oferta, de
+tabla de precios y de margen terminan en «las `LineaCarrito` afectadas quedaron actualizadas», y
+sin carrito esa postcondición no tiene sobre qué cumplirse.
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Contratos | Operaciones de escritura | Operaciones de consulta |
+| --- | --- | --- | --- |
+| `CU-TDA-CRA` | `CO-083` | 1 | 0 |
+| `CU-TDA-CRC` | `CO-178`, `CO-085`, `CO-086` | 2 | 1 |
+| `CU-TDA-CRM` | `CO-084` | 1 | 0 |
+| `CU-TDA-CRB` | `CO-085` | 1 | 0 |
+| `CU-TDA-CAT` (cierre) | `CO-083` desde el paso 6 | — | — |
+| `CU-AUT-INI` (cierre parcial) | `CO-086` | 1 | 0 |
+| `CU-PVP-TBM`, `CU-PVP-MAR` (cierre) | `CO-048`, `CO-053`: la propagación a `LineaCarrito` | — | — |
+
+**Total: 5 contratos nuevos** (`CO-083`, `CO-084`, `CO-085`, `CO-086`, `CO-178`) y la parte
+pendiente de dos que ya existen (`CO-048`, `CO-053`). `CO-179 procederAlPago` queda fuera: sólo
+transfiere a `CU-TDA-CMP`, que no existe.
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Carrito` | **No** | Lo crea: `usuario` (opcional), `persistencia`, `actualizado_en`, y la clave de sesión del invitado |
+| `LineaCarrito` | **No** | La crea: `cantidad`, `precio_vigente`. La disponibilidad se deriva, no se guarda (ambigüedad 2) |
+| `Producto` | Sí | Lo lee: estado, stock y precio visible |
+| `Usuario` | Sí | Se asocia al carrito persistente |
+| `TablaPrecioReferencia`, margen global | Sí | Su propagación pasa a alcanzar a las líneas de carrito |
+
+El precio visible de un producto pasa a salir de **una sola función**. Hoy es `producto.precio`;
+con las ofertas, es el precio con la oferta vigente aplicada. El carrito, la tienda y más adelante
+el mostrador leen esa función y no el campo.
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | `CU-TDA-CRC` A2 («el precio cambió desde que se agregó») frente a `CO-048`, `CO-053` y los contratos de oferta («las `LineaCarrito` afectadas quedaron actualizadas») | Si la propagación pisa el precio de la línea, la consulta ya no tiene contra qué comparar y el aviso de A2 nunca aparece. **(a)** La línea guarda dos importes: el precio vigente, que la propagación actualiza, y el precio que el Cliente vio al agregar o al cambiar la cantidad. El aviso aparece cuando difieren y se apaga cuando el Cliente vuelve a tocar la línea. **(b)** La propagación no toca la línea; la consulta compara contra el precio del producto. Cumple A2, pero deja `CO-048` y `CO-053` sin cumplir, y `CU-PVP-TBM` y `MAR` en `Parcial` para siempre | Decisión. **Recomiendo (a)**: es la única que cumple los cuatro contratos. Es un agregado al modelo y va a la bitácora |
+| 2 | `LineaCarrito.disponibilidad` en el modelo de dominio: «{Disponible, Producto no disponible}». `CO-178` deriva **tres** valores, con «Stock insuficiente» | **(a)** Se deriva en cada consulta del estado y del stock del producto, como dice `CO-178`, y no se guarda. **(b)** Se guarda, y hay que actualizarlo ante cada cambio de stock o de estado | **Recomiendo (a)**. La diferencia con el modelo va a la bitácora como corrección |
+| 3 | Quién tiene carrito | Los casos de uso dicen «Cliente» e «invitado». Un Administrador o un Cajero con sesión que entra a la tienda… **(a)** No tiene carrito: las acciones de compra no se le ofrecen. **(b)** Lo tiene, como cualquiera | **Recomiendo (a)**: el personal no compra por la tienda con su cuenta de trabajo, y la prueba de acceso con el rol equivocado lo fija |
+| 4 | Duración del carrito de invitado: «se destruye al cerrar el navegador» | La sesión del sistema ya vence a los 30 minutos sin actividad (`SESSION_COOKIE_AGE`). **(a)** El carrito de invitado vive lo que vive su sesión: se pierde al cerrar el navegador **o** tras 30 minutos sin actividad. **(b)** Sólo al cerrar el navegador, con una sesión de invitado distinta de la del personal | **Recomiendo (a)**: no abre una segunda política de sesión. Va a la bitácora |
+| 5 | Avanzar al pago (`CU-TDA-CRC` paso 3, `CO-179`) | `CU-TDA-CMP` no existe | El botón se muestra deshabilitado con «Disponible próximamente», como las acciones de la ficha (B-07-002) |
+| 6 | «Avisarme cuando haya stock» en la ficha | Inicia `CU-RST-SUS`, que no existe | Sigue deshabilitado |
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `Carrito`, `LineaCarrito` y el precio visible en una sola función | — | Todo lo demás los usa |
+| 2 | `CU-TDA-CRA` (`CO-083`), y el botón de la ficha habilitado | 1 | Sin agregar no hay qué consultar |
+| 3 | `CU-TDA-CRC` (`CO-178`), con disponibilidad y aviso de precio | 2 | |
+| 4 | `CU-TDA-CRM` (`CO-084`) y `CU-TDA-CRB` (`CO-085`) | 3 | Se inician desde el carrito |
+| 5 | `CO-086`, al iniciar sesión | 2 | Toca la autenticación, que ya existe |
+| 6 | Propagación de `CO-048` y `CO-053` a las líneas | 1 | Cierra `CU-PVP-TBM` y `MAR` |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde aparece | Cómo se cubre |
+| --- | --- | --- |
+| Un invitado manipula la dirección y toca la línea de otro carrito | `CO-084`, `CO-085` | La línea se busca **dentro** del carrito de quien pide; la de otro responde 404. Prueba por la dirección real |
+| El stock baja entre agregar y consultar | `CO-178` | Es el comportamiento declarado: la consulta lo marca «Stock insuficiente». Prueba explícita |
+| Dos pestañas agregan el mismo producto a la vez y duplican la línea | `CO-083` | Unicidad (carrito, producto) en la base, y la suma dentro de una transacción |
+| La fusión al iniciar sesión pierde el carrito de invitado | `CO-086` | Django rota la clave de sesión al iniciar sesión: el carrito se ubica por el identificador guardado en la sesión, que sí sobrevive. Prueba con el inicio de sesión real |
+| Postcondiciones negativas | `CO-178` | La consulta no modifica nada: prueba que compara el carrito antes y después |
+
+---
+
+## 6. Fuera de alcance
+
+- `CO-179 procederAlPago`, `CU-TDA-CMP` y `CU-TDA-INV`: necesitan `Pedido` y `TransaccionPago`.
+- `LineaCarrito.cubierta con puntos`: no existe Puntos.
+- La limpieza de carritos de invitado abandonados: es un proceso periódico (P-05).
+
+---
+---
+
+# Plan — `07` Tienda Online · tercera parte: filas de la portada
+
+**Estado del plan:** Aprobado el 2026-10-04 por pedido explícito del responsable («agregar a la
+presentación de inicio de la tienda la capacidad de poner distintos grupos de catálogo por
+etiqueta o grupos de etiqueta como barras de desplazamiento horizontal») · **Fecha:** 2026-10-04
+
+Es un agregado: ningún caso de uso lo describe. Va a la bitácora (B-07-009).
+
+## 1. Qué cubre
+
+La portada de la tienda suma, debajo de «Recién llegados», filas de productos que se recorren de
+costado. Cada fila sale de una **etiqueta** («Shonen») o de un **grupo de etiquetas** entero
+(«Demografía»: los productos con cualquiera de sus etiquetas). El Administrador elige cuáles, en
+qué orden y con qué título, desde «Tienda → Filas de la portada».
+
+No toca ningún contrato existente. Los productos que muestra salen de la misma consulta que el
+catálogo público (`CO-176`): nunca un producto que el catálogo no mostraría.
+
+## 2. Conceptos
+
+| Concepto | ¿Existe? | Qué hace este plan |
+| --- | --- | --- |
+| `FilaPortada` | **No** | Lo crea: etiqueta **o** grupo, título opcional, orden y si está activa |
+| `Etiqueta`, `GrupoEtiqueta` | Sí | Las lee |
+| `RegistroAuditoria` | Sí | Una acción nueva: «Modificación de las filas de la portada» |
+
+## 3. Decisiones
+
+| # | Punto | Decisión |
+| --- | --- | --- |
+| 1 | Cuántos productos por fila | Hasta 12, de lo más nuevo a lo más viejo, sólo los visibles en la tienda |
+| 2 | Una fila sin productos | No se dibuja |
+| 3 | Título | Si se deja vacío, el nombre de la etiqueta o del grupo |
+| 4 | «Ver todo» | Al catálogo filtrado por esa etiqueta o, para un grupo, por el grupo (filtro nuevo del catálogo público, `?grupo=`) |
+| 5 | Etiqueta o grupo dados de baja | La fila no se muestra mientras lo estén |
+| 6 | Quién la ve | La portada sigue siendo de la cuenta de cliente (C-20) |
+
+## 4. Fuera de alcance
+
+- Filas por editorial, por tipo o elegidas a mano producto por producto.

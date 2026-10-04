@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.catalog",
     "apps.suppliers",
+    "apps.tienda",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
@@ -76,6 +77,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.sesion",
                 "apps.core.context_processors.identidad_tienda",
+                "apps.tienda.context_processors.carrito_tienda",
             ],
         },
     },
@@ -123,7 +125,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "es-ar"
 
-TIME_ZONE = "UTC"
+# La comiquería está en Argentina: «hoy» es la fecha de acá. Con UTC, entre las
+# 21:00 y la medianoche el sistema creía que ya era mañana: las ofertas vencían
+# tres horas antes y las horas del log se leían corridas (B-03-012).
+TIME_ZONE = "America/Argentina/Buenos_Aires"
 
 USE_I18N = True
 

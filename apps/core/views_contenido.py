@@ -6,6 +6,7 @@ la hoja de estilo con las variables `--tienda-*` (C-06, C-07).
 """
 
 from django.contrib import messages
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -13,9 +14,22 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from apps.core import contenido
-from apps.core.forms import BannerEdicionForm, BannerForm, FaqForm, IdentidadVisualForm
+from apps.core.forms import (
+    BannerEdicionForm,
+    BannerForm,
+    FaqForm,
+    FilasPortadaFormSet,
+    IdentidadVisualForm,
+)
 from apps.core.mixins import RolRequeridoMixin
-from apps.core.models import Banner, ConfiguracionSistema, ContenidoFAQ, IdentidadVisual
+from apps.core.models import (
+    Banner,
+    ConfiguracionSistema,
+    ContenidoFAQ,
+    FilaPortada,
+    IdentidadVisual,
+    RegistroAuditoria,
+)
 from apps.core.utils import obtener_ip
 
 
@@ -215,3 +229,48 @@ class TiendaCssView(View):
         respuesta = HttpResponse(hoja, content_type="text/css; charset=utf-8")
         respuesta["Cache-Control"] = "public, max-age=86400"
         return respuesta
+
+
+def _lista(filas):
+    return " · ".join(filas) or "ninguna"
+
+
+def _resumen_de_filas():
+    return [
+        f"{fila.titulo_visible}{'' if fila.activa else ' (inactiva)'}"
+        for fila in FilaPortada.objects.select_related("etiqueta", "grupo")
+    ]
+
+
+class FilasPortadaView(ContenidoAdminMixin, View):
+    """Las filas de la portada de la tienda (plan 07, tercera parte; B-07-009).
+
+    Un formulario por fila, más uno vacío para agregar. Se guardan juntas y el
+    cambio queda auditado con la lista anterior y la nueva.
+    """
+
+    template_name = "core/filas_portada.html"
+
+    def get(self, request):
+        return self._pantalla(request, FilasPortadaFormSet(queryset=FilaPortada.objects.all()))
+
+    def post(self, request):
+        formularios = FilasPortadaFormSet(request.POST, queryset=FilaPortada.objects.all())
+        if not formularios.is_valid():
+            return self._pantalla(request, formularios)
+        antes = _resumen_de_filas()
+        with transaction.atomic():
+            formularios.save()
+            despues = _resumen_de_filas()
+            if antes != despues:
+                RegistroAuditoria.registrar(
+                    accion=RegistroAuditoria.MODIFICACION_FILAS_PORTADA,
+                    actor=request.user,
+                    ip=obtener_ip(request),
+                    detalle=f"{_lista(antes)} → {_lista(despues)}",
+                )
+        messages.success(request, "Se guardaron las filas de la portada.")
+        return redirect("core:filas_portada")
+
+    def _pantalla(self, request, formularios):
+        return render(request, self.template_name, {"formularios": formularios})

@@ -15,7 +15,7 @@ Exclusivas del Administrador, validado del lado del servidor (RNF-03).
 """
 
 from django.contrib import messages
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -126,9 +126,23 @@ class CatalogoFormularioMixin(CatalogoMixin):
         """Lo que alguna pantalla guarda además del registro. Casi siempre nada."""
 
     def form_valid(self, form):
-        with transaction.atomic():
-            self.object = self.guardar(form)
-            self.despues_de_guardar(form, self.object)
+        try:
+            with transaction.atomic():
+                self.object = self.guardar(form)
+                self.despues_de_guardar(form, self.object)
+        except IntegrityError:
+            # Dos envíos del mismo nombre a la vez (un doble clic): los dos pasan
+            # la validación del formulario y el segundo choca contra la unicidad
+            # de la base. Se le avisa lo mismo que habría dicho el formulario un
+            # instante después, en vez de un error 500 (B-17-016).
+            if "nombre" not in form.cleaned_data or not hasattr(form, "mensaje_repetido"):
+                raise
+            nombre = form.cleaned_data["nombre"]
+            # La misma pantalla que la validación normal: el aviso con el enlace al
+            # registro que ganó la carrera.
+            form.colision = self.catalogo.modelo.objects.filter(nombre__iexact=nombre).first()
+            form.add_error("nombre", form.mensaje_repetido.format(nombre=nombre))
+            return self.form_invalid(form)
         messages.success(self.request, self.mensaje(self.object))
         return redirect(self.catalogo.url_lista(self.object))
 

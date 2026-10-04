@@ -212,3 +212,26 @@ la nueva extracción tiene éxito; si falla, se conservan.
 
 **Qué habría que cambiar.**
 `CO-019`, Notas: agregar que, si la extracción falla, los borradores abiertos se conservan.
+
+---
+
+### B-04-006 · Un doble clic en el alta de un proveedor terminaba en error 500
+
+**Tipo:** Corrección · **Fecha:** 2026-10-04 · **Alcance:** `CO-060`
+**Estado:** Resuelta — corregido el código el 2026-10-04, encontrado en el ensayo de la demostración (plan 00, D4-04)
+
+**Qué apareció.**
+El mismo defecto que B-17-016: dos envíos idénticos a la vez pasaban la validación y el segundo
+chocaba contra la unicidad de la razón social o del correo comercial, con **error 500**.
+
+**Qué dice la especificación.**
+La razón social y el correo comercial son únicos; un duplicado se informa y no se registra.
+
+**Qué se hizo.**
+El alta atrapa el choque de unicidad, vuelve a validar el formulario —que ahora ve el proveedor
+que el otro envío acaba de crear— y lo devuelve con su aviso. Prueba:
+`test_concurrencia_proveedores.py`, escrita antes de la corrección.
+
+**Qué habría que cambiar.**
+Nada en el documento. Otras altas con datos únicos (productos por ISBN, código de barras o código
+interno; cuentas por correo) pueden tener la misma carrera y no se ensayaron: quedan en `DEUDA.md`.

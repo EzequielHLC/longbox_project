@@ -241,19 +241,29 @@ def enviar_bienvenida(usuario, request):
 def es_el_unico_administrador_activo(usuario):
     """¿Sacarle el rol o darlo de baja dejaría al sistema sin Administrador?
 
-    Se llama siempre dentro de una transacción: `select_for_update()` bloquea
-    las filas de los demás Administradores activos hasta el commit, así dos
-    Administradores editando al mismo tiempo no pueden quitarse el rol
-    mutuamente y dejar el sistema sin ninguno.
+    Se llama siempre dentro de una transacción. Bloquea **a todos** los
+    Administradores activos, incluido el afectado, **en orden de clave**, hasta
+    el commit (B-13-006):
+
+    - Bloquear sólo a «los otros» dejaba que A, quitándole el rol a B, y B,
+      quitándoselo a A, se bloquearan cada uno su propia fila y esperaran la
+      ajena: un interbloqueo que PostgreSQL corta abortando una de las dos, y esa
+      petición terminaba en error 500.
+    - Con el mismo orden para todos, la segunda espera a que la primera
+      confirme. Al obtener el bloqueo, PostgreSQL vuelve a evaluar el filtro
+      sobre la fila ya actualizada: el que perdió el rol deja de contar, y la
+      segunda operación se rechaza con el mensaje del resguardo.
+
+    El estado del afectado se lee de la fila bloqueada, no del objeto que trajo
+    la vista, que pudo quedar viejo mientras se esperaba.
     """
-    if not usuario.es_administrador_activo:
-        return False
-    otros_administradores = list(
+    activos = list(
         Usuario.objects.select_for_update()
         .filter(rol=Usuario.ADMINISTRADOR, estado=Usuario.ACTIVO)
-        .exclude(pk=usuario.pk)
+        .order_by("pk")
+        .values_list("pk", flat=True)
     )
-    return not otros_administradores
+    return activos == [usuario.pk]
 
 
 # ---------------------------------------------------------------------------

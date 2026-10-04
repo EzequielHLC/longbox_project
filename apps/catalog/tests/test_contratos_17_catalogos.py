@@ -9,10 +9,12 @@ Cubre editoriales (`CU-CFG-EDC`, `EDA`, `EDM`, `EDB`), tipos de material
 operaciones se ejercen por su dirección real.
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.catalog import revisiones
 from apps.catalog.forms import CabeceraLoteForm, editoriales_activas, formatos_para
@@ -22,6 +24,7 @@ from apps.catalog.models import (
     BorradorProducto,
     Editorial,
     Formato,
+    Oferta,
     Producto,
     ProductoEditorial,
     TablaPrecioReferencia,
@@ -432,12 +435,43 @@ def test_CO212_consultar_tipos_con_rubro_formatos_y_productos(client_admin):
     assert "B6" in contenido and "Fanzine" in contenido and "Editorial" in contenido
 
 
-def test_CO220_solicitar_baja_de_tipo_informa_ofertas_como_no_disponible(client_admin):
-    """`Oferta` todavía no existe: un cero diría que se verificó que no hay
-    ninguna (C-12)."""
+def test_CO220_solicitar_baja_de_tipo_cuenta_las_ofertas_vivas_del_tipo(client_admin):
+    """Cuentan las Programadas y las Activas según sus fechas; no las vencidas, las
+    dadas de baja ni las de un producto suelto (R-17-003)."""
     tipo = TipoFactory(nombre="Manga")
-    ProductoFactory(tipo=tipo)
+    producto = ProductoFactory(tipo=tipo)
     ProveedorFactory(tipo_por_defecto=tipo)
+    hoy = timezone.localdate()
+    comun = {"tipo_descuento": Oferta.PORCENTAJE, "valor": Decimal("10"), "descripcion": "x"}
+    Oferta.objects.create(
+        alcance=Oferta.TIPO, tipo=tipo, fecha_inicio=hoy, fecha_vencimiento=hoy, **comun
+    )
+    Oferta.objects.create(
+        alcance=Oferta.TIPO,
+        tipo=tipo,
+        fecha_inicio=hoy + timedelta(days=5),
+        fecha_vencimiento=hoy + timedelta(days=9),
+        estado=Oferta.PROGRAMADA,
+        **comun,
+    )
+    Oferta.objects.create(
+        alcance=Oferta.TIPO,
+        tipo=tipo,
+        fecha_inicio=hoy - timedelta(days=9),
+        fecha_vencimiento=hoy - timedelta(days=1),
+        **comun,
+    )
+    Oferta.objects.create(
+        alcance=Oferta.TIPO,
+        tipo=tipo,
+        fecha_inicio=hoy,
+        fecha_vencimiento=hoy,
+        estado=Oferta.DADA_DE_BAJA,
+        **comun,
+    )
+    Oferta.objects.create(
+        alcance=Oferta.PRODUCTO, producto=producto, fecha_inicio=hoy, fecha_vencimiento=hoy, **comun
+    )
 
     respuesta = client_admin.get(reverse("catalog:tipo_baja", args=[tipo.pk]))
 
@@ -445,8 +479,7 @@ def test_CO220_solicitar_baja_de_tipo_informa_ofertas_como_no_disponible(client_
     assert informe["Productos"] == 1
     assert informe["Proveedores"] == 1
     assert informe["Filas de la tabla de precios"] == 0
-    assert informe["Ofertas programadas o activas"] is None
-    assert "No disponible" in respuesta.content.decode()
+    assert informe["Ofertas programadas o activas"] == 2
 
 
 def test_CO221_confirmar_baja_de_tipo_conserva_sus_vinculos(client_admin, administrador):
@@ -455,6 +488,17 @@ def test_CO221_confirmar_baja_de_tipo_conserva_sus_vinculos(client_admin, admini
     producto = ProductoFactory(tipo=tipo, formato=formato)
     fila = PrecioReferenciaFactory(tipo=tipo, formato=formato)
     proveedor = ProveedorFactory(tipo_por_defecto=tipo)
+    hoy = timezone.localdate()
+    oferta = Oferta.objects.create(
+        descripcion="Semana del manga",
+        alcance=Oferta.TIPO,
+        tipo=tipo,
+        fecha_inicio=hoy,
+        fecha_vencimiento=hoy + timedelta(days=3),
+        tipo_descuento=Oferta.PORCENTAJE,
+        valor=Decimal("10"),
+        estado=Oferta.ACTIVA,
+    )
 
     client_admin.post(reverse("catalog:tipo_baja", args=[tipo.pk]))
 
@@ -463,7 +507,15 @@ def test_CO221_confirmar_baja_de_tipo_conserva_sus_vinculos(client_admin, admini
     producto.refresh_from_db()
     fila.refresh_from_db()
     proveedor.refresh_from_db()
-    assert producto.tipo_id == fila.tipo_id == proveedor.tipo_por_defecto_id == tipo.pk
+    oferta.refresh_from_db()
+    assert (
+        producto.tipo_id
+        == fila.tipo_id
+        == proveedor.tipo_por_defecto_id
+        == oferta.tipo_id
+        == tipo.pk
+    )
+    assert oferta.estado == Oferta.ACTIVA
     assert formato.tipos.filter(pk=tipo.pk).exists()
     assert auditorias(RegistroAuditoria.BAJA_CATALOGO).get().actor == administrador
 

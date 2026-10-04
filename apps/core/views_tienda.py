@@ -17,6 +17,7 @@ from django.shortcuts import render
 from django.views import View
 
 from apps.catalog.models import Editorial, Etiqueta, Producto, Tipo
+from apps.catalog.precio_visible import OfertasDelDia
 
 POR_PAGINA = 24
 
@@ -36,8 +37,10 @@ FILTROS_DE_ESTADO = [
 
 def visibles():
     """Lo que el catálogo público puede mostrar, bajo cualquier filtro."""
+    # La tarjeta lee la editorial del tomo o la marca del artículo: las dos hijas
+    # van en la misma consulta, o cada artículo no editorial cuesta una más (B-07-007).
     return Producto.objects.filter(estado__in=ESTADOS_VISIBLES, solo_adultos=False).select_related(
-        "tipo", "productoeditorial__editorial", "productoeditorial__formato"
+        "tipo", "productoeditorial__editorial", "productoeditorial__formato", "productonoeditorial"
     )
 
 
@@ -78,6 +81,8 @@ class FiltrosDelCatalogo:
         self.tipo = _entero(parametros.get("tipo"))
         self.editorial = _entero(parametros.get("editorial"))
         self.etiqueta = _entero(parametros.get("etiqueta"))
+        # Lo usa el «Ver todo» de una fila de la portada armada por grupo (B-07-009).
+        self.grupo = _entero(parametros.get("grupo"))
         self.precio_desde = _decimal(parametros.get("desde")) if parametros.get("desde") else None
         self.precio_hasta = _decimal(parametros.get("hasta")) if parametros.get("hasta") else None
         estado = parametros.get("estado", DISPONIBLE)
@@ -92,6 +97,7 @@ class FiltrosDelCatalogo:
                 self.tipo,
                 self.editorial,
                 self.etiqueta,
+                self.grupo,
                 self.precio_desde is not None,
                 self.precio_hasta is not None,
                 self.estado != DISPONIBLE,
@@ -111,10 +117,10 @@ class FiltrosDelCatalogo:
             productos = productos.filter(productoeditorial__editorial_id=self.editorial)
         if self.etiqueta:
             productos = productos.filter(etiquetas=self.etiqueta)
-        if self.precio_desde is not None:
-            productos = productos.filter(precio__gte=self.precio_desde)
-        if self.precio_hasta is not None:
-            productos = productos.filter(precio__lte=self.precio_hasta)
+        if self.grupo:
+            productos = productos.filter(etiquetas__grupo_id=self.grupo, etiquetas__activa=True)
+        if self.precio_desde is not None or self.precio_hasta is not None:
+            productos = productos.filter(pk__in=self._en_rango_de_precio(productos))
         if self.estado == DISPONIBLE:
             productos = productos.filter(disponibles())
         elif self.estado == AGOTADO:
@@ -123,11 +129,30 @@ class FiltrosDelCatalogo:
             productos = productos.filter(estado=Producto.PRE_VENTA)
         return productos.distinct()
 
+    def _en_rango_de_precio(self, productos):
+        """El rango se mide sobre el precio que se cobra, con la oferta aplicada.
+
+        Se calcula en Python con la misma función que el carrito: una segunda
+        versión del descuento escrita en SQL podría redondear distinto.
+        """
+        del_dia = OfertasDelDia()
+        elegidos = []
+        for producto in productos.select_related(None).only("pk", "precio", "tipo_id"):
+            precio = del_dia.precio(producto)
+            if self.precio_desde is not None and precio < self.precio_desde:
+                continue
+            if self.precio_hasta is not None and precio > self.precio_hasta:
+                continue
+            elegidos.append(producto.pk)
+        return elegidos
+
 
 def _marcar(productos):
     for indice, producto in enumerate(productos):
         producto.estado_publico = estado_publico(producto)
         producto.indice = indice
+    # El precio con la oferta vigente, y la oferta para tachar el original.
+    OfertasDelDia().anotar(productos)
     return productos
 
 
@@ -188,16 +213,29 @@ class FichaPublicaView(View):
         if producto is None:
             raise Http404("Producto no disponible en la tienda.")
         producto.estado_publico = estado_publico(producto)
+        OfertasDelDia().anotar([producto])
         return render(
             request,
             "core/tienda_producto.html",
             {
                 "producto": producto,
+                "en_carrito": _en_carrito(request, producto),
                 "editorial": getattr(producto, "productoeditorial", None),
                 # Volver al catálogo con los filtros que traía (paso 7).
                 "volver": request.GET.get("volver", ""),
             },
         )
+
+
+def _en_carrito(request, producto):
+    """Cuántas unidades de este producto lleva quien mira: el acceso al carrito del paso 4."""
+    from apps.tienda import carrito as servicio
+
+    if not servicio.puede_tener_carrito(request.user):
+        return 0
+    carrito = servicio.carrito_de(request)
+    linea = carrito.lineas.filter(producto=producto).first() if carrito else None
+    return linea.cantidad if linea else 0
 
 
 def recien_llegados(cantidad=8):
@@ -208,3 +246,30 @@ def recien_llegados(cantidad=8):
         .order_by("-creado_en", "-pk")[:cantidad]
     )
     return _marcar(productos)
+
+
+PRODUCTOS_POR_FILA = 12
+
+
+def filas_de_portada():
+    """Las filas de la portada, cada una con sus productos (plan 07, tercera parte).
+
+    Sólo las activas, con su etiqueta o su grupo vigentes, y con algún producto
+    visible: una fila vacía no se dibuja.
+    """
+    from apps.core.models import FilaPortada
+
+    filas = []
+    for fila in FilaPortada.objects.filter(activa=True).select_related("etiqueta__grupo", "grupo"):
+        if not fila.disponible:
+            continue
+        productos = visibles()
+        if fila.etiqueta_id:
+            productos = productos.filter(etiquetas=fila.etiqueta_id)
+        else:
+            productos = productos.filter(etiquetas__grupo=fila.grupo_id, etiquetas__activa=True)
+        productos = list(productos.distinct().order_by("-creado_en", "-pk")[:PRODUCTOS_POR_FILA])
+        if productos:
+            fila.productos = _marcar(productos)
+            filas.append(fila)
+    return filas

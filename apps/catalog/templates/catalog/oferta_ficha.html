@@ -1,0 +1,71 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-PVP-CON paso 5 (CO-170): la ficha de una oferta, con cada producto del
+alcance y sus dos precios.
+
+Acciones según el estado (paso 6): Editar y Dar de baja en Activa y en
+Programada (plan 03, segunda parte, ambigüedad 4). Vencida y Dada de baja son
+de sólo lectura. En una oferta por tipo, un producto con oferta individual
+propia queda «tapado»: se cobra con la individual (ambigüedad 3).
+{% endcomment %}
+
+{% block titulo %}{{ oferta.descripcion }} · Longbox{% endblock %}
+{% block seccion %}Ofertas{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:oferta_lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Gestión de ofertas" atras=1 %}</span>
+    <h1>{{ oferta.descripcion }}</h1>
+    <p>{% include "catalog/_estado_oferta.html" with estado=estado %}</p>
+  </div>
+  {% if editable %}
+    <div class="fila-2">
+      <a href="{% url 'catalog:oferta_editar' oferta.pk %}" class="boton-primario">{% include "_iconos.html" with icono="editar" %}<span>Editar</span></a>
+      <a href="{% url 'catalog:oferta_baja' oferta.pk %}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a>
+    </div>
+  {% endif %}
+</header>
+
+<div class="panel">
+  <dl class="datos-de-ficha">
+    <dt>Descuento</dt><dd class="datos">{{ descuento }}</dd>
+    <dt>Alcance</dt><dd>{{ alcance }}</dd>
+    <dt>Vigencia</dt><dd><span class="datos">{{ oferta.fecha_inicio|date:"d/m/Y" }}</span> a <span class="datos">{{ oferta.fecha_vencimiento|date:"d/m/Y" }}</span>, ambos días incluidos</dd>
+  </dl>
+  {% if not editable %}
+    <p class="secundario">{% if estado == "vencida" %}Venció: los precios ya volvieron a su valor.{% else %}Dada de baja: no se edita ni se reactiva.{% endif %} Para volver a aplicar el descuento, creá una oferta nueva.</p>
+  {% endif %}
+</div>
+
+<section class="seccion" aria-labelledby="titulo-productos">
+  <div class="seccion__titulo"><h2 id="titulo-productos">Productos afectados</h2></div>
+  {% if productos %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Código</th><th>Producto</th><th>Estado</th><th class="numero">Precio original</th><th class="numero">Con descuento</th></tr>
+        </thead>
+        <tbody>
+          {% for fila in productos %}
+            <tr>
+              <td class="datos sin-cortar">{{ fila.producto.codigo }}</td>
+              <td class="celda-principal">
+                <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto.titulo }}</a>
+                {% if fila.tapado_por %}<br><span class="texto-chico secundario">Se cobra con su oferta propia, «{{ fila.tapado_por.descripcion }}»</span>{% endif %}
+              </td>
+              <td>{{ fila.producto.get_estado_display }}</td>
+              <td class="numero">{{ fila.precio_original|pesos }}</td>
+              <td class="numero"><span class="calculado">{{ fila.precio_con_descuento|pesos }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="secundario">El tipo no tiene productos activos ni en pre-venta. La oferta se aplica sola cuando los haya.</p>
+  {% endif %}
+</section>
+{% endblock %}

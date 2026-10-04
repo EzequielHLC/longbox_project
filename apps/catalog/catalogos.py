@@ -21,20 +21,18 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.db.models import Count
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.catalog.models import (
     Editorial,
     Etiqueta,
     Formato,
     GrupoEtiqueta,
+    Oferta,
     Producto,
     Tipo,
 )
 from apps.core.models import RegistroAuditoria
-
-# `CO-220` cuenta las ofertas Programadas o Activas, y `Oferta` todavía no
-# existe. Un cero diría que se verificó que no hay ninguna (C-12).
-NO_DISPONIBLE = None
 
 
 @dataclass(frozen=True)
@@ -132,7 +130,11 @@ class CatalogoTipos(Catalogo):
             Referencia("Productos", tipo.productos.count()),
             Referencia("Filas de la tabla de precios", tipo.precios_de_referencia.count()),
             Referencia("Proveedores", tipo.proveedores.count()),
-            Referencia("Ofertas programadas o activas", NO_DISPONIBLE),
+            # Las que referencian el tipo como alcance, vivas según sus fechas (R-17-003).
+            Referencia(
+                "Ofertas programadas o activas",
+                Oferta.objects.vivas(timezone.localdate()).filter(tipo=tipo).count(),
+            ),
         ]
 
     def listado(self):

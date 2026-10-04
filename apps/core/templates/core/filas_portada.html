@@ -1,0 +1,55 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Las filas de productos de la portada de la tienda (plan 07, tercera parte; B-07-009).
+
+Cada fila sale de una etiqueta o de un grupo de etiquetas entero. Se guardan
+todas juntas; el último bloque, vacío, sirve para agregar una. Una fila sin
+productos visibles no se dibuja en la portada.
+{% endcomment %}
+
+{% block titulo %}Filas de la portada · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Filas de la portada</h1>
+    <p>Grupos de productos que el cliente recorre de costado en la portada de la tienda, debajo de «Recién llegados». Cada fila sale de una etiqueta o de un grupo de etiquetas entero, y muestra lo más nuevo que haya.</p>
+  </div>
+</header>
+
+{% if formularios.non_form_errors %}
+  <ul class="mensajes">
+    {% for error in formularios.non_form_errors %}
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" novalidate class="formulario">
+  {% csrf_token %}
+  {{ formularios.management_form }}
+  <div class="pila-5">
+    {% for formulario in formularios %}
+      <fieldset class="panel">
+        <legend class="etiqueta">{% if formulario.instance.pk %}Fila «{{ formulario.instance.titulo_visible }}»{% else %}Nueva fila{% endif %}</legend>
+        {% for oculto in formulario.hidden_fields %}{{ oculto }}{% endfor %}
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=formulario.origen %}
+          {% include "_campo.html" with campo=formulario.titulo %}
+          {% include "_campo.html" with campo=formulario.orden ayuda="Las filas se muestran de menor a mayor." %}
+        </div>
+        <div class="fila-5">
+          {% include "_casilla.html" with campo=formulario.activa interruptor=1 encendido="Activa" apagado="Inactiva" %}
+          {% if formulario.instance.pk %}
+            {% include "_casilla.html" with campo=formulario.DELETE %}
+          {% endif %}
+        </div>
+      </fieldset>
+    {% endfor %}
+  </div>
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar las filas</button>
+  </div>
+</form>
+{% endblock %}

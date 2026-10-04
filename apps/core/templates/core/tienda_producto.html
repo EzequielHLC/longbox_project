@@ -5,8 +5,9 @@ CU-TDA-CAT pasos 5 a 7 — la ficha pública de un producto (CO-177).
 
 La acción depende del estado: Disponible → «Agregar al carrito»; Agotado →
 «Avisarme cuando haya stock»; Pre-venta → «Reservar» con la fecha estimada.
-Inician casos de uso que todavía no existen (CU-TDA-CRA, CU-RST-SUS): se
-muestran deshabilitadas, con una línea que dice por qué (plan 07, ambigüedad 3).
+Agregar y reservar inician CU-TDA-CRA (CO-083). El aviso de stock inicia
+CU-RST-SUS, que no existe: sigue deshabilitado (B-07-002). El personal no
+tiene carrito (plan 07, segunda parte, ambigüedad 3).
 {% endcomment %}
 
 {% block titulo %}{{ producto.titulo }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
@@ -51,18 +52,34 @@ muestran deshabilitadas, con una línea que dice por qué (plan 07, ambigüedad 
           {% endif %}
         </div>
 
-        <p class="ficha-publica__precio">{{ producto.precio|pesos }}</p>
+        <p class="ficha-publica__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</p>
+        {% if producto.oferta_aplicada %}<p class="texto-chico">{{ producto.oferta_aplicada.descripcion }} · hasta el <span class="datos">{{ producto.oferta_aplicada.fecha_vencimiento|date:"d/m/Y" }}</span></p>{% endif %}
 
         <div class="pila-2">
-          {% if producto.estado_publico == "pre_venta" %}
-            <button type="button" class="boton-primario" disabled aria-describedby="accion-proximamente">Reservar</button>
-            {% if editorial.fecha_llegada %}<p>Llegada estimada: <span class="datos">{{ editorial.fecha_llegada|date:"d/m/Y" }}</span></p>{% endif %}
-          {% elif producto.estado_publico == "agotado" %}
+          {% if producto.estado_publico == "agotado" %}
             <button type="button" class="boton-seccion" disabled aria-describedby="accion-proximamente">Avisarme cuando haya stock</button>
+            <p id="accion-proximamente" class="texto-chico secundario">Disponible próximamente.</p>
+          {% elif unidades_en_carrito is None %}
+            <p class="texto-chico secundario">La compra es para cuentas de cliente.</p>
           {% else %}
-            <button type="button" class="boton-primario" disabled aria-describedby="accion-proximamente">Agregar al carrito</button>
+            <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="fila-2 fila-abajo">
+              {% csrf_token %}
+              <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+              {% if producto.estado_publico == "disponible" %}
+                {% include "_cantidad.html" with id="cantidad" valor=1 maximo=producto.stock %}
+              {% else %}
+                {% include "_cantidad.html" with id="cantidad" valor=1 %}
+              {% endif %}
+              <button type="submit" class="boton-primario">{% if producto.estado_publico == "pre_venta" %}Reservar{% else %}Agregar al carrito{% endif %}</button>
+            </form>
+            {% if producto.estado_publico == "pre_venta" %}
+              {% if editorial.fecha_llegada %}<p>Llegada estimada: <span class="datos">{{ editorial.fecha_llegada|date:"d/m/Y" }}</span></p>{% endif %}
+              <p class="texto-chico secundario">La reserva no tiene tope: lo que no cubra el ingreso queda demorado.</p>
+            {% endif %}
+            {% if en_carrito %}
+              <p class="texto-chico">Tenés <span class="datos">{{ en_carrito }}</span> en el carrito · <a href="{% url 'tienda:carrito' %}">Ver carrito</a></p>
+            {% endif %}
           {% endif %}
-          <p id="accion-proximamente" class="texto-chico secundario">Disponible próximamente.</p>
         </div>
 
         <dl class="datos-de-ficha">

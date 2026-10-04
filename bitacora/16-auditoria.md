@@ -83,3 +83,32 @@ archivo lleva además la marca de codificación para que los acentos se lean bie
 `CU-AUD-CON` completo: consulta paginada con filtros, detalle y exportación CSV auditada. El log
 responde 403 a toda escritura. No queda nada pendiente del módulo salvo las enmiendas de las tres
 entradas.
+
+---
+
+### B-16-004 · La inmutabilidad del log pasa a la base de datos
+
+**Tipo:** Corrección · **Fecha:** 2026-10-04 · **Alcance:** I-13, `RegistroAuditoria`
+**Estado:** Resuelta — decidido por el responsable el 2026-10-04 (plan 00, decisión 4: «hay que hacer las cosas bien»)
+
+**Qué apareció.**
+Preparando la demostración (D3-10) se verificó hasta dónde llega la garantía. `save()` y
+`delete()` del modelo rechazaban la escritura, pero un `update()` o `delete()` de queryset y una
+sentencia SQL directa modificaban y borraban entradas sin obstáculo. `DEUDA.md` decía que I-13 la
+respetaba «cualquier escritura», y no era cierto.
+
+**Qué dice la especificación.**
+> «Una entrada del log no se modifica ni se borra, por ningún rol ni por ningún camino» (I-13)
+
+**Qué se hizo.**
+Un disparador de PostgreSQL (`core.0023`) rechaza toda modificación y todo borrado de una entrada,
+con el mensaje «El log de auditoría es inmutable». Admite una sola escritura: la que hace la
+propia base al eliminar una cuenta o un tipo de objeto, que pone en nulo `actor_id` u
+`objetivo_tipo_id` sin tocar nada más; el correo del actor queda en la entrada. Las pruebas
+(`test_inmutabilidad_auditoria_en_la_base.py`) se escribieron antes y fallaban 6 de 8.
+
+**Límite conocido:** `TRUNCATE` sobre la tabla no lo detiene un disparador de fila. Exige ser el
+dueño de la tabla, y Django lo usa para vaciar la base entre pruebas.
+
+**Qué habría que cambiar.**
+Nada en el documento.

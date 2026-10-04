@@ -17,6 +17,7 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
     <link rel="stylesheet" href="{% url 'core:tienda_css' %}?v={{ identidad_tienda.version }}">
   {% endif %}
   {% include "_autocompletado.html" %}
+  {% include "_cantidad_js.html" %}
   {% include "_ver_contrasena.html" %}
 {% endblock %}
 
@@ -38,6 +39,11 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
         {% endif %}
         <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
         <a href="{% url 'core:faq' %}" {% if actual == 'core:faq' %}aria-current="page"{% endif %}>Preguntas frecuentes</a>
+        {% with unidades=unidades_en_carrito %}
+          {% if unidades is not None %}
+            <a href="{% url 'tienda:carrito' %}" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>Carrito{% if unidades %} <span class="contador" aria-label="{{ unidades }} unidades">{{ unidades }}</span>{% endif %}</a>
+          {% endif %}
+        {% endwith %}
         {% if user.is_authenticated %}
           {% comment %}
           El correo va como texto y no como enlace: el Cliente todavía no tiene

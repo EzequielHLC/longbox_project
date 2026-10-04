@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-02**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-03**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,40 +11,42 @@ enlazan a éste.
 
 ## Resumen
 
-Cuarta fotografía. **Se cerró la etapa A del plan de la sesión**: catálogos de clasificación
-(módulo 17, tanda 1), grupos, etiquetas y exportación del inventario (módulo 02), tabla de
-precios y margen (módulo 03), consulta del log (módulo 16) y contenido de la tienda (módulo 17,
-tanda 2). De la etapa B se construyó el catálogo público (`CU-TDA-CAT`, plan 07); el carrito y
-las ofertas no se empezaron.
+Quinta fotografía. **Se construyó la etapa B sin la compra**: el carrito (plan 07, segunda parte) y
+las ofertas (plan 03, segunda parte). La compra, el invitado y los pedidos siguen esperando a
+`Pedido` y `TransaccionPago`.
 
-**El estilo cambió.** El responsable reemplazó el estilo preliminar plano por **Viñeta Nocturna**
-(`TOKENS_VISUALES.md`, `identidad_visual.md`, `tokens.css`). Se aplicó a todo el sistema con los
-mismos nombres de clase; lo que el documento describe y todavía no está, en B-00-005.
-
-**Lo que más se movió.** La baja de los cinco catálogos dejó de ser una casilla del formulario:
-es un par informe y confirmación, y la modificación sólo corrige y reactiva. Los precios ya no
-se editan sin propagar: la tabla y el margen informan el alcance antes de confirmar. `Banner`,
-`ContenidoFAQ` e `IdentidadVisual` existen, con el procesamiento de imágenes de RNF-05.
+**Lo que más se movió.**
+- **El precio visible sale de una sola función.** La tienda, el carrito y, cuando exista, el
+  mostrador cobran el precio con la oferta vigente. La oferta no toca el precio guardado del
+  producto: darla de baja o dejarla vencer lo restaura solo (B-03-007).
+- **El carrito guarda dos importes por línea**, el vigente y el que vio el Cliente, para poder
+  avisar que el precio cambió sin dejar de propagar (B-07-003).
+- **La propagación de precios llega a los carritos**: la tabla de precios, el margen y cada
+  operación de oferta. Por eso `CU-PVP-TBM` y `MAR` pasan a Verificado (R-03-001).
+- **P-05 tiene forma**: `manage.py ejecutar_temporizador` es la puerta de los procesos periódicos.
+  Hoy corre el ciclo de vigencia de ofertas (`CO-059`) y arranca con `demostracion.bat`.
+- **Los correos salen por SMTP** con copia en la consola y el estilo del sistema (B-00-008). Mientras
+  el `.env` no tenga una contraseña de aplicación válida, quedan sólo en la consola.
 
 **Por qué varios quedan `Parcial` con todas sus pruebas de contrato.** Sus contratos declaran un
-efecto sobre algo que todavía no existe: los filtros del catálogo público (`CU-CAT-GRM`, `GRB`,
-`ETM`, `ETB`; B-02-004), las líneas de carrito (`CU-PVP-TBM`, `MAR`; B-03-001) y las ofertas
-(`CU-CFG-TPB`; B-17-008). La prueba cubre todo lo demás.
+efecto sobre los filtros del catálogo público (`CU-CAT-GRM`, `GRB`, `ETM`, `ETB`; B-02-004), o
+inician un caso de uso que no existe (`CU-TDA-CAT`: «Avisarme cuando haya stock»). La prueba cubre
+todo lo demás.
 
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 37 |
+| Verificados | 48 |
 | Construidos, sin verificar | 9 |
-| Parciales | 18 |
+| Parciales | 15 |
 | En curso | 0 |
-| Pendientes | 39 |
+| Pendientes | 31 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **80**, de los cuales **72 verificados**
-y **8 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`, `CO-048`, `CO-053`,
-`CO-221`). Sin prueba: **139**. El detalle por contrato está en
-[pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 260 pruebas de contrato.
+Contratos de operación especificados: **219**. Con prueba: **94**, de los cuales **89 verificados**
+y **5 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`). Sin prueba: **125**. El
+detalle por contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 320
+pruebas de contrato.
 
 ### Cómo leer la columna «Contratos»
 
@@ -95,13 +97,13 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | --- | --- | --- | --- |
 | `CU-PVP-TBC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `PrecioListaView`, pantalla propia con filtros combinables por editorial, tipo y formato. |
 | `CU-PVP-TBA` | Verificado | 3 / 3 | **Todos sus contratos verificados.** Exige rubro editorial, clasificación por formato, formato aplicable y entradas activas; la colisión enlaza la fila existente. |
-| `CU-PVP-TBM` | Parcial | 4 / 4 | Contratos con prueba. Informe de alcance y confirmación que propaga a los vinculados, salvo cancelados y precio a mano. `Parcial`: la propagación a `LineaCarrito` no puede existir antes de `Carrito` (B-03-001). |
+| `CU-PVP-TBM` | Verificado | 4 / 4 | Informe de alcance y confirmación que propaga a los vinculados, salvo cancelados y precio a mano, **y a las líneas de carrito de esos productos** (R-03-001, B-07-003). |
 | `CU-PVP-TBB` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Informe de vinculados y baja que desvincula conservando precio y marca; se vuelven a vincular con `CO-031`. |
-| `CU-PVP-MAR` | Parcial | 4 / 4 | Contratos con prueba. `MargenView`: valor vigente en porcentaje, simulación y recálculo desde el precio base con `Decimal` exacto. Sin importados el cambio no se ofrece (B-03-003, C-19). `Parcial` por `LineaCarrito` (B-03-001). |
-| `CU-PVP-ALT` | Pendiente | 0 / 2 | No existe `Oferta`. |
-| `CU-PVP-EDI` | Pendiente | 0 / 2 | Ídem. |
-| `CU-PVP-BAJ` | Pendiente | 0 / 3 | Ídem. |
-| `CU-PVP-CON` | Pendiente | 0 / 2 | Ídem. |
+| `CU-PVP-MAR` | Verificado | 4 / 4 | `MargenView`: valor vigente en porcentaje, simulación y recálculo desde el precio base con `Decimal` exacto, **también en las líneas de carrito** (R-03-001). Sin importados el cambio no se ofrece (B-03-003, C-19). |
+| `CU-PVP-ALT` | Verificado | 2 / 2 | `apps/catalog/ofertas.py`. Activa o Programada según la fecha; solapamiento con bloqueo sobre el alcance (E2); tope de $1 con confirmación (E3, `CO-055`); aviso de tipo vacío (A1). La oferta cambia el precio visible, no el guardado (B-03-007, B-03-008). |
+| `CU-PVP-EDI` | Verificado | 2 / 2 | Registra cada campo anterior y nuevo; reducir el alcance restaura a los excluidos (A1); también pide confirmar el tope (B-03-010). |
+| `CU-PVP-BAJ` | Verificado | 3 / 3 | Informe con productos con descuento activo y carritos (`CO-057`), confirmación terminal (`CO-058`) y cancelar sin efecto (`CO-156`). Una vencida informa que ya expiró (E1). |
+| `CU-PVP-CON` | Verificado | 2 / 2 | `OfertaListaView`, `OfertaFichaView`. Estado según las fechas aunque el Temporizador no haya corrido (B-03-007). La ficha marca los productos «tapados» por su oferta individual y ofrece la baja también en Programada (B-03-009). Plan 03, segunda parte. |
 
 ### `04` Proveedores
 
@@ -134,13 +136,18 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con filtros por texto, tipo, editorial, etiqueta, precio y estado, de a 24; ficha pública con galería y la acción según estado. `Parcial`: las acciones inician `CU-TDA-CRA` y `CU-RST-SUS`, que no existen, y se muestran deshabilitadas (B-07-002); sin `Oferta` no hay precio tachado. Plan 07 |
-| `CU-TDA-CRC` | Pendiente | 0 / 3 | No existe `Carrito`. |
-| `CU-TDA-CRA` | Pendiente | 0 / 1 | Ídem. |
-| `CU-TDA-CRM` | Pendiente | 0 / 1 | Ídem. |
-| `CU-TDA-CRB` | Pendiente | 0 / 1 | Ídem. |
+| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con filtros, de a 24; ficha con galería, **precio tachado con la oferta vigente** y el filtro de precio sobre el precio que se cobra (B-03-011). «Agregar al carrito» y «Reservar» inician `CU-TDA-CRA` (R-07-001). `Parcial`: «Avisarme cuando haya stock» espera a `CU-RST-SUS`. Plan 07 |
+| `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» deshabilitado hasta `CU-TDA-CMP` (B-07-006). Plan 07, segunda parte. |
+| `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta reserva sin tope (A1). El personal no tiene carrito (B-07-005). |
+| `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2), sin tope en Pre-venta. La línea de otro carrito responde 404. |
+| `CU-TDA-CRB` | Verificado | 1 / 1 | Sin confirmación. La línea de otro carrito responde 404. |
 | `CU-TDA-CMP` | Pendiente | 0 / 6 | No existen `Pedido` ni `TransaccionPago`. |
 | `CU-TDA-INV` | Pendiente | 0 / 5 | Ídem. |
+
+**Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera parte; B-07-009). El
+Administrador las arma por etiqueta o por grupo de etiquetas en «Tienda → Filas de la portada»; el
+Cliente las recorre de costado. Con prueba (`test_filas_portada.py`, 10 casos, incluido el rol
+equivocado por la dirección real). El código del caso de uso lo asigna el responsable.
 
 ### `08` Gestión de Pedidos
 
@@ -182,7 +189,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-AUT-INI` | Parcial | 1 / 3 | `LoginUsuarioView`, bloqueo por intentos, redirección por rol y expiración con renovación. **`CO-115` verificado**, `CO-114` parcial (B-12-001). **Nuevo:** la ficha referencia `CO-086 fusionarCarritoDeSesion`, que no puede existir antes de `Carrito`. |
+| `CU-AUT-INI` | Parcial | 2 / 3 | `LoginUsuarioView`, bloqueo por intentos, redirección por rol y expiración con renovación. **`CO-115` y `CO-086` verificados**: el inicio de sesión fusiona el carrito de invitado (B-07-005). `CO-114` parcial (B-12-001). |
 | `CU-AUT-FIN` | Verificado | 1 / 1 | **Todos sus contratos verificados.** |
 | `CU-AUT-REC` | Verificado | 2 / 2 | **Todos sus contratos verificados.** |
 | `CU-AUT-ACT` | Verificado | 3 / 3 | **Todos sus contratos verificados.** |
@@ -219,7 +226,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-CFG-TPC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** Rubro, clasificación, formatos declarados, productos y filtro por estado. |
 | `CU-CFG-TPA` | Verificado | 3 / 3 | **Todos sus contratos verificados.** El rubro entra al formulario; declaración de formatos (`CO-146`) auditada aparte. |
 | `CU-CFG-TPM` | Verificado | 3 / 3 | **Todos sus contratos verificados.** E2, E4 y E5 validados; dejar de clasificarse por formato rompe sus combinaciones. |
-| `CU-CFG-TPB` | Parcial | 4 / 4 | Contratos con prueba. Par informe y confirmación; las ofertas vigentes se informan «No disponible» (B-17-008). `Parcial`: la postcondición «Oferta → Tipo se conservaron» no se puede ejercer sin `Oferta`. |
+| `CU-CFG-TPB` | Verificado | 4 / 4 | Par informe y confirmación. El informe cuenta las ofertas Programadas o Activas del tipo y la baja las conserva (R-17-003). |
 | `CU-CFG-FMC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** Medidas, «aplica a todos», tipos, productos y filtro por estado. |
 | `CU-CFG-FMA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** «Aplica a todos los tipos» es atributo (B-17-004), con migración que conserva el alcance. |
 | `CU-CFG-FMM` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Pasar a «aplica a todos» desvincula los tipos; E3 validado. |
@@ -261,21 +268,24 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-02**, con PostgreSQL levantado, sobre el repositorio entero.
+Medición del **2026-10-03**, con PostgreSQL levantado, sobre el repositorio entero.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1720 pasan**, 0 fallos, 7 min 9 s (la prueba del proveedor caído se corrigió y se volvió a correr con su archivo) |
-| **Contratos** | **72 de 219 verificados**, 8 parciales, 139 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (6051 sentencias, 188 sin cubrir) |
+| Suite de pruebas | **1812 pasan**, 0 fallos, 7 min 44 s. Después se ajustó el informe de baja de tipo (R-17-003) y se volvió a correr `apps/catalog` entero: 749 pasan |
+| **Contratos** | **89 de 219 verificados**, 5 parciales, 125 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **96 %** (6893 sentencias, 271 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 178 archivos sin cambios |
+| Formato | `black --check .`: 194 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos |
-| Configuración de despliegue | `check --deploy` con la configuración de producción y el `.env` de esta máquina (`ALLOWED_HOSTS=.trycloudflare.com`): **sin advertencias** |
+| Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción y el `.env` de esta máquina: **sin advertencias** |
 
-**Las dos verificaciones a mano.** Las migraciones de hoy (`catalog.0020`, `0021`; `core.0018` a
-`0021`) aplicaron sobre la base de desarrollo, y las pantallas nuevas se recorrieron sobre esos
-datos. `makemigrations --check` no detecta cambios. Ninguna agrega restricciones de unicidad.
+**Las dos verificaciones a mano.** Las migraciones de hoy (`tienda.0001`, `catalog.0022`,
+`core.0022`) aplicaron sobre la base de desarrollo, y `ejecutar_temporizador` corrió sobre ella.
+`makemigrations --check` no detecta cambios. Las restricciones están en la base:
+`linea_unica_por_producto` (restricción e índice), `linea_cantidad_minima`,
+`carrito_persistente_si_tiene_usuario`, `oferta_alcance_coherente`, `oferta_fechas_coherentes`,
+`oferta_valor_positivo` y `oferta_porcentaje_menor_a_100`.
 
 **La prueba del estilo es ahora `test_estilo_vineta.py`**: `tokens.css` idéntico al del
 responsable, fuentes autoalojadas presentes, ningún color ni radio en los componentes, sombras sin

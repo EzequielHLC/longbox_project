@@ -1,0 +1,38 @@
+# HTTPS local para la demostración (plan 00, decisión 2).
+#
+#   caddy run --config scripts/demo/Caddyfile.demo
+#
+# La configuración de producción redirige a HTTPS y marca las cookies como
+# seguras. Con un certificado local de Caddy (`tls internal`) el navegador y la
+# herramienta de carga hablan HTTPS con el mismo Django de producción, sin
+# tocar sus ajustes. El navegador va a advertir que el certificado no es de una
+# autoridad pública: es esperado y se acepta una vez.
+#
+# Se corre desde la raíz del repositorio, como el Caddyfile del túnel.
+
+{
+	servers {
+		trusted_proxies static 127.0.0.1/32 ::1
+	}
+	# Sin instalar la autoridad local en el sistema: no hacen falta permisos.
+	skip_install_trust
+}
+
+https://127.0.0.1:8443, https://localhost:8443 {
+	tls internal
+	encode gzip
+
+	handle_path /static/* {
+		root * staticfiles
+		file_server
+	}
+
+	handle_path /media/* {
+		root * scripts/demo/datos/media
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}

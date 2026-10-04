@@ -30,14 +30,14 @@ pytest-django==4.12.0
 pytest==9.1.1
 python-dateutil==2.9.0.post0
 python-decouple==3.8
-python-discovery==1.5.1
+python-discovery==1.6.1
 pytokens==0.4.1
 PyYAML==6.0.3
 rich==15.0.0
 ruff==0.16.1
 six==1.17.0
-sqlparse==0.5.5
+sqlparse==0.6.0
 stevedore==5.9.0
 tzdata==2026.3
-virtualenv==21.7.1
+virtualenv==21.7.13
 waitress==3.0.2

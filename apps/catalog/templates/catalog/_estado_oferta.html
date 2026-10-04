@@ -1,0 +1,2 @@
+{# El estado de una oferta como marca: activa en lima, programada en celeste, terminadas apagadas. #}
+<span class="marca-estado{% if estado == 'activa' %} marca-estado--ok{% elif estado == 'programada' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{% if estado == 'activa' %}Activa{% elif estado == 'programada' %}Programada{% elif estado == 'vencida' %}Vencida{% else %}Dada de baja{% endif %}</span>

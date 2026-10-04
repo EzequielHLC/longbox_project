@@ -238,3 +238,27 @@ Las fichas dicen que el sistema «envía un correo»; sobre su formato visual: `
 **Qué habría que cambiar.**
 `identidad_visual.md`: una sección «Correo» con la adaptación de arriba. Las fichas que envían
 correo pueden remitir a ella.
+
+---
+
+### B-00-009 · Desplegables y barras de desplazamiento con el diseño del sistema
+
+**Tipo:** Agregado · **Fecha:** 2026-10-04 · **Alcance:** todas las pantallas
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-03
+
+**Qué apareció.**
+El responsable pidió que los desplegables y las barras de desplazamiento tengan diseño propio y no
+el del navegador. El desplegable cerrado ya lo tenía; la lista que se abre y las barras, no.
+
+**Qué dice la especificación.**
+`TOKENS_VISUALES.md` no dibuja ni la lista abierta de un desplegable ni las barras de desplazamiento.
+
+**Qué se hizo.**
+- **Lista del desplegable:** borde duro, fondo del panel, sombra de golpe y la opción elegida en el
+  acento, con un rombo como marca. Usa `appearance: base-select`, que hoy admiten Chrome y Edge;
+  en los demás navegadores queda la lista nativa y nada se rompe.
+- **Barras de desplazamiento:** angostas, en los colores del sistema y con el acento al pasar el
+  puntero.
+
+**Qué habría que cambiar.**
+`TOKENS_VISUALES.md`: el desplegable abierto y las barras de desplazamiento.

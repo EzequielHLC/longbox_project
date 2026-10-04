@@ -62,6 +62,7 @@ class TiendaView(RolRequeridoMixin, TemplateView):
         llegados = views_tienda.recien_llegados()
         contexto["recien_llegados"] = llegados
         contexto["destacado"] = next((p for p in llegados if p.portada), None)
+        contexto["filas"] = views_tienda.filas_de_portada()
         return contexto
 
 

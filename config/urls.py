@@ -26,6 +26,7 @@ urlpatterns = [
     path("cuentas/", include("apps.accounts.urls")),
     path("catalogo/", include("apps.catalog.urls")),
     path("proveedores/", include("apps.suppliers.urls")),
+    path("tienda/carrito/", include("apps.tienda.urls")),
     path("", include("apps.core.urls")),
     path("", RedirectView.as_view(pattern_name="accounts:login"), name="inicio"),
 ]

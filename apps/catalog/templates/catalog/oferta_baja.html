@@ -1,0 +1,44 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PVP-BAJ: esta pantalla es el informe (CO-057, pasos 2 y 3) y el botón es la
+confirmación (CO-058). Cancelar es volver sin enviar nada (CO-156): no cambia ni
+se audita.
+{% endcomment %}
+
+{% block titulo %}Dar de baja {{ informe.oferta.descripcion }} · Longbox{% endblock %}
+{% block seccion %}Ofertas{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:oferta_ficha' informe.oferta.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha de la oferta" atras=1 %}</span>
+    <h1>Dar de baja la oferta</h1>
+    <p>«{{ informe.oferta.descripcion }}» · {{ informe.alcance }}</p>
+  </div>
+</header>
+
+<div class="panel panel--atencion">
+  <div class="seccion__titulo"><h2>Qué alcanza</h2></div>
+  <div class="cifras">
+    <div class="cifra">
+      <span class="cifra__rotulo">Productos con descuento activo</span>
+      <span class="cifra__valor">{{ informe.con_descuento }}</span>
+    </div>
+    <div class="cifra">
+      <span class="cifra__rotulo">Carritos con productos afectados</span>
+      <span class="cifra__valor">{{ informe.carritos }}</span>
+    </div>
+  </div>
+
+  <h3>Qué implica la baja</h3>
+  <p>{{ informe.consecuencia }}</p>
+  <p class="secundario">No se puede revertir: una oferta dada de baja no se edita ni se reactiva.</p>
+
+  <form method="post" class="acciones">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario boton-primario--critico">Confirmar baja</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

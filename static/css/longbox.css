@@ -808,6 +808,65 @@ select {
 select[multiple] { min-height: 8em; background-image: none; padding-right: var(--esp-3); }
 textarea { min-height: 6em; resize: vertical; }
 
+/* La lista que se abre del desplegable, con el diseño del sistema. Mejora
+   progresiva: donde el navegador no admite `appearance: base-select` (hoy, fuera
+   de Chrome y Edge), queda la lista nativa y el desplegable cerrado sigue igual. */
+@supports (appearance: base-select) {
+  select:not([multiple]),
+  select:not([multiple])::picker(select) { appearance: base-select; }
+  select:not([multiple]) { background-image: none; padding-right: var(--esp-3); }
+  select:not([multiple])::picker-icon {
+    color: var(--texto-2);
+    transition: transform var(--dur-1) var(--curva-golpe);
+  }
+  select:not([multiple]):open::picker-icon { transform: rotate(180deg); }
+  select:not([multiple])::picker(select) {
+    margin-top: var(--esp-1);
+    padding: var(--esp-1) 0;
+    border: var(--trazo-grueso) var(--texto-fuerte);
+    border-radius: var(--radio);
+    background: var(--fondo-2);
+    box-shadow: var(--sombra-golpe-2);
+  }
+  select:not([multiple]) option {
+    padding: var(--esp-2) var(--esp-3);
+    color: var(--texto);
+  }
+  select:not([multiple]) option:hover,
+  select:not([multiple]) option:focus-visible { background: var(--fondo-3); color: var(--texto-fuerte); }
+  select:not([multiple]) option:checked { background: var(--acento); color: var(--sobre-acento); }
+  select:not([multiple]) option::checkmark { content: "◆"; }
+}
+
+/* Barras de desplazamiento con los colores del sistema: angostas, sin bordes
+   redondeados y con el acento al pasar el puntero. */
+* { scrollbar-width: thin; scrollbar-color: var(--borde-control) var(--fondo-2); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--fondo-2); }
+::-webkit-scrollbar-thumb { background: var(--borde-control); border: 2px solid var(--fondo-2); }
+::-webkit-scrollbar-thumb:hover { background: var(--acento); }
+
+/* Cantidad con flechas (tienda: ficha y carrito). */
+.selector-cantidad { display: inline-flex; align-items: stretch; }
+.selector-cantidad input[type="number"] {
+  width: 4.5rem;
+  text-align: center;
+  appearance: textfield;
+}
+.selector-cantidad input[type="number"]::-webkit-inner-spin-button,
+.selector-cantidad input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.selector-cantidad__paso {
+  min-width: 2.75rem;
+  border: var(--trazo) var(--borde-control);
+  background: var(--fondo-3);
+  color: var(--texto-fuerte);
+  font: 700 var(--op-titulo-3) / 1 var(--fuente-datos);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.selector-cantidad__paso:hover,
+.selector-cantidad__paso:focus-visible { background: var(--acento); color: var(--sobre-acento); }
+
 input:disabled, textarea:disabled, select:disabled,
 input[readonly], textarea[readonly] {
   background-color: var(--fondo-2);
@@ -1863,6 +1922,112 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 }
 .ficha-publica__precio { font: 700 var(--pub-titulo-2) / 1 var(--fuente-datos); color: var(--texto-fuerte); }
 
+/* Carrito (CU-TDA-CRC). Las líneas a la izquierda, el resumen pegado a la derecha. */
+.carrito { display: grid; gap: var(--esp-6); }
+@media (min-width: 900px) {
+  .carrito { grid-template-columns: minmax(0, 1fr) 18rem; align-items: start; }
+}
+.carrito__lineas { display: grid; gap: var(--esp-4); margin: 0; padding: 0; list-style: none; }
+.linea-carrito {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: var(--esp-3) var(--esp-4);
+  padding: var(--esp-4);
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-2);
+}
+@media (min-width: 640px) {
+  .linea-carrito { grid-template-columns: 5.5rem minmax(0, 1fr) auto auto; align-items: center; }
+}
+.linea-carrito--con-problema { border-color: var(--error); }
+.linea-carrito__portada img,
+.linea-carrito__portada .portada-vacia { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.linea-carrito__titulo {
+  font: 700 var(--pub-titulo-3) / 1.15 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  color: var(--texto-fuerte);
+  text-decoration: none;
+}
+.linea-carrito__titulo:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.linea-carrito__precio { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); margin: 0; }
+.linea-carrito__acciones { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--esp-3); grid-column: 1 / -1; }
+.linea-carrito__subtotal {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: 700 var(--op-titulo-2) / 1.2 var(--fuente-datos);
+  color: var(--texto-fuerte);
+  text-align: right;
+}
+@media (min-width: 640px) {
+  .linea-carrito__acciones,
+  .linea-carrito__subtotal { grid-column: auto; }
+}
+.campo--cantidad input { width: 5.5rem; }
+
+.resumen-carrito {
+  padding: var(--esp-5);
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-2);
+  box-shadow: var(--sombra-golpe-2);
+}
+.resumen-carrito__total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  margin: 0;
+  font: 700 var(--pub-titulo-2) / 1 var(--fuente-datos);
+  color: var(--texto-fuerte);
+}
+
+/* El precio sin la oferta, tachado y en segundo plano. La guía no lo dibuja (B-03-011). */
+.precio-anterior {
+  margin-right: var(--esp-1);
+  font-size: 0.7em;
+  font-weight: 400;
+  color: var(--texto-2);
+  text-decoration-thickness: 2px;
+}
+
+/* Filas de la portada (B-07-009): tarjetas en una sola línea que se recorre de costado. */
+.fila-portada { display: grid; gap: var(--esp-4); }
+.fila-portada__pista {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 200px);
+  gap: var(--esp-5);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding: var(--esp-2) var(--esp-3) var(--esp-5) var(--esp-1);
+}
+.fila-portada__pista > * { scroll-snap-align: start; }
+.fila-portada__pista:focus-visible { outline: var(--trazo-fuerte) var(--acento); }
+.fila-portada__flecha {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-2);
+  color: var(--texto-fuerte);
+  font: 700 var(--op-titulo-3) / 1 var(--fuente-datos);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.fila-portada__flecha:hover,
+.fila-portada__flecha:focus-visible { background: var(--acento); color: var(--sobre-acento); }
+
+/* Cuántas unidades lleva el carrito, junto al enlace del encabezado. */
+.contador {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-left: var(--esp-1);
+  padding: 0 var(--esp-1);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: 700 var(--op-rotulo) / 1.5 var(--fuente-datos);
+  text-align: center;
+  transform: skewX(var(--sesgo));
+}
+
 /* Globo de diálogo cuadrado: FAQ, reseñas. Cola de dos capas. */
 .globo {
   position: relative;
@@ -2003,3 +2168,6 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   .barras-carga > span { animation: none; transform: none; }
   .punto-en-linea { animation: none; }
 }
+
+/* Un ícono que cambia con el estado del botón (Pausar / Reanudar). */
+.icono-de-estado { display: inline-flex; }

@@ -95,7 +95,20 @@ Administrador con `python manage.py crear_administrador_inicial`.
 ruta. Revisa que estén el entorno virtual, Caddy, `cloudflared`, el `.env` y los puertos 8000 y
 8080 libres. Corre el paso C y abre las tres ventanas de abajo. Muestra la dirección pública y la
 copia al portapapeles. Una tecla en su ventana cierra las tres; cerrarla con la cruz las deja
-corriendo.
+corriendo. Antes de levantar corre el Temporizador (`manage.py ejecutar_temporizador`), que deja
+al día el estado de las ofertas.
+
+**Si la máquina queda encendida varios días**, el Temporizador se programa una vez por día. En
+PowerShell, desde la raíz del repositorio:
+
+```powershell
+$accion = New-ScheduledTaskAction -Execute "$PWD\venv\Scripts\python.exe" -Argument "manage.py ejecutar_temporizador" -WorkingDirectory "$PWD"
+Register-ScheduledTask -TaskName "Longbox temporizador" -Action $accion -Trigger (New-ScheduledTaskTrigger -Daily -At 00:05)
+```
+
+Aunque no corra, las ofertas empiezan y terminan a tiempo: el precio con descuento se calcula con
+las fechas. Lo que espera al Temporizador es el estado que muestra la lista y la entrada de
+auditoría del vencimiento.
 
 A mano son tres ventanas, desde la raíz del repositorio:
 
@@ -181,6 +194,29 @@ Desde un **teléfono con datos móviles**, no desde el wifi de la casa.
 Si la demostración usa el procesamiento de correos, el servicio del modelo de lenguaje
 configurado en Parámetros globales tiene que estar corriendo. Con la modalidad local, eso es LM
 Studio en esta misma máquina.
+
+## La base de la presentación
+
+Para mostrar el sistema con datos reales y sin restos de pruebas manuales:
+
+```bash
+python scripts/demo/presentacion.py --confirmar
+```
+
+No borra la base actual. Respalda la base y `media/` en `respaldos/presentacion-<fecha>/`,
+crea `longbox_presentacion` y cambia **sólo** `DB_NAME` en el `.env` (anota la anterior en
+`DB_NAME_ANTERIOR`). La base nueva queda con:
+
+- tres cuentas, con las contraseñas de siempre: `admin@correo.com`, `cajero@correo.com` y
+  `cliente@correo.com`;
+- el catálogo de Ivrea limpio: 487 series y 3594 tomos con portada y sinopsis, sin las páginas que
+  agrupan franquicias ni el código del sitio que venía pegado a la sinopsis;
+- el proveedor Ivrea con una casilla `.demo` y tres correos de novedades pendientes;
+- tres ofertas, tres banners armados con portadas y cinco filas en la portada;
+- la identidad visual y los parámetros de la base anterior, y unas preguntas frecuentes reales.
+
+Requiere `scripts/demo/datos/` (lo arma `raspar_ivrea.py`). `--reemplazar` la rehace desde la
+base anterior. Para volver: `DB_NAME=longbox_db` en el `.env` y `media/` desde el respaldo.
 
 ## Después
 

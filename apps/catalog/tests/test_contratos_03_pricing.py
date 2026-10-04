@@ -5,8 +5,9 @@ Es una zona de foco reforzado (dinero): se cubren las ramas de error, la
 aritmética decimal exacta y las postcondiciones negativas —lo que la operación
 **no** debe cambiar—.
 
-`LineaCarrito` y `Oferta` no existen todavía: las postcondiciones de `CO-048` y
-`CO-053` sobre carritos y ofertas no tienen sobre qué afirmarse (B-03-001).
+La parte de `CO-048` y `CO-053` que llega a las líneas de carrito se prueba en
+`apps/tienda/tests/test_contratos_07_carrito.py` (R-03-001). Las ofertas, en
+`test_contratos_03_ofertas.py`.
 """
 
 from decimal import Decimal

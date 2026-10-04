@@ -161,7 +161,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         </a>
       </details>
 
-      <details class="menu-grupo" {% if 'catalog:precio' in actual or actual == 'catalog:margen' %}open{% endif %}>
+      <details class="menu-grupo" {% if 'catalog:precio' in actual or actual == 'catalog:margen' or 'catalog:oferta' in actual %}open{% endif %}>
         <summary class="menu-titulo">
           {% include "_iconos.html" with icono="precios" %}
           <span>Precios</span>
@@ -176,9 +176,14 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
           {% include "_iconos.html" with icono="importado" %}
           <span>Margen de importados</span>
         </a>
+        <a href="{% url 'catalog:oferta_lista' %}"
+           class="menu-enlace menu-enlace--hijo {% if 'catalog:oferta' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:oferta' in actual %}aria-current="page"{% endif %}>
+          {% include "_iconos.html" with icono="etiqueta" %}
+          <span>Ofertas</span>
+        </a>
       </details>
 
-      <details class="menu-grupo" {% if actual == 'core:faq_editor' or 'core:banner' in actual or actual == 'core:identidad_visual' %}open{% endif %}>
+      <details class="menu-grupo" {% if actual == 'core:faq_editor' or 'core:banner' in actual or actual == 'core:identidad_visual' or actual == 'core:filas_portada' %}open{% endif %}>
         <summary class="menu-titulo">
           {% include "_iconos.html" with icono="tienda" %}
           <span>Tienda</span>
@@ -187,6 +192,11 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
            class="menu-enlace menu-enlace--hijo {% if 'core:banner' in actual %}menu-enlace--actual{% endif %}" {% if 'core:banner' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="imagen" %}
           <span>Banners</span>
+        </a>
+        <a href="{% url 'core:filas_portada' %}"
+           class="menu-enlace menu-enlace--hijo {% if actual == 'core:filas_portada' %}menu-enlace--actual{% endif %}" {% if actual == 'core:filas_portada' %}aria-current="page"{% endif %}>
+          {% include "_iconos.html" with icono="etiqueta" %}
+          <span>Filas de la portada</span>
         </a>
         <a href="{% url 'core:faq_editor' %}"
            class="menu-enlace menu-enlace--hijo {% if actual == 'core:faq_editor' %}menu-enlace--actual{% endif %}" {% if actual == 'core:faq_editor' %}aria-current="page"{% endif %}>

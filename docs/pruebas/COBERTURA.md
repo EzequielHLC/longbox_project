@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-02, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-10-03, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 80 |
-| Sin ninguna | 139 |
-| Pruebas de contrato en la suite | 260 |
+| Con al menos una prueba que lleva su código | 94 |
+| Sin ninguna | 125 |
+| Pruebas de contrato en la suite | 320 |
 
 ---
 
@@ -34,7 +34,7 @@ es otra puerta y su número también vive ahí.
 
 ### `00-transversales.md` — Transversales
 
-18 contratos · 9 con prueba · 9 sin.
+18 contratos · 10 con prueba · 8 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -43,10 +43,10 @@ es otra puerta y su número también vive ahí.
 | `CO-019` | reprocesarCorreo | 5 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-025` | cerrarSesionDeRevision | — | — |
 | `CO-031` | restaurarPrecioCalculado | 4 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-053` | confirmarCambioDeMargenGlobal | 2 | `apps/catalog/tests/test_contratos_03_pricing.py` |
+| `CO-053` | confirmarCambioDeMargenGlobal | 3 | `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-074` | enviarPedidoConsolidado — *contrato de operación interna* | — | — |
 | `CO-077` | notificarReposicionASuscriptores — *contrato de operación interna* | — | — |
-| `CO-086` | fusionarCarritoDeSesion | — | — |
+| `CO-086` | fusionarCarritoDeSesion | 3 | `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-087` | declararDireccionDeEnvio | — | — |
 | `CO-089` | registrarResultadoDePago | — | — |
 | `CO-103` | aplicarCanjeDePuntosAItem | — | — |
@@ -55,7 +55,7 @@ es otra puerta y su número también vive ahí.
 | `CO-137` | registrarEditorial | 3 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-141` | registrarTipoDeMaterial | 1 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-144` | registrarFormato | 2 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
-| `CO-156` | cancelarOperacion | 8 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-156` | cancelarOperacion | 9 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 
 ### `01-alta-editorial.md` — 01 Alta Editorial
 
@@ -119,27 +119,27 @@ es otra puerta y su número también vive ahí.
 
 ### `03-pricing.md` — 03 Pricing
 
-17 contratos · 8 con prueba · 9 sin.
+17 contratos · 17 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-047` | solicitarModificacionDePrecioDeReferencia | 3 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-048` | confirmarModificacionDePrecioDeReferencia | 3 | `apps/catalog/tests/test_contratos_03_pricing.py` |
+| `CO-048` | confirmarModificacionDePrecioDeReferencia | 5 | `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-049` | registrarCombinacionDePrecioDeReferencia | 4 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-050` | solicitarBajaDeCombinacionDePrecio | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-051` | confirmarBajaDeCombinacionDePrecio | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-052` | simularCambioDeMargenGlobal | 3 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-054` | registrarOferta | — | — |
-| `CO-055` | confirmarOfertaConTopeMinimo | — | — |
-| `CO-056` | editarOferta | — | — |
-| `CO-057` | solicitarBajaDeOferta | — | — |
-| `CO-058` | confirmarBajaDeOferta | — | — |
-| `CO-059` | ejecutarCicloDeVigenciaDeOfertas | — | — |
+| `CO-054` | registrarOferta | 11 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-055` | confirmarOfertaConTopeMinimo | 1 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-056` | editarOferta | 5 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-057` | solicitarBajaDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-058` | confirmarBajaDeOferta | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-059` | ejecutarCicloDeVigenciaDeOfertas | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
 | `CO-166` | consultarTablaDePrecios | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-167` | consultarMargenGlobal | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-168` | abrirEdicionDeOferta | — | — |
-| `CO-169` | consultarOfertas | — | — |
-| `CO-170` | consultarFichaDeOferta | — | — |
+| `CO-168` | abrirEdicionDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-169` | consultarOfertas | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-170` | consultarFichaDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
 
 ### `04-proveedores.md` — 04 Proveedores
 
@@ -193,19 +193,19 @@ es otra puerta y su número también vive ahí.
 
 ### `07-tienda-online.md` — 07 Tienda Online
 
-12 contratos · 2 con prueba · 10 sin.
+12 contratos · 6 con prueba · 6 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-083` | agregarProductoAlCarrito | — | — |
-| `CO-084` | modificarCantidadDeLinea | — | — |
-| `CO-085` | eliminarLineaDelCarrito | — | — |
+| `CO-083` | agregarProductoAlCarrito | 10 | `apps/tienda/tests/test_contratos_07_carrito.py` |
+| `CO-084` | modificarCantidadDeLinea | 5 | `apps/tienda/tests/test_contratos_07_carrito.py` |
+| `CO-085` | eliminarLineaDelCarrito | 2 | `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-088` | confirmarPedido | — | — |
 | `CO-090` | declararDatosDeInvitado | — | — |
 | `CO-091` | confirmarPedidoDeInvitado | — | — |
 | `CO-176` | consultarCatalogoPublico | 6 | `apps/core/tests/test_contratos_07_tienda.py` |
 | `CO-177` | consultarFichaPublicaDeProducto | 3 | `apps/core/tests/test_contratos_07_tienda.py` |
-| `CO-178` | consultarCarrito | — | — |
+| `CO-178` | consultarCarrito | 5 | `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-179` | procederAlPago | — | — |
 | `CO-180` | iniciarCheckout | — | — |
 | `CO-181` | iniciarCompraComoInvitado | — | — |
@@ -475,9 +475,11 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-048` · confirmarModificacionDePrecioDeReferencia**
 
+- `test_CO048_confirmar_modificacion_actualiza_las_lineas_y_el_carrito_avisa` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO048_confirmar_propaga_a_los_vinculados_y_respeta_las_excepciones` — `apps/catalog/tests/test_contratos_03_pricing.py`
 - `test_CO048_el_informe_cuenta_lo_mismo_que_se_propaga` — `apps/catalog/tests/test_contratos_03_pricing.py`
 - `test_CO048_no_toca_el_precio_base` — `apps/catalog/tests/test_contratos_03_pricing.py`
+- `test_CO048_no_toca_las_lineas_de_otros_productos` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-049` · registrarCombinacionDePrecioDeReferencia**
 
@@ -502,8 +504,83 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-053` · confirmarCambioDeMargenGlobal**
 
+- `test_CO053_confirmar_cambio_de_margen_actualiza_las_lineas` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO053_confirmar_recalcula_desde_el_precio_base_con_decimal_exacto` — `apps/catalog/tests/test_contratos_03_pricing.py`
 - `test_CO053_no_toca_a_los_nacionales` — `apps/catalog/tests/test_contratos_03_pricing.py`
+
+**`CO-054` · registrarOferta**
+
+- `test_CO054_A1_un_tipo_sin_productos_registra_con_aviso` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E1_el_vencimiento_tiene_que_ser_futuro` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E2_no_cuentan_las_dadas_de_baja_ni_las_de_otro_alcance` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E2_rechaza_el_solapamiento_con_el_nombre_y_el_periodo` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E3_un_monto_que_supera_el_precio_pide_confirmacion_y_no_registra` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_con_inicio_futuro_queda_programada_y_no_descuenta_todavia` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_el_inicio_no_puede_pasar_al_vencimiento` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_no_toca_el_precio_guardado_del_producto` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_por_tipo_se_asocia_al_tipo_y_alcanza_a_sus_productos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_rechaza_un_porcentaje_de_cien` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_registrar_con_inicio_hoy_la_deja_activa_y_aplicada_en_los_dos_canales` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-055` · confirmarOfertaConTopeMinimo**
+
+- `test_CO055_confirmar_registra_y_deja_en_un_peso_a_los_que_no_alcanzan` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-056` · editarOferta**
+
+- `test_CO056_A1_reducir_el_alcance_restaura_a_los_que_quedan_afuera` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_E1_un_solapamiento_no_actualiza_ningun_campo` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_cambiar_el_valor_de_una_activa_actualiza_precio_carrito_y_log` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_mover_el_inicio_al_futuro_la_vuelve_programada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_sin_cambios_no_audita` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-057` · solicitarBajaDeOferta**
+
+- `test_CO057_E1_una_vencida_informa_que_ya_expiro_y_no_registra_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO057_el_informe_cuenta_productos_con_descuento_y_carritos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-058` · confirmarBajaDeOferta**
+
+- `test_CO058_confirmar_la_deja_dada_de_baja_y_restaura_precio_y_carritos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO058_una_dada_de_baja_no_se_reactiva_ni_se_audita_dos_veces` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO058_una_programada_tambien_se_da_de_baja` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-059` · ejecutarCicloDeVigenciaDeOfertas**
+
+- `test_CO059_activa_las_programadas_y_vence_las_activas_con_su_entrada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO059_correrlo_dos_veces_no_duplica_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-083` · agregarProductoAlCarrito**
+
+- `test_CO083_A1_la_pre_venta_se_reserva_sin_tope_de_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_E1_la_cantidad_no_pasa_del_stock_y_se_informa_el_maximo` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_el_cliente_crea_un_carrito_persistente_asociado_a_su_cuenta` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_el_invitado_crea_un_carrito_de_sesion_con_la_linea` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_no_toca_el_producto_ni_se_audita` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_rechaza_una_cantidad_que_no_es_al_menos_uno` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_si_ya_estaba_suma_a_la_misma_linea` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_un_producto_fuera_de_la_tienda_responde_404` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_un_producto_sin_stock_no_se_agrega` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_volver_a_una_direccion_externa_se_ignora` — `apps/tienda/tests/test_contratos_07_carrito.py`
+
+**`CO-084` · modificarCantidadDeLinea**
+
+- `test_CO084_A1_en_pre_venta_no_hay_tope` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_E1_no_pasa_del_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_E2_menos_de_uno_se_rechaza_y_la_linea_no_cambia` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_la_linea_de_otro_carrito_responde_404` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_la_linea_queda_con_la_cantidad_declarada` — `apps/tienda/tests/test_contratos_07_carrito.py`
+
+**`CO-085` · eliminarLineaDelCarrito**
+
+- `test_CO085_la_linea_de_otro_carrito_responde_404` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO085_la_linea_deja_de_existir_y_el_producto_sigue_igual` — `apps/tienda/tests/test_contratos_07_carrito.py`
+
+**`CO-086` · fusionarCarritoDeSesion**
+
+- `test_CO086_con_carrito_propio_suma_con_tope_y_elimina_el_de_sesion` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO086_el_personal_que_inicia_sesion_descarta_el_carrito_de_invitado` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO086_sin_carrito_propio_el_de_sesion_pasa_a_la_cuenta` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-114` · iniciarSesion**
 
@@ -742,6 +819,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO156_abandonar_la_confirmacion_no_cambia_el_producto` — `apps/catalog/tests/test_contratos_02_catalogo.py`
 - `test_CO156_abandonar_la_confirmacion_no_cambia_el_proveedor` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO156_abandonar_la_modificacion_no_cambia_el_precio` — `apps/catalog/tests/test_contratos_03_pricing.py`
+- `test_CO156_cancelar_la_baja_no_cambia_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 
 **`CO-157` · consultarColaDeCorreos**
 
@@ -779,6 +857,22 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO167_consultar_margen_lo_expresa_como_porcentaje` — `apps/catalog/tests/test_contratos_03_pricing.py`
 
+**`CO-168` · abrirEdicionDeOferta**
+
+- `test_CO168_E2_vencida_o_dada_de_baja_no_abre_ni_guarda` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO168_abre_con_los_campos_actuales` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-169` · consultarOfertas**
+
+- `test_CO169_E1_sin_resultados_ofrece_limpiar_y_E2_sin_ofertas_ofrece_la_alta` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO169_filtra_por_estado_texto_y_fechas` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO169_lista_de_la_mas_reciente_a_la_mas_vieja_con_su_estado_por_fecha` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
+**`CO-170` · consultarFichaDeOferta**
+
+- `test_CO170_la_ficha_muestra_los_dos_precios_y_las_acciones_del_estado` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO170_una_vencida_es_de_solo_lectura` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+
 **`CO-176` · consultarCatalogoPublico**
 
 - `test_CO176_E1_sin_resultados_ofrece_limpiar_los_filtros` — `apps/core/tests/test_contratos_07_tienda.py`
@@ -793,6 +887,14 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO177_la_ficha_ofrece_la_accion_de_su_estado` — `apps/core/tests/test_contratos_07_tienda.py`
 - `test_CO177_un_producto_no_visible_responde_404` — `apps/core/tests/test_contratos_07_tienda.py`
 - `test_CO177_volver_conserva_los_filtros` — `apps/core/tests/test_contratos_07_tienda.py`
+
+**`CO-178` · consultarCarrito**
+
+- `test_CO178_A1_el_carrito_vacio_ofrece_el_catalogo` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO178_A3_y_A4_la_disponibilidad_se_deriva_del_producto` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO178_A4_la_pre_venta_figura_siempre_disponible` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO178_la_consulta_no_modifica_nada` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO178_presenta_las_lineas_con_precio_subtotal_y_total` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-194` · consultarCuentasDeCliente**
 
@@ -883,7 +985,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-220` · solicitarBajaDeTipoDeMaterial**
 
-- `test_CO220_solicitar_baja_de_tipo_informa_ofertas_como_no_disponible` — `apps/catalog/tests/test_contratos_17_catalogos.py`
+- `test_CO220_solicitar_baja_de_tipo_cuenta_las_ofertas_vivas_del_tipo` — `apps/catalog/tests/test_contratos_17_catalogos.py`
 
 **`CO-221` · confirmarBajaDeTipoDeMaterial**
 

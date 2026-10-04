@@ -13,7 +13,7 @@ un solo ciclo en procesarlo.
 """
 
 from django.contrib import messages
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import redirect, render
@@ -170,16 +170,25 @@ class ProveedorAltaView(ProveedoresMixin, CreateView):
         return contexto
 
     def form_valid(self, form):
-        with transaction.atomic():
-            proveedor = form.save()
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.ALTA_PROVEEDOR,
-                actor=self.request.user,
-                objetivo=proveedor,
-                objetivo_email=proveedor.correo_comercial,
-                ip=obtener_ip(self.request),
-                detalle=f"«{proveedor.razon_social}» · {proveedor.correo_comercial}",
-            )
+        try:
+            with transaction.atomic():
+                proveedor = form.save()
+                RegistroAuditoria.registrar(
+                    accion=RegistroAuditoria.ALTA_PROVEEDOR,
+                    actor=self.request.user,
+                    objetivo=proveedor,
+                    objetivo_email=proveedor.correo_comercial,
+                    ip=obtener_ip(self.request),
+                    detalle=f"«{proveedor.razon_social}» · {proveedor.correo_comercial}",
+                )
+        except IntegrityError:
+            # Dos envíos idénticos a la vez (un doble clic): el otro ya confirmó.
+            # Validado de nuevo, el formulario ve el duplicado y lo avisa como
+            # siempre, en vez de un error 500 (B-04-006).
+            repetido = self.get_form()
+            if repetido.is_valid():
+                raise
+            return self.form_invalid(repetido)
 
         self.object = proveedor
         messages.success(

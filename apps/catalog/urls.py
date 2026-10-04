@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.catalog import views
 from apps.catalog import views_catalogos as vc
+from apps.catalog import views_ofertas as vo
 from apps.catalog import views_precios as vp
 
 app_name = "catalog"
@@ -148,6 +149,11 @@ urlpatterns = [
         name="precio_eliminar",
     ),
     path("parametros/margen/", vp.MargenView.as_view(), name="margen"),
+    path("ofertas/", vo.OfertaListaView.as_view(), name="oferta_lista"),
+    path("ofertas/nueva/", vo.OfertaAltaView.as_view(), name="oferta_alta"),
+    path("ofertas/<int:pk>/", vo.OfertaFichaView.as_view(), name="oferta_ficha"),
+    path("ofertas/<int:pk>/editar/", vo.OfertaEdicionView.as_view(), name="oferta_editar"),
+    path("ofertas/<int:pk>/baja/", vo.OfertaBajaView.as_view(), name="oferta_baja"),
     path(
         "productos/<int:pk>/restaurar-precio/",
         vp.RestaurarPrecioView.as_view(),

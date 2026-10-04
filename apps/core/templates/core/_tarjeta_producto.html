@@ -3,8 +3,8 @@
 Una viñeta de la estantería (`identidad_visual.md`, Estantería y tarjeta).
 
 Portada a 2:3 con sus colores, título, editorial, precio y el rótulo de estado
-sesgado sobre la portada: «Disponible», «Pre-venta» o «Sin stock». Sin ofertas
-todavía, ningún precio sale tachado.
+sesgado sobre la portada: «Disponible», «Pre-venta» o «Sin stock». Con una
+oferta vigente, el precio original sale tachado antes del que se cobra.
 
     {% include "core/_tarjeta_producto.html" with producto=producto volver=parametros %}
 {% endcomment %}
@@ -28,6 +28,6 @@ todavía, ningún precio sale tachado.
   <div class="tarjeta-producto__cuerpo">
     <span class="tarjeta-producto__titulo">{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</span>
     <span class="tarjeta-producto__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
-    <span class="tarjeta-producto__precio">{{ producto.precio|pesos }}</span>
+    <span class="tarjeta-producto__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</span>
   </div>
 </a>

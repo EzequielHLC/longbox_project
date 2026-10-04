@@ -9,8 +9,9 @@ otra (plan 03, riesgos).
 Todo el dinero es `Decimal`. El margen conserva sus cuatro decimales y el
 redondeo al peso se aplica sólo al resultado (`precios.calcular_precio_final`).
 
-`LineaCarrito` y `Oferta` todavía no existen: las postcondiciones de `CO-048` y
-`CO-053` sobre los carritos quedan sin ejercer (B-03-001).
+Las dos propagaciones alcanzan también a las líneas de carrito de los productos
+que tocan (`actualizar_precios`), que es la postcondición que `CO-048` y `CO-053`
+dejaban pendiente mientras no existía `LineaCarrito` (B-03-001).
 """
 
 from dataclasses import dataclass
@@ -93,9 +94,9 @@ def confirmar_modificacion(fila, nuevo_pvp, *, actor, ip=None):
         fila.save(update_fields=["pvp", "actualizado_en"])
 
         alcanzados = alcanzados_por_modificacion(fila)
-        actualizados = Producto.objects.filter(pk__in=alcanzados.values("pk")).update(
-            precio=nuevo_pvp
-        )
+        productos = Producto.objects.filter(pk__in=alcanzados.values("pk"))
+        actualizados = productos.update(precio=nuevo_pvp)
+        _actualizar_carritos(productos)
 
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.MODIFICACION_PRECIO_REFERENCIA,
@@ -310,6 +311,7 @@ def confirmar_cambio_de_margen(nuevo_margen, *, actor, ip=None):
         for producto in recalcular:
             producto.precio = precios.calcular_precio_final(producto.precio_base, nuevo_margen)
         ProductoEditorial.objects.bulk_update(recalcular, ["precio"], batch_size=500)
+        _actualizar_carritos([producto.pk for producto in recalcular])
         excluidos = importados().filter(precio_manual=True).count()
 
         RegistroAuditoria.registrar(
@@ -331,3 +333,13 @@ def porcentaje(margen):
     valor = (Decimal(margen) * 100).normalize()
     texto = f"{valor:f}".replace(".", ",")
     return f"{texto} %"
+
+
+def _actualizar_carritos(productos):
+    """Las líneas de carrito de estos productos pasan al precio nuevo (B-03-001).
+
+    Se importa acá: el carrito depende del catálogo, y no al revés.
+    """
+    from apps.tienda.carrito import actualizar_precios
+
+    return actualizar_precios(productos)

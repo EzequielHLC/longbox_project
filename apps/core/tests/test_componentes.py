@@ -216,6 +216,8 @@ CON_FILAS = {
     "etiqueta_lista.html",
     "auditoria_lista.html",
     "banner_lista.html",
+    # Cada línea del carrito actualiza su cantidad (CU-TDA-CRM).
+    "carrito.html",
 }
 
 

@@ -1,0 +1,108 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-PVP-CON — Consultar Ofertas (CO-169). Sólo lectura.
+
+El estado de cada fila es el de sus fechas hoy, aunque el Temporizador no haya
+corrido todavía (plan 03, segunda parte, ambigüedad 1).
+{% endcomment %}
+
+{% block titulo %}Gestión de ofertas · Longbox{% endblock %}
+{% block seccion %}Ofertas{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Gestión de ofertas</h1>
+    <p>Descuentos con fechas. Se aplican solos en la tienda y en el carrito, y vencen solos.</p>
+  </div>
+  <a href="{% url 'catalog:oferta_alta' %}" class="boton-primario">
+    {% include "_iconos.html" with icono="agregar" %}<span>Nueva oferta</span>
+  </a>
+</header>
+
+{% if hay_ofertas %}
+<form method="get" class="barra-de-herramientas">
+  <div class="campo">
+    <label for="q" class="etiqueta">Buscar</label>
+    <input type="search" id="q" name="q" value="{{ filtros.texto }}" placeholder="Descripción, producto o tipo">
+  </div>
+  <div class="campo">
+    <label for="estado" class="etiqueta">Estado</label>
+    <select id="estado" name="estado">
+      <option value="">Todos</option>
+      {% for valor, nombre in estados %}
+        <option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="fecha" class="etiqueta">Fecha de</label>
+    <select id="fecha" name="fecha">
+      <option value="inicio" {% if filtros.fecha == "inicio" %}selected{% endif %}>Inicio</option>
+      <option value="vencimiento" {% if filtros.fecha == "vencimiento" %}selected{% endif %}>Vencimiento</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label for="desde" class="etiqueta">Desde</label>
+    <input type="date" id="desde" name="desde" value="{{ filtros.desde|date:'Y-m-d' }}">
+  </div>
+  <div class="campo">
+    <label for="hasta" class="etiqueta">Hasta</label>
+    <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta|date:'Y-m-d' }}">
+  </div>
+  <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+  {% if filtros.activos %}
+    <a href="{% url 'catalog:oferta_lista' %}" class="boton-texto">Limpiar filtros</a>
+  {% endif %}
+</form>
+{% endif %}
+
+{% if ofertas %}
+  <p class="texto-chico secundario"><span class="datos">{{ pagina.paginator.count }}</span> oferta{{ pagina.paginator.count|pluralize }}</p>
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr><th>Descripción</th><th>Estado</th><th>Inicio</th><th>Vencimiento</th><th class="numero">Descuento</th><th>Alcance</th></tr>
+      </thead>
+      <tbody>
+        {% for oferta in ofertas %}
+          <tr>
+            <td class="celda-principal"><a href="{% url 'catalog:oferta_ficha' oferta.pk %}">{{ oferta.descripcion }}</a></td>
+            <td>{% include "catalog/_estado_oferta.html" with estado=oferta.estado_hoy %}</td>
+            <td class="datos sin-cortar">{{ oferta.fecha_inicio|date:"d/m/Y" }}</td>
+            <td class="datos sin-cortar">{{ oferta.fecha_vencimiento|date:"d/m/Y" }}</td>
+            <td class="numero datos sin-cortar">{% if oferta.tipo_descuento == "porcentaje" %}{{ oferta.valor|floatformat:"-2" }} %{% else %}{{ oferta.valor|pesos }}{% endif %}</td>
+            <td>{% if oferta.alcance == "producto" %}{{ oferta.producto.titulo }}{% else %}Tipo: {{ oferta.tipo.nombre }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pagina.has_other_pages %}
+    <div class="paginacion">
+      <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      <span class="fila-5">
+        {% if pagina.has_previous %}
+          <a href="?{{ parametros }}&amp;page={{ pagina.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+        {% endif %}
+        {% if pagina.has_next %}
+          <a href="?{{ parametros }}&amp;page={{ pagina.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+        {% endif %}
+      </span>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="precios" %}
+    {% if hay_ofertas %}
+      <p>Ninguna oferta cumple los filtros.</p>
+      <a href="{% url 'catalog:oferta_lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% else %}
+      <p>Todavía no hay ofertas registradas.</p>
+      <a href="{% url 'catalog:oferta_alta' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Nueva oferta</span></a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

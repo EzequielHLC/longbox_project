@@ -1,0 +1,21 @@
+{% comment %}
+El comportamiento de `_cantidad.html`. Las flechas nacen ocultas y se muestran
+sólo si hay JavaScript, para que sin él no queden botones que no hacen nada.
+{% endcomment %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    for (const selector of document.querySelectorAll("[data-selector-cantidad]")) {
+      const campo = selector.querySelector("input");
+      for (const boton of selector.querySelectorAll("[data-paso]")) {
+        boton.hidden = false;
+        boton.addEventListener("click", function () {
+          const minimo = Number(campo.min || 1);
+          const maximo = campo.max ? Number(campo.max) : Infinity;
+          const actual = Number(campo.value) || minimo;
+          campo.value = Math.min(maximo, Math.max(minimo, actual + Number(boton.dataset.paso)));
+          campo.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
+    }
+  });
+</script>

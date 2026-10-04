@@ -329,3 +329,33 @@ la base no distingue estado, así que la regla ya se sostenía; lo que faltaba e
 afirmara.
 
 Las otras dos pruebas de E2 quedaron con su redacción alineada a la enmienda.
+
+---
+
+### B-13-006 · El resguardo del último Administrador se interbloqueaba bajo concurrencia
+
+**Tipo:** Corrección · **Fecha:** 2026-10-04 · **Alcance:** I-12, `CO-121`, `CO-123`
+**Estado:** Resuelta — corregido el código el 2026-10-04, encontrado en el ensayo de la demostración (plan 00, D4-01)
+
+**Qué apareció.**
+La carrera nunca se había probado (`DEUDA.md`, I-12). Con hilos reales contra PostgreSQL, dos
+Administradores que se sacan el rol o se dan de baja a la vez terminaban siempre igual: la
+invariante se sostenía, pero PostgreSQL detectaba un interbloqueo, abortaba una de las dos
+transacciones y esa petición respondía **error 500**. El sistema no perdía su último
+Administrador, pero se rompía mal.
+
+**Qué dice la especificación.**
+> «Debe existir siempre al menos un Administrador activo» (I-12)
+
+La especificación es correcta; el código no la cumplía de forma controlada.
+
+**Qué se hizo.**
+El resguardo bloqueaba sólo a los *otros* Administradores. Cada transacción tomaba su propia fila
+y esperaba la del otro. Ahora bloquea a todos los Administradores activos, incluido el afectado, en
+orden de clave: la segunda operación espera a la primera, vuelve a leer las filas ya actualizadas
+y se rechaza con el mensaje del resguardo. La prueba
+(`test_concurrencia_ultimo_administrador.py`, diez repeticiones de cada cruce) se escribió antes
+de la corrección y fallaba con el 500.
+
+**Qué habría que cambiar.**
+Nada en el documento.

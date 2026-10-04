@@ -52,9 +52,10 @@ al plan o a la sección donde está desarrollada.
 
 | Ítem | Decisión pendiente | Qué bloquea | Desde |
 | --- | --- | --- | --- |
-| **P-05** · procesos periódicos | No existe forma de disparar las operaciones del Temporizador | `CO-016`, `CO-155`, `CU-ALT-TRA`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-PED-CMP`, `CU-STK-VEN`, `CO-096` de `CU-PED-OPC` y el vencimiento de ofertas (`CO-059`) | — |
+| **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`. Falta sumar cada proceso cuando exista su caso de uso | `CO-016`, `CO-155`, `CU-ALT-TRA`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-PED-CMP`, `CU-STK-VEN`, `CO-096` de `CU-PED-OPC`, y la limpieza de carritos de invitado abandonados | — |
 | Parámetros de seguridad | Resuelto en B-12-001; falta construirlo | La sección Seguridad de `CU-CFG-PAR` y la mitad de `CO-114` | — |
-| Pedido como dependencia raíz | Orden de construcción: `Pedido` no existe | Los módulos 07, 08, 09, 10, 14 y 18, más `CU-ALT-DEM`, `CU-ALT-CAN`, `CU-CLI-BAJ` y `CU-CLI-HIS`. **Nuevo:** también `CO-086` de `CU-AUT-INI`, vía `Carrito` | — |
+| Pedido como dependencia raíz | Orden de construcción: `Pedido` no existe | Del módulo 07, la compra (`CU-TDA-CMP`, `INV`, `CO-179`); los módulos 08, 09, 10, 14 y 18, más `CU-ALT-DEM`, `CU-ALT-CAN`, `CU-CLI-BAJ` y `CU-CLI-HIS`. `Carrito` ya existe (plan 07, segunda parte) | — |
+| Carreras de unicidad no ensayadas | El doble envío de un alta con datos únicos terminaba en 500 en catálogos y proveedores (B-17-016, B-04-006, corregidos). No se ensayaron el alta de productos (ISBN, código de barras, código interno), el registro de clientes (correo) ni el alta de personal | Que esas altas respondan con el aviso de duplicado y no con un 500 ante un doble clic | 2026-10-04 |
 | `04_RESUMEN.md` | `MODELO_DE_DOMINIO.md` lo cita y el archivo no está en el repositorio | Saber cuáles son las «cuatro operaciones con contrato pausado» | 2026-09-14 |
 
 ---
@@ -150,11 +151,12 @@ booleano en `Formato`, un entero en `ConfiguracionSistema` y tres tablas nuevas 
 | Invariante | Dónde vive hoy | La respeta cualquier escritura |
 | --- | --- | --- |
 | I-01, I-03, I-04, I-07, I-08, I-10, I-15, I-16, I-17 (unicidades) | Restricciones en la base | Sí |
-| I-02, I-13, I-14, I-11 | `save()`, `delete()` o el backend de autenticación | Sí |
+| I-13 | Disparador de PostgreSQL, además de `save()` y `delete()` (B-16-004). `TRUNCATE` queda fuera | Sí, salvo `TRUNCATE` |
+| I-02, I-14, I-11 | `save()`, `delete()` o el backend de autenticación | Sí |
 | **I-05** tipo del mismo rubro que el producto | `clean()` | **No** |
 | **I-06** no editorial sin Pre-venta ni Cancelado | `clean()` | **No** |
 | **I-09** ningún importe negativo, ningún precio cero | `MinValueValidator` | **No** |
-| **I-12** siempre un Administrador activo | Servicio de `accounts` | **No** |
+| **I-12** siempre un Administrador activo | Servicio de `accounts`, con bloqueo ordenado y prueba de concurrencia (B-13-006) | **No**: sólo las operaciones que pasan por el servicio |
 
 **No hay ninguna `CheckConstraint` en el proyecto.** I-09 es la más expuesta porque toca dinero, y
 el plan 03 la ejerce más que nadie: la propagación escribe precios con `update()` de queryset, que

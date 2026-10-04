@@ -21,6 +21,7 @@ pestaña de herramientas del desarrollador abierta.
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.core.validators import MaxValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models.functions import Lower
@@ -1425,6 +1426,29 @@ class CatalogoNombradoForm(forms.ModelForm):
             self.colision = existente
             raise forms.ValidationError(self.mensaje_repetido.format(nombre=existente.nombre))
         return nombre
+
+    def _post_clean(self):
+        """El duplicado que aparece entre `clean_nombre` y la validación del modelo.
+
+        Si otro envío del mismo nombre se guardó en ese instante (un doble clic),
+        la restricción de unicidad del modelo lo detecta con un error general y el
+        nombre técnico de la restricción. Se cambia por el aviso de siempre, con su
+        enlace al registro existente (B-17-016).
+        """
+        super()._post_clean()
+        nombre = self.cleaned_data.get("nombre")
+        if not nombre or NON_FIELD_ERRORS not in self._errors:
+            return
+        existente = (
+            self._meta.model.objects.annotate(normalizado=Lower("nombre"))
+            .filter(normalizado=nombre.casefold())
+            .exclude(pk=self.instance.pk)
+            .first()
+        )
+        if existente is not None:
+            del self._errors[NON_FIELD_ERRORS]
+            self.colision = existente
+            self.add_error("nombre", self.mensaje_repetido.format(nombre=existente.nombre))
 
 
 class EditorialForm(CatalogoNombradoForm):

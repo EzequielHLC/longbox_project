@@ -13,3 +13,6 @@ coverage.xml
 /.contexto-ia/
 .claude
 /respaldos/
+# Demostración: datos raspados de Ivrea, sólo para la clase (plan 00, decisión 7)
+/scripts/demo/datos/
+/scripts/demo/salida/

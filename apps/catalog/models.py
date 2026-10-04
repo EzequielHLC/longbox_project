@@ -1468,3 +1468,127 @@ class ConfianzaCampo(models.Model):
     def exige_revision(self):
         """Baja, y todavía sin la acción afirmativa del Administrador."""
         return self.nivel == self.BAJA and not self.revisado
+
+
+# ---------------------------------------------------------------------------
+# Oferta — CU-PVP-ALT, EDI, BAJ y CON (plan 03, segunda parte)
+# ---------------------------------------------------------------------------
+
+
+class OfertaQuerySet(models.QuerySet):
+    def en_vigencia(self, hoy):
+        """Las que descuentan hoy: no dadas de baja, y con hoy dentro de sus fechas.
+
+        Se mira la fecha y no el estado guardado: una oferta empieza y termina a
+        tiempo aunque el Temporizador no haya corrido (plan 03, ambigüedad 1). El
+        día de vencimiento está incluido (ambigüedad 2).
+        """
+        return self.exclude(estado=Oferta.DADA_DE_BAJA).filter(
+            fecha_inicio__lte=hoy, fecha_vencimiento__gte=hoy
+        )
+
+    def vivas(self, hoy):
+        """Activas o Programadas según sus fechas: las que cuentan para I-20."""
+        return self.exclude(estado=Oferta.DADA_DE_BAJA).filter(fecha_vencimiento__gte=hoy)
+
+
+class Oferta(models.Model):
+    """Un descuento con vigencia sobre un producto o sobre un tipo de material.
+
+    No toca `Producto.precio`: modifica el precio visible
+    (`apps.catalog.precio_visible`), y por eso darla de baja o dejarla vencer
+    restaura el precio sin tener que recordar cuál era.
+
+    El estado se guarda, como lo declaran los contratos, y además se puede
+    derivar de las fechas (`estado_en`). El guardado lo actualizan el alta, la
+    edición, la baja y el ciclo del Temporizador (`CO-059`).
+    """
+
+    PORCENTAJE = "porcentaje"
+    MONTO_FIJO = "monto_fijo"
+    TIPOS_DE_DESCUENTO = [  # noqa: RUF012
+        (PORCENTAJE, "Porcentaje"),
+        (MONTO_FIJO, "Monto fijo en ARS"),
+    ]
+
+    PRODUCTO = "producto"
+    TIPO = "tipo"
+    ALCANCES = [  # noqa: RUF012
+        (PRODUCTO, "Producto individual"),
+        (TIPO, "Tipo de material"),
+    ]
+
+    PROGRAMADA = "programada"
+    ACTIVA = "activa"
+    VENCIDA = "vencida"
+    DADA_DE_BAJA = "dada_de_baja"
+    ESTADOS = [  # noqa: RUF012
+        (PROGRAMADA, "Programada"),
+        (ACTIVA, "Activa"),
+        (VENCIDA, "Vencida"),
+        (DADA_DE_BAJA, "Dada de baja"),
+    ]
+    TERMINALES = (VENCIDA, DADA_DE_BAJA)
+
+    descripcion = models.CharField("descripción", max_length=200)
+    fecha_inicio = models.DateField("fecha de inicio")
+    fecha_vencimiento = models.DateField("fecha de vencimiento")
+    tipo_descuento = models.CharField(
+        "tipo de descuento", max_length=12, choices=TIPOS_DE_DESCUENTO
+    )
+    valor = models.DecimalField("valor", max_digits=12, decimal_places=2, validators=[POSITIVO])
+    alcance = models.CharField("alcance", max_length=10, choices=ALCANCES)
+    producto = models.ForeignKey(
+        "Producto", on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
+    )
+    tipo = models.ForeignKey(
+        Tipo, on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
+    )
+    estado = models.CharField("estado", max_length=15, choices=ESTADOS, default=PROGRAMADA)
+    creada_en = models.DateTimeField("creada en", auto_now_add=True)
+    actualizada_en = models.DateTimeField("actualizada en", auto_now=True)
+
+    objects = OfertaQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = "oferta"
+        verbose_name_plural = "ofertas"
+        ordering = ["-fecha_inicio", "-pk"]  # noqa: RUF012
+        constraints = [  # noqa: RUF012
+            # El alcance nombra exactamente uno de los dos destinos.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(alcance="producto", producto__isnull=False, tipo__isnull=True)
+                    | models.Q(alcance="tipo", tipo__isnull=False, producto__isnull=True)
+                ),
+                name="oferta_alcance_coherente",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(fecha_inicio__lte=models.F("fecha_vencimiento")),
+                name="oferta_fechas_coherentes",
+            ),
+            models.CheckConstraint(condition=models.Q(valor__gt=0), name="oferta_valor_positivo"),
+            # Un porcentaje de 100 o más deja todo el alcance en cero (I-09).
+            models.CheckConstraint(
+                condition=~models.Q(tipo_descuento="porcentaje", valor__gte=100),
+                name="oferta_porcentaje_menor_a_100",
+            ),
+        ]
+
+    def __str__(self):
+        return self.descripcion
+
+    def estado_en(self, hoy):
+        """El estado según las fechas. La baja manda sobre todo lo demás."""
+        if self.estado == self.DADA_DE_BAJA:
+            return self.DADA_DE_BAJA
+        if hoy > self.fecha_vencimiento:
+            return self.VENCIDA
+        if hoy >= self.fecha_inicio:
+            return self.ACTIVA
+        return self.PROGRAMADA
+
+    @property
+    def destino(self):
+        """El producto o el tipo del alcance."""
+        return self.producto if self.alcance == self.PRODUCTO else self.tipo

@@ -23,6 +23,14 @@ con su estado: si está dado de baja, desde ahí se lo reactiva.
   </div>
 </header>
 
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 {% if colision %}
   <div class="mensaje mensaje--error" role="alert">
     {% include "_iconos.html" with icono="error" %}

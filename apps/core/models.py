@@ -262,6 +262,11 @@ class RegistroAuditoria(models.Model):
     BAJA_BANNER = "baja_banner"
     EXPORTACION_INVENTARIO = "exportacion_inventario"
     EXPORTACION_AUDITORIA = "exportacion_auditoria"
+    ALTA_OFERTA = "alta_oferta"
+    MODIFICACION_OFERTA = "modificacion_oferta"
+    BAJA_OFERTA = "baja_oferta"
+    VENCIMIENTO_AUTOMATICO_OFERTA = "vencimiento_automatico_oferta"
+    MODIFICACION_FILAS_PORTADA = "modificacion_filas_portada"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -305,6 +310,11 @@ class RegistroAuditoria(models.Model):
         (BAJA_BANNER, "Baja de banner"),
         (EXPORTACION_INVENTARIO, "Exportación de inventario"),
         (EXPORTACION_AUDITORIA, "Exportación del log de auditoría"),
+        (ALTA_OFERTA, "Alta de oferta"),
+        (MODIFICACION_OFERTA, "Modificación de oferta"),
+        (BAJA_OFERTA, "Baja de oferta"),
+        (VENCIMIENTO_AUTOMATICO_OFERTA, "Vencimiento automático de oferta"),
+        (MODIFICACION_FILAS_PORTADA, "Modificación de las filas de la portada"),
     ]
 
     actor = models.ForeignKey(
@@ -579,3 +589,67 @@ class Banner(models.Model):
     @property
     def numero(self):
         return self.posicion + 1
+
+
+class FilaPortada(models.Model):
+    """Una fila de productos de la portada de la tienda (plan 07, tercera parte; B-07-009).
+
+    Sale de una etiqueta («Shonen») o de un grupo de etiquetas entero
+    («Demografía»): nunca de las dos. La fila se recorre de costado y muestra los
+    productos visibles en la tienda más nuevos de ese origen.
+    """
+
+    titulo = models.CharField(
+        "título",
+        max_length=80,
+        blank=True,
+        help_text="Vacío, usa el nombre de la etiqueta o del grupo.",
+    )
+    etiqueta = models.ForeignKey(
+        "catalog.Etiqueta",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="filas_portada",
+    )
+    grupo = models.ForeignKey(
+        "catalog.GrupoEtiqueta",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="filas_portada",
+    )
+    orden = models.PositiveIntegerField("orden", default=0)
+    activa = models.BooleanField("activa", default=True)
+
+    class Meta:
+        verbose_name = "fila de la portada"
+        verbose_name_plural = "filas de la portada"
+        ordering = ["orden", "pk"]  # noqa: RUF012
+        constraints = [  # noqa: RUF012
+            models.CheckConstraint(
+                condition=(
+                    models.Q(etiqueta__isnull=False, grupo__isnull=True)
+                    | models.Q(etiqueta__isnull=True, grupo__isnull=False)
+                ),
+                name="fila_portada_de_etiqueta_o_de_grupo",
+            ),
+        ]
+
+    def __str__(self):
+        return self.titulo_visible
+
+    @property
+    def origen(self):
+        return self.etiqueta or self.grupo
+
+    @property
+    def titulo_visible(self):
+        return self.titulo or (self.origen.nombre if self.origen else "")
+
+    @property
+    def disponible(self):
+        """Sin la etiqueta o el grupo dados de baja (decisión 5)."""
+        if self.etiqueta_id:
+            return self.etiqueta.activa and self.etiqueta.grupo.activo
+        return self.grupo.activo

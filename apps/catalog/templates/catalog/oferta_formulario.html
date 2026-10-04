@@ -1,0 +1,73 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-PVP-ALT (CO-054, CO-055) y CU-PVP-EDI (CO-168, CO-056): el mismo formulario.
+
+Las reglas del paso 5 las valida el servicio, no la pantalla. Si el monto fijo
+deja productos en cero o menos (E3), el formulario vuelve con la lista y un
+segundo botón que confirma aceptando el precio mínimo de $1 (CO-055). La edición
+pide la misma confirmación (B-03-010).
+
+El buscador de producto es un `<datalist>` del catálogo activo: el código va
+primero porque es lo que identifica (regla 1 del dominio).
+{% endcomment %}
+
+{% block titulo %}{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %} · Longbox{% endblock %}
+{% block seccion %}Ofertas{% endblock %}
+
+{% block contenido %}
+{% if oferta %}{% url 'catalog:oferta_ficha' oferta.pk as volver %}{% else %}{% url 'catalog:oferta_lista' as volver %}{% endif %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto=oferta|yesno:"Ficha de la oferta,Gestión de ofertas" atras=1 %}</span>
+    <h1>{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %}</h1>
+    {% if oferta %}<p>«{{ oferta.descripcion }}»</p>{% else %}<p>Un descuento con fechas, sobre un producto o sobre todo un tipo de material. Empieza y termina solo.</p>{% endif %}
+  </div>
+</header>
+
+{% if form.non_field_errors %}
+  <ul class="mensajes">
+    {% for error in form.non_field_errors %}
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  {% include "_campo.html" with campo=form.descripcion %}
+  <div class="fila-2 fila-arriba">
+    {% include "_campo.html" with campo=form.fecha_inicio %}
+    {% include "_campo.html" with campo=form.fecha_vencimiento %}
+  </div>
+  {% include "catalog/_opciones.html" with campo=form.tipo_descuento %}
+  {% include "_campo.html" with campo=form.valor %}
+  {% include "catalog/_opciones.html" with campo=form.alcance %}
+  {% include "_campo.html" with campo=form.producto %}
+  <datalist id="productos-elegibles">
+    {% for opcion in productos %}<option value="{{ opcion }}">{% endfor %}
+  </datalist>
+  {% include "_campo.html" with campo=form.tipo %}
+
+  {% if afectados %}
+    <div class="panel panel--atencion" role="alert">
+      <div class="seccion__titulo"><h2>El descuento supera el precio de {{ afectados|length }} producto{{ afectados|length|pluralize }}</h2></div>
+      <p class="seccion__bajada">Con este monto quedarían en cero o menos. Si confirmás, se venden a $ 1 mientras dure la oferta. Si no, reducí el valor del descuento.</p>
+      <ul class="lista-renglones">
+        {% for producto in afectados %}
+          <li><span class="datos">{{ producto.codigo }}</span><span>{{ producto.titulo }} · {{ producto.precio|pesos }}</span></li>
+        {% endfor %}
+      </ul>
+      <div class="acciones">
+        <button type="submit" name="aceptar_tope" value="1" class="boton-primario">Confirmar con precio mínimo de $ 1</button>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="acciones">
+    <button type="submit" class="{% if afectados %}boton-seccion{% else %}boton-primario{% endif %}">{% if oferta %}Guardar cambios{% else %}Guardar oferta{% endif %}</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </div>
+</form>
+{% include "_autocompletado.html" %}
+{% endblock %}

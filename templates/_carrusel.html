@@ -27,7 +27,7 @@ vista previa es exactamente lo que ve el cliente.
         {% for banner in banners %}<span data-indicador></span>{% endfor %}
       </span>
       <span class="datos sr-only" data-contador aria-live="polite">1 de {{ banners|length }}</span>
-      <button type="button" class="boton-texto" data-pausar aria-pressed="false">{% include "_iconos.html" with icono="pausar" %}<span>Pausar</span></button>
+      <button type="button" class="boton-texto" data-pausar aria-pressed="false"><span class="icono-de-estado" data-icono-pausar>{% include "_iconos.html" with icono="pausar" %}</span><span class="icono-de-estado" data-icono-reanudar hidden>{% include "_iconos.html" with icono="reproducir" %}</span><span data-texto>Pausar</span></button>
       <button type="button" class="boton-texto" data-siguiente><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</button>
     </div>
   {% endif %}
@@ -76,7 +76,10 @@ vista previa es exactamente lo que ve el cliente.
       pausar.addEventListener("click", () => {
         pausadoAMano = !pausadoAMano;
         pausar.setAttribute("aria-pressed", pausadoAMano ? "true" : "false");
-        pausar.querySelector("span").textContent = pausadoAMano ? "Reanudar" : "Pausar";
+        // El ícono dice lo que hace el botón, igual que el texto: pausado, ofrece reanudar.
+        pausar.querySelector("[data-texto]").textContent = pausadoAMano ? "Reanudar" : "Pausar";
+        pausar.querySelector("[data-icono-pausar]").hidden = pausadoAMano;
+        pausar.querySelector("[data-icono-reanudar]").hidden = !pausadoAMano;
         pausadoAMano ? detener() : arrancar();
       });
       raiz.addEventListener("mouseenter", detener);

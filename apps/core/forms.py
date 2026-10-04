@@ -12,7 +12,7 @@ from django.core.validators import MaxValueValidator
 
 from apps.core import imagenes
 from apps.core.contraste import MINIMO_TEXTO, contraste
-from apps.core.models import Banner, IdentidadVisual
+from apps.core.models import Banner, FilaPortada, IdentidadVisual
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -221,3 +221,72 @@ class IdentidadVisualForm(forms.ModelForm):
         ):
             self.add_error("fondo_nuevo", "Un fondo de imagen necesita una imagen.")
         return datos
+
+
+class FilaPortadaForm(forms.ModelForm):
+    """Una fila de la portada: una etiqueta o un grupo entero (B-07-009).
+
+    El origen es un solo desplegable con las dos clases de opción, agrupadas:
+    primero los grupos enteros y después las etiquetas de cada grupo. Sólo se
+    ofrecen las vigentes; la que ya tiene la fila se sigue ofreciendo aunque se
+    haya dado de baja, para que la edición no la pierda en silencio.
+    """
+
+    origen = forms.ChoiceField(label="Etiqueta o grupo")
+
+    class Meta:
+        model = FilaPortada
+        fields = ["titulo", "orden", "activa"]
+        widgets = {
+            "orden": forms.NumberInput(attrs={"min": 0, "inputmode": "numeric"})
+        }  # noqa: RUF012
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.catalog.models import Etiqueta, GrupoEtiqueta
+
+        actual = self.instance
+        grupos = GrupoEtiqueta.objects.filter(activo=True) | GrupoEtiqueta.objects.filter(
+            pk=actual.grupo_id or 0
+        )
+        etiquetas = Etiqueta.objects.filter(
+            activa=True, grupo__activo=True
+        ) | Etiqueta.objects.filter(pk=actual.etiqueta_id or 0)
+        opciones = [("", "Elegí una etiqueta o un grupo")]
+        opciones.append(
+            (
+                "Grupos enteros",
+                [
+                    (f"g:{g.pk}", f"{g.nombre} (todas sus etiquetas)")
+                    for g in grupos.order_by("nombre")
+                ],
+            )
+        )
+        por_grupo = {}
+        for etiqueta in etiquetas.select_related("grupo").order_by("grupo__nombre", "nombre"):
+            por_grupo.setdefault(etiqueta.grupo.nombre, []).append(
+                (f"e:{etiqueta.pk}", etiqueta.nombre)
+            )
+        opciones.extend(por_grupo.items())
+        self.fields["origen"].choices = opciones
+        if actual.etiqueta_id:
+            self.initial["origen"] = f"e:{actual.etiqueta_id}"
+        elif actual.grupo_id:
+            self.initial["origen"] = f"g:{actual.grupo_id}"
+
+    def clean_origen(self):
+        clase, _, pk = self.cleaned_data["origen"].partition(":")
+        if clase not in ("e", "g") or not pk.isdigit():
+            raise forms.ValidationError("Elegí una etiqueta o un grupo de la lista.")
+        return clase, int(pk)
+
+    def save(self, commit=True):
+        clase, pk = self.cleaned_data["origen"]
+        self.instance.etiqueta_id = pk if clase == "e" else None
+        self.instance.grupo_id = pk if clase == "g" else None
+        return super().save(commit=commit)
+
+
+FilasPortadaFormSet = forms.modelformset_factory(
+    FilaPortada, form=FilaPortadaForm, extra=1, can_delete=True
+)

@@ -512,3 +512,71 @@ se auditan con la misma acción y el detalle anterior y nuevo.
 **Qué habría que cambiar.**
 `CU-CFG-VIS`, paso 2: agregar la sección «Portada y pie». `MODELO_DE_DOMINIO.md`,
 `IdentidadVisual`: los cinco atributos.
+
+---
+
+### R-17-003 · Resolución de B-17-008
+
+**Fecha:** 2026-10-03 · **Enmienda al documento:** ninguna
+
+**Qué se decidió.**
+Con `Oferta` construida (plan 03, segunda parte), el informe de baja de un tipo cuenta las ofertas
+que lo referencian, y la baja las conserva.
+
+**Qué se hizo.**
+El informe de `CO-220` presenta la cantidad real de ofertas Programadas o Activas cuyo alcance es
+el tipo, según sus fechas: no cuentan las vencidas, las dadas de baja ni las de un producto suelto
+de ese tipo. La baja de `CO-221` conserva la asociación Oferta → Tipo y no cambia el estado de la
+oferta, que sigue descontando. B-17-008 queda resuelta.
+
+---
+
+### B-17-016 · Un doble clic en el alta de un catálogo terminaba en error 500
+
+**Tipo:** Corrección · **Fecha:** 2026-10-04 · **Alcance:** `CO-137`, `CO-141`, `CO-144`, `CO-038`, `CO-042` (altas de los cinco catálogos)
+**Estado:** Resuelta — corregido el código el 2026-10-04, encontrado en el ensayo de la demostración (plan 00, D4-04)
+
+**Qué apareció.**
+Dos envíos del mismo nombre a la vez (un doble clic, o dos pestañas) pasaban los dos la validación
+del formulario, porque todavía no existía ninguno. El segundo chocaba contra la restricción de
+unicidad de la base y respondía **error 500**. El dato quedaba bien (un solo registro), pero el
+sistema se rompía mal: en el ensayo, 6 de 10 dobles envíos.
+
+**Qué dice la especificación.**
+> E1 de cada alta: el nombre repetido se informa y no se registra.
+
+La especificación es correcta; el código no cubría la carrera.
+
+**Qué se hizo.**
+La vista común de los catálogos atrapa el choque de unicidad y devuelve el formulario con el mismo
+aviso de duplicado que daría la validación. La prueba (`test_concurrencia_catalogos.py`, editorial
+y tipo, diez repeticiones cada uno) se escribió antes y fallaba con el 500.
+
+**Qué habría que cambiar.**
+Nada en el documento.
+
+---
+
+### B-17-017 · El alta de un catálogo podía volver sin decir por qué
+
+**Tipo:** Corrección · **Fecha:** 2026-10-04 · **Alcance:** `CO-137`, `CO-141`, `CO-144`, `CO-038`, `CO-042`
+**Estado:** Resuelta — corregido el código el 2026-10-04, encontrado al repetir la prueba de B-17-016
+
+**Qué apareció.**
+Con el doble clic corregido, la prueba falló una de cada tres corridas por otro lado. Si el otro
+envío se guardaba entre la consulta de duplicados del formulario y la validación del modelo, el
+choque lo detectaba la restricción de unicidad del modelo, con un error general redactado con su
+nombre técnico («No se cumple la restricción editorial_unica_por_nombre»). Y la pantalla de los
+catálogos **no mostraba los errores generales**: el formulario volvía sin ninguna explicación.
+
+**Qué dice la especificación.**
+> E1 de cada alta: el nombre repetido se informa.
+
+**Qué se hizo.**
+- El formulario de los catálogos traduce ese caso al aviso de duplicado de siempre, con el enlace al
+  registro existente.
+- La pantalla de los catálogos muestra los errores generales, para que ningún otro rechazo vuelva
+  sin texto.
+
+**Qué habría que cambiar.**
+Nada en el documento.

@@ -90,6 +90,52 @@ con el foco y con «Pausar»; con movimiento reducido no corre.
   </div>
 </section>
 
+{% comment %}
+Las filas que elige el Administrador (B-07-009): cada una, una etiqueta o un grupo
+de etiquetas, recorrida de costado. Las flechas aparecen sólo con JavaScript; sin
+él, la fila se desplaza igual con la rueda, el teclado o el dedo.
+{% endcomment %}
+{% if filas %}
+<section class="seccion-publica superficie-noche" aria-label="Recorré la tienda">
+  <div class="columna-publica pila-6">
+    {% for fila in filas %}
+      <div class="fila-portada" data-fila-portada>
+        <div class="fila fila-entre fila-abajo">
+          <div class="titulo-seccion">
+            <p class="antetitulo">{% if fila.etiqueta %}{{ fila.etiqueta.grupo.nombre }}{% else %}Explorá{% endif %}</p>
+            <h2 id="fila-{{ fila.pk }}">{{ fila.titulo_visible }}</h2>
+          </div>
+          <div class="fila-2 fila-base">
+            <button type="button" class="fila-portada__flecha" data-desplazar="-1" aria-label="Ver los anteriores" hidden>←</button>
+            <button type="button" class="fila-portada__flecha" data-desplazar="1" aria-label="Ver los siguientes" hidden>→</button>
+            <a href="{% url 'core:tienda_catalogo' %}?{% if fila.etiqueta_id %}etiqueta={{ fila.etiqueta_id }}{% else %}grupo={{ fila.grupo_id }}{% endif %}&amp;estado=todos" class="boton-texto">Ver todo →</a>
+          </div>
+        </div>
+        <div class="fila-portada__pista" data-pista tabindex="0" aria-labelledby="fila-{{ fila.pk }}">
+          {% for producto in fila.productos %}
+            {% include "core/_tarjeta_producto.html" with producto=producto %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+<script>
+  (function () {
+    for (const fila of document.querySelectorAll("[data-fila-portada]")) {
+      const pista = fila.querySelector("[data-pista]");
+      for (const flecha of fila.querySelectorAll("[data-desplazar]")) {
+        flecha.hidden = false;
+        flecha.addEventListener("click", function () {
+          const paso = Number(flecha.dataset.desplazar) * pista.clientWidth * 0.8;
+          pista.scrollBy({ left: paso, behavior: "smooth" });
+        });
+      }
+    }
+  })();
+</script>
+{% endif %}
+
 <script>
   (function () {
     // El glitch del título: una vez al cargar y otra al pasar el puntero.

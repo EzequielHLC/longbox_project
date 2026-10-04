@@ -1,0 +1,15 @@
+{% comment %}
+Un grupo de opciones excluyentes como fichas: tipo de descuento, alcance.
+
+    {% include "catalog/_opciones.html" with campo=form.alcance %}
+{% endcomment %}
+<fieldset class="campo">
+  <legend class="etiqueta">{{ campo.label }}{% if campo.field.required %}<span class="obligatorio" aria-hidden="true"> *</span>{% endif %}</legend>
+  <div class="ambito-opciones">
+    {% for opcion in campo %}
+      <label class="ficha-opcion">{{ opcion.tag }}<span>{{ opcion.choice_label }}</span></label>
+    {% endfor %}
+  </div>
+  {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+  {% for error in campo.errors %}<p class="error-de-campo">Error: {{ error }}</p>{% endfor %}
+</fieldset>

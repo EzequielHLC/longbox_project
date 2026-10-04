@@ -103,3 +103,90 @@ cierran como **parciales** hasta que exista `Carrito`. Con ellos, `CU-PVP-TBM` y
 - El recálculo de ofertas de tipo porcentaje: cuando exista `Oferta`.
 - `CU-PVP-ALT`, `EDI`, `BAJ` y `CON`: etapa B.
 - El vencimiento automático de ofertas (`CO-059`, `CU-PVP-VEN`): sin ficha y dependiente de P-05.
+
+---
+---
+
+# Plan — `03` Pricing · segunda parte: ofertas
+
+**Estado del plan:** Aprobado el 2026-10-03, con las recomendaciones de la sección 3 · **Fecha:** 2026-10-03
+
+Segunda parte del plan del módulo. La primera, de arriba, está aprobada y no se toca. Ésta cubre
+las ofertas y se construye **después** del carrito (plan 07, segunda parte), porque cada contrato
+de oferta termina actualizando las líneas de carrito.
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Contratos | Operaciones de escritura | Operaciones de consulta |
+| --- | --- | --- | --- |
+| `CU-PVP-CON` | `CO-169`, `CO-170` | 0 | 2 |
+| `CU-PVP-ALT` | `CO-054`, `CO-055` | 2 | 0 |
+| `CU-PVP-EDI` | `CO-168`, `CO-056` | 1 | 1 |
+| `CU-PVP-BAJ` | `CO-057`, `CO-058`, `CO-156` | 1 | 2 |
+| Sin caso de uso | `CO-059 ejecutarCicloDeVigenciaDeOfertas` | 1 | 0 |
+| `CU-TDA-CAT` (cierre) | El precio tachado de `CO-176` y `CO-177` | — | — |
+
+**Total: 10 contratos distintos**, de los cuales `CO-156` ya está verificado en otros casos de uso
+y se ejerce acá de nuevo.
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Oferta` | **No** | La crea, con los siete atributos del modelo y sus dos alcances (`Producto` o `Tipo`) |
+| `Producto` | Sí | Lo lee. **Su precio guardado no cambia**: la oferta modifica el precio *visible*, que se calcula |
+| `Tipo` | Sí | Alcance de una oferta por tipo de material |
+| `LineaCarrito` | La crea el plan 07 | Su precio vigente se actualiza con cada cambio de oferta |
+| `RegistroAuditoria` | Sí | Cuatro acciones nuevas: alta, modificación, baja y vencimiento automático de oferta |
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | `CO-059` y **P-05**: no existe forma de disparar las operaciones del Temporizador | **(a)** El precio visible se calcula con las fechas en cada consulta, así que una oferta empieza y termina **a tiempo aunque nada corra**. El cambio de estado guardado y la entrada de auditoría los hace un comando, `manage.py ejecutar_temporizador`, que corre al arrancar `demostracion.bat` y que se puede programar en el Programador de tareas de Windows. Queda como la puerta única de todos los procesos periódicos que vengan. **(b)** Sólo el comando: si no corre, la oferta no empieza ni termina | **Recomiendo (a)**. Cierra P-05 para las ofertas y deja la puerta para los otros ocho procesos |
+| 2 | «Fecha de vencimiento alcanzada» (`CO-059`) frente a «fecha de inicio ≤ fecha de vencimiento» (`CO-054`) | **(a)** El día de vencimiento **incluido**: la oferta vence al terminar ese día. **(b)** Excluido: vence al empezar ese día. Con (b), una oferta con inicio igual a vencimiento, que el contrato admite, no estaría activa nunca | **Recomiendo (a)** |
+| 3 | Un producto con una oferta individual **y** una de su tipo, las dos activas. I-20 sólo prohíbe el solapamiento «sobre el mismo alcance» | **(a)** Manda la individual, por ser la más específica. **(b)** Manda la que deja el precio más bajo. **(c)** Se prohíbe el solapamiento cruzado | Decisión. **Recomiendo (a)**: es predecible para el Administrador y la ficha de la oferta puede mostrar qué productos quedan tapados |
+| 4 | Baja de una oferta Programada | `CU-PVP-CON` paso 6 ofrece la baja sólo si está **Activa**. `CU-PVP-BAJ`, en su precondición, y `CO-057` y `CO-058` aceptan **Activa o Programada** | Es una contradicción entre dos fichas. **Recomiendo** seguir a `CU-PVP-BAJ` y a los dos contratos: la baja se ofrece también en Programada |
+| 5 | Qué productos de un tipo alcanza la oferta | La ficha dice «productos activos». **(a)** Los que se ofrecen en la tienda: Activo y Pre-venta. **(b)** Sólo Activo | **Recomiendo (a)**: una reserva en Pre-venta también se cobra con precio vigente (`CU-TDA-CAT` A2) |
+| 6 | Redondeo del porcentaje | No declarado | Se redondea al peso, como todo precio de venta (A1 del alta), con aritmética decimal exacta |
+| 7 | La activación automática en el log | `CO-059` declara una entrada con la acción «Vencimiento automático de oferta». No dice nada de la activación | Sólo se audita el vencimiento, como dice el contrato. La activación no deja entrada |
+
+---
+
+## 4. Orden de construcción
+
+| # | Caso de uso | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `Oferta` y el precio visible con oferta | Plan 07, paso 1 | La función de precio visible ya existe y se extiende |
+| 2 | `CU-PVP-CON` | 1 | Es el punto de entrada de los otros tres |
+| 3 | `CU-PVP-ALT` | 2 | |
+| 4 | `CU-PVP-EDI` | 3 | |
+| 5 | `CU-PVP-BAJ` | 3 | |
+| 6 | `CO-059` y el comando del Temporizador | 1 | |
+| 7 | Precio tachado en la tienda y en el carrito | 1 | Cierra `CU-TDA-CAT` |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde aparece | Cómo se cubre |
+| --- | --- | --- |
+| Descuento en punto flotante | Precio visible | `Decimal` en todo el cálculo; prueba con porcentajes que no dan exacto |
+| Dos administradores crean a la vez ofertas solapadas | `CO-054`, `CO-056` | La validación de solapamiento y el alta van en una transacción con bloqueo sobre el producto o el tipo del alcance |
+| Una oferta de monto fijo deja un precio en cero | `CO-055`, I-09 | Tope de $1. Prueba en el borde: descuento igual al precio |
+| Postcondiciones negativas | `CO-058`, `CO-059` | Una baja o un vencimiento no tocan el precio guardado del producto, ni otras ofertas, ni carritos sin productos del alcance |
+| Control de acceso | Las seis pantallas | Prueba por la dirección real con Cajero y con Cliente |
+
+---
+
+## 6. Fuera de alcance
+
+- El precio con oferta en el mostrador (`CU-VTA-REG`): usará la misma función cuando exista.
+- La relación con el canje de puntos (RF-12): no existe Puntos.
+- Los otros ocho procesos del Temporizador: el comando los recibirá a medida que existan.
