@@ -47,8 +47,8 @@ con el foco y con «Pausar»; con movimiento reducido no corre.
           {% for mensaje in mensajes %}<span>{{ mensaje }}</span>{% endfor %}
           {% for mensaje in mensajes %}<span aria-hidden="true">{{ mensaje }}</span>{% endfor %}
         {% else %}
-          {% for producto in recien_llegados %}<span>Llegó {{ producto.titulo }}</span>{% endfor %}
-          {% for producto in recien_llegados %}<span aria-hidden="true">Llegó {{ producto.titulo }}</span>{% endfor %}
+          {% for titulo in llegaron %}<span>Llegó {{ titulo }}</span>{% endfor %}
+          {% for titulo in llegaron %}<span aria-hidden="true">Llegó {{ titulo }}</span>{% endfor %}
         {% endif %}
       </div>
       <button type="button" class="ticker__pausa" data-ticker-pausa aria-pressed="false">Pausar</button>
@@ -84,56 +84,25 @@ con el foco y con «Pausar»; con movimiento reducido no corre.
       </div>
     {% endif %}
 
-    {% if hay_faq %}
-      <a href="{% url 'core:faq' %}" class="boton-texto">Preguntas frecuentes →</a>
-    {% endif %}
   </div>
 </section>
 
 {% comment %}
-Las filas que elige el Administrador (B-07-009): cada una, una etiqueta o un grupo
-de etiquetas, recorrida de costado. Las flechas aparecen sólo con JavaScript; sin
-él, la fila se desplaza igual con la rueda, el teclado o el dedo.
+«Lo que se viene» (B-07-015) y las filas que elige el Administrador (B-07-009,
+B-07-010): cada una se recorre de costado. El guion muestra las flechas sólo si
+la fila no entra entera, las esconde en cada extremo y mueve la barra de
+recorrido, que reemplaza a la del navegador.
 {% endcomment %}
-{% if filas %}
-<section class="seccion-publica superficie-noche" aria-label="Recorré la tienda">
+{% if se_viene or filas %}
+<section class="seccion-publica superficie-noche seccion-publica--trama" aria-label="Recorré la tienda">
   <div class="columna-publica pila-6">
+    {% if se_viene %}{% include "core/_fila_portada.html" with fila=se_viene %}{% endif %}
     {% for fila in filas %}
-      <div class="fila-portada" data-fila-portada>
-        <div class="fila fila-entre fila-abajo">
-          <div class="titulo-seccion">
-            <p class="antetitulo">{% if fila.etiqueta %}{{ fila.etiqueta.grupo.nombre }}{% else %}Explorá{% endif %}</p>
-            <h2 id="fila-{{ fila.pk }}">{{ fila.titulo_visible }}</h2>
-          </div>
-          <div class="fila-2 fila-base">
-            <button type="button" class="fila-portada__flecha" data-desplazar="-1" aria-label="Ver los anteriores" hidden>←</button>
-            <button type="button" class="fila-portada__flecha" data-desplazar="1" aria-label="Ver los siguientes" hidden>→</button>
-            <a href="{% url 'core:tienda_catalogo' %}?{% if fila.etiqueta_id %}etiqueta={{ fila.etiqueta_id }}{% else %}grupo={{ fila.grupo_id }}{% endif %}&amp;estado=todos" class="boton-texto">Ver todo →</a>
-          </div>
-        </div>
-        <div class="fila-portada__pista" data-pista tabindex="0" aria-labelledby="fila-{{ fila.pk }}">
-          {% for producto in fila.productos %}
-            {% include "core/_tarjeta_producto.html" with producto=producto %}
-          {% endfor %}
-        </div>
-      </div>
+      {% include "core/_fila_portada.html" with fila=fila %}
     {% endfor %}
   </div>
 </section>
-<script>
-  (function () {
-    for (const fila of document.querySelectorAll("[data-fila-portada]")) {
-      const pista = fila.querySelector("[data-pista]");
-      for (const flecha of fila.querySelectorAll("[data-desplazar]")) {
-        flecha.hidden = false;
-        flecha.addEventListener("click", function () {
-          const paso = Number(flecha.dataset.desplazar) * pista.clientWidth * 0.8;
-          pista.scrollBy({ left: paso, behavior: "smooth" });
-        });
-      }
-    }
-  })();
-</script>
+{% include "core/_fila_portada_js.html" %}
 {% endif %}
 
 <script>

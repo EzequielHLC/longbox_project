@@ -1,0 +1,54 @@
+{% comment %}
+Una fila de la portada en su gestor (B-07-010). La arrastra el asa; «Subir» y
+«Bajar» hacen lo mismo con teclado. `numero` vacío en la plantilla de «Agregar
+fila»: lo pone el guion.
+{% endcomment %}
+<li class="tarjeta-fila{% if formulario.errors %} tarjeta-fila--con-error{% endif %}" data-tarjeta-fila>
+  {% for oculto in formulario.hidden_fields %}{{ oculto }}{% endfor %}
+
+  <div class="tarjeta-fila__cabecera">
+    <div class="fila fila-base">
+      <span class="tarjeta-fila__asa" data-asa title="Arrastrar para cambiar el lugar" aria-hidden="true">
+        {% include "_iconos.html" with icono="menu" %}
+      </span>
+      <span class="tarjeta-fila__numero" data-numero>{{ numero|stringformat:"02d" }}</span>
+      <span class="fuerte" data-nombre-fila>{% if formulario.instance.pk %}{{ formulario.instance.titulo_visible }}{% else %}Nueva fila{% endif %}</span>
+      {% if formulario.instance.pk and not formulario.instance.activa %}
+        <span class="marca-estado marca-estado--apagado">Inactiva</span>
+      {% endif %}
+      {% if formulario.errors %}
+        <span class="marca-estado marca-estado--atencion">Con errores</span>
+      {% endif %}
+    </div>
+    <div class="fila-2">
+      <button type="button" class="boton-texto texto-chico" data-subir>{% include "_iconos.html" with icono="anterior" %}<span>Subir</span></button>
+      <button type="button" class="boton-texto texto-chico" data-bajar>{% include "_iconos.html" with icono="siguiente" %}<span>Bajar</span></button>
+    </div>
+  </div>
+
+  <div class="tarjeta-fila__cuerpo">
+    <div class="tarjeta-fila__imagen">
+      {% if formulario.instance.imagen %}
+        <img src="{{ formulario.instance.imagen.url }}" alt="Imagen actual de la fila">
+      {% else %}
+        <span class="tarjeta-fila__sin-imagen">{% include "_iconos.html" with icono="imagen" %}<span>Sin imagen</span></span>
+      {% endif %}
+    </div>
+    <div class="pila-3 min-0">
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=formulario.origen %}
+        {% include "_campo.html" with campo=formulario.titulo %}
+      </div>
+      <div class="pila-2">
+        {% include "_campo.html" with campo=formulario.imagen %}
+        {% if formulario.instance.imagen %}{% include "_casilla.html" with campo=formulario.quitar_imagen %}{% endif %}
+      </div>
+      <div class="fila-5">
+        {% include "_casilla.html" with campo=formulario.activa interruptor=1 encendido="Activa" apagado="Inactiva" %}
+        {% if formulario.instance.pk %}
+          {% include "_casilla.html" with campo=formulario.DELETE %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</li>

@@ -1,0 +1,40 @@
+{% comment %}
+El comportamiento de las filas que se recorren de costado (`_fila_portada.html`):
+lo usan la portada y la ficha («Más de la serie»). Muestra las flechas sólo si la
+fila no entra entera, las esconde en cada extremo y mueve la barra de recorrido,
+que reemplaza a la del navegador.
+{% endcomment %}
+<script>
+  (function () {
+    for (const fila of document.querySelectorAll("[data-fila-portada]")) {
+      const pista = fila.querySelector("[data-pista]");
+      const [atras, adelante] = fila.querySelectorAll("[data-desplazar]");
+      const recorrido = fila.querySelector(".fila-portada__recorrido");
+      const marca = fila.querySelector("[data-recorrido]");
+
+      const actualizar = function () {
+        const maximo = pista.scrollWidth - pista.clientWidth;
+        const desborda = maximo > 2;
+        pista.classList.toggle("fila-portada__pista--guiada", desborda);
+        recorrido.hidden = !desborda;
+        atras.hidden = !desborda || pista.scrollLeft <= 12;
+        adelante.hidden = !desborda || pista.scrollLeft >= maximo - 12;
+        if (!desborda) return;
+        const visible = pista.clientWidth / pista.scrollWidth;
+        marca.style.width = (visible * 100) + "%";
+        marca.style.transform = "translateX(" + (pista.scrollLeft / maximo) * (1 / visible - 1) * 100 + "%)";
+      };
+
+      for (const flecha of [atras, adelante]) {
+        flecha.addEventListener("click", function () {
+          const paso = Number(flecha.dataset.desplazar) * pista.clientWidth * 0.8;
+          pista.scrollBy({ left: paso, behavior: "smooth" });
+        });
+      }
+      pista.addEventListener("scroll", actualizar, { passive: true });
+      window.addEventListener("resize", actualizar, { passive: true });
+      window.addEventListener("load", actualizar);
+      actualizar();
+    }
+  })();
+</script>

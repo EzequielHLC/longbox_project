@@ -16,7 +16,9 @@ from apps.accounts.tests.factories import PASSWORD_DE_PRUEBA, UsuarioFactory
 from apps.core.models import RegistroAuditoria
 
 URL_PEDIR_ENLACE = reverse("accounts:password_reset")
-URL_PROTEGIDA = reverse("core:tienda")
+# Una dirección que exige sesión. La portada ya no la exige (C-20, resuelta el
+# 2026-10-05): ésta, sin sesión, manda al ingreso. Sólo acepta POST.
+URL_PROTEGIDA = reverse("accounts:renovar_sesion")
 NUEVA_CONTRASENA = "OtraClaveDistinta456"
 MOMENTO_DE_EMISION = datetime(2026, 8, 5, 10, 0, 0)
 
@@ -166,7 +168,7 @@ def test_el_cambio_invalida_todas_las_sesiones_activas(cliente):
     computadora = Client()
     telefono.force_login(cliente)
     computadora.force_login(cliente)
-    assert telefono.get(URL_PROTEGIDA).status_code == 200
+    assert telefono.post(URL_PROTEGIDA).status_code == 200
 
     navegador_de_recuperacion = Client()
     respuesta = navegador_de_recuperacion.get(url_de_restablecimiento(cliente))
@@ -175,8 +177,8 @@ def test_el_cambio_invalida_todas_las_sesiones_activas(cliente):
         {"new_password1": NUEVA_CONTRASENA, "new_password2": NUEVA_CONTRASENA},
     )
 
-    assert telefono.get(URL_PROTEGIDA).status_code == 302
-    assert computadora.get(URL_PROTEGIDA).status_code == 302
+    assert telefono.post(URL_PROTEGIDA).status_code == 302
+    assert computadora.post(URL_PROTEGIDA).status_code == 302
 
 
 def test_el_cambio_queda_registrado_en_auditoria(client, cliente):

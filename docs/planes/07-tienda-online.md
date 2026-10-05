@@ -208,3 +208,67 @@ catálogo público (`CO-176`): nunca un producto que el catálogo no mostraría.
 ## 4. Fuera de alcance
 
 - Filas por editorial, por tipo o elegidas a mano producto por producto.
+
+---
+
+# Plan — `07` Tienda Online · cuarta parte: la cáscara de la tienda y el gestor de filas
+
+**Estado del plan:** Aprobado el 2026-10-04 por pedido explícito del responsable (gestor de filas
+«por tarjetas … deslizables/acomodables», imagen en el título de cada fila, botón de preguntas
+frecuentes «estilo burbuja de chat» más abajo, «la cinta para acceder a los distintos filtros»
+debajo del encabezado, un pie mejor, un encabezado que acompaña al bajar con búsqueda y acceso a
+la cuenta, y flechas de las filas con más personalidad) · **Fecha:** 2026-10-04
+
+Es un agregado sobre la tercera parte. Ningún contrato cambia. Va a la bitácora (B-07-010 a
+B-07-012).
+
+## 1. Decisiones
+
+| # | Punto | Decisión |
+| --- | --- | --- |
+| 1 | Gestor de filas | Una tarjeta por fila, como los ítems de la carga de lotes. Se reordenan **arrastrando** la tarjeta o con «Subir» / «Bajar» (teclado y lector de pantalla). El orden se guarda con «Guardar las filas», no al soltar |
+| 2 | Imagen de la fila | Opcional. Se procesa como cualquier imagen del sistema (RNF-05: WebP, lado mayor acotado). En la portada abre la fila como una tarjeta titular, con su título |
+| 3 | Encabezado | Queda **fijo** arriba al bajar (la guía decía que se escondía: B-07-011). Suma la búsqueda del catálogo y un menú de cuenta nativo (`<details>`) con el correo, el carrito y «Cerrar sesión» |
+| 4 | Cinta de accesos | Debajo del encabezado, en todas las pantallas de la tienda: «Novedades», «Pre-ventas» y una entrada por cada fila de la portada activa, que lleva al catálogo filtrado igual que su «Ver todo» |
+| 5 | Preguntas frecuentes | Sale del menú y de la estantería. Un globo de diálogo cuadrado fijo abajo a la derecha (`.globo` de la guía), sólo si hay contenido publicado |
+| 6 | Pie | Cinta arriba; marca y descripción; «Tienda» (catálogo, pre-ventas, filas); «Ayuda» (preguntas frecuentes, carrito, cuenta); «Contacto» con el correo, el teléfono y las redes con íconos de trazo |
+| 7 | Flechas de las filas | Bloques sesgados con chevrones dobles y sombra dura; se deshabilitan en cada extremo. Debajo de la pista, una barra que marca cuánto se recorrió |
+| 8 | Animaciones | Sólo las del catálogo de la guía. Ninguna nueva |
+
+## 2. Fuera de alcance
+
+- Un panel propio del Cliente: el menú de cuenta enlaza lo que ya existe (`CU-CLI-DAT` sigue
+  pendiente).
+- Elegir a mano qué accesos lleva la cinta: salen de las filas de la portada.
+
+---
+
+# Plan — `07` Tienda Online · quinta parte: catálogo con panel, portada pública y correcciones visuales
+
+**Estado del plan:** Aprobado el 2026-10-05 por pedido explícito del responsable (filtros «a tiempo
+real», «la barra de filtros a un costado con interruptores, arriba solo la barra de búsqueda»; «un
+invitado debería poder ver la pantalla de inicio de la tienda»; «Lo que se viene»; agregar al
+carrito desde la tarjeta; carteles «¡TOMO 1!» y «¡ÚLTIMO TOMO!»; y siete correcciones gráficas:
+botón de preguntas, barra de búsqueda, pantalla de ingreso, flechas de las filas, doble barra de
+desplazamiento, desplegables con la lista del navegador, y el botón de limpiar filtros que movía al
+de aplicar) · **Fecha:** 2026-10-05
+
+Ningún contrato cambia de efecto. Va a la bitácora (B-07-013 a B-07-019, B-00-011) y resuelve C-20.
+
+## 1. Decisiones
+
+| # | Punto | Decisión |
+| --- | --- | --- |
+| 1 | Filtros | Panel al costado con interruptores; tipo, editorial, etiqueta y estado admiten varios valores. Dentro de un grupo de etiquetas alcanza con una; entre grupos, todas. Sólo se ofrecen opciones con productos visibles |
+| 2 | Tiempo real | Los interruptores aplican al cambiar; la búsqueda y el precio, al dejar de escribir. Se reemplazan sólo los resultados y la dirección se actualiza (paso 7). Sin guion, el panel tiene «Aplicar filtros» |
+| 3 | Orden | Lo más nuevo (por defecto, `CO-176`), próximos a llegar (fecha estimada o programada) y título |
+| 4 | Portada | Pública (C-20). La raíz del sitio lleva a la portada |
+| 5 | «Lo que se viene» | Una fila más, antes de las del Administrador: pre-ventas, la más próxima primero; «Ver todo» al catálogo de pre-ventas por llegada |
+| 6 | Agregar desde la tarjeta | Una unidad, misma operación (`CO-083`) y mismas validaciones; sin recargar si hay guion, con aviso y el contador del encabezado. Invitado y cliente; nunca el personal; nunca un agotado |
+| 7 | Carteles | «¡TOMO 1!» en el tomo 1 de una serie de más de un tomo; «¡NOVEDAD!» en lo dado de alta en los últimos 30 días (cambio del 2026-10-05, B-07-024; antes «¡ÚLTIMO TOMO!»). Las pre-ventas no llevan cartel |
+| 8 | Acceso | Ingreso, registro y recuperación: pantalla partida en diagonal, sin búsqueda ni globo. A la izquierda, la imagen del ingreso de la identidad visual, o el logo, o el nombre (B-07-020) |
+| 9 | Desplegables | Donde el navegador no tiene `appearance: base-select`, una lista propia sobre el `<select>` nativo |
+
+**Ajustes del 2026-10-05, a pedido del responsable:** se quita la cinta de accesos (B-07-021); la
+búsqueda marca el foco en su propio marco y «Buscar» tiene relieve; las flechas de las filas
+pierden la franja de cinta (B-07-022); el ticker nombra cada serie una vez (B-07-023).

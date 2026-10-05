@@ -145,10 +145,11 @@ def test_CO177_volver_conserva_los_filtros(client):
     assert f"{URL}?q=berserk&amp;tipo=3" in contenido
 
 
-def test_el_catalogo_es_publico_y_la_portada_sigue_siendo_del_cliente(client):
-    """Precondición de `CO-176`; la portada espera la respuesta a C-20."""
+def test_el_catalogo_y_la_portada_son_publicos(client):
+    """Precondición de `CO-176`; la portada, desde que se resolvió C-20."""
     assert client.get(URL).status_code == 200
-    assert client.get(reverse("core:tienda")).status_code == 302
+    # C-20, resuelta por el responsable el 2026-10-05: la portada la ve un invitado.
+    assert client.get(reverse("core:tienda")).status_code == 200
 
 
 # ===========================================================================

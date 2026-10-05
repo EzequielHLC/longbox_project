@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 
 from apps.core import georef, views_tienda
 from apps.core.mixins import RolRequeridoMixin
-from apps.core.models import Banner, ConfiguracionSistema, ContenidoFAQ, RegistroAuditoria
+from apps.core.models import Banner, ConfiguracionSistema, RegistroAuditoria
 
 
 def localidades(request):
@@ -45,24 +45,27 @@ class PoliticaPrivacidadView(TemplateView):
 # es definitivo es el control de acceso por rol.
 
 
-class TiendaView(RolRequeridoMixin, TemplateView):
+class TiendaView(TemplateView):
     """La portada de la tienda: el carrusel de banners (CU-CFG-BNC, C-06).
 
-    El catálogo público es `CU-TDA-CAT`, de la etapa B.
+    Pública, como el catálogo y la ficha (`CO-176`): la ve cualquiera, con
+    sesión o sin ella (C-20, resuelta por el responsable el 2026-10-05).
     """
 
     template_name = "core/tienda.html"
-    roles_permitidos = ("cliente",)
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["banners"] = Banner.objects.all()
         contexto["intervalo"] = ConfiguracionSistema.obtener().intervalo_carrusel
-        contexto["hay_faq"] = bool(ContenidoFAQ.obtener().contenido)
         llegados = views_tienda.recien_llegados()
         contexto["recien_llegados"] = llegados
         contexto["destacado"] = next((p for p in llegados if p.portada), None)
+        # El ticker nombra cada serie una vez, aunque hayan llegado varios tomos
+        # (B-07-023).
+        contexto["llegaron"] = list(dict.fromkeys(p.titulo for p in llegados))
         contexto["filas"] = views_tienda.filas_de_portada()
+        contexto["se_viene"] = views_tienda.lo_que_se_viene()
         return contexto
 
 

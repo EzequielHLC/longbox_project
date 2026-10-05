@@ -481,6 +481,9 @@ class IdentidadVisual(InstanciaUnica):
     tipo_fondo = models.CharField("fondo", max_length=10, choices=TIPOS_DE_FONDO, default=COLOR)
     color_fondo = models.CharField("color de fondo", max_length=7, default="#0A0A0C")
     imagen_fondo = models.ImageField("imagen de fondo", upload_to="identidad/", blank=True)
+    # La que acompaña al formulario en las pantallas de acceso (B-07-020). Sin
+    # ella, el logo; sin logo, el nombre de la tienda en grande.
+    imagen_acceso = models.ImageField("imagen del ingreso", upload_to="identidad/", blank=True)
 
     # Los textos de la portada y del pie (B-17-015). Son anuncios del
     # escaparate: los decide el negocio, no el código.
@@ -619,6 +622,9 @@ class FilaPortada(models.Model):
         blank=True,
         related_name="filas_portada",
     )
+    # Abre la fila en la portada, en una tarjeta con su título (B-07-010).
+    # Llega ya procesada por RNF-05, como toda imagen del sistema.
+    imagen = models.ImageField("imagen", upload_to="filas/", blank=True)
     orden = models.PositiveIntegerField("orden", default=0)
     activa = models.BooleanField("activa", default=True)
 

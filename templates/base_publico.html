@@ -25,41 +25,65 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
 
 {% block encabezado %}
 {% with actual=request.resolver_match.view_name %}
+{% comment %}
+El encabezado queda fijo arriba y, pasada la portada, se compacta (B-07-011: la
+guía lo escondía al bajar; el responsable pidió que acompañe). Lleva la búsqueda
+del catálogo y el menú de la cuenta, un `<details>` nativo que funciona sin
+JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
+{% endcomment %}
 <header class="encabezado-publico" data-encabezado-publico>
-  <div class="columna-publica">
-    {# La portada es de la cuenta de cliente (C-20); el resto entra al catálogo. #}
-    <a href="{% if user.rol == 'cliente' %}{% url 'core:tienda' %}{% else %}{% url 'core:tienda_catalogo' %}{% endif %}" class="marca{% if identidad_tienda.logo %} marca--con-logo{% endif %}">
+  <div class="columna-publica encabezado-publico__barra">
+    {# La portada es pública (C-20, resuelta el 2026-10-05). #}
+    <a href="{% url 'core:tienda' %}" class="marca{% if identidad_tienda.logo %} marca--con-logo{% endif %}">
       {% if identidad_tienda.logo %}<img src="{{ identidad_tienda.logo.url }}" alt="">{% endif %}
       <span>{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
     </a>
+
+    {% block busqueda_encabezado %}
+    <form method="get" action="{% url 'core:tienda_catalogo' %}" class="buscador-publico" role="search">
+      <label for="busqueda-encabezado" class="sr-only">Buscar en el catálogo</label>
+      {% include "_iconos.html" with icono="buscar" %}
+      <input id="busqueda-encabezado" type="search" name="q" value="{% if actual == 'core:tienda_catalogo' %}{{ request.GET.q }}{% endif %}" placeholder="Título, autor o editorial" autocomplete="off" aria-keyshortcuts="/" title="Atajo: /">
+      <input type="hidden" name="estado" value="todos">
+      <button type="submit" class="buscador-publico__ir">Buscar</button>
+    </form>
+    {% endblock %}
+
     <nav aria-label="Tienda">
       {% block navegacion_publica %}
-        {% if user.rol == "cliente" %}
-          <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
-        {% endif %}
+        <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
         <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
-        <a href="{% url 'core:faq' %}" {% if actual == 'core:faq' %}aria-current="page"{% endif %}>Preguntas frecuentes</a>
         {% with unidades=unidades_en_carrito %}
           {% if unidades is not None %}
-            <a href="{% url 'tienda:carrito' %}" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>Carrito{% if unidades %} <span class="contador" aria-label="{{ unidades }} unidades">{{ unidades }}</span>{% endif %}</a>
+            <a href="{% url 'tienda:carrito' %}" class="encabezado-publico__carrito" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>
+              <span>Carrito</span>{% if unidades %} <span class="contador" aria-label="{{ unidades }} unidades">{{ unidades }}</span>{% endif %}
+            </a>
           {% endif %}
         {% endwith %}
         {% if user.is_authenticated %}
           {% comment %}
-          El correo va como texto y no como enlace: el Cliente todavía no tiene
-          panel propio (CU-CLI-DAT). Cerrar sesión es un POST (CU-AUT-FIN).
+          El Cliente todavía no tiene panel propio (CU-CLI-DAT): el menú reúne lo
+          que su cuenta ya puede hacer. Cerrar sesión es un POST (CU-AUT-FIN).
           {% endcomment %}
-          <span class="cuenta-publica">{% include "_iconos.html" with icono="usuario" %}<span>{{ user.email }}</span></span>
-          <form method="post" action="{% url 'accounts:logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="boton-texto">Cerrar sesión</button>
-          </form>
+          <details class="menu-de-cuenta">
+            <summary>{% include "_iconos.html" with icono="usuario" %}<span>Mi cuenta</span></summary>
+            <div class="menu-de-cuenta__panel">
+              <p class="menu-de-cuenta__correo">{{ user.email }}</p>
+              {% if unidades_en_carrito is not None %}<a href="{% url 'tienda:carrito' %}">Mi carrito</a>{% endif %}
+              {% if hay_faq %}<a href="{% url 'core:faq' %}">Preguntas frecuentes</a>{% endif %}
+              <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="boton-texto">Cerrar sesión</button>
+              </form>
+            </div>
+          </details>
         {% else %}
           <a href="{% url 'accounts:login' %}" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>Ingresar</a>
         {% endif %}
       {% endblock %}
     </nav>
   </div>
+
 </header>
 {% endwith %}
 {% endblock %}
@@ -74,47 +98,173 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
   {% endblock %}
 </main>
 
+{% comment %}
+El globo de preguntas frecuentes (B-07-012): un globo de diálogo cuadrado,
+como manda la guía para la FAQ, fijo abajo a la derecha. No aparece en la
+propia página de preguntas ni si no hay nada publicado.
+{% endcomment %}
+{% block globo_ayuda %}
+{% if hay_faq and request.resolver_match.view_name != "core:faq" %}
+  <a href="{% url 'core:faq' %}" class="globo-ayuda" data-globo-ayuda>
+    <span class="globo-ayuda__icono">{% include "_iconos.html" with icono="faq" %}</span>
+    <span class="globo-ayuda__texto">¿Dudas? <span class="globo-ayuda__mas">Preguntas frecuentes</span></span>
+  </a>
+{% endif %}
+{% endblock %}
+
+{# Los avisos de lo que se hace sin cambiar de pantalla (agregar al carrito). #}
+<div class="avisos-flotantes" aria-live="polite" data-avisos-flotantes></div>
+
 <footer class="pie-publico superficie-noche">
   <div class="pie-publico__cinta" aria-hidden="true"></div>
-  <div class="columna-publica pila-5">
-    <div class="rejilla-3">
-      <div class="pila-2">
-        <span class="marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
-        <p>{{ textos_tienda.descripcion_tienda }}</p>
-      </div>
-      {% if identidad_tienda %}
-        <div class="pila-2">
-          <p class="antetitulo">Contacto</p>
-          <p class="datos">{{ identidad_tienda.correo_contacto }}</p>
-          {% if identidad_tienda.telefono %}<p class="datos">{{ identidad_tienda.telefono }}</p>{% endif %}
-        </div>
-        {% if identidad_tienda.redes %}
-          <div class="pila-2">
-            <p class="antetitulo">Redes</p>
-            <ul class="pila-1">
-              {% for nombre, url in identidad_tienda.redes %}
-                <li><a href="{{ url }}" rel="noopener">{{ nombre }}</a></li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-      {% endif %}
+  <div class="columna-publica pie-publico__contenido">
+    <div class="pie-publico__marca">
+      <span class="marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
+      <p>{{ textos_tienda.descripcion_tienda }}</p>
     </div>
+
+    <nav class="pie-publico__columna" aria-label="Tienda">
+      <p class="antetitulo">Tienda</p>
+      <ul>
+        <li><a href="{% url 'core:tienda_catalogo' %}">Todo el catálogo</a></li>
+        {% for acceso in accesos_tienda|slice:":6" %}
+          <li><a href="{{ acceso.url }}">{{ acceso.texto }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+    <nav class="pie-publico__columna" aria-label="Ayuda">
+      <p class="antetitulo">Ayuda</p>
+      <ul>
+        {% if hay_faq %}<li><a href="{% url 'core:faq' %}">Preguntas frecuentes</a></li>{% endif %}
+        {% if unidades_en_carrito is not None %}<li><a href="{% url 'tienda:carrito' %}">Mi carrito</a></li>{% endif %}
+        {% if not user.is_authenticated %}
+          <li><a href="{% url 'accounts:login' %}">Ingresar</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    {% if identidad_tienda %}
+      <div class="pie-publico__columna">
+        <p class="antetitulo">Contacto</p>
+        <ul>
+          {% if identidad_tienda.correo_contacto %}<li class="datos">{{ identidad_tienda.correo_contacto }}</li>{% endif %}
+          {% if identidad_tienda.telefono %}<li class="datos">{{ identidad_tienda.telefono }}</li>{% endif %}
+        </ul>
+        {% if identidad_tienda.redes %}
+          <ul class="pie-publico__redes">
+            {% for nombre, url in identidad_tienda.redes %}
+              <li>
+                <a href="{{ url }}" rel="noopener">
+                  {% if nombre == "Instagram" %}{% include "_iconos.html" with icono="red-instagram" %}{% elif nombre == "Facebook" %}{% include "_iconos.html" with icono="red-facebook" %}{% elif nombre == "TikTok" %}{% include "_iconos.html" with icono="red-tiktok" %}{% else %}{% include "_iconos.html" with icono="red-x" %}{% endif %}
+                  <span>{{ nombre }}</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+  <div class="columna-publica pie-publico__base">
+    <span class="datos">© {% now "Y" %} {% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
+    <a href="#" class="boton-texto">Volver arriba ↑</a>
   </div>
 </footer>
 
 <script>
-  // El encabezado se esconde al bajar y vuelve al subir
-  // (`identidad_visual.md`, Encabezado).
+  // Pasada la portada, el encabezado se compacta (B-07-011). En una pantalla
+  // sin portada, desde el primer desplazamiento.
   (function () {
     const encabezado = document.querySelector("[data-encabezado-publico]");
     if (!encabezado) return;
-    let anterior = window.scrollY;
-    window.addEventListener("scroll", function () {
-      const actual = window.scrollY;
-      encabezado.classList.toggle("encabezado-publico--oculto", actual > anterior && actual > 80);
-      anterior = actual;
-    }, { passive: true });
+    const umbral = function () {
+      const portada = document.querySelector(".portada-tienda");
+      return portada ? portada.offsetTop + portada.offsetHeight - encabezado.offsetHeight : 24;
+    };
+    let limite = umbral();
+    window.addEventListener("resize", function () { limite = umbral(); }, { passive: true });
+    // El globo de preguntas se pliega al bajar y queda el ícono (B-07-016).
+    const globo = document.querySelector("[data-globo-ayuda]");
+    const revisar = function () {
+      encabezado.classList.toggle("encabezado-publico--compacto", window.scrollY > limite);
+      if (globo) globo.classList.toggle("globo-ayuda--plegado", window.scrollY > 240);
+    };
+    window.addEventListener("scroll", revisar, { passive: true });
+    revisar();
+    // Agregar al carrito desde una tarjeta, sin salir de la pantalla
+    // (B-07-014). Si algo falla, el formulario se envía como siempre.
+    const avisos = document.querySelector("[data-avisos-flotantes]");
+    const avisar = window.avisarEnTienda = function (nivel, texto) {
+      const aviso = document.createElement("p");
+      const prefijo = { error: "Error:", atencion: "Atención:", exito: "Listo:" }[nivel] || "";
+      aviso.className = "mensaje mensaje--" + nivel;
+      aviso.setAttribute("role", nivel === "error" ? "alert" : "status");
+      aviso.innerHTML = '<span class="mensaje__prefijo"></span> <span></span>';
+      aviso.children[0].textContent = prefijo;
+      aviso.children[1].textContent = texto;
+      avisos.append(aviso);
+      window.setTimeout(function () { aviso.remove(); }, 4500);
+    };
+    const contarUnidades = window.contarUnidadesEnTienda = function (unidades) {
+      const enlace = encabezado.querySelector(".encabezado-publico__carrito");
+      if (!enlace) return;
+      let contador = enlace.querySelector(".contador");
+      if (!contador) {
+        contador = document.createElement("span");
+        contador.className = "contador";
+        enlace.append(" ", contador);
+      }
+      contador.textContent = unidades;
+      contador.setAttribute("aria-label", unidades + " unidades");
+      contador.classList.remove("rebota");
+      void contador.offsetWidth;
+      contador.classList.add("rebota");
+    };
+    document.addEventListener("submit", async function (evento) {
+      const formulario = evento.target.closest("[data-agregar-rapido]");
+      if (!formulario) return;
+      evento.preventDefault();
+      const boton = formulario.querySelector("button");
+      boton.disabled = true;
+      try {
+        const respuesta = await fetch(formulario.action, {
+          method: "POST",
+          body: new FormData(formulario),
+          headers: { "X-Requested-With": "fetch" },
+        });
+        const datos = await respuesta.json();
+        avisar(datos.nivel, datos.mensaje);
+        if (datos.unidades !== undefined) contarUnidades(datos.unidades);
+      } catch (error) {
+        formulario.submit();
+      } finally {
+        boton.disabled = false;
+      }
+    });
+
+    // «/» lleva a la búsqueda desde cualquier lugar de la tienda, salvo que se
+    // esté escribiendo en un campo (B-07-030).
+    document.addEventListener("keydown", function (evento) {
+      if (evento.key !== "/" || evento.ctrlKey || evento.metaKey || evento.altKey) return;
+      if (evento.target.closest("input, textarea, select, [contenteditable]")) return;
+      const busqueda = document.querySelector("[data-filtro-texto], #busqueda-encabezado");
+      if (!busqueda) return;
+      evento.preventDefault();
+      busqueda.focus();
+      busqueda.select();
+    });
+
+    // El menú de la cuenta se cierra al hacer clic afuera o con Escape.
+    const menu = encabezado.querySelector(".menu-de-cuenta");
+    if (menu) {
+      document.addEventListener("click", function (evento) {
+        if (!menu.contains(evento.target)) menu.open = false;
+      });
+      menu.addEventListener("keydown", function (evento) {
+        if (evento.key === "Escape") { menu.open = false; menu.querySelector("summary").focus(); }
+      });
+    }
   })();
 </script>
 {% endblock %}

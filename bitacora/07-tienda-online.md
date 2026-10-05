@@ -262,3 +262,557 @@ mostrándole al cliente lo que hay.
   junto a los de banners en el módulo 17.
 - `CO-176` no cambia: la fila reusa su consulta. Sí suma el filtro por grupo de etiquetas al
   catálogo público, que el contrato hoy no enumera.
+
+---
+
+### B-07-010 · El gestor de filas por tarjetas que se reordenan, y una imagen por fila
+
+**Tipo:** Agregado · **Fecha:** 2026-10-04 · **Alcance:** las filas de la portada (B-07-009)
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-04
+
+**Qué apareció.**
+El responsable pidió administrar las filas «por tarjetas, así como en las cargas de catálogo, pero
+deslizables/acomodables», y poder poner una imagen en el título de cada fila de la portada.
+
+**Qué dice la especificación.**
+`Nada.` Las filas no tienen caso de uso (B-07-009).
+
+**Qué se hizo.**
+- Cada fila es una tarjeta, como los ítems de la carga de lotes. El orden se cambia arrastrando
+  la tarjeta por su asa, o con «Subir» y «Bajar», que funcionan con teclado y lector de pantalla y
+  anuncian el lugar nuevo. Nada se guarda al soltar: el orden queda al apretar «Guardar las
+  filas», junto con el resto de los cambios.
+- «Agregar fila» suma una tarjeta vacía. Una fila marcada para quitar queda tachada hasta guardar.
+- Cada fila puede llevar una imagen. Se procesa como toda imagen del sistema (RNF-05) y en la
+  portada abre la fila en una tarjeta titular que lleva a «Ver todo». Sin imagen, la tarjeta
+  titular muestra en abanico las primeras portadas de la fila.
+- Cambiar sólo la imagen de una fila también queda en la auditoría.
+
+**Qué habría que cambiar.**
+- `MODELO_DE_DOMINIO`, en **FilaPortada** (B-07-009): el atributo imagen, opcional.
+- `identidad_visual.md`: el patrón de arrastrar y soltar, que la guía manda consultar (ver
+  B-00-010).
+
+---
+
+### B-07-011 · El encabezado de la tienda acompaña al bajar, con búsqueda y menú de cuenta
+
+**Tipo:** Desvío · **Fecha:** 2026-10-04 · **Alcance:** la cáscara pública
+**Estado:** Abierta — consultado: es el pedido explícito del responsable del 2026-10-04
+
+**Qué apareció.**
+El responsable pidió «un header que se mueve contigo al bajar de los banners con su barra de
+búsqueda y acceso al perfil personal».
+
+**Qué dice la especificación.**
+> «Al desplazar hacia abajo el encabezado se esconde (`translateY(-100%)`, `--dur-3`); al subir,
+> vuelve.» (`identidad_visual.md`, Modo público · Encabezado)
+
+**Qué se hizo.**
+- El encabezado queda fijo arriba todo el tiempo. Pasada la portada se vuelve más bajo y marca su
+  borde con una sombra dura; el cambio es de golpe, sin animar el alto.
+- Suma la búsqueda del catálogo (título, autor o editorial), que lleva al catálogo con todos los
+  estados.
+- «Mi cuenta» abre un menú con el correo, el carrito, las preguntas frecuentes y «Cerrar sesión».
+  Es un control nativo: funciona sin JavaScript, se cierra con Escape o con un clic afuera. No hay
+  panel del Cliente todavía (`CU-CLI-DAT` pendiente): el menú reúne lo que la cuenta ya puede
+  hacer.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Encabezado: reemplazar «se esconde al bajar» por «queda fijo y se compacta
+pasada la portada», y sumar la búsqueda y el menú de cuenta.
+
+---
+
+### B-07-012 · Cinta de accesos, globo de preguntas frecuentes y un pie completo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-04 · **Alcance:** la cáscara pública
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-04
+
+**Qué apareció.**
+El responsable pidió, debajo del encabezado, «la cinta para acceder a los distintos filtros»; que
+el botón de preguntas frecuentes sea «más bonito, como un estilo burbuja de chat» y esté más abajo;
+y un pie mejor.
+
+**Qué dice la especificación.**
+`Nada` sobre la cinta de accesos. Sobre el resto:
+
+> «Citas, reseñas y FAQ: dentro de globos de diálogo cuadrados (borde `--trazo-fuerte`, un
+> triángulo de cola hecho con `clip-path`).» · «Pie: Superficie noche con una franja de `--cinta`
+> arriba. Datos de contacto, redes con íconos de trazo, horarios en `--fuente-datos`.»
+> (`identidad_visual.md`)
+
+**Qué se hizo.**
+- **Cinta de accesos**, en todas las pantallas de la tienda: «Novedades», «Pre-ventas» y una
+  entrada por cada fila activa de la portada, que lleva al catálogo con el mismo filtro que su
+  «Ver todo». La entrada en la que se está queda marcada con fondo, borde y peso, no sólo con
+  color. Quien administra las filas administra la cinta.
+- **Globo de preguntas frecuentes**: un globo de diálogo cuadrado de papel con su cola, fijo abajo
+  a la derecha, junto a un bloque con el ícono. Sale del menú y de la estantería. No aparece en la
+  propia página de preguntas ni si no hay nada publicado. En el teléfono queda sólo el ícono.
+- **Pie**: la marca en grande con la descripción de la tienda; «Tienda» con el catálogo y los
+  accesos; «Ayuda»; «Contacto» con el correo, el teléfono y las redes con íconos de trazo; y una
+  base con el año y «Volver arriba». Los horarios no están porque la identidad visual no los
+  guarda.
+
+**Qué habría que cambiar.**
+- `identidad_visual.md`: describir la cinta de accesos y el globo fijo de preguntas.
+- Si el pie tiene que mostrar horarios, `CU-CFG-VIS` necesita un campo para cargarlos.
+
+---
+
+### B-07-013 · El catálogo filtra desde un panel lateral, con varios valores y mientras se cambia
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-TDA-CAT`, `CO-176`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable pidió que los filtros se apliquen «a tiempo real», en una barra al costado con
+interruptores, con sólo la búsqueda arriba. El botón «Limpiar filtros» aparecía al lado de
+«Filtrar» recién después de filtrar, y lo corría de lugar.
+
+**Qué dice la especificación.**
+> «El Cliente aplica uno o más filtros disponibles: búsqueda por texto libre (título, autor o
+> editorial), tipo de material, franquicia, editorial, rango de precio y estado del producto.» ·
+> «El sistema actualiza el listado con los filtros aplicados y muestra el total de resultados
+> encontrados.» (`CU-TDA-CAT`, pasos 3 y 4)
+
+**Qué se hizo.**
+- Arriba, sólo la búsqueda. Los filtros van en un panel al costado; en el teléfono, plegado
+  detrás de «Filtros».
+- Tipo, editorial, etiqueta y estado son interruptores y admiten **varios valores**. Dos etiquetas
+  del mismo grupo suman («Shonen» o «Seinen»); de grupos distintos restringen («Seinen» y
+  «Acción»). El panel sólo ofrece opciones que tienen algún producto visible.
+- Se aplican al cambiar: los interruptores al instante, la búsqueda y el precio al dejar de
+  escribir. Cambian sólo los resultados y la dirección, así «volver» desde la ficha conserva los
+  filtros (paso 7). Sin guion, el panel muestra «Aplicar filtros».
+- Se puede ordenar por lo más nuevo (lo de siempre), por próximos a llegar o por título.
+- «Limpiar» queda fijo en la cabecera del panel: aparece y desaparece sin mover nada.
+
+**Qué habría que cambiar.**
+`CU-TDA-CAT`, paso 3: decir que un filtro admite varios valores y cómo se combinan. `CO-176`:
+sumar el orden elegido (hoy el contrato fija la fecha de alta descendente; queda como orden por
+defecto).
+
+---
+
+### B-07-014 · Agregar al carrito desde la tarjeta
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-TDA-CRA`, `CO-083`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable pidió agregar al carrito desde la tarjeta del catálogo y de la portada, sin abrir
+la ficha.
+
+**Qué dice la especificación.**
+> «Desde la ficha del producto (CU-TDA-CAT), el Cliente selecciona «Agregar al carrito» o, si el
+> producto está en Pre-venta, «Reservar».» (`CU-TDA-CRA`, paso 1)
+
+**Qué se hizo.**
+- Cada tarjeta lleva un botón que agrega **una** unidad (o la reserva, en pre-venta). Es la misma
+  operación de la ficha, con las mismas validaciones en el servidor: el tope de stock se avisa
+  igual que desde la ficha.
+- Con guion, no se cambia de pantalla: aparece un aviso y el contador del encabezado se actualiza.
+  Sin guion, el formulario se envía y vuelve a la pantalla de origen con el mismo mensaje.
+- Lo ven el invitado y el cliente. El personal no (no tiene carrito) y un producto sin stock
+  tampoco.
+
+**Qué habría que cambiar.**
+`CU-TDA-CRA`, paso 1: sumar la tarjeta del catálogo como otro punto de partida, con cantidad 1.
+
+---
+
+### B-07-015 · «Lo que se viene»: las pre-ventas, la más próxima primero
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la portada de la tienda
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable pidió mostrar en la portada «Lo que se viene»: las pre-ventas ordenadas por fecha
+de llegada.
+
+**Qué dice la especificación.**
+`Nada.`
+
+**Qué se hizo.**
+- Una fila más de la portada, antes de las que arma el Administrador, con las pre-ventas
+  ordenadas por la fecha en que hoy se espera cada una: la estimada si la hay, si no la
+  programada. Las que no tienen fecha van al final.
+- Cada tarjeta de pre-venta dice «Llega el» con el día y el mes.
+- «Ver todo» lleva al catálogo de pre-ventas ordenado por llegada.
+- Sin pre-ventas, la fila no aparece.
+
+**Qué habría que cambiar.**
+Si se le da caso de uso a la portada (B-07-009), que la incluya.
+
+---
+
+### B-07-016 · Correcciones gráficas de la tienda
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública y la portada
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable marcó para corregir el botón de preguntas frecuentes, la barra de búsqueda, las
+flechas de las filas y una doble barra de desplazamiento.
+
+**Qué dice la especificación.**
+`Nada` más que lo citado en B-07-012.
+
+**Qué se hizo.**
+- **Preguntas frecuentes:** el globo quedó más chico, a la izquierda del ícono y con la cola hacia
+  él. Pasada la portada se pliega y queda el ícono; vuelve al pasar el puntero.
+- **Búsqueda:** el campo heredaba el recuadro de los campos comunes y se dibujaba un cuadro dentro
+  del marco. Ahora el marco sesgado es el único borde.
+- **Flechas de las filas:** pestañas sesgadas sobre los bordes de la pista, a la altura de las
+  portadas. Sólo aparecen si la fila no entra entera y se esconden en cada extremo.
+- **Doble barra:** cada fila mostraba la barra del navegador y, debajo, la de recorrido. Ahora queda
+  una sola, la de recorrido. Sin guion vuelve la del navegador.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Modo público: describir el globo plegable y las flechas de las filas.
+
+---
+
+### B-07-017 · Carteles «¡TOMO 1!» y «¡ÚLTIMO TOMO!»
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la tarjeta de producto
+**Estado:** Resuelta el 2026-10-05 — el responsable cambió el cartel por «¡NOVEDAD!» (B-07-024)
+
+**Qué apareció.**
+El responsable pidió carteles de historieta «¡TOMO 1!» y «¡ÚLTIMO TOMO!» en las tarjetas. «Último
+tomo» puede ser el más reciente que salió o el tomo final de una serie terminada, y el modelo no
+sabe si una serie terminó.
+
+**Qué dice la especificación.**
+`Nada.` El modelo de dominio no tiene ningún dato de serie completa. La regla 3 del proyecto
+impide sacarlo de una etiqueta («lo que cambia el comportamiento del sistema es campo»).
+
+**Qué se hizo.**
+- «¡TOMO 1!» en el tomo 1 de una serie con más de un tomo.
+- «¡ÚLTIMO TOMO!» en el tomo de número más alto **ya a la venta**: el último que salió. Las
+  pre-ventas no lo llevan, porque ya tienen su rótulo.
+- Una serie de un solo tomo no lleva cartel.
+
+**Qué habría que cambiar.**
+Si «último» tiene que ser el tomo final, hace falta un dato en el modelo (por ejemplo, la cantidad
+de tomos de la serie o una marca de serie terminada) y su caso de uso de carga. Mientras tanto,
+se queda como «el último que salió».
+
+---
+
+### B-07-018 · Las pantallas de acceso, partidas en diagonal
+
+**Tipo:** Corrección · **Fecha:** 2026-10-05 · **Alcance:** `CU-AUT-INI`, `CU-CLI-ALT`, recuperación de contraseña
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+Con el encabezado nuevo, la pantalla de ingreso heredaba la búsqueda, la cinta de accesos y el
+globo de preguntas, y el formulario iba en una columna suelta. La guía pide otra composición.
+
+**Qué dice la especificación.**
+> «Pantalla partida en diagonal: a la izquierda, noche con una portada grande y `--trama-puntos`;
+> a la derecha, papel con el formulario. En móvil, sólo el formulario con una franja de `--cinta`
+> arriba.» (`identidad_visual.md`, Registro e inicio de sesión)
+
+**Qué se hizo.**
+Ingreso, registro y las cuatro pantallas de recuperación usan esa composición. La portada es la
+del producto más nuevo con imagen; en el registro, que es largo, acompaña al bajar. Sin búsqueda,
+cinta ni globo.
+
+**Qué habría que cambiar.**
+Nada en el documento: la corrección es del código, que no seguía la guía.
+
+---
+
+### B-07-019 · La portada de la tienda es pública
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la portada de la tienda
+**Estado:** Resuelta — responde C-20
+
+**Qué apareció.**
+C-20 preguntaba si la portada se tiene que ver sin iniciar sesión. El responsable respondió: «Un
+invitado debería poder ver la pantalla de inicio de la tienda».
+
+**Qué dice la especificación.**
+`Nada` sobre la portada. El catálogo y la ficha ya eran públicos (`CO-176`, `CO-177`).
+
+**Qué se hizo.**
+La portada la ve cualquiera, con sesión o sin ella, y la raíz del sitio lleva a ella (antes llevaba
+al ingreso). Las pruebas de sesión que usaban la portada como dirección protegida pasaron a otra
+que sí exige sesión.
+
+**Qué habría que cambiar.**
+Nada, salvo incluirla si la portada recibe caso de uso (B-07-009).
+
+---
+
+### B-07-020 · Las pantallas de acceso muestran una imagen configurable o el logo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-CFG-VIS`, `CO-131`, las pantallas de acceso
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+La escena de las pantallas de acceso (B-07-018) mostraba la portada del producto más nuevo. El
+responsable pidió «una imagen personalizable (en la configuración de la tienda) o bien, el Logo de
+la tienda».
+
+**Qué dice la especificación.**
+> «a la izquierda, noche con una portada grande y `--trama-puntos`» (`identidad_visual.md`, Registro
+> e inicio de sesión)
+
+`CU-CFG-VIS` no prevé una imagen para el ingreso.
+
+**Qué se hizo.**
+- La identidad visual suma **«Imagen del ingreso»**, opcional. Se procesa como el resto de las
+  imágenes (RNF-05) y su carga o reemplazo queda en la auditoría de `CO-131`, igual que el logo y el
+  fondo.
+- La escena muestra esa imagen a todo el alto, con sus colores. Sin ella, el logo sobre la trama.
+  Sin logo, el nombre de la tienda en grande con el cartel «¡BIENVENIDO!». Nunca la portada de un
+  producto.
+
+**Qué habría que cambiar.**
+- `CU-CFG-VIS` y `CO-131`: sumar el atributo «imagen del ingreso».
+- `identidad_visual.md`, Registro e inicio de sesión: cambiar «una portada grande» por «la imagen
+  del ingreso, o el logo».
+
+---
+
+### B-07-021 · Se quita la cinta de accesos
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública
+**Estado:** Resuelta — reemplaza la parte de la cinta de B-07-012
+
+**Qué apareció.**
+El responsable pidió quitar la cinta de accesos de debajo del encabezado: «no tiene sentido
+teniendo el catálogo a mano».
+
+**Qué dice la especificación.**
+`Nada.` La cinta era un agregado (B-07-012).
+
+**Qué se hizo.**
+Se quitó del encabezado y de la pantalla de filas. Los mismos accesos (novedades, pre-ventas y las
+filas activas) siguen en el pie, en la columna «Tienda».
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### B-07-022 · La búsqueda sin recuadro de foco, «Buscar» con relieve y flechas sin la franja
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública y la portada
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+Al tomar foco, la búsqueda del encabezado y la del catálogo quedaban rodeadas por un recuadro
+naranja además de su marco. Las flechas de las filas tenían una franja de cinta abajo que cambiaba
+al pasar el puntero y se veía mal.
+
+**Qué dice la especificación.**
+> «Foco: Contorno `2px` `--foco` con `outline-offset: 2px`. Siempre visible con teclado»
+> (`TOKENS_VISUALES.md`, Estados de un control)
+
+**Qué se hizo.**
+- El foco de la búsqueda lo marca el marco mismo: pasa al acento y se engrosa. Sigue visible con
+  teclado, y no por el color solo: cambia el grosor.
+- «Buscar» tiene el relieve del botón de preguntas frecuentes: borde oscuro, y al pasar el puntero
+  sube con una sombra dura.
+- Las flechas de las filas perdieron la franja de cinta.
+
+**Qué habría que cambiar.**
+`TOKENS_VISUALES.md`, Estados de un control: admitir que un campo con marco propio muestre el foco
+en ese marco, más grueso, en lugar del contorno.
+
+---
+
+### B-07-023 · El ticker nombra cada serie una vez
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la portada de la tienda
+**Estado:** Resuelta
+
+**Qué apareció.**
+Sin mensajes cargados, el ticker de la portada dice «Llegó» con lo recién llegado. Si llegaban dos
+tomos de la misma serie, la serie salía dos veces.
+
+**Qué dice la especificación.**
+`Nada.`
+
+**Qué se hizo.**
+Cada serie aparece una sola vez, en el orden de llegada.
+
+**Qué habría que cambiar.**
+Nada.
+
+---
+
+### B-07-024 · «¡NOVEDAD!» en lugar de «¡ÚLTIMO TOMO!»
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la tarjeta de producto
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05; resuelve la consulta de B-07-017
+
+**Qué apareció.**
+El responsable eligió cambiar «¡ÚLTIMO TOMO!» por «Lo último» o «Novedad»: «queda redundante con
+las novedades, pero es mejor y trabaja menos datos».
+
+**Qué dice la especificación.**
+`Nada.`
+
+**Qué se hizo.**
+- «¡NOVEDAD!» en lo que se dio de alta en los últimos **30 días** y ya está a la venta. Las
+  pre-ventas no lo llevan: tienen su rótulo.
+- «¡TOMO 1!» sigue igual y gana si un tomo 1 también es novedad.
+- La serie ya no se recorre para buscar su tomo más alto: sólo se consulta, en una consulta por
+  estantería, si los tomos 1 de la pantalla tienen más tomos.
+
+**Qué habría que cambiar.**
+Si se quiere configurar cuántos días dura una novedad, un parámetro en `CU-CFG-PAR`.
+
+---
+
+### B-07-025 · El logo y la imagen del ingreso se pueden quitar
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-CFG-VIS`, `CO-131`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+Una vez cargados, el logo y la imagen del ingreso no se podían sacar: sólo reemplazar.
+
+**Qué dice la especificación.**
+`Nada` sobre quitar una imagen de la identidad.
+
+**Qué se hizo.**
+- «Quitar el logo» y «Quitar la imagen del ingreso», cada una junto a su imagen. Quitar borra el
+  archivo y queda en la auditoría de `CO-131` («logo quitado»).
+- Cada imagen se ve en la pantalla con su vista: la cargada o, sin ella, la **predeterminada**,
+  dibujada como la tarjeta «Ver todo» de las filas: el nombre de la tienda sobre la trama y el
+  rótulo «Predeterminado». Para el ingreso, la predeterminada es el logo si lo hay.
+
+**Qué habría que cambiar.**
+`CO-131`: sumar quitar el logo y la imagen del ingreso a sus postcondiciones.
+
+---
+
+### B-07-026 · Encabezado a todo el ancho, «Buscar» dentro de la barra y el botón de la tarjeta en su base
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública y la tarjeta de producto
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05; reemplaza el relieve de «Buscar» de B-07-022
+
+**Qué apareció.**
+En una pantalla ultra ancha, la marca, la búsqueda y el menú quedaban encerrados en la columna de
+contenido. El borde de «Buscar» no coincidía con el de la barra, y su borde naranja se confundía
+con el relleno. En la tarjeta, el precio quedaba pegado al botón de agregar.
+
+**Qué dice la especificación.**
+> «Contenido hasta `--ancho-escaparate`» (`TOKENS_VISUALES.md`, Los dos modos)
+
+**Qué se hizo.**
+- El encabezado ocupa todo el ancho: la marca al borde izquierdo, el menú al derecho y la búsqueda
+  en el medio, hasta 640 px. El contenido de las secciones sigue en la columna.
+- «Buscar» va dentro del marco de la barra y comparte sus bordes: el mismo alto, el mismo sesgo y
+  el mismo color de borde. Relleno noche y letras de acento; al puntero se llena de acento.
+- En la tarjeta, el precio va arriba y el botón ocupa la base, a lo ancho, con su palabra:
+  «Agregar» o «Reservar».
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Encabezado: el encabezado público no se limita a `--ancho-escaparate`.
+
+---
+
+### B-07-027 · El menú de la tienda, todo texto
+
+**Tipo:** Corrección · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública
+**Estado:** Resuelta
+
+**Qué apareció.**
+El responsable preguntó por qué «Carrito» era el único enlace del menú con ícono. El ícono lo
+agregó el encabezado nuevo (B-07-011) contra la regla del propio sistema.
+
+**Qué dice la especificación.**
+> «Menú en `--pub-rotulo`» (`identidad_visual.md`, Encabezado). La hoja lo dice así: «Los enlaces
+> del menú público: rótulos, sin íconos».
+
+**Qué se hizo.**
+«Carrito» quedó como los demás: texto, con su contador en el rombo de acento.
+
+**Qué habría que cambiar.**
+Nada en el documento: el error era del código.
+
+---
+
+### B-07-028 · El carrito se actualiza solo al cambiar una cantidad
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-TDA-CRM`, `CU-TDA-CRB`, `CO-084`, `CO-085`
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable pidió que el carrito actualice el precio solo al cambiar las cantidades, verificando
+el stock, en lugar de un botón «Actualizar».
+
+**Qué dice la especificación.**
+> «El Cliente modifica la cantidad de una línea.» (`CU-TDA-CRM`) — no dice si hace falta confirmar.
+
+**Qué se hizo.**
+- Con las flechas, la cantidad se aplica al instante; escribiendo, cuando se deja de tipear. Quitar
+  una línea tampoco recarga la pantalla.
+- Es la misma operación (`CO-084`, `CO-085`), con la misma verificación de stock en el servidor. El
+  servidor devuelve el carrito recalculado: precio de cada línea, disponibilidad y total salen de
+  la misma consulta de `CO-178`, nunca de una cuenta en el navegador. Si hubo que topear por stock,
+  aparece el aviso; el contador del encabezado se actualiza.
+- Sin guion, cada línea conserva su botón «Actualizar».
+
+**Qué habría que cambiar.**
+`CU-TDA-CRM`: decir que la cantidad se aplica al cambiarla, sin confirmación aparte.
+
+---
+
+### B-07-029 · Ajustes de la portada, del ingreso y del catálogo en pantallas anchas
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** la tienda pública
+**Estado:** Resuelta — pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El contador «01 / 12» de las filas sobraba. En una pantalla ultra ancha, el nombre predeterminado
+del ingreso se cortaba en medio de la palabra («LONGB / OX») y el catálogo dejaba márgenes vacíos
+con cuatro tarjetas por renglón.
+
+**Qué dice la especificación.**
+> «Contenido hasta `--ancho-escaparate`» (`TOKENS_VISUALES.md`, Los dos modos)
+
+**Qué se hizo.**
+- Las filas no tienen contador: quedan las flechas y la barra de recorrido.
+- El nombre del ingreso va en una sola línea y su tamaño sigue el ancho de la escena, entre los
+  extremos de `--pub-mega`.
+- El catálogo (cabecera, panel y resultados) usa el ancho de la pantalla: en una pantalla ancha
+  entran más tarjetas por renglón. Las demás secciones siguen en la columna.
+
+**Qué habría que cambiar.**
+`TOKENS_VISUALES.md`: exceptuar el catálogo de `--ancho-escaparate`, como el encabezado (B-07-026).
+
+---
+
+### B-07-030 · «Más de la serie» en la ficha y «/» para buscar
+
+**Tipo:** Agregado · **Fecha:** 2026-10-05 · **Alcance:** `CU-TDA-CAT`, `CO-177`
+**Estado:** Abierta — propuesta aceptada por el responsable el 2026-10-05 («cualquier otro
+agregado de QoL que consideres»)
+
+**Qué apareció.**
+En una tienda de historietas, quien mira un tomo casi siempre busca el siguiente o el anterior, y
+para eso tenía que volver al catálogo y buscar la serie.
+
+**Qué dice la especificación.**
+> «El Cliente puede navegar de regreso al catálogo conservando los filtros activos, o continuar la
+> navegación a otra ficha.» (`CU-TDA-CAT`, paso 7)
+
+**Qué se hizo.**
+- La ficha de un tomo muestra, debajo, **«Más de la serie»**: los demás tomos visibles del mismo
+  título y editorial, en orden, en una fila como las de la portada. «Ver todo» lleva al catálogo
+  con la serie ordenada por título. Un tomo único no la muestra.
+- **«/»** lleva a la búsqueda desde cualquier pantalla de la tienda (la del catálogo o la del
+  encabezado), salvo que se esté escribiendo en un campo. El atajo está declarado para lectores de
+  pantalla y en el texto de ayuda del campo.
+
+**Qué habría que cambiar.**
+`CO-177`: sumar a la salida de la ficha los demás tomos de la serie.

@@ -1,12 +1,17 @@
-"""Las filas de la portada de la tienda (plan 07, tercera parte; B-07-009).
+"""Las filas de la portada de la tienda (plan 07, tercera y cuarta parte).
 
-El Administrador las configura; el Cliente las recorre de costado en la portada.
-Cada fila muestra sólo productos visibles en la tienda, de lo más nuevo a lo más
-viejo, hasta doce.
+El Administrador las configura en tarjetas que se reordenan (B-07-010); el
+Cliente las recorre de costado en la portada. Cada fila muestra sólo productos
+visibles en la tienda, de lo más nuevo a lo más viejo, hasta doce. Las filas
+activas también son las entradas de la cinta de accesos (B-07-012).
 """
 
+from io import BytesIO
+
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 
 from apps.catalog.models import Producto
 from apps.catalog.tests.factories import (
@@ -14,13 +19,26 @@ from apps.catalog.tests.factories import (
     GrupoEtiquetaFactory,
     ProductoFactory,
 )
-from apps.core.models import FilaPortada, RegistroAuditoria
+from apps.core.models import ContenidoFAQ, FilaPortada, RegistroAuditoria
 from apps.core.views_tienda import PRODUCTOS_POR_FILA
 
 pytestmark = pytest.mark.django_db
 
 URL_CONFIGURAR = reverse("core:filas_portada")
 URL_PORTADA = reverse("core:tienda")
+URL_CATALOGO = reverse("core:tienda_catalogo")
+
+
+@pytest.fixture(autouse=True)
+def media_temporal(settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    return tmp_path
+
+
+def imagen(nombre="fila.png", tamano=(900, 1350)):
+    salida = BytesIO()
+    Image.new("RGB", tamano, (40, 120, 200)).save(salida, "PNG")
+    return SimpleUploadedFile(nombre, salida.getvalue(), content_type="image/png")
 
 
 def formset(*filas, existentes=0):
@@ -208,3 +226,162 @@ def test_el_catalogo_filtra_por_grupo_para_el_ver_todo(client, shonen):
     )
 
     assert [p.titulo for p in respuesta.context["productos"]] == ["Naruto"]
+
+
+# ---------------------------------------------------------------------------
+# El gestor por tarjetas (B-07-010)
+# ---------------------------------------------------------------------------
+
+
+def test_reordenar_las_tarjetas_cambia_el_orden_y_se_audita(client_admin, shonen):
+    seinen = EtiquetaFactory(nombre="Seinen", grupo=shonen.grupo)
+    primera = FilaPortada.objects.create(etiqueta=shonen, orden=1)
+    segunda = FilaPortada.objects.create(etiqueta=seinen, orden=2)
+
+    client_admin.post(
+        URL_CONFIGURAR,
+        formset(
+            {"id": str(primera.pk), "origen": f"e:{shonen.pk}", "orden": "2", "activa": "on"},
+            {"id": str(segunda.pk), "origen": f"e:{seinen.pk}", "orden": "1", "activa": "on"},
+            existentes=2,
+        ),
+    )
+
+    assert [f.titulo_visible for f in FilaPortada.objects.all()] == ["Seinen", "Shonen"]
+    detalle = RegistroAuditoria.objects.get(
+        accion=RegistroAuditoria.MODIFICACION_FILAS_PORTADA
+    ).detalle
+    assert detalle == "Shonen · Seinen → Seinen · Shonen"
+
+
+def test_la_imagen_de_la_fila_se_guarda_procesada_y_se_audita(client_admin, shonen):
+    fila = FilaPortada.objects.create(etiqueta=shonen, orden=1)
+
+    client_admin.post(
+        URL_CONFIGURAR,
+        {
+            **formset(
+                {"id": str(fila.pk), "origen": f"e:{shonen.pk}", "orden": "1", "activa": "on"},
+                existentes=1,
+            ),
+            "form-0-imagen": imagen(),
+        },
+    )
+
+    fila.refresh_from_db()
+    assert fila.imagen.name.startswith("filas/") and fila.imagen.name.endswith(".webp")
+    assert max(Image.open(fila.imagen.path).size) <= 800  # RNF-05
+    detalle = RegistroAuditoria.objects.get(
+        accion=RegistroAuditoria.MODIFICACION_FILAS_PORTADA
+    ).detalle
+    assert detalle == "Shonen → Shonen (con imagen); imagen cambiada en Shonen"
+
+
+def test_un_archivo_que_no_es_imagen_se_rechaza_y_no_se_guarda_nada(client_admin, shonen):
+    respuesta = client_admin.post(
+        URL_CONFIGURAR,
+        {
+            **formset({"origen": f"e:{shonen.pk}", "orden": "1", "activa": "on"}),
+            "form-0-imagen": SimpleUploadedFile("a.png", b"no es una imagen"),
+        },
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.context["formularios"].forms[0].errors["imagen"]
+    assert not FilaPortada.objects.exists()
+
+
+def test_quitar_la_imagen_de_una_fila(client_admin, shonen):
+    fila = FilaPortada.objects.create(etiqueta=shonen, orden=1, imagen="filas/vieja.webp")
+
+    client_admin.post(
+        URL_CONFIGURAR,
+        formset(
+            {
+                "id": str(fila.pk),
+                "origen": f"e:{shonen.pk}",
+                "orden": "1",
+                "activa": "on",
+                "quitar_imagen": "on",
+            },
+            existentes=1,
+        ),
+    )
+
+    fila.refresh_from_db()
+    assert not fila.imagen
+
+
+def test_el_gestor_trae_la_tarjeta_vacia_para_agregar_y_los_mandos(client_admin, shonen):
+    FilaPortada.objects.create(etiqueta=shonen, orden=1)
+
+    contenido = client_admin.get(URL_CONFIGURAR).content.decode()
+
+    assert "data-plantilla-fila" in contenido
+    assert 'name="form-__prefix__-origen"' in contenido
+    assert contenido.count('<li class="tarjeta-fila') == 2  # la fila y la plantilla
+    assert "data-subir" in contenido and "data-bajar" in contenido and "data-asa" in contenido
+    assert 'enctype="multipart/form-data"' in contenido
+
+
+# ---------------------------------------------------------------------------
+# La cáscara de la tienda (B-07-011, B-07-012)
+# ---------------------------------------------------------------------------
+
+
+def test_el_pie_lleva_las_filas_activas_al_catalogo(client, shonen):
+    """La cinta de accesos se quitó (B-07-021): los accesos quedan en el pie."""
+    otra = EtiquetaFactory(nombre="Kodomo", grupo=shonen.grupo, activa=False)
+    FilaPortada.objects.create(etiqueta=shonen, orden=1)
+    FilaPortada.objects.create(grupo=shonen.grupo, titulo="Por demografía", orden=2)
+    FilaPortada.objects.create(etiqueta=otra, orden=3)
+    FilaPortada.objects.create(etiqueta=shonen, titulo="Apagada", orden=4, activa=False)
+
+    respuesta = client.get(URL_CATALOGO, {"etiqueta": shonen.pk, "estado": "todos"})
+
+    accesos = [(a["texto"], a["actual"]) for a in respuesta.context["accesos_tienda"]]
+    assert accesos == [
+        ("Novedades", False),
+        ("Pre-ventas", False),
+        ("Shonen", True),
+        ("Por demografía", False),
+    ]
+    contenido = respuesta.content.decode()
+    assert 'class="cinta-accesos"' not in contenido
+    assert (
+        f"etiqueta={shonen.pk}&amp;estado=todos"
+        in contenido.partition('<footer class="pie-publico')[2]
+    )
+
+
+def test_el_encabezado_busca_en_el_catalogo(client):
+    contenido = client.get(reverse("core:faq")).content.decode()
+
+    assert 'class="buscador-publico"' in contenido
+    assert f'action="{URL_CATALOGO}"' in contenido
+    assert 'name="q"' in contenido
+
+
+def test_el_globo_de_ayuda_aparece_si_hay_preguntas_publicadas(client):
+    assert 'class="globo-ayuda"' not in client.get(URL_CATALOGO).content.decode()
+
+    faq = ContenidoFAQ.obtener()
+    faq.contenido = "## ¿Qué es una pre-venta?"
+    faq.save()
+
+    assert 'class="globo-ayuda"' in client.get(URL_CATALOGO).content.decode()
+    assert 'class="globo-ayuda"' not in client.get(reverse("core:faq")).content.decode()
+
+
+def test_la_fila_abre_con_su_imagen_o_con_el_abanico_de_portadas(client, cliente, shonen):
+    seinen = EtiquetaFactory(nombre="Seinen", grupo=shonen.grupo)
+    con_etiqueta(shonen, titulo="Dragon Ball")
+    con_etiqueta(seinen, titulo="Berserk")
+    FilaPortada.objects.create(etiqueta=shonen, orden=1, imagen="filas/shonen.webp")
+    FilaPortada.objects.create(etiqueta=seinen, orden=2)
+
+    contenido = portada(client, cliente).content.decode()
+
+    assert 'src="/media/filas/shonen.webp"' in contenido
+    assert contenido.count("fila-portada__titular--sin-imagen") == 1
+    assert "fila-portada__abanico" in contenido

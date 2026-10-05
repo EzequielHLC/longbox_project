@@ -430,3 +430,42 @@ def test_el_cajero_no_edita_el_contenido_de_la_tienda(client, cajero, ruta):
     assert client.get(reverse(ruta)).status_code == 403
     assert client.post(reverse(ruta), {"contenido": "x"}).status_code == 403
     assert ContenidoFAQ.obtener().contenido == ""
+
+
+def test_CO131_la_imagen_del_ingreso_se_procesa_y_se_audita(client_admin):
+    """B-07-020: la imagen que acompaña a las pantallas de acceso, en la identidad."""
+    datos = {**DATOS_VALIDOS, "acceso_nueva": imagen("ingreso.png", (1200, 1600))}
+
+    client_admin.post(reverse("core:identidad_visual"), datos)
+
+    identidad = IdentidadVisual.obtener()
+    assert identidad.imagen_acceso.name.endswith(".webp")
+    registro = auditorias(RegistroAuditoria.MODIFICACION_IDENTIDAD_VISUAL).latest("pk")
+    assert "imagen del ingreso cargado" in registro.detalle
+
+
+def test_CO131_quitar_el_logo_y_la_imagen_del_ingreso_vuelve_a_lo_predeterminado(client_admin):
+    """B-07-025: las dos imágenes se pueden quitar; la tienda vuelve a su vista
+    predeterminada y la auditoría lo dice."""
+    client_admin.post(
+        reverse("core:identidad_visual"),
+        {
+            **DATOS_VALIDOS,
+            "logo_nuevo": imagen("logo.png", (400, 400)),
+            "acceso_nueva": imagen("ingreso.png", (900, 1200)),
+        },
+    )
+
+    client_admin.post(
+        reverse("core:identidad_visual"),
+        {**DATOS_VALIDOS, "quitar_logo": "on", "quitar_acceso": "on"},
+    )
+
+    identidad = IdentidadVisual.obtener()
+    assert not identidad.logo
+    assert not identidad.imagen_acceso
+    detalle = auditorias(RegistroAuditoria.MODIFICACION_IDENTIDAD_VISUAL).latest("pk").detalle
+    assert "logo quitado" in detalle
+    assert "imagen del ingreso quitado" in detalle
+    pantalla = client_admin.get(reverse("core:identidad_visual")).content.decode()
+    assert pantalla.count("imagen-configurable__predeterminada") == 2

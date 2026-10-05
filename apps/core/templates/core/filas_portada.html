@@ -1,20 +1,27 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-Las filas de productos de la portada de la tienda (plan 07, tercera parte; B-07-009).
+Las filas de productos de la portada de la tienda (plan 07, tercera y cuarta
+parte; B-07-009, B-07-010).
 
-Cada fila sale de una etiqueta o de un grupo de etiquetas entero. Se guardan
-todas juntas; el último bloque, vacío, sirve para agregar una. Una fila sin
-productos visibles no se dibuja en la portada.
+Una tarjeta por fila, como los ítems de la carga de lotes. El orden es el de
+las tarjetas: se cambia arrastrándolas por el asa o con «Subir» y «Bajar», que
+sirven con teclado y lector de pantalla. Al guardar, el guion numera el campo
+oculto `orden` según la posición; nada se guarda al soltar.
+
+«Agregar fila» copia `empty_form`. Una tarjeta marcada para quitar queda a la
+vista, tachada, hasta guardar.
 {% endcomment %}
 
 {% block titulo %}Filas de la portada · Longbox{% endblock %}
 {% block seccion %}Tienda{% endblock %}
 
+{% block cabecera_extra %}{% include "_archivo.html" %}{% endblock %}
+
 {% block contenido %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Filas de la portada</h1>
-    <p>Grupos de productos que el cliente recorre de costado en la portada de la tienda, debajo de «Recién llegados». Cada fila sale de una etiqueta o de un grupo de etiquetas entero, y muestra lo más nuevo que haya.</p>
+    <p>Grupos de productos que el cliente recorre de costado en la portada de la tienda, debajo de «Recién llegados». Cada fila sale de una etiqueta o de un grupo de etiquetas entero y muestra lo más nuevo que haya. Arrastrá las tarjetas para cambiar el orden; cada fila activa también aparece en el pie de la tienda.</p>
   </div>
 </header>
 
@@ -26,30 +33,147 @@ productos visibles no se dibuja en la portada.
   </ul>
 {% endif %}
 
-<form method="post" novalidate class="formulario">
+<form method="post" enctype="multipart/form-data" novalidate class="formulario" data-gestor-filas>
   {% csrf_token %}
   {{ formularios.management_form }}
-  <div class="pila-5">
-    {% for formulario in formularios %}
-      <fieldset class="panel">
-        <legend class="etiqueta">{% if formulario.instance.pk %}Fila «{{ formulario.instance.titulo_visible }}»{% else %}Nueva fila{% endif %}</legend>
-        {% for oculto in formulario.hidden_fields %}{{ oculto }}{% endfor %}
-        <div class="rejilla-2">
-          {% include "_campo.html" with campo=formulario.origen %}
-          {% include "_campo.html" with campo=formulario.titulo %}
-          {% include "_campo.html" with campo=formulario.orden ayuda="Las filas se muestran de menor a mayor." %}
-        </div>
-        <div class="fila-5">
-          {% include "_casilla.html" with campo=formulario.activa interruptor=1 encendido="Activa" apagado="Inactiva" %}
-          {% if formulario.instance.pk %}
-            {% include "_casilla.html" with campo=formulario.DELETE %}
-          {% endif %}
-        </div>
-      </fieldset>
-    {% endfor %}
+
+  <div class="paso fila-entre">
+    <p class="secundario"><span data-contador-filas class="fuerte">{{ formularios.total_form_count }}</span> en la portada, en este orden.</p>
+    <button type="button" class="boton-seccion" data-agregar-fila>
+      {% include "_iconos.html" with icono="agregar" %}<span>Agregar fila</span>
+    </button>
   </div>
+
+  <ol class="gestor-filas" data-lista-filas>
+    {% for formulario in formularios %}
+      {% include "core/_tarjeta_fila.html" with formulario=formulario numero=forloop.counter %}
+    {% empty %}
+      <li class="vacio" data-sin-filas>
+        {% include "_iconos.html" with icono="tienda" %}
+        <p>La portada todavía no tiene filas. Agregá la primera.</p>
+      </li>
+    {% endfor %}
+  </ol>
+
+  <template data-plantilla-fila>
+    {% include "core/_tarjeta_fila.html" with formulario=formularios.empty_form numero="" %}
+  </template>
+
+  <p class="sr-only" aria-live="polite" data-anuncio-filas></p>
+
   <div class="acciones">
     <button type="submit" class="boton-primario">Guardar las filas</button>
   </div>
 </form>
+
+<script>
+  (function () {
+    const formulario = document.querySelector("[data-gestor-filas]");
+    const lista = formulario.querySelector("[data-lista-filas]");
+    const plantilla = formulario.querySelector("[data-plantilla-fila]");
+    const total = formulario.querySelector('input[name$="-TOTAL_FORMS"]');
+    const anuncio = formulario.querySelector("[data-anuncio-filas]");
+    const contador = formulario.querySelector("[data-contador-filas]");
+
+    const tarjetas = () => Array.from(lista.querySelectorAll("[data-tarjeta-fila]"));
+
+    // El número visible y el campo `orden` siguen la posición de la tarjeta.
+    function renumerar() {
+      const todas = tarjetas();
+      todas.forEach(function (tarjeta, indice) {
+        tarjeta.querySelector("[data-numero]").textContent = String(indice + 1).padStart(2, "0");
+        tarjeta.querySelector("[data-orden]").value = indice + 1;
+        tarjeta.querySelector("[data-subir]").disabled = indice === 0;
+        tarjeta.querySelector("[data-bajar]").disabled = indice === todas.length - 1;
+      });
+      contador.textContent = todas.length;
+    }
+
+    function nombre(tarjeta) {
+      return tarjeta.querySelector("[data-nombre-fila]").textContent.trim();
+    }
+
+    function mover(tarjeta, destino) {
+      const todas = tarjetas();
+      const desde = todas.indexOf(tarjeta);
+      if (destino < 0 || destino >= todas.length || destino === desde) return;
+      lista.insertBefore(tarjeta, destino > desde ? todas[destino].nextSibling : todas[destino]);
+      renumerar();
+      anuncio.textContent = nombre(tarjeta) + ": lugar " + (destino + 1) + " de " + todas.length + ".";
+    }
+
+    function preparar(tarjeta) {
+      tarjeta.querySelector("[data-subir]").addEventListener("click", function () {
+        mover(tarjeta, tarjetas().indexOf(tarjeta) - 1);
+        this.disabled ? tarjeta.querySelector("[data-bajar]").focus() : this.focus();
+      });
+      tarjeta.querySelector("[data-bajar]").addEventListener("click", function () {
+        mover(tarjeta, tarjetas().indexOf(tarjeta) + 1);
+        this.disabled ? tarjeta.querySelector("[data-subir]").focus() : this.focus();
+      });
+      // Arrastrar sólo desde el asa: arrastrar desde un campo seleccionaría texto.
+      const asa = tarjeta.querySelector("[data-asa]");
+      asa.addEventListener("mousedown", function () { tarjeta.draggable = true; });
+      tarjeta.addEventListener("dragstart", function (evento) {
+        evento.dataTransfer.effectAllowed = "move";
+        evento.dataTransfer.setData("text/plain", "");
+        tarjeta.classList.add("tarjeta-fila--arrastrando");
+      });
+      tarjeta.addEventListener("dragend", function () {
+        tarjeta.draggable = false;
+        tarjeta.classList.remove("tarjeta-fila--arrastrando");
+        for (const otra of tarjetas()) otra.classList.remove("tarjeta-fila--destino");
+        renumerar();
+        anuncio.textContent = nombre(tarjeta) + ": lugar " + (tarjetas().indexOf(tarjeta) + 1) + ".";
+      });
+      // Quitar: la tarjeta queda tachada hasta guardar.
+      const quitar = tarjeta.querySelector('input[name$="-DELETE"]');
+      if (quitar) {
+        quitar.addEventListener("change", function () {
+          tarjeta.classList.toggle("tarjeta-fila--quitada", quitar.checked);
+        });
+      }
+      const titulo = tarjeta.querySelector('input[name$="-titulo"]');
+      const origen = tarjeta.querySelector('select[name$="-origen"]');
+      const rotulo = tarjeta.querySelector("[data-nombre-fila]");
+      function rotular() {
+        const elegido = origen.selectedOptions[0];
+        rotulo.textContent = titulo.value.trim()
+          || (origen.value ? elegido.textContent.replace(" (todas sus etiquetas)", "") : "Nueva fila");
+      }
+      titulo.addEventListener("input", rotular);
+      origen.addEventListener("change", rotular);
+    }
+
+    lista.addEventListener("dragover", function (evento) {
+      const arrastrada = lista.querySelector(".tarjeta-fila--arrastrando");
+      if (!arrastrada) return;
+      evento.preventDefault();
+      const debajo = tarjetas().find(function (tarjeta) {
+        const caja = tarjeta.getBoundingClientRect();
+        return tarjeta !== arrastrada && evento.clientY < caja.top + caja.height / 2;
+      });
+      for (const otra of tarjetas()) otra.classList.toggle("tarjeta-fila--destino", otra === debajo);
+      lista.insertBefore(arrastrada, debajo || null);
+    });
+    lista.addEventListener("drop", function (evento) { evento.preventDefault(); });
+
+    formulario.querySelector("[data-agregar-fila]").addEventListener("click", function () {
+      const indice = Number(total.value);
+      const html = plantilla.innerHTML.replace(/__prefix__/g, String(indice));
+      lista.querySelector("[data-sin-filas]")?.remove();
+      lista.insertAdjacentHTML("beforeend", html);
+      total.value = indice + 1;
+      const nueva = tarjetas().at(-1);
+      preparar(nueva);
+      mejorarArchivos(nueva);
+      renumerar();
+      nueva.querySelector("select").focus();
+    });
+
+    formulario.addEventListener("submit", renumerar);
+    tarjetas().forEach(preparar);
+    renumerar();
+  })();
+</script>
 {% endblock %}

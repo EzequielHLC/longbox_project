@@ -179,16 +179,19 @@ def test_el_selector_de_etiquetas_trae_las_etiquetas_como_opciones(client_admin)
 
 
 @pytest.mark.django_db
-def test_los_desplegables_son_los_nativos(client_admin):
-    """El desplegable propio se retiró con el sistema visual anterior: sus
-    únicas razones eran la tipografía y la paleta. El formulario dibuja el
-    `<select>` nativo y ningún guion lo reemplaza."""
+def test_los_desplegables_son_nativos_y_el_propio_solo_falta_base_select(client_admin):
+    """B-00-011: el formulario dibuja el `<select>` nativo, que es el que envía el
+    valor y el que leen los guiones. La lista propia la arma un guion aparte, y
+    sólo donde el navegador no tiene `appearance: base-select`."""
     EditorialFactory()
 
     html = client_admin.get(reverse("catalog:lote_nacional")).content.decode()
+    guion = (settings.BASE_DIR / "static" / "js" / "desplegable.js").read_text(encoding="utf-8")
 
     assert "<select" in html
     assert "data-desplegable" not in html
+    assert "js/desplegable.js" in html
+    assert 'CSS.supports("appearance", "base-select")' in guion
 
 
 # ---------------------------------------------------------------------------
@@ -216,8 +219,9 @@ CON_FILAS = {
     "etiqueta_lista.html",
     "auditoria_lista.html",
     "banner_lista.html",
-    # Cada línea del carrito actualiza su cantidad (CU-TDA-CRM).
-    "carrito.html",
+    # Cada línea del carrito actualiza su cantidad (CU-TDA-CRM); sin guion, con
+    # «Actualizar». Las líneas viven en el parcial desde B-07-028.
+    "_carrito.html",
 }
 
 

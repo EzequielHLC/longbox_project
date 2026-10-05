@@ -208,6 +208,12 @@ class IdentidadVisualView(ContenidoAdminMixin, View):
             ip=obtener_ip(request),
             logo=formulario.cleaned_data.get("logo_nuevo"),
             imagen_fondo=formulario.cleaned_data.get("fondo_nuevo"),
+            imagen_acceso=formulario.cleaned_data.get("acceso_nueva"),
+            quitar={
+                campo
+                for campo, casilla in (("logo", "quitar_logo"), ("imagen_acceso", "quitar_acceso"))
+                if formulario.cleaned_data.get(casilla)
+            },
         )
         messages.success(request, "Se guardó la identidad visual. Ya se ve en la tienda.")
         return redirect("core:identidad_visual")
@@ -238,6 +244,7 @@ def _lista(filas):
 def _resumen_de_filas():
     return [
         f"{fila.titulo_visible}{'' if fila.activa else ' (inactiva)'}"
+        f"{' (con imagen)' if fila.imagen else ''}"
         for fila in FilaPortada.objects.select_related("etiqueta", "grupo")
     ]
 
@@ -245,8 +252,10 @@ def _resumen_de_filas():
 class FilasPortadaView(ContenidoAdminMixin, View):
     """Las filas de la portada de la tienda (plan 07, tercera parte; B-07-009).
 
-    Un formulario por fila, más uno vacío para agregar. Se guardan juntas y el
-    cambio queda auditado con la lista anterior y la nueva.
+    Una tarjeta por fila, que se reordena arrastrándola (B-07-010); «Agregar
+    fila» suma una vacía. Se guardan juntas y el cambio queda auditado con la
+    lista anterior y la nueva. Cambiar sólo la imagen de una fila también se
+    audita, aunque la lista quede igual.
     """
 
     template_name = "core/filas_portada.html"
@@ -255,19 +264,29 @@ class FilasPortadaView(ContenidoAdminMixin, View):
         return self._pantalla(request, FilasPortadaFormSet(queryset=FilaPortada.objects.all()))
 
     def post(self, request):
-        formularios = FilasPortadaFormSet(request.POST, queryset=FilaPortada.objects.all())
+        formularios = FilasPortadaFormSet(
+            request.POST, request.FILES, queryset=FilaPortada.objects.all()
+        )
         if not formularios.is_valid():
             return self._pantalla(request, formularios)
         antes = _resumen_de_filas()
         with transaction.atomic():
             formularios.save()
             despues = _resumen_de_filas()
-            if antes != despues:
+            imagenes = [
+                f.instance.titulo_visible
+                for f in formularios.forms
+                if f not in formularios.deleted_forms and f.has_changed() and f.cambio_la_imagen
+            ]
+            if antes != despues or imagenes:
+                detalle = f"{_lista(antes)} → {_lista(despues)}"
+                if imagenes:
+                    detalle += f"; imagen cambiada en {_lista(imagenes)}"
                 RegistroAuditoria.registrar(
                     accion=RegistroAuditoria.MODIFICACION_FILAS_PORTADA,
                     actor=request.user,
                     ip=obtener_ip(request),
-                    detalle=f"{_lista(antes)} → {_lista(despues)}",
+                    detalle=detalle,
                 )
         messages.success(request, "Se guardaron las filas de la portada.")
         return redirect("core:filas_portada")

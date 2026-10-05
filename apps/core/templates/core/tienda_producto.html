@@ -108,4 +108,14 @@ tiene carrito (plan 07, segunda parte, ambigüedad 3).
     </div>
   </div>
 </section>
+
+{% comment %}«Más de la serie» (B-07-030): los demás tomos, para seguir la colección.{% endcomment %}
+{% if serie %}
+<section class="seccion-publica superficie-noche seccion-publica--trama" aria-label="Más de la serie">
+  <div class="columna-publica">
+    {% include "core/_fila_portada.html" with fila=serie %}
+  </div>
+</section>
+{% include "core/_fila_portada_js.html" %}
+{% endif %}
 {% endblock %}

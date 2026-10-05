@@ -20,85 +20,70 @@ deshabilitado (plan 07, segunda parte, ambigüedad 5).
       <h1 id="titulo-carrito" class="titulo-1">Carrito</h1>
     </div>
 
-    {% if carrito.vacio %}
-      <div class="vacio pila-3">
-        <p>Tu carrito está vacío.</p>
-        <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Ver el catálogo</a></p>
-      </div>
-    {% else %}
-      <div class="carrito">
-        <ul class="carrito__lineas" aria-label="Productos del carrito">
-          {% for item in carrito.lineas %}
-            <li class="linea-carrito{% if item.disponibilidad != 'disponible' %} linea-carrito--con-problema{% endif %}">
-              <a href="{% url 'core:tienda_producto' item.producto.pk %}" class="linea-carrito__portada" tabindex="-1" aria-hidden="true">
-                {% if item.producto.portada %}
-                  <img src="{{ item.producto.portada.url }}" alt="">
-                {% else %}
-                  <span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>
-                {% endif %}
-              </a>
-
-              <div class="linea-carrito__datos pila-2">
-                <a href="{% url 'core:tienda_producto' item.producto.pk %}" class="linea-carrito__titulo">{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</a>
-                <div class="fila-2">
-                  {% if item.pre_venta %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
-                  {% if item.disponibilidad == "no_disponible" %}
-                    <span class="marca-estado marca-estado--error">Producto no disponible</span>
-                  {% elif item.disponibilidad == "stock_insuficiente" %}
-                    <span class="marca-estado marca-estado--error">Stock insuficiente · máximo {{ item.maximo }}</span>
-                  {% endif %}
-                </div>
-                <p class="linea-carrito__precio">
-                  {% if item.oferta %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ item.producto.precio|pesos }}</s>{% endif %}
-                  <span class="datos">{{ item.precio|pesos }}</span> c/u
-                  {% if item.oferta %}<span class="texto-chico secundario">{{ item.oferta.descripcion }}</span>{% endif %}
-                  {% if item.precio_cambio %}
-                    <span class="marca-estado marca-estado--atencion">El precio de este producto ha cambiado</span>
-                    <span class="texto-chico secundario">antes {{ item.linea.precio_visto|pesos }}</span>
-                  {% endif %}
-                </p>
-              </div>
-
-              <div class="linea-carrito__acciones">
-                {% if item.disponibilidad != "no_disponible" %}
-                  <form method="post" action="{% url 'tienda:cantidad' item.linea.pk %}" class="fila-2 fila-abajo">
-                    {% csrf_token %}
-                    {% with pk_texto=item.linea.pk|stringformat:"s" %}{% with id_cantidad="cantidad-"|add:pk_texto %}
-                      {% if item.pre_venta %}
-                        {% include "_cantidad.html" with id=id_cantidad valor=item.linea.cantidad %}
-                      {% else %}
-                        {% include "_cantidad.html" with id=id_cantidad valor=item.linea.cantidad maximo=item.maximo %}
-                      {% endif %}
-                    {% endwith %}{% endwith %}
-                    <button type="submit" class="boton-menor">Actualizar</button>
-                  </form>
-                {% else %}
-                  <p class="texto-chico secundario">{{ item.linea.cantidad }} unidad(es)</p>
-                {% endif %}
-                <form method="post" action="{% url 'tienda:quitar' item.linea.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="boton-texto boton-texto--critico">Quitar</button>
-                </form>
-              </div>
-
-              <p class="linea-carrito__subtotal"><span class="sr-only">Subtotal: </span>{{ item.subtotal|pesos }}</p>
-            </li>
-          {% endfor %}
-        </ul>
-
-        <aside class="resumen-carrito pila-3" aria-label="Resumen">
-          <p class="antetitulo">{{ carrito.unidades }} unidad(es)</p>
-          <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ carrito.total|pesos }}</span></p>
-          <button type="button" class="boton-primario" disabled aria-describedby="pago-proximamente">Ir a pagar</button>
-          {% if carrito.se_puede_pagar %}
-            <p id="pago-proximamente" class="texto-chico secundario">El pago estará disponible próximamente.</p>
-          {% else %}
-            <p id="pago-proximamente" class="texto-chico secundario">Para avanzar, quitá los productos no disponibles y ajustá las cantidades marcadas.</p>
-          {% endif %}
-          <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Seguir comprando</a>
-        </aside>
-      </div>
-    {% endif %}
+    <div data-carrito>
+      {% include "tienda/_carrito.html" %}
+    </div>
   </div>
 </section>
+<script>
+  // La cantidad se aplica sola al cambiarla (B-07-028): con las flechas al
+  // instante, escribiendo cuando se deja de tipear. El servidor verifica el
+  // stock y devuelve el carrito recalculado; si hubo que topear, lo avisa.
+  (function () {
+    const contenedor = document.querySelector("[data-carrito]");
+    if (!contenedor) return;
+    const ocultarBotones = function () {
+      for (const boton of contenedor.querySelectorAll("[data-sin-guion]")) boton.hidden = true;
+    };
+    ocultarBotones();
+    let espera = null;
+    let pedido = null;
+
+    async function enviar(formulario) {
+      const foco = document.activeElement && document.activeElement.id;
+      if (pedido) pedido.abort();
+      pedido = new AbortController();
+      contenedor.setAttribute("aria-busy", "true");
+      try {
+        const respuesta = await fetch(formulario.action, {
+          method: "POST",
+          body: new FormData(formulario),
+          headers: { "X-Requested-With": "fetch" },
+          signal: pedido.signal,
+        });
+        const datos = await respuesta.json();
+        contenedor.innerHTML = datos.html;
+        ocultarBotones();
+        window.mostrarFlechasDeCantidad(contenedor);
+        if (datos.nivel !== "exito") window.avisarEnTienda(datos.nivel, datos.mensaje);
+        window.contarUnidadesEnTienda(datos.unidades);
+        const recuperar = foco && document.getElementById(foco);
+        if (recuperar) recuperar.focus();
+      } catch (error) {
+        if (error.name !== "AbortError") formulario.submit();
+      } finally {
+        contenedor.removeAttribute("aria-busy");
+      }
+    }
+
+    contenedor.addEventListener("change", function (evento) {
+      const formulario = evento.target.closest("[data-cantidad-linea]");
+      if (!formulario) return;
+      window.clearTimeout(espera);
+      enviar(formulario);
+    });
+    contenedor.addEventListener("input", function (evento) {
+      const formulario = evento.target.closest("[data-cantidad-linea]");
+      if (!formulario || !evento.target.value) return;
+      window.clearTimeout(espera);
+      espera = window.setTimeout(function () { enviar(formulario); }, 600);
+    });
+    contenedor.addEventListener("submit", function (evento) {
+      const formulario = evento.target.closest("[data-cantidad-linea], [data-quitar-linea]");
+      if (!formulario) return;
+      evento.preventDefault();
+      enviar(formulario);
+    });
+  })();
+</script>
 {% endblock %}

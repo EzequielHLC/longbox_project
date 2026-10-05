@@ -1,0 +1,40 @@
+{% extends "base_publico.html" %}
+{% comment %}
+Las pantallas de acceso: inicio de sesión, registro y recuperación de contraseña
+(`identidad_visual.md`, Registro e inicio de sesión; B-07-018, B-07-020).
+
+Pantalla partida en diagonal: a la izquierda, noche con la imagen del ingreso
+que el Administrador carga en la identidad visual; sin ella, el logo sobre la
+trama; sin logo, el nombre de la tienda en grande. A la derecha, papel con el
+formulario. En el teléfono queda sólo el formulario, con una franja de cinta
+arriba. Sin la búsqueda del encabezado ni el globo de preguntas: acá se viene
+a entrar.
+
+Las pantallas llenan `contenido`; el título va adentro, como siempre.
+{% endcomment %}
+
+{% block busqueda_encabezado %}{% endblock %}
+{% block globo_ayuda %}{% endblock %}
+
+{% block secciones %}
+<div class="acceso">
+  <div class="acceso__escena superficie-noche{% if textos_tienda.imagen_acceso %} acceso__escena--imagen{% endif %}" aria-hidden="true">
+    {% if textos_tienda.imagen_acceso %}
+      <img src="{{ textos_tienda.imagen_acceso.url }}" alt="" class="acceso__imagen">
+    {% elif textos_tienda.logo %}
+      <div class="acceso__cuadro"><img src="{{ textos_tienda.logo.url }}" alt="" class="acceso__logo"></div>
+    {% else %}
+      <div class="acceso__cuadro">
+        <span class="acceso__nombre">{% firstof textos_tienda.nombre_tienda "Longbox" %}</span>
+        <span class="sticker acceso__sticker">¡BIENVENIDO!</span>
+      </div>
+    {% endif %}
+  </div>
+  <div class="acceso__formulario superficie-papel">
+    <div class="acceso__columna">
+      {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
+      {% block contenido %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

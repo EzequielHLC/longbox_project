@@ -65,10 +65,47 @@ cambios» vuelve a cargar lo guardado (A1).
     <div class="seccion__titulo"><h2 id="titulo-apariencia">Apariencia</h2></div>
     <div class="dos-columnas">
       <div class="pila-3">
-        {% if identidad.logo %}
-          <img src="{{ identidad.logo.url }}" alt="Logo actual" class="miniatura-logo">
-        {% endif %}
-        {% include "_campo.html" with campo=form.logo_nuevo %}
+        {% comment %}
+        Cada imagen con su vista: la cargada, o la predeterminada que se usa sin
+        ella, dibujada como la tarjeta «Ver todo» de las filas (B-07-025).
+        {% endcomment %}
+        <div class="imagen-configurable">
+          <div class="imagen-configurable__vista modo-publico superficie-noche">
+            {% if identidad.logo %}
+              <img src="{{ identidad.logo.url }}" alt="Logo actual">
+            {% else %}
+              <span class="imagen-configurable__predeterminada">
+                <span class="imagen-configurable__nombre">{{ identidad.nombre_tienda }}</span>
+                <span class="imagen-configurable__rotulo">Predeterminado</span>
+              </span>
+            {% endif %}
+          </div>
+          <div class="pila-2 min-0">
+            {% include "_campo.html" with campo=form.logo_nuevo %}
+            {% if identidad.logo %}{% include "_casilla.html" with campo=form.quitar_logo %}{% else %}<p class="ayuda">Sin logo, el encabezado muestra el nombre de la tienda.</p>{% endif %}
+          </div>
+        </div>
+        <div class="imagen-configurable">
+          <div class="imagen-configurable__vista imagen-configurable__vista--alta modo-publico superficie-noche">
+            {% if identidad.imagen_acceso %}
+              <img src="{{ identidad.imagen_acceso.url }}" alt="Imagen del ingreso actual">
+            {% elif identidad.logo %}
+              <span class="imagen-configurable__predeterminada">
+                <img src="{{ identidad.logo.url }}" alt="" class="imagen-configurable__logo">
+                <span class="imagen-configurable__rotulo">Predeterminado: el logo</span>
+              </span>
+            {% else %}
+              <span class="imagen-configurable__predeterminada">
+                <span class="imagen-configurable__nombre">{{ identidad.nombre_tienda }}</span>
+                <span class="imagen-configurable__rotulo">Predeterminado</span>
+              </span>
+            {% endif %}
+          </div>
+          <div class="pila-2 min-0">
+            {% include "_campo.html" with campo=form.acceso_nueva %}
+            {% if identidad.imagen_acceso %}{% include "_casilla.html" with campo=form.quitar_acceso %}{% else %}<p class="ayuda">Sin imagen, el ingreso muestra el logo; sin logo, el nombre de la tienda.</p>{% endif %}
+          </div>
+        </div>
         <div class="rejilla-3">
           {% include "_campo.html" with campo=form.color_primario %}
           {% include "_campo.html" with campo=form.color_secundario %}

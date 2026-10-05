@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-03**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-05**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,22 +11,26 @@ enlazan a éste.
 
 ## Resumen
 
-Quinta fotografía. **Se construyó la etapa B sin la compra**: el carrito (plan 07, segunda parte) y
-las ofertas (plan 03, segunda parte). La compra, el invitado y los pedidos siguen esperando a
-`Pedido` y `TransaccionPago`.
+Sexta fotografía. **La tienda pública quedó completa hasta la compra**, y el sistema se preparó para
+la demostración. La compra, los pedidos y el pago siguen esperando a `Pedido` y
+`TransaccionPago`.
 
 **Lo que más se movió.**
-- **El precio visible sale de una sola función.** La tienda, el carrito y, cuando exista, el
-  mostrador cobran el precio con la oferta vigente. La oferta no toca el precio guardado del
-  producto: darla de baja o dejarla vencer lo restaura solo (B-03-007).
-- **El carrito guarda dos importes por línea**, el vigente y el que vio el Cliente, para poder
-  avisar que el precio cambió sin dejar de propagar (B-07-003).
-- **La propagación de precios llega a los carritos**: la tabla de precios, el margen y cada
-  operación de oferta. Por eso `CU-PVP-TBM` y `MAR` pasan a Verificado (R-03-001).
-- **P-05 tiene forma**: `manage.py ejecutar_temporizador` es la puerta de los procesos periódicos.
-  Hoy corre el ciclo de vigencia de ofertas (`CO-059`) y arranca con `demostracion.bat`.
-- **Los correos salen por SMTP** con copia en la consola y el estilo del sistema (B-00-008). Mientras
-  el `.env` no tenga una contraseña de aplicación válida, quedan sólo en la consola.
+- **La tienda es pública** (C-20 resuelta): portada con banners, «Lo que se viene» y filas por
+  etiqueta o grupo que arma el Administrador; catálogo con un panel de filtros de varios valores
+  que se aplican mientras se cambian; ficha con «Más de la serie»; agregar al carrito desde la
+  tarjeta; y un carrito que recalcula precios y stock solo, sin botón de actualizar
+  (B-07-009 a B-07-030).
+- **Correcciones encontradas ensayando la demostración, cada una con su prueba primero**: un
+  interbloqueo entre dos bajas de administrador simultáneas (B-13-006), el registro de auditoría
+  que ahora no se puede modificar ni desde la base (B-16-004), errores 500 por doble envío
+  (B-17-016, B-04-006), una consulta por producto en el catálogo público (B-07-007) y la zona
+  horaria, que estaba en UTC (B-03-012).
+- **Las pantallas de acceso siguen la guía** y llevan una imagen configurable en la identidad
+  visual (B-07-018, B-07-020, B-07-025).
+- **Dos desvíos consultados de la guía visual**, por pedido del responsable: el encabezado que
+  acompaña al bajar (B-07-011) y la lista propia del desplegable donde el navegador no la sabe
+  dibujar (B-00-011).
 
 **Por qué varios quedan `Parcial` con todas sus pruebas de contrato.** Sus contratos declaran un
 efecto sobre los filtros del catálogo público (`CU-CAT-GRM`, `GRB`, `ETM`, `ETB`; B-02-004), o
@@ -43,10 +47,10 @@ todo lo demás.
 | Pendientes | 31 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **94**, de los cuales **89 verificados**
-y **5 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`). Sin prueba: **125**. El
-detalle por contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 320
-pruebas de contrato.
+Contratos de operación especificados: **219**. Con prueba: **95**, de los cuales **89 verificados**
+y **6 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045` y `CO-060`, que por ahora
+sólo tiene la prueba de doble envío). Sin prueba: **124**. El detalle por contrato está en
+[pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 341 pruebas de contrato.
 
 ### Cómo leer la columna «Contratos»
 
@@ -136,7 +140,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con filtros, de a 24; ficha con galería, **precio tachado con la oferta vigente** y el filtro de precio sobre el precio que se cobra (B-03-011). «Agregar al carrito» y «Reservar» inician `CU-TDA-CRA` (R-07-001). `Parcial`: «Avisarme cuando haya stock» espera a `CU-RST-SUS`. Plan 07 |
+| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con panel de filtros de varios valores que se aplican mientras se cambian, y orden elegible (B-07-013), de a 24; ficha con galería, **precio tachado con la oferta vigente** y el filtro de precio sobre el precio que se cobra (B-03-011). «Agregar al carrito» y «Reservar» inician `CU-TDA-CRA` (R-07-001). `Parcial`: «Avisarme cuando haya stock» espera a `CU-RST-SUS`. Plan 07 |
 | `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» deshabilitado hasta `CU-TDA-CMP` (B-07-006). Plan 07, segunda parte. |
 | `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta reserva sin tope (A1). El personal no tiene carrito (B-07-005). |
 | `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2), sin tope en Pre-venta. La línea de otro carrito responde 404. |
@@ -144,10 +148,20 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-TDA-CMP` | Pendiente | 0 / 6 | No existen `Pedido` ni `TransaccionPago`. |
 | `CU-TDA-INV` | Pendiente | 0 / 5 | Ídem. |
 
-**Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera parte; B-07-009). El
-Administrador las arma por etiqueta o por grupo de etiquetas en «Tienda → Filas de la portada»; el
-Cliente las recorre de costado. Con prueba (`test_filas_portada.py`, 10 casos, incluido el rol
-equivocado por la dirección real). El código del caso de uso lo asigna el responsable.
+**Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera y cuarta parte;
+B-07-009, B-07-010). El Administrador las arma por etiqueta o por grupo de etiquetas en «Tienda →
+Filas de la portada», en tarjetas que se reordenan arrastrando y con imagen opcional; el Cliente
+las recorre de costado. La cáscara de la tienda suma el encabezado fijo con búsqueda y menú de
+cuenta (B-07-011, desvío consultado), la cinta de accesos, el globo de preguntas frecuentes y el
+pie (B-07-012). Con prueba (`test_filas_portada.py`, 19 casos, incluido el rol equivocado por la
+dirección real). El código del caso de uso lo asigna el responsable.
+
+**Quinta parte del plan 07 (2026-10-05):** la portada es pública (C-20 resuelta, B-07-019) y suma
+«Lo que se viene» (B-07-015); las tarjetas agregan al carrito sin abrir la ficha (`CO-083`,
+B-07-014) y llevan los carteles «¡TOMO 1!» y «¡NOVEDAD!» (B-07-024); las pantallas de acceso siguen la guía, con la imagen del ingreso configurable en la identidad
+visual (B-07-018, B-07-020); se quitó la cinta de accesos (B-07-021); el logo y la imagen del ingreso se pueden quitar (B-07-025); y donde el navegador no
+tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consultado). Con prueba:
+`test_tienda_quinta_parte.py`, 18 casos, y `CO-131` suma la imagen del ingreso.
 
 ### `08` Gestión de Pedidos
 
@@ -268,20 +282,22 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-03**, con PostgreSQL levantado, sobre el repositorio entero.
+Medición del **2026-10-05**, con PostgreSQL levantado, sobre el repositorio entero.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1812 pasan**, 0 fallos, 7 min 44 s. Después se ajustó el informe de baja de tipo (R-17-003) y se volvió a correr `apps/catalog` entero: 749 pasan |
-| **Contratos** | **89 de 219 verificados**, 5 parciales, 125 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **96 %** (6893 sentencias, 271 sin cubrir) |
+| Suite de pruebas | **1920 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 11 s) |
+| **Contratos** | **89 de 219 verificados**, 6 parciales, 124 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **97 %** (7173 sentencias, 228 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 194 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos |
+| Formato | `black --check .`: 229 archivos sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción y el `.env` de esta máquina: **sin advertencias** |
 
-**Las dos verificaciones a mano.** Las migraciones de hoy (`tienda.0001`, `catalog.0022`,
-`core.0022`) aplicaron sobre la base de desarrollo, y `ejecutar_temporizador` corrió sobre ella.
+**Las dos verificaciones a mano.** Las migraciones de estos días (`core.0023` a `core.0026`:
+la auditoría inmutable en la base, las filas de la portada, su imagen y la imagen del ingreso)
+aplicaron sobre la base de la presentación, y `ejecutar_temporizador` corrió sobre ella. El
+disparador `auditoria_inmutable` está en la base.
 `makemigrations --check` no detecta cambios. Las restricciones están en la base:
 `linea_unica_por_producto` (restricción e índice), `linea_cantidad_minima`,
 `carrito_persistente_si_tiene_usuario`, `oferta_alcance_coherente`, `oferta_fechas_coherentes`,

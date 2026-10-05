@@ -262,3 +262,63 @@ el del navegador. El desplegable cerrado ya lo tenía; la lista que se abre y la
 
 **Qué habría que cambiar.**
 `TOKENS_VISUALES.md`: el desplegable abierto y las barras de desplazamiento.
+
+---
+
+### B-00-010 · Arrastrar y soltar para ordenar
+
+**Tipo:** Agregado · **Fecha:** 2026-10-04 · **Alcance:** las filas de la portada (B-07-010)
+**Estado:** Abierta — consultado: pedido explícito del responsable el 2026-10-04
+
+**Qué apareció.**
+El gestor de filas de la portada se ordena arrastrando las tarjetas. La guía lo prevé como un
+patrón a consultar.
+
+**Qué dice la especificación.**
+> «Si una pantalla necesita un patrón que no está descrito (un gráfico de reportes, un calendario,
+> arrastrar y soltar), no se improvisa. […] La resolución se agrega a este archivo.»
+> (`identidad_visual.md`)
+
+**Qué se hizo.**
+- Se arrastra sólo desde un **asa** visible en la cabecera de la tarjeta: arrastrar desde un campo
+  seleccionaría texto. El asa usa el ícono de menú y el cursor de agarrar.
+- Mientras se arrastra, la tarjeta queda semitransparente y con borde discontinuo, y las demás se
+  corren para mostrar dónde va a caer. Ninguna animación nueva.
+- **Siempre hay una alternativa sin arrastrar**: «Subir» y «Bajar» en cada tarjeta, que se apagan en
+  los extremos y anuncian el lugar nuevo a los lectores de pantalla.
+- Nada se guarda al soltar. El orden se guarda con el botón del formulario, como cualquier otro
+  cambio.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: sumar el patrón tal como está arriba, para que cualquier otra lista
+ordenable se haga igual.
+
+---
+
+### B-00-011 · Una lista propia para el desplegable donde el navegador no la sabe dibujar
+
+**Tipo:** Desvío · **Fecha:** 2026-10-05 · **Alcance:** todos los `<select>` del sistema
+**Estado:** Abierta — consultado: pedido explícito del responsable el 2026-10-05
+
+**Qué apareció.**
+El responsable vio los desplegables abriendo la lista del navegador. La lista con el diseño del
+sistema (B-00-009) depende de `appearance: base-select`, que hoy sólo tienen Chrome y Edge
+recientes.
+
+**Qué dice la especificación.**
+> «los controles **nativos** (`<select>`, …) —ahora estilizados con `appearance: none` donde hace
+> falta, pero sin reconstruirlos en JavaScript—» (`identidad_visual.md`, Qué cambia respecto del
+> estilo preliminar plano)
+
+**Qué se hizo.**
+- Donde el navegador no tiene `base-select`, un guion arma encima del `<select>` un botón y una
+  lista con el diseño del sistema. Donde lo tiene, no hace nada y sigue la lista de B-00-009.
+- El `<select>` sigue en el formulario: envía el valor, lo leen los demás guiones y dispara
+  `change`. Lo que se agrega sigue el patrón de accesibilidad «combobox de sólo selección»: se
+  abre con Enter, Espacio o las flechas, se recorre con flechas o tecleando la inicial (sin
+  distinguir acentos), Enter elige y Escape cierra.
+- Se aplica también a los campos que se suman después (ítems del lote, filas de la portada).
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: exceptuar el desplegable de la regla «sin reconstruirlos en JavaScript»
+mientras `base-select` no esté en todos los navegadores, con las condiciones de arriba.

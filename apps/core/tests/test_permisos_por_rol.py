@@ -7,6 +7,9 @@ from apps.accounts.tests.factories import UsuarioFactory
 
 URL_LOGIN = reverse("accounts:login")
 
+# La tienda es del cliente, pero desde que se resolvió C-20 (2026-10-05) la
+# portada también la ve cualquiera: lo que el personal no puede abrir es el
+# carrito, y lo que un invitado no puede abrir es el mostrador.
 VISTAS_POR_ROL = {
     "cliente": reverse("core:tienda"),
     "cajero": reverse("core:mostrador"),
@@ -29,7 +32,7 @@ def test_cada_rol_entra_a_su_propia_seccion(client, rol):
         ("cliente", VISTAS_POR_ROL["administrador"]),
         ("cliente", VISTAS_POR_ROL["cajero"]),
         ("cajero", VISTAS_POR_ROL["administrador"]),
-        ("administrador", VISTAS_POR_ROL["cliente"]),
+        ("administrador", reverse("tienda:carrito")),
     ],
 )
 def test_un_rol_que_no_corresponde_recibe_403(client, rol, url_ajena):
@@ -41,7 +44,7 @@ def test_un_rol_que_no_corresponde_recibe_403(client, rol, url_ajena):
     assert respuesta.status_code == 403
 
 
-@pytest.mark.parametrize("url", list(VISTAS_POR_ROL.values()))
+@pytest.mark.parametrize("url", [VISTAS_POR_ROL["cajero"], VISTAS_POR_ROL["administrador"]])
 def test_sin_sesion_redirige_al_login(client, url):
     respuesta = client.get(url)
 

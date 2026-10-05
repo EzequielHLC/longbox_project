@@ -59,7 +59,8 @@ def test_CO194_el_padron_lista_nombre_correo_estado_y_registro(client_admin, luc
     assert "Lucía Gómez" in contenido
     assert "lucia@correo.test" in contenido
     assert lucia.get_estado_display() in contenido
-    assert lucia.date_joined.strftime("%d/%m/%Y") in contenido
+    # En hora local: entre las 21 y las 24 de Buenos Aires, en UTC ya es mañana.
+    assert timezone.localtime(lucia.date_joined).strftime("%d/%m/%Y") in contenido
     # Postcondición: ninguna.
     assert _foto(lucia) == antes
     assert RegistroAuditoria.objects.count() == registros
@@ -100,7 +101,8 @@ def test_CO195_la_ficha_presenta_los_datos_que_declara_el_contrato(client_admin,
     assert "Posadas" in contenido
     assert "Misiones" in contenido
     assert lucia.get_estado_display() in contenido
-    assert lucia.date_joined.strftime("%d/%m/%Y") in contenido
+    # En hora local: entre las 21 y las 24 de Buenos Aires, en UTC ya es mañana.
+    assert timezone.localtime(lucia.date_joined).strftime("%d/%m/%Y") in contenido
     assert timezone.localtime(lucia.fecha_aceptacion_politica).strftime("%d/%m/%Y") in contenido
 
 

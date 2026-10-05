@@ -50,7 +50,7 @@ se vuelve a ella al final:
 
     python -m pytest -n auto --randomly-seed=<una semilla que diga el público> -q --no-cov
 
-Qué se ve: la semilla en el encabezado, y al final **1890 pasan, 0 fallan**, en unos 2 minutos.
+Qué se ve: la semilla en el encabezado, y al final **1920 pasan, 0 fallan**, en unos 2 minutos.
 Se ensayó con cuatro semillas distintas; ninguna prueba depende del orden. Plan B:
 `docs/pruebas/demo/suite.txt`.
 

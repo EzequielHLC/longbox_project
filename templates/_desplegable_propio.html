@@ -1,0 +1,18 @@
+{% load static %}{% comment %}
+El desplegable con el diseño del sistema donde el navegador no sabe dibujarlo
+(B-00-011).
+
+Donde existe `appearance: base-select` (Chrome y Edge recientes) la lista que se
+abre ya tiene el diseño del sistema por CSS, y este guion no hace nada. Donde no
+existe, la lista abierta era la del sistema operativo: acá se arma una propia.
+
+El `<select>` sigue en el formulario: es el que envía el valor, el que leen los
+demás guiones y el que dispara `change`. Lo que se agrega encima es un botón con
+el patrón «combobox de sólo selección» (WAI-ARIA): se abre con el puntero, con
+Enter, Espacio o las flechas; se recorre con flechas, Inicio y Fin, o tecleando
+la inicial; Enter elige y Escape cierra sin cambiar.
+
+`<html data-desplegable-propio>` lo activa aunque el navegador soporte
+`base-select`: sirve para probarlo.
+{% endcomment %}
+<script src="{% static 'js/desplegable.js' %}" defer></script>

@@ -77,6 +77,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.sesion",
                 "apps.core.context_processors.identidad_tienda",
+                "apps.core.context_processors.accesos_tienda",
                 "apps.tienda.context_processors.carrito_tienda",
             ],
         },

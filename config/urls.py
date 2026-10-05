@@ -28,7 +28,8 @@ urlpatterns = [
     path("proveedores/", include("apps.suppliers.urls")),
     path("tienda/carrito/", include("apps.tienda.urls")),
     path("", include("apps.core.urls")),
-    path("", RedirectView.as_view(pattern_name="accounts:login"), name="inicio"),
+    # La raíz es la tienda: pública desde que se resolvió C-20 (2026-10-05).
+    path("", RedirectView.as_view(pattern_name="core:tienda"), name="inicio"),
 ]
 
 # Las portadas subidas por el personal las sirve el runserver solo en

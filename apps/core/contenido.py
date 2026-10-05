@@ -173,7 +173,16 @@ CAMPOS_DE_IDENTIDAD = (
 )
 
 
-def actualizar_identidad(formulario, *, actor, ip=None, logo=None, imagen_fondo=None):
+def actualizar_identidad(
+    formulario,
+    *,
+    actor,
+    ip=None,
+    logo=None,
+    imagen_fondo=None,
+    imagen_acceso=None,
+    quitar=(),
+):
     """`CO-131`: aplica los cambios a la tienda de inmediato.
 
     Se audita con los campos modificados y sus valores anteriores. Las
@@ -192,15 +201,22 @@ def actualizar_identidad(formulario, *, actor, ip=None, logo=None, imagen_fondo=
         for campo, nueva, etiqueta in (
             ("logo", logo, "logo"),
             ("imagen_fondo", imagen_fondo, "imagen de fondo"),
+            ("imagen_acceso", imagen_acceso, "imagen del ingreso"),
         ):
+            vieja = getattr(guardada, campo).name
             if nueva is not None:
-                vieja = getattr(guardada, campo).name
                 setattr(identidad, campo, nueva)
                 cambios.append(f"{etiqueta} reemplazado" if vieja else f"{etiqueta} cargado")
-                if vieja:
-                    transaction.on_commit(
-                        lambda nombre=vieja: IdentidadVisual.logo.field.storage.delete(nombre)
-                    )
+            elif campo in quitar and vieja:
+                # Sin imagen, la tienda vuelve a su vista predeterminada (B-07-025).
+                setattr(identidad, campo, "")
+                cambios.append(f"{etiqueta} quitado")
+            else:
+                continue
+            if vieja:
+                transaction.on_commit(
+                    lambda nombre=vieja: IdentidadVisual.logo.field.storage.delete(nombre)
+                )
 
         identidad.actualizado_en = timezone.now()
         identidad.actualizado_por = actor

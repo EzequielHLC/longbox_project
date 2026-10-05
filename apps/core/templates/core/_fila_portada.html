@@ -1,0 +1,49 @@
+{% comment %}
+Una fila de la portada que se recorre de costado (B-07-009, B-07-010, B-07-015).
+Sirve para las filas del Administrador y para «Lo que se viene»: `fila` trae
+`pk`, `titulo_visible`, `antetitulo`, `imagen`, `productos` y `ver_todo`.
+
+Abre con una tarjeta titular que lleva a «Ver todo»: con la imagen de la fila
+o, sin ella, con un abanico de las primeras portadas. Las flechas van sobre los
+bordes de la pista y se esconden en cada extremo (sin contador, B-07-029); debajo, la barra de recorrido
+reemplaza a la barra del navegador (una sola barra, no dos). Todo eso lo pone
+el guion de la portada: sin él, la pista se recorre con su barra nativa.
+{% endcomment %}
+<div class="fila-portada" data-fila-portada>
+  <div class="fila fila-entre fila-abajo">
+    <div class="titulo-seccion">
+      <p class="antetitulo">{{ fila.antetitulo }}</p>
+      <h2 id="fila-{{ fila.pk }}">{{ fila.titulo_visible }}</h2>
+    </div>
+    <div class="fila-portada__mandos">
+      <a href="{{ fila.ver_todo }}" class="boton-texto">Ver todo →</a>
+    </div>
+  </div>
+  <div class="fila-portada__marco">
+    <button type="button" class="fila-portada__flecha fila-portada__flecha--atras" data-desplazar="-1" aria-label="Ver los anteriores de {{ fila.titulo_visible }}" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" class="icono"><path d="M13 5l-7 7 7 7M19 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="fila-portada__pista" data-pista tabindex="0" aria-labelledby="fila-{{ fila.pk }}">
+      <a href="{{ fila.ver_todo }}" class="fila-portada__titular{% if not fila.imagen %} fila-portada__titular--sin-imagen{% endif %}">
+        {% if fila.imagen %}
+          <img src="{{ fila.imagen.url }}" alt="" loading="lazy">
+          <span class="fila-portada__titular-nombre">{{ fila.titulo_visible }}</span>
+        {% else %}
+          <span class="fila-portada__titular-nombre">{{ fila.titulo_visible }}</span>
+          {# Sin imagen propia, un abanico con las primeras portadas de la fila. #}
+          <span class="fila-portada__abanico" aria-hidden="true">
+            {% for producto in fila.productos|slice:":3" %}{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" loading="lazy">{% endif %}{% endfor %}
+          </span>
+        {% endif %}
+        <span class="fila-portada__titular-ver">Ver todo →</span>
+      </a>
+      {% for producto in fila.productos %}
+        {% include "core/_tarjeta_producto.html" with producto=producto %}
+      {% endfor %}
+    </div>
+    <button type="button" class="fila-portada__flecha fila-portada__flecha--adelante" data-desplazar="1" aria-label="Ver los siguientes de {{ fila.titulo_visible }}" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" class="icono"><path d="M11 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+  <div class="fila-portada__recorrido" aria-hidden="true" hidden><span data-recorrido></span></div>
+</div>

@@ -6,28 +6,53 @@ Portada a 2:3 con sus colores, título, editorial, precio y el rótulo de estado
 sesgado sobre la portada: «Disponible», «Pre-venta» o «Sin stock». Con una
 oferta vigente, el precio original sale tachado antes del que se cobra.
 
+Plan 07, quinta parte: el cartel «¡TOMO 1!» o «¡NOVEDAD!» (B-07-024) sobre la portada,
+la fecha de llegada de una pre-venta, y el botón para agregar una unidad al
+carrito sin abrir la ficha (B-07-014). El botón va fuera del enlace —un
+formulario no puede ir dentro de un enlace— y sólo para quien tiene carrito:
+invitado o cliente, nunca el personal. Sin stock, no hay botón.
+
     {% include "core/_tarjeta_producto.html" with producto=producto volver=parametros %}
 {% endcomment %}
-<a href="{% url 'core:tienda_producto' producto.pk %}{% if volver %}?volver={{ volver|urlencode }}{% endif %}"
-   class="tarjeta-producto{% if producto.estado_publico == 'agotado' %} tarjeta-producto--sin-stock{% endif %}"
-   data-indice="{{ producto.indice|default:0 }}">
-  <div class="tarjeta-producto__portada">
-    {% if producto.estado_publico == "pre_venta" %}
-      <span class="rotulo-estado rotulo-estado--pre-venta"><span>Pre-venta</span></span>
-    {% elif producto.estado_publico == "agotado" %}
-      <span class="rotulo-estado rotulo-estado--sin-stock">Sin stock</span>
-    {% else %}
-      <span class="rotulo-estado rotulo-estado--disponible">Disponible</span>
-    {% endif %}
-    {% if producto.portada %}
-      <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy" data-portada="{{ producto.pk }}">
-    {% else %}
-      <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
-    {% endif %}
-  </div>
-  <div class="tarjeta-producto__cuerpo">
-    <span class="tarjeta-producto__titulo">{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</span>
-    <span class="tarjeta-producto__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
-    <span class="tarjeta-producto__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</span>
-  </div>
-</a>
+{% with volumen=producto.productoeditorial.volumen %}
+<article class="tarjeta-producto{% if producto.estado_publico == 'agotado' %} tarjeta-producto--sin-stock{% endif %}" data-indice="{{ producto.indice|default:0 }}">
+  <a href="{% url 'core:tienda_producto' producto.pk %}{% if volver %}?volver={{ volver|urlencode }}{% endif %}" class="tarjeta-producto__enlace">
+    <div class="tarjeta-producto__portada">
+      {% if producto.estado_publico == "pre_venta" %}
+        <span class="rotulo-estado rotulo-estado--pre-venta"><span>Pre-venta</span></span>
+      {% elif producto.estado_publico == "agotado" %}
+        <span class="rotulo-estado rotulo-estado--sin-stock">Sin stock</span>
+      {% else %}
+        <span class="rotulo-estado rotulo-estado--disponible">Disponible</span>
+      {% endif %}
+      {% if producto.cartel %}<span class="cartel-tomo{% if producto.cartel == "¡TOMO 1!" %} cartel-tomo--primero{% endif %}">{{ producto.cartel }}</span>{% endif %}
+      {% if producto.portada %}
+        <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy" data-portada="{{ producto.pk }}">
+      {% else %}
+        <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+      {% endif %}
+    </div>
+    <div class="tarjeta-producto__cuerpo">
+      <span class="tarjeta-producto__titulo">{{ producto.titulo }}{% if volumen or volumen == 0 %} #{{ volumen }}{% endif %}</span>
+      <span class="tarjeta-producto__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
+      {% if producto.estado_publico == "pre_venta" %}
+        {% with llegada=producto.productoeditorial.llegada_vigente %}
+          {% if llegada %}<span class="tarjeta-producto__llegada">Llega el <span class="datos">{{ llegada|date:"d/m" }}</span></span>{% endif %}
+        {% endwith %}
+      {% endif %}
+      <span class="tarjeta-producto__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</span>
+    </div>
+  </a>
+  {% if unidades_en_carrito is not None and producto.estado_publico != "agotado" %}
+    <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="tarjeta-producto__agregar" data-agregar-rapido>
+      {% csrf_token %}
+      <input type="hidden" name="cantidad" value="1">
+      <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+      <button type="submit" title="{% if producto.estado_publico == 'pre_venta' %}Reservar{% else %}Agregar al carrito{% endif %}">
+        {% include "_iconos.html" with icono="bolsa" %}<span>{% if producto.estado_publico == "pre_venta" %}Reservar{% else %}Agregar{% endif %}</span>
+        <span class="sr-only"> «{{ producto.titulo }}{% if volumen or volumen == 0 %} #{{ volumen }}{% endif %}» al carrito</span>
+      </button>
+    </form>
+  {% endif %}
+</article>
+{% endwith %}

@@ -37,13 +37,13 @@ al plan o a la sección donde está desarrollada.
 | C-14 | Formato de la exportación de inventario | Recomendación del plan, sin objeción: CSV | — |
 | C-15 | Filtros por acción y por rol en el log | Recomendación del plan, sin objeción: acciones agrupadas y rol actual | B-16-001, B-16-002 |
 | C-16 | Markdown de la FAQ | Recomendación del plan, sin objeción: sin HTML crudo | — |
+| C-20 | ¿La portada de la tienda se ve sin iniciar sesión? | Sí, el 2026-10-05: la ve un invitado y cualquier rol, y la raíz del sitio lleva a ella | B-07-019 |
 
 ### Siguen abiertas
 
 | # | Consulta | Dónde está | Qué desbloquea |
 | --- | --- | --- | --- |
 | C-19 | `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita. Construido así (B-03-003) | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
-| C-20 | La portada de la tienda, con el carrusel, sigue siendo sólo para la cuenta de cliente. El catálogo y la ficha ya son públicos (`CO-176`), y la FAQ también. ¿La portada tiene que verse sin iniciar sesión? | B-17-013, B-07-002 | El acceso de `core:tienda` |
 | C-21 | **Nueva.** El logo no admite SVG porque RNF-05 convierte toda imagen a WebP. ¿Se enmienda la guía de `CU-CFG-VIS` o se exceptúa el logo de RNF-05? | B-17-011 | La guía de formato del logo |
 
 ---

@@ -174,7 +174,9 @@ def _banner(rutas, nombre):
 
     ancho, alto, cinta = 1920, 810, 44
     lienzo = Image.new("RGB", (ancho, alto), (10, 10, 12))
-    alto_portada, margen, separacion = alto - cinta - 120, 60, 36
+    # El carrusel recorta los costados según el ancho de la pantalla: las
+    # portadas quedan en el centro, con aire a los lados.
+    alto_portada, margen, separacion = 540, 180, 28
     portadas, ocupado = [], 0
     for ruta in rutas:
         portada = Image.open(ruta).convert("RGB")
@@ -184,8 +186,9 @@ def _banner(rutas, nombre):
         portadas.append(portada)
         ocupado += portada.width + separacion
     x = (ancho - (ocupado - separacion)) // 2
+    arriba = (alto - cinta - alto_portada) // 2
     for portada in portadas:
-        lienzo.paste(portada, (x, margen))
+        lienzo.paste(portada, (x, arriba))
         x += portada.width + separacion
     dibujo = ImageDraw.Draw(lienzo)
     for inicio in range(-cinta, ancho + cinta, 56):
@@ -204,6 +207,36 @@ def _banner(rutas, nombre):
     return imagenes.procesar(
         archivo, lado_mayor=imagenes.LADO_MAYOR_BANNER, tamano_maximo=imagenes.TAMANO_MAXIMO_BANNER
     )
+
+
+def _titular(rutas, nombre):
+    """La imagen de una fila de la portada: tres portadas en abanico sobre noche."""
+    from PIL import Image, ImageDraw
+
+    ancho, alto = 600, 900
+    lienzo = Image.new("RGB", (ancho, alto), (10, 10, 12))
+    dibujo = ImageDraw.Draw(lienzo)
+    # Trama de puntos naranja en la esquina, que se desvanece.
+    for y in range(0, 420, 18):
+        for x in range(0, 420, 18):
+            radio = max(0.0, 4.2 - (x + y) / 140)
+            if radio > 0.4:
+                dibujo.ellipse((x - radio, y - radio, x + radio, y + radio), fill=(255, 106, 19))
+    for indice, (ruta, angulo, x, y) in enumerate(
+        zip(rutas, (9, -5, 3), (40, 170, 110), (120, 60, 300), strict=False)
+    ):
+        portada = Image.open(ruta).convert("RGB")
+        portada.thumbnail((330, 10_000))
+        marco = Image.new("RGB", (portada.width + 12, portada.height + 12), (10, 10, 12))
+        marco.paste(portada, (6, 6))
+        girada = marco.rotate(angulo, expand=True, fillcolor=(10, 10, 12))
+        mascara = marco.convert("L").point(lambda _: 255).rotate(angulo, expand=True)
+        lienzo.paste(girada, (x, y + indice * 10), mascara)
+    salida = BytesIO()
+    lienzo.save(salida, "PNG")
+    from apps.core import imagenes
+
+    return imagenes.procesar(ContentFile(salida.getvalue(), name=f"fila-{nombre}.png"))
 
 
 # ---------------------------------------------------------------------------
@@ -271,8 +304,42 @@ def cargar(origen):
     faq.contenido = FAQ
     faq.save()
 
+    identidad = IdentidadVisual.obtener()
+    if not identidad.correo_contacto:
+        identidad.correo_contacto = "hola@longbox.demo"
+        identidad.save()
+
     series = limpias(leer_series())
     carga = Poblador()
+
+    # La portada de cada tomo, de la galería de la serie (raspar_portadas_tomos.py).
+    # El tomo que no la tiene usa la portada de la serie; el tomo 0 entra sólo si
+    # la galería lo trae.
+    indice_tomos = DATOS / "portadas_tomos.json"
+    por_tomo = json.loads(indice_tomos.read_text(encoding="utf-8")) if indice_tomos.exists() else {}
+    procesadas = {}
+
+    def portada_del_tomo(serie, volumen, de_la_serie):
+        from django.core.files import File
+        from django.core.files.storage import default_storage
+
+        from apps.core.imagenes import ImagenInvalida, procesar
+
+        archivo = por_tomo.get(serie["slug"], {}).get(str(volumen))
+        if not archivo:
+            return de_la_serie
+        ruta = DATOS / "portadas_tomos" / archivo
+        if ruta not in procesadas:
+            try:
+                with open(ruta, "rb") as original:
+                    procesada = procesar(File(original))
+            except (OSError, ImagenInvalida):
+                return de_la_serie
+            procesadas[ruta] = default_storage.save(
+                f"portadas/{serie['slug']}-{volumen:03d}.webp", procesada
+            )
+        return procesadas[ruta]
+
     ivrea = _uno(Editorial, "Ivrea")
     tipos = {
         n: _uno(Tipo, n, clase=Producto.EDITORIAL, usa_formato=True)
@@ -309,12 +376,21 @@ def cargar(origen):
         marcas = str(serie.get("etiquetas") or "").lower()
         propias += [etiqueta("Estado de la serie", v) for k, v in ESTADOS.items() if k in marcas]
         propias += [etiqueta("Colección", v) for k, v in COLECCIONES.items() if k in marcas]
+        galeria = {int(n) for n in por_tomo.get(serie["slug"], {}) if n.isdigit()}
         tomos = cantidad_de_tomos(serie)
+        # Si Ivrea no publica cuántos tomos salieron, la galería lo dice.
+        if not isinstance(serie.get("tomos_argentina"), int) and galeria:
+            tomos = max(tomos, max(galeria))
         en_curso = "en curso" in marcas
         dias = azar.randint(0, 75) if en_curso else azar.randint(120, 2200)
         ultimo = ahora - timedelta(days=dias)
         portada = carga.portada(serie)
-        for volumen in range(1, tomos + 1):
+        volumenes = list(range(1, tomos + 1))
+        # El tomo 0 es un tomo más sólo junto al 1: en «Another 0» el cero es
+        # parte del título de un libro único.
+        if {0, 1} <= galeria:
+            volumenes.insert(0, 0)
+        for volumen in volumenes:
             producto = carga.producto_editorial(
                 titulo=serie["titulo"],
                 volumen=volumen,
@@ -323,7 +399,7 @@ def cargar(origen):
                 formato=formatos[formato(serie)],
                 autor=" ".join(str(serie.get("autor") or "").split()).replace(" ,", ","),
                 descripcion=sinopsis(serie.get("sinopsis")),
-                portada=portada,
+                portada=portada_del_tomo(serie, volumen, portada),
                 etiquetas=propias,
                 ultimo=volumen == tomos,
                 en_curso=en_curso,
@@ -375,8 +451,13 @@ def cargar(origen):
 
     filas = []
     for orden, demografia in enumerate(DEMOGRAFIAS, start=1):
-        filas.append(FilaPortada(etiqueta=etiquetas[("Demografía", demografia)], orden=orden))
+        fila = FilaPortada(etiqueta=etiquetas[("Demografía", demografia)], orden=orden)
         rutas = [DATOS / "portadas" / s["portada_archivo"] for s in destacadas(demografia, 8)]
+        if orden == 1:
+            # Una fila con imagen propia; las demás muestran el abanico de portadas.
+            fila.imagen = _titular(rutas[:3], demografia.lower())
+            fila.save()
+        filas.append(fila)
         Banner.objects.create(imagen=_banner(rutas, demografia.lower()), posicion=orden - 1)
     filas.append(
         FilaPortada(
@@ -386,11 +467,12 @@ def cargar(origen):
         )
     )
     filas.append(FilaPortada(grupo=grupos["Género"], titulo="BL y Yuri", orden=len(filas) + 1))
-    FilaPortada.objects.bulk_create(filas)
+    FilaPortada.objects.bulk_create([f for f in filas if f.pk is None])
 
     print(
         f"Cargado: {Usuario.objects.count()} cuentas, {len(series)} series, {len(altas)} tomos "
-        f"de Ivrea, {Oferta.objects.count()} ofertas, {Banner.objects.count()} banners, "
+        f"de Ivrea ({len(procesadas)} con portada propia), "
+        f"{Oferta.objects.count()} ofertas, {Banner.objects.count()} banners, "
         f"{FilaPortada.objects.count()} filas de portada"
     )
 

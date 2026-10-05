@@ -8,15 +8,21 @@ Descatalogados ni los Cancelados por la editorial, bajo ningún filtro. Tampoco
 los marcados «solo para adultos» (plan 07, ambigüedad 2).
 """
 
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+from types import SimpleNamespace
+from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q
+from django.db.models import F, Prefetch, Q
+from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import render
+from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 
-from apps.catalog.models import Editorial, Etiqueta, Producto, Tipo
+from apps.catalog.models import Editorial, Etiqueta, Producto, ProductoEditorial, Tipo
 from apps.catalog.precio_visible import OfertasDelDia
 
 POR_PAGINA = 24
@@ -33,6 +39,14 @@ FILTROS_DE_ESTADO = [
     (PRE_VENTA, "Pre-venta"),
     (TODOS, "Todos"),
 ]
+# Los interruptores de estado del catálogo (plan 07, quinta parte): se pueden
+# prender varios; «todos» en la dirección los prende a los tres.
+ESTADOS_ELEGIBLES = [(DISPONIBLE, "Disponibles"), (PRE_VENTA, "Pre-ventas"), (AGOTADO, "Sin stock")]
+
+RECIENTES = "recientes"
+LLEGADA = "llegada"
+TITULO = "titulo"
+ORDENES = [(RECIENTES, "Lo más nuevo"), (LLEGADA, "Próximos a llegar"), (TITULO, "Título")]
 
 
 def visibles():
@@ -73,34 +87,78 @@ def _entero(texto):
     return int(texto) if str(texto or "").isdigit() else None
 
 
+def _enteros(parametros, nombre):
+    valores = (
+        parametros.getlist(nombre) if hasattr(parametros, "getlist") else [parametros.get(nombre)]
+    )
+    return sorted({int(v) for v in valores if str(v or "").isdigit()})
+
+
 class FiltrosDelCatalogo:
-    """Los filtros del paso 3. Un valor inválido en la dirección se ignora."""
+    """Los filtros del paso 3. Un valor inválido en la dirección se ignora.
+
+    Tipo, editorial, etiqueta y estado admiten varios valores (plan 07, quinta
+    parte): dentro de un mismo grupo de etiquetas alcanza con una; entre grupos
+    distintos, el producto tiene que cumplir todos. La vista por defecto sigue
+    siendo la del paso 2: Activos con stock, lo más nuevo primero.
+    """
 
     def __init__(self, parametros):
         self.busqueda = parametros.get("q", "").strip()
-        self.tipo = _entero(parametros.get("tipo"))
-        self.editorial = _entero(parametros.get("editorial"))
-        self.etiqueta = _entero(parametros.get("etiqueta"))
+        self.tipos = _enteros(parametros, "tipo")
+        self.editoriales = _enteros(parametros, "editorial")
+        self.etiquetas = _enteros(parametros, "etiqueta")
         # Lo usa el «Ver todo» de una fila de la portada armada por grupo (B-07-009).
         self.grupo = _entero(parametros.get("grupo"))
         self.precio_desde = _decimal(parametros.get("desde")) if parametros.get("desde") else None
         self.precio_hasta = _decimal(parametros.get("hasta")) if parametros.get("hasta") else None
-        estado = parametros.get("estado", DISPONIBLE)
-        # La vista por defecto: Activos con stock (paso 2 de la ficha).
-        self.estado = estado if estado in dict(FILTROS_DE_ESTADO) else DISPONIBLE
+        validos = [valor for valor, _ in ESTADOS_ELEGIBLES]
+        pedidos = (
+            parametros.getlist("estado")
+            if hasattr(parametros, "getlist")
+            else [parametros.get("estado", "")]
+        )
+        if TODOS in pedidos:
+            self.estados = validos
+        else:
+            self.estados = [e for e in validos if e in pedidos]
+        if not self.estados:
+            # Con el panel enviado y todos los estados apagados, no se filtra por
+            # estado; sin panel, la vista por defecto del paso 2.
+            self.estados = validos if parametros.get("f") else [DISPONIBLE]
+        orden = parametros.get("orden", RECIENTES)
+        self.orden = orden if orden in dict(ORDENES) else RECIENTES
+
+    # Lo que leen las pantallas que conocen un solo valor por filtro.
+    @property
+    def estado(self):
+        return self.estados[0] if len(self.estados) == 1 else TODOS
+
+    @property
+    def tipo(self):
+        return self.tipos[0] if self.tipos else None
+
+    @property
+    def editorial(self):
+        return self.editoriales[0] if self.editoriales else None
+
+    @property
+    def etiqueta(self):
+        return self.etiquetas[0] if self.etiquetas else None
 
     @property
     def activos(self):
         return any(
             [
                 self.busqueda,
-                self.tipo,
-                self.editorial,
-                self.etiqueta,
+                self.tipos,
+                self.editoriales,
+                self.etiquetas,
                 self.grupo,
                 self.precio_desde is not None,
                 self.precio_hasta is not None,
-                self.estado != DISPONIBLE,
+                self.estados != [DISPONIBLE],
+                self.orden != RECIENTES,
             ]
         )
 
@@ -111,23 +169,42 @@ class FiltrosDelCatalogo:
                 | Q(productoeditorial__autor__icontains=self.busqueda)
                 | Q(productoeditorial__editorial__nombre__icontains=self.busqueda)
             )
-        if self.tipo:
-            productos = productos.filter(tipo_id=self.tipo)
-        if self.editorial:
-            productos = productos.filter(productoeditorial__editorial_id=self.editorial)
-        if self.etiqueta:
-            productos = productos.filter(etiquetas=self.etiqueta)
+        if self.tipos:
+            productos = productos.filter(tipo_id__in=self.tipos)
+        if self.editoriales:
+            productos = productos.filter(productoeditorial__editorial_id__in=self.editoriales)
+        if self.etiquetas:
+            por_grupo = {}
+            for pk, grupo in Etiqueta.objects.filter(pk__in=self.etiquetas).values_list(
+                "pk", "grupo_id"
+            ):
+                por_grupo.setdefault(grupo, []).append(pk)
+            for elegidas in por_grupo.values():
+                productos = productos.filter(etiquetas__in=elegidas)
         if self.grupo:
             productos = productos.filter(etiquetas__grupo_id=self.grupo, etiquetas__activa=True)
         if self.precio_desde is not None or self.precio_hasta is not None:
             productos = productos.filter(pk__in=self._en_rango_de_precio(productos))
-        if self.estado == DISPONIBLE:
-            productos = productos.filter(disponibles())
-        elif self.estado == AGOTADO:
-            productos = productos.filter(sin_stock())
-        elif self.estado == PRE_VENTA:
-            productos = productos.filter(estado=Producto.PRE_VENTA)
+        condiciones = {
+            DISPONIBLE: disponibles(),
+            AGOTADO: sin_stock(),
+            PRE_VENTA: Q(estado=Producto.PRE_VENTA),
+        }
+        if len(self.estados) < len(condiciones):
+            elegidas = Q()
+            for estado in self.estados:
+                elegidas |= condiciones[estado]
+            productos = productos.filter(elegidas)
         return productos.distinct()
+
+    def ordenar(self, productos):
+        if self.orden == LLEGADA:
+            return productos.annotate(llegada=_llegada()).order_by(
+                F("llegada").asc(nulls_last=True), "-creado_en", "-pk"
+            )
+        if self.orden == TITULO:
+            return productos.order_by("titulo", "productoeditorial__volumen", "pk")
+        return productos.order_by("-creado_en", "-pk")
 
     def _en_rango_de_precio(self, productos):
         """El rango se mide sobre el precio que se cobra, con la oferta aplicada.
@@ -147,45 +224,119 @@ class FiltrosDelCatalogo:
         return elegidos
 
 
+def _llegada():
+    """La fecha en la que hoy se espera un tomo: la estimada pisa a la programada."""
+    return Coalesce("productoeditorial__fecha_estimada", "productoeditorial__fecha_llegada")
+
+
+def _editorial(producto):
+    try:
+        return producto.productoeditorial
+    except ProductoEditorial.DoesNotExist:
+        return None
+
+
+DIAS_DE_NOVEDAD = 30
+
+
+def _carteles(productos):
+    """«¡TOMO 1!» y «¡NOVEDAD!» (plan 07, quinta parte; B-07-024).
+
+    «¡TOMO 1!» en el tomo 1 de una serie con más de un tomo. «¡NOVEDAD!» en lo
+    que se dio de alta en los últimos treinta días y ya está a la venta: las
+    pre-ventas tienen su rótulo. Si un tomo 1 es novedad, gana «¡TOMO 1!». La
+    serie sólo se consulta para los tomos 1 de la estantería, en una consulta.
+    """
+    desde = timezone.now() - timedelta(days=DIAS_DE_NOVEDAD)
+    primeros = []
+    for producto in productos:
+        editorial = _editorial(producto)
+        if editorial is not None and editorial.volumen == 1:
+            primeros.append((producto, editorial))
+        elif producto.estado != Producto.PRE_VENTA and producto.creado_en >= desde:
+            producto.cartel = "¡NOVEDAD!"
+    if not primeros:
+        return
+    con_mas_tomos = set(
+        ProductoEditorial.objects.filter(
+            estado__in=ESTADOS_VISIBLES,
+            solo_adultos=False,
+            titulo__in={p.titulo for p, _ in primeros},
+            volumen__gt=1,
+        ).values_list("titulo", "editorial_id")
+    )
+    for producto, editorial in primeros:
+        if (producto.titulo, editorial.editorial_id) in con_mas_tomos:
+            producto.cartel = "¡TOMO 1!"
+        elif producto.estado != Producto.PRE_VENTA and producto.creado_en >= desde:
+            producto.cartel = "¡NOVEDAD!"
+
+
 def _marcar(productos):
     for indice, producto in enumerate(productos):
         producto.estado_publico = estado_publico(producto)
         producto.indice = indice
     # El precio con la oferta vigente, y la oferta para tachar el original.
     OfertasDelDia().anotar(productos)
+    _carteles(productos)
     return productos
 
 
+def _con_productos():
+    """Lo visible, sin las relaciones de la tarjeta: para saber qué opciones tienen algo."""
+    return Producto.objects.filter(estado__in=ESTADOS_VISIBLES, solo_adultos=False)
+
+
 class CatalogoPublicoView(View):
-    """`CO-176`: la estantería con sus filtros, de lo más nuevo a lo más viejo."""
+    """`CO-176`: la estantería con sus filtros, de lo más nuevo a lo más viejo.
+
+    Con `parcial=1` responde sólo los resultados: es lo que pide el panel de
+    filtros mientras el cliente los cambia, sin recargar la pantalla (plan 07,
+    quinta parte). Sin JavaScript el panel se envía con su botón.
+    """
 
     def get(self, request):
         filtros = FiltrosDelCatalogo(request.GET)
-        productos = filtros.aplicar(visibles()).order_by("-creado_en", "-pk")
+        productos = filtros.ordenar(filtros.aplicar(visibles()))
         pagina = Paginator(productos, POR_PAGINA).get_page(request.GET.get("page"))
         _marcar(pagina.object_list)
 
         parametros = request.GET.copy()
-        parametros.pop("page", None)
-        etiquetas = (
-            Etiqueta.objects.filter(activa=True, grupo__activo=True)
-            .select_related("grupo")
-            .order_by("grupo__nombre", "nombre")
-        )
-        return render(
-            request,
-            "core/tienda_catalogo.html",
+        for clave in ("page", "parcial"):
+            parametros.pop(clave, None)
+        contexto = {
+            "pagina": pagina,
+            "productos": pagina.object_list,
+            "filtros": filtros,
+            "parametros": parametros.urlencode(),
+        }
+        if request.GET.get("parcial") == "1":
+            return render(request, "core/_catalogo_resultados.html", contexto)
+
+        # Sólo las opciones que tienen algo para mostrar: una editorial sembrada
+        # sin productos sería un interruptor que siempre deja el catálogo vacío.
+        con_productos = _con_productos()
+        contexto.update(
             {
-                "pagina": pagina,
-                "productos": pagina.object_list,
-                "filtros": filtros,
-                "estados": FILTROS_DE_ESTADO,
-                "tipos": Tipo.objects.filter(activo=True).order_by("nombre"),
-                "editoriales": Editorial.objects.filter(activa=True).order_by("nombre"),
-                "etiquetas": etiquetas,
-                "parametros": parametros.urlencode(),
-            },
+                "estados": ESTADOS_ELEGIBLES,
+                "ordenes": ORDENES,
+                "tipos": Tipo.objects.filter(activo=True, productos__in=con_productos)
+                .distinct()
+                .order_by("nombre"),
+                "editoriales": Editorial.objects.filter(activa=True, productos__in=con_productos)
+                .distinct()
+                .order_by("nombre"),
+                "etiquetas": Etiqueta.objects.filter(
+                    Q(productos__in=con_productos) | Q(pk__in=filtros.etiquetas),
+                    activa=True,
+                    grupo__activo=True,
+                )
+                .select_related("grupo")
+                .distinct()
+                .order_by("grupo__nombre", "nombre"),
+            }
         )
+        return render(request, "core/tienda_catalogo.html", contexto)
 
 
 class FichaPublicaView(View):
@@ -218,6 +369,7 @@ class FichaPublicaView(View):
             request,
             "core/tienda_producto.html",
             {
+                "serie": _mas_de_la_serie(producto),
                 "producto": producto,
                 "en_carrito": _en_carrito(request, producto),
                 "editorial": getattr(producto, "productoeditorial", None),
@@ -225,6 +377,37 @@ class FichaPublicaView(View):
                 "volver": request.GET.get("volver", ""),
             },
         )
+
+
+TOMOS_DE_LA_SERIE = 30
+
+
+def _mas_de_la_serie(producto):
+    """«Más de la serie» en la ficha de un tomo (B-07-030): los demás tomos visibles
+    del mismo título y editorial, en orden. `None` si no es un tomo o no hay más."""
+    editorial = _editorial(producto)
+    if editorial is None:
+        return None
+    tomos = list(
+        visibles()
+        .filter(
+            productoeditorial__editorial_id=editorial.editorial_id,
+            titulo=producto.titulo,
+        )
+        .exclude(pk=producto.pk)
+        .order_by("productoeditorial__volumen", "pk")[:TOMOS_DE_LA_SERIE]
+    )
+    if not tomos:
+        return None
+    filtro = urlencode({"q": producto.titulo, "estado": TODOS, "orden": TITULO})
+    return SimpleNamespace(
+        pk="serie",
+        titulo_visible=f"Más de {producto.titulo}",
+        antetitulo="La serie",
+        imagen=None,
+        productos=_marcar(tomos),
+        ver_todo=f"{reverse('core:tienda_catalogo')}?{filtro}",
+    )
 
 
 def _en_carrito(request, producto):
@@ -271,5 +454,35 @@ def filas_de_portada():
         productos = list(productos.distinct().order_by("-creado_en", "-pk")[:PRODUCTOS_POR_FILA])
         if productos:
             fila.productos = _marcar(productos)
+            fila.antetitulo = fila.etiqueta.grupo.nombre if fila.etiqueta_id else "Explorá"
+            filtro = (
+                f"etiqueta={fila.etiqueta_id}" if fila.etiqueta_id else f"grupo={fila.grupo_id}"
+            )
+            fila.ver_todo = f"{reverse('core:tienda_catalogo')}?{filtro}&estado=todos"
             filas.append(fila)
     return filas
+
+
+def lo_que_se_viene(cantidad=PRODUCTOS_POR_FILA):
+    """«Lo que se viene» (plan 07, quinta parte; B-07-015): las pre-ventas, la más próxima primero.
+
+    Se dibuja como una fila más de la portada, sin imagen propia: el «Ver
+    todo» lleva al catálogo de pre-ventas ordenado por llegada. Sin pre-ventas,
+    `None` y la fila no aparece.
+    """
+    productos = list(
+        visibles()
+        .filter(estado=Producto.PRE_VENTA)
+        .annotate(llegada=_llegada())
+        .order_by(F("llegada").asc(nulls_last=True), "-creado_en", "-pk")[:cantidad]
+    )
+    if not productos:
+        return None
+    return SimpleNamespace(
+        pk="se-viene",
+        titulo_visible="Lo que se viene",
+        antetitulo="Pre-ventas",
+        imagen=None,
+        productos=_marcar(productos),
+        ver_todo=f"{reverse('core:tienda_catalogo')}?estado=pre_venta&orden={LLEGADA}",
+    )

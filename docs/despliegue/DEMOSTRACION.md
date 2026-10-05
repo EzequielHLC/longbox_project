@@ -209,13 +209,15 @@ crea `longbox_presentacion` y cambia **sólo** `DB_NAME` en el `.env` (anota la 
 
 - tres cuentas, con las contraseñas de siempre: `admin@correo.com`, `cajero@correo.com` y
   `cliente@correo.com`;
-- el catálogo de Ivrea limpio: 487 series y 3594 tomos con portada y sinopsis, sin las páginas que
-  agrupan franquicias ni el código del sitio que venía pegado a la sinopsis;
+- el catálogo de Ivrea limpio: 487 series y unos 3600 tomos con sinopsis y la portada de cada
+  tomo (el tomo 0 cuando la serie lo tiene), sin las páginas que agrupan franquicias ni el código
+  del sitio que venía pegado a la sinopsis;
 - el proveedor Ivrea con una casilla `.demo` y tres correos de novedades pendientes;
-- tres ofertas, tres banners armados con portadas y cinco filas en la portada;
+- tres ofertas, tres banners armados con portadas y cinco filas en la portada, una con imagen;
 - la identidad visual y los parámetros de la base anterior, y unas preguntas frecuentes reales.
 
-Requiere `scripts/demo/datos/` (lo arma `raspar_ivrea.py`). `--reemplazar` la rehace desde la
+Requiere `scripts/demo/datos/`: lo arman `raspar_ivrea.py` (series) y `raspar_portadas_tomos.py`
+(portada de cada tomo, desde la galería PORTADAS de cada serie). `--reemplazar` la rehace desde la
 base anterior. Para volver: `DB_NAME=longbox_db` en el `.env` y `media/` desde el respaldo.
 
 ## Después

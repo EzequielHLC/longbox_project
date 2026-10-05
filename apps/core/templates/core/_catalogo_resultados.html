@@ -1,0 +1,26 @@
+{% comment %}
+Los resultados del catálogo público (`CO-176`): la cantidad, la estantería y la
+paginación. Es lo único que se reemplaza cuando cambian los filtros (plan 07,
+quinta parte); la vista lo responde solo con `parcial=1`.
+{% endcomment %}
+<p class="antetitulo" role="status">{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</p>
+
+{% if productos %}
+  {% include "core/_estanteria.html" with productos=productos volver=parametros %}
+
+  {% if pagina.has_other_pages %}
+    <div class="paginacion">
+      <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      <span class="fila-5">
+        {% if pagina.has_previous %}<a href="?{{ parametros }}&amp;page={{ pagina.previous_page_number }}" class="boton-texto" data-pagina="{{ pagina.previous_page_number }}">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>{% endif %}
+        {% if pagina.has_next %}<a href="?{{ parametros }}&amp;page={{ pagina.next_page_number }}" class="boton-texto" data-pagina="{{ pagina.next_page_number }}"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>{% endif %}
+      </span>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="buscar" %}
+    <p>Ningún producto coincide con los filtros.</p>
+    <a href="{% url 'core:tienda_catalogo' %}" class="boton-seccion">Limpiar filtros</a>
+  </div>
+{% endif %}

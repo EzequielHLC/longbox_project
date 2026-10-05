@@ -8,7 +8,9 @@ from apps.core.models import RegistroAuditoria
 
 URL_LOGOUT = reverse("accounts:logout")
 URL_LOGIN = reverse("accounts:login")
-URL_PROTEGIDA = reverse("core:tienda")
+# Una dirección que exige sesión. La portada ya no la exige (C-20, resuelta el
+# 2026-10-05): ésta, sin sesión, manda al ingreso. Sólo acepta POST.
+URL_PROTEGIDA = reverse("accounts:renovar_sesion")
 
 pytestmark = pytest.mark.django_db
 
@@ -22,7 +24,7 @@ def test_logout_invalida_la_sesion_actual(client, cliente):
     assert respuesta.url == URL_LOGIN
     assert "_auth_user_id" not in client.session
 
-    posterior = client.get(URL_PROTEGIDA)
+    posterior = client.post(URL_PROTEGIDA)
     assert posterior.status_code == 302
     assert posterior.url.startswith(URL_LOGIN)
 
@@ -36,7 +38,7 @@ def test_logout_no_afecta_las_sesiones_de_otros_dispositivos(cliente):
     telefono.post(URL_LOGOUT)
 
     assert "_auth_user_id" not in telefono.session
-    assert computadora.get(URL_PROTEGIDA).status_code == 200
+    assert computadora.post(URL_PROTEGIDA).status_code == 200
 
 
 def test_logout_queda_registrado_en_auditoria(client, cliente):

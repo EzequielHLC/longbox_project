@@ -100,6 +100,17 @@ class IdentidadVisualForm(forms.ModelForm):
         required=False,
         help_text="JPG, PNG o WebP. Se guarda en WebP con 1920 px en el lado mayor.",
     )
+    # Quitar una imagen vuelve a la vista predeterminada (B-07-025).
+    quitar_logo = forms.BooleanField(label="Quitar el logo", required=False)
+    quitar_acceso = forms.BooleanField(label="Quitar la imagen del ingreso", required=False)
+    acceso_nueva = forms.FileField(
+        label="Imagen del ingreso",
+        required=False,
+        help_text=(
+            "Acompaña al formulario de ingreso y de registro, a la izquierda. Vertical o "
+            "cuadrada. Sin imagen se usa el logo. Se guarda en WebP."
+        ),
+    )
 
     class Meta:
         model = IdentidadVisual
@@ -194,6 +205,12 @@ class IdentidadVisualForm(forms.ModelForm):
         archivo = self.cleaned_data.get("logo_nuevo")
         return _imagen(archivo) if archivo else None
 
+    def clean_acceso_nueva(self):
+        archivo = self.cleaned_data.get("acceso_nueva")
+        if not archivo:
+            return None
+        return _imagen(archivo, lado_mayor=imagenes.LADO_MAYOR_BANNER)
+
     def clean_fondo_nuevo(self):
         archivo = self.cleaned_data.get("fondo_nuevo")
         if not archivo:
@@ -233,18 +250,27 @@ class FilaPortadaForm(forms.ModelForm):
     """
 
     origen = forms.ChoiceField(label="Etiqueta o grupo")
+    # La imagen de la tarjeta titular (B-07-010). Archivo y «quitar» van por
+    # separado: el control de Django que junta los dos no se dibuja con `_campo`.
+    imagen = forms.FileField(
+        label="Imagen del título",
+        required=False,
+        help_text="Opcional. Vertical, como una portada. Se guarda en WebP.",
+    )
+    quitar_imagen = forms.BooleanField(label="Quitar la imagen", required=False)
 
     class Meta:
         model = FilaPortada
         fields = ["titulo", "orden", "activa"]
-        widgets = {
-            "orden": forms.NumberInput(attrs={"min": 0, "inputmode": "numeric"})
-        }  # noqa: RUF012
+        # El orden lo pone la pantalla al arrastrar las tarjetas (B-07-010).
+        widgets = {"orden": forms.HiddenInput(attrs={"data-orden": ""})}  # noqa: RUF012
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from apps.catalog.models import Etiqueta, GrupoEtiqueta
 
+        # El interruptor ya dice «Activa» o «Inactiva»: el rótulo no lo repite.
+        self.fields["activa"].label = "Estado"
         actual = self.instance
         grupos = GrupoEtiqueta.objects.filter(activo=True) | GrupoEtiqueta.objects.filter(
             pk=actual.grupo_id or 0
@@ -274,6 +300,10 @@ class FilaPortadaForm(forms.ModelForm):
         elif actual.grupo_id:
             self.initial["origen"] = f"g:{actual.grupo_id}"
 
+    def clean_imagen(self):
+        archivo = self.cleaned_data.get("imagen")
+        return _imagen(archivo) if archivo else None
+
     def clean_origen(self):
         clase, _, pk = self.cleaned_data["origen"].partition(":")
         if clase not in ("e", "g") or not pk.isdigit():
@@ -284,9 +314,18 @@ class FilaPortadaForm(forms.ModelForm):
         clase, pk = self.cleaned_data["origen"]
         self.instance.etiqueta_id = pk if clase == "e" else None
         self.instance.grupo_id = pk if clase == "g" else None
+        if self.cleaned_data.get("imagen"):
+            self.instance.imagen = self.cleaned_data["imagen"]
+        elif self.cleaned_data.get("quitar_imagen"):
+            self.instance.imagen = ""
         return super().save(commit=commit)
 
+    @property
+    def cambio_la_imagen(self):
+        return bool(self.cleaned_data.get("imagen") or self.cleaned_data.get("quitar_imagen"))
 
+
+# Sin formulario vacío fijo: «Agregar fila» copia `empty_form` (B-07-010).
 FilasPortadaFormSet = forms.modelformset_factory(
-    FilaPortada, form=FilaPortadaForm, extra=1, can_delete=True
+    FilaPortada, form=FilaPortadaForm, extra=0, can_delete=True
 )

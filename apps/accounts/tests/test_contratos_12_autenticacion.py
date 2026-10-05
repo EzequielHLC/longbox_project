@@ -40,7 +40,9 @@ URL_LOGIN = reverse("accounts:login")
 URL_LOGOUT = reverse("accounts:logout")
 URL_RENOVAR = reverse("accounts:renovar_sesion")
 URL_PEDIR_ENLACE = reverse("accounts:password_reset")
-URL_PROTEGIDA = reverse("core:tienda")
+# Una dirección que exige sesión. La portada ya no la exige (C-20, resuelta el
+# 2026-10-05): ésta, sin sesión, manda al ingreso. Sólo acepta POST.
+URL_PROTEGIDA = reverse("accounts:renovar_sesion")
 
 NUEVA_CONTRASENA = "ContrasenaNueva789"
 
@@ -290,7 +292,7 @@ def test_CO116_cerrar_sesion_no_afecta_las_sesiones_de_otros_dispositivos(client
 
     assert not hay_sesion(este_dispositivo)
     assert hay_sesion(otro_dispositivo)
-    assert otro_dispositivo.get(URL_PROTEGIDA).status_code == 200
+    assert otro_dispositivo.post(URL_PROTEGIDA).status_code == 200
 
 
 def test_CO116_cerrar_sesion_registra_el_cierre_en_auditoria(client, cliente):
@@ -447,8 +449,8 @@ def test_CO118_invalida_las_sesiones_en_todos_los_dispositivos(cliente):
 
     fijar_contrasena(Client(), url_de_token(cliente), NUEVA_CONTRASENA)
 
-    assert uno.get(URL_PROTEGIDA).status_code == 302
-    assert dos.get(URL_PROTEGIDA).status_code == 302
+    assert uno.post(URL_PROTEGIDA).status_code == 302
+    assert dos.post(URL_PROTEGIDA).status_code == 302
 
 
 def test_CO118_registra_el_cambio_de_contrasena_en_auditoria(client, cliente):

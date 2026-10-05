@@ -5,96 +5,201 @@ CU-TDA-CAT — Consultar Catálogo Público (CO-176).
 Vista por defecto: Activos con stock, de lo más nuevo a lo más viejo, de a 24.
 Los filtros se combinan y viajan en la dirección, así la ficha puede volver al
 catálogo conservándolos (paso 7). Sin resultados (E1), se ofrece limpiarlos.
+
+Plan 07, quinta parte: arriba sólo la búsqueda; los filtros, en un panel al
+costado con interruptores, y se aplican mientras se cambian, sin botón
+(B-07-013). La búsqueda pertenece al mismo formulario (`form=`). Sin
+JavaScript, el panel muestra «Aplicar filtros» y funciona como antes.
 {% endcomment %}
 
 {% block titulo %}Catálogo · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
 
+{# La búsqueda grande del catálogo reemplaza a la del encabezado. #}
+{% block busqueda_encabezado %}{% endblock %}
+
 {% block secciones %}
-<section class="seccion-publica seccion-publica--trama superficie-noche" aria-labelledby="titulo-catalogo">
+<section class="seccion-publica seccion-publica--trama superficie-noche catalogo-cabeza" aria-labelledby="titulo-catalogo">
   <div class="columna-publica">
     <div class="titulo-seccion">
       <p class="antetitulo">Catálogo</p>
       <h1 id="titulo-catalogo">Toda la tienda</h1>
     </div>
-
-    <form method="get" class="filtros-tienda" role="search">
-      <div class="campo abarca-2">
-        <label for="q" class="etiqueta">Buscar</label>
-        <input type="search" id="q" name="q" value="{{ filtros.busqueda }}" placeholder="Título, autor o editorial">
-      </div>
-      <div class="campo">
-        <label for="tipo" class="etiqueta">Tipo de material</label>
-        <select id="tipo" name="tipo">
-          <option value="">Todos</option>
-          {% for tipo in tipos %}<option value="{{ tipo.pk }}" {% if filtros.tipo == tipo.pk %}selected{% endif %}>{{ tipo.nombre }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="campo">
-        <label for="editorial" class="etiqueta">Editorial</label>
-        <select id="editorial" name="editorial">
-          <option value="">Todas</option>
-          {% for editorial in editoriales %}<option value="{{ editorial.pk }}" {% if filtros.editorial == editorial.pk %}selected{% endif %}>{{ editorial.nombre }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="campo">
-        <label for="etiqueta" class="etiqueta">Franquicia, género o colección</label>
-        <select id="etiqueta" name="etiqueta">
-          <option value="">Todas</option>
-          {% regroup etiquetas by grupo as por_grupo %}
-          {% for bloque in por_grupo %}
-            <optgroup label="{{ bloque.grouper }}">
-              {% for etiqueta in bloque.list %}<option value="{{ etiqueta.pk }}" {% if filtros.etiqueta == etiqueta.pk %}selected{% endif %}>{{ etiqueta.nombre }}</option>{% endfor %}
-            </optgroup>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="campo">
-        <label for="estado" class="etiqueta">Estado</label>
-        <select id="estado" name="estado">
-          {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="campo">
-        <label for="desde" class="etiqueta">Precio desde</label>
-        <input type="number" id="desde" name="desde" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_desde|default_if_none:'' }}">
-      </div>
-      <div class="campo">
-        <label for="hasta" class="etiqueta">Precio hasta</label>
-        <input type="number" id="hasta" name="hasta" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_hasta|default_if_none:'' }}">
-      </div>
-      <div class="fila">
-        <button type="submit" class="boton-seccion">{% include "_iconos.html" with icono="buscar" %}<span>Filtrar</span></button>
-        {% if filtros.activos %}<a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Limpiar filtros</a>{% endif %}
-      </div>
-    </form>
+    <div class="buscador-catalogo" role="search">
+      <label for="q" class="sr-only">Buscar en el catálogo</label>
+      {% include "_iconos.html" with icono="buscar" %}
+      <input type="search" id="q" name="q" form="filtros-catalogo" value="{{ filtros.busqueda }}" placeholder="Buscá por título, autor o editorial" autocomplete="off" aria-keyshortcuts="/" title="Atajo: /" data-filtro-texto>
+    </div>
   </div>
 </section>
 
 <div class="union-cinta" aria-hidden="true"></div>
 
 <section class="seccion-publica superficie-papel" aria-label="Resultados">
-  <div class="columna-publica">
-    <p class="antetitulo" role="status">{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</p>
-
-    {% if productos %}
-      {% include "core/_estanteria.html" with productos=productos volver=parametros %}
-
-      {% if pagina.has_other_pages %}
-        <div class="paginacion">
-          <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-          <span class="fila-5">
-            {% if pagina.has_previous %}<a href="?{{ parametros }}&amp;page={{ pagina.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>{% endif %}
-            {% if pagina.has_next %}<a href="?{{ parametros }}&amp;page={{ pagina.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>{% endif %}
-          </span>
+  <div class="columna-publica catalogo">
+    <details class="catalogo__panel" open data-panel-filtros>
+      <summary class="catalogo__abrir-panel">{% include "_iconos.html" with icono="filtro" %}<span>Filtros</span></summary>
+      <form id="filtros-catalogo" method="get" class="panel-filtros" data-filtros>
+        <input type="hidden" name="f" value="1">
+        {% if filtros.grupo %}<input type="hidden" name="grupo" value="{{ filtros.grupo }}">{% endif %}
+        <div class="panel-filtros__cabeza">
+          <p class="panel-filtros__titulo">Filtros</p>
+          <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto texto-chico{% if not filtros.activos %} invisible{% endif %}" data-limpiar-filtros>Limpiar</a>
         </div>
-      {% endif %}
-    {% else %}
-      <div class="vacio">
-        {% include "_iconos.html" with icono="buscar" %}
-        <p>Ningún producto coincide con los filtros.</p>
-        <a href="{% url 'core:tienda_catalogo' %}" class="boton-seccion">Limpiar filtros</a>
-      </div>
-    {% endif %}
+
+        <fieldset class="panel-filtros__grupo">
+          <legend>Estado</legend>
+          {% for valor, etiqueta in estados %}
+            <label class="casilla"><input type="checkbox" role="switch" name="estado" value="{{ valor }}" {% if valor in filtros.estados %}checked{% endif %}><span>{{ etiqueta }}</span></label>
+          {% endfor %}
+        </fieldset>
+
+        <fieldset class="panel-filtros__grupo">
+          <legend>Ordenar</legend>
+          {% for valor, etiqueta in ordenes %}
+            <label class="casilla"><input type="radio" name="orden" value="{{ valor }}" {% if filtros.orden == valor %}checked{% endif %}><span>{{ etiqueta }}</span></label>
+          {% endfor %}
+        </fieldset>
+
+        {% if tipos %}
+          <fieldset class="panel-filtros__grupo">
+            <legend>Tipo de material</legend>
+            {% for tipo in tipos %}
+              <label class="casilla"><input type="checkbox" role="switch" name="tipo" value="{{ tipo.pk }}" {% if tipo.pk in filtros.tipos %}checked{% endif %}><span>{{ tipo.nombre }}</span></label>
+            {% endfor %}
+          </fieldset>
+        {% endif %}
+
+        {% if editoriales %}
+          <fieldset class="panel-filtros__grupo">
+            <legend>Editorial</legend>
+            {% for editorial in editoriales %}
+              <label class="casilla"><input type="checkbox" role="switch" name="editorial" value="{{ editorial.pk }}" {% if editorial.pk in filtros.editoriales %}checked{% endif %}><span>{{ editorial.nombre }}</span></label>
+            {% endfor %}
+          </fieldset>
+        {% endif %}
+
+        {% regroup etiquetas by grupo as por_grupo %}
+        {% for bloque in por_grupo %}
+          <fieldset class="panel-filtros__grupo">
+            <legend>{{ bloque.grouper.nombre }}</legend>
+            {% for etiqueta in bloque.list %}
+              <label class="casilla"><input type="checkbox" role="switch" name="etiqueta" value="{{ etiqueta.pk }}" {% if etiqueta.pk in filtros.etiquetas %}checked{% endif %}><span>{{ etiqueta.nombre }}</span></label>
+            {% endfor %}
+          </fieldset>
+        {% endfor %}
+
+        <fieldset class="panel-filtros__grupo">
+          <legend>Precio</legend>
+          <div class="rejilla-2">
+            <div class="campo">
+              <label for="desde" class="etiqueta">Desde</label>
+              <input type="number" id="desde" name="desde" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_desde|default_if_none:'' }}">
+            </div>
+            <div class="campo">
+              <label for="hasta" class="etiqueta">Hasta</label>
+              <input type="number" id="hasta" name="hasta" min="0" step="1" inputmode="numeric" value="{{ filtros.precio_hasta|default_if_none:'' }}">
+            </div>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="boton-seccion" data-sin-guion>{% include "_iconos.html" with icono="filtro" %}<span>Aplicar filtros</span></button>
+      </form>
+    </details>
+
+    <div class="catalogo__resultados" data-resultados>
+      {% include "core/_catalogo_resultados.html" %}
+    </div>
   </div>
 </section>
+
+<script>
+  // Los filtros se aplican mientras se cambian (B-07-013): los interruptores al
+  // instante, la búsqueda y el precio cuando se deja de escribir. Se reemplazan
+  // sólo los resultados y la dirección se actualiza, para que «volver» desde la
+  // ficha conserve los filtros (paso 7).
+  (function () {
+    const formulario = document.querySelector("[data-filtros]");
+    const resultados = document.querySelector("[data-resultados]");
+    const limpiar = formulario.querySelector("[data-limpiar-filtros]");
+    const panel = document.querySelector("[data-panel-filtros]");
+    formulario.querySelector("[data-sin-guion]").hidden = true;
+    if (window.matchMedia("(max-width: 899px)").matches) panel.open = false;
+
+    let espera = null;
+    let pedido = null;
+
+    function parametros(pagina) {
+      const datos = new URLSearchParams();
+      for (const [clave, valor] of new FormData(formulario)) {
+        if (String(valor).trim() !== "") datos.append(clave, valor);
+      }
+      if (pagina) datos.set("page", pagina);
+      return datos;
+    }
+
+    function hayFiltros(datos) {
+      const propios = new URLSearchParams(datos);
+      propios.delete("f");
+      propios.delete("page");
+      const estados = propios.getAll("estado");
+      const soloPorDefecto = estados.length === 1 && estados[0] === "disponible";
+      if (soloPorDefecto) propios.delete("estado");
+      if (propios.get("orden") === "recientes") propios.delete("orden");
+      return propios.toString() !== "";
+    }
+
+    async function actualizar(pagina) {
+      const datos = parametros(pagina);
+      const direccion = location.pathname + "?" + datos.toString();
+      history.replaceState(null, "", direccion);
+      limpiar.classList.toggle("invisible", !hayFiltros(datos));
+      datos.set("parcial", "1");
+      if (pedido) pedido.abort();
+      pedido = new AbortController();
+      resultados.setAttribute("aria-busy", "true");
+      try {
+        const respuesta = await fetch(location.pathname + "?" + datos.toString(), {
+          signal: pedido.signal,
+          headers: { "X-Requested-With": "fetch" },
+        });
+        if (!respuesta.ok) throw new Error(respuesta.status);
+        resultados.innerHTML = await respuesta.text();
+        for (const tarjeta of resultados.querySelectorAll("[data-indice]")) {
+          tarjeta.style.setProperty("--i", tarjeta.dataset.indice);
+        }
+        if (pagina) resultados.scrollIntoView({ block: "start" });
+      } catch (error) {
+        if (error.name !== "AbortError") window.location.assign(direccion);
+      } finally {
+        resultados.removeAttribute("aria-busy");
+      }
+    }
+
+    function demorar() {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(function () { actualizar(); }, 350);
+    }
+
+    formulario.addEventListener("change", function (evento) {
+      if (evento.target.matches('input[type="number"]')) return;
+      actualizar();
+    });
+    for (const campo of document.querySelectorAll('[data-filtro-texto], #desde, #hasta')) {
+      campo.addEventListener("input", demorar);
+    }
+    formulario.addEventListener("submit", function (evento) {
+      evento.preventDefault();
+      actualizar();
+    });
+    document.querySelector("[data-filtro-texto]").addEventListener("keydown", function (evento) {
+      if (evento.key === "Enter") { evento.preventDefault(); window.clearTimeout(espera); actualizar(); }
+    });
+    resultados.addEventListener("click", function (evento) {
+      const enlace = evento.target.closest("a[data-pagina]");
+      if (!enlace) return;
+      evento.preventDefault();
+      actualizar(enlace.dataset.pagina);
+    });
+  })();
+</script>
 {% endblock %}
