@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -132,6 +132,75 @@ class ConfiguracionSistema(models.Model):
         default=10,
         validators=[MinValueValidator(1)],
         help_text="Cada cuántos segundos la portada pasa al banner siguiente.",
+    )
+
+    # ------------------------------------------------------------------
+    # Logística (CU-CFG-PAR) y el costo de envío (B-07-032)
+    # ------------------------------------------------------------------
+
+    costo_envio = models.DecimalField(
+        "costo de envío",
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("8000"),
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text="Lo que paga una compra online que no alcanza el envío gratuito.",
+    )
+    monto_minimo_envio_gratuito = models.DecimalField(
+        "monto mínimo para envío gratuito",
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("100000"),
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="Desde este subtotal de productos, el envío no se cobra.",
+    )
+
+    # ------------------------------------------------------------------
+    # Fidelización (CU-CFG-PAR; RF-19)
+    # ------------------------------------------------------------------
+
+    # Dos parámetros independientes (B-10-004): lo que vale un punto al
+    # canjearlo, y qué porcentaje de cada compra vuelve en puntos. Puntos
+    # ganados = pagado en dinero × porcentaje ÷ valor del punto.
+    equivalencia_puntos = models.DecimalField(
+        "valor del punto",
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("10"),
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="Lo que vale 1 punto al canjearlo.",
+    )
+    porcentaje_puntos = models.DecimalField(
+        "reintegro en puntos",
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("5"),
+        validators=[MinValueValidator(Decimal("0.01")), MaxValueValidator(Decimal("100"))],
+        help_text="Sobre lo pagado en dinero, sin el envío.",
+    )
+    caducidad_puntos_meses = models.PositiveIntegerField(
+        "caducidad de puntos (meses)",
+        default=12,
+        validators=[MinValueValidator(1)],
+        help_text="Cuánto dura un lote de puntos desde que se acredita.",
+    )
+
+    # ------------------------------------------------------------------
+    # Pasarela de pago (B-07-031)
+    # ------------------------------------------------------------------
+
+    PASARELA_PRUEBA = "prueba"
+    PASARELA_MERCADOPAGO = "mercadopago"
+    PASARELA_CHOICES = [  # noqa: RUF012
+        (PASARELA_PRUEBA, "Pasarela de prueba"),
+        (PASARELA_MERCADOPAGO, "MercadoPago"),
+    ]
+    pasarela = models.CharField(
+        "pasarela de pago",
+        max_length=15,
+        choices=PASARELA_CHOICES,
+        default=PASARELA_PRUEBA,
+        help_text="La de prueba no mueve dinero real.",
     )
 
     actualizado_en = models.DateTimeField("última modificación", auto_now=True)
@@ -267,6 +336,15 @@ class RegistroAuditoria(models.Model):
     BAJA_OFERTA = "baja_oferta"
     VENCIMIENTO_AUTOMATICO_OFERTA = "vencimiento_automatico_oferta"
     MODIFICACION_FILAS_PORTADA = "modificacion_filas_portada"
+    # Plan 07, sexta parte: la compra online (CU-TDA-CMP, CU-TDA-INV).
+    COMPRA_ONLINE = "compra_online"
+    PAGO_RECHAZADO = "pago_rechazado"
+    INCIDENTE_COMPRA = "incidente_compra"
+    # Plan 08: el avance manual del pedido (CU-PED-EST).
+    AVANCE_ESTADO_PEDIDO = "avance_estado_pedido"
+    # Plan 11, segunda parte: el Cliente edita su cuenta (CU-CLI-DAT).
+    MODIFICACION_DATOS_CLIENTE = "modificacion_datos_cliente"
+    CAMBIO_CORREO = "cambio_correo"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -315,6 +393,12 @@ class RegistroAuditoria(models.Model):
         (BAJA_OFERTA, "Baja de oferta"),
         (VENCIMIENTO_AUTOMATICO_OFERTA, "Vencimiento automático de oferta"),
         (MODIFICACION_FILAS_PORTADA, "Modificación de las filas de la portada"),
+        (COMPRA_ONLINE, "Compra online"),
+        (PAGO_RECHAZADO, "Pago rechazado por la pasarela"),
+        (INCIDENTE_COMPRA, "Compra fallida con reembolso"),
+        (AVANCE_ESTADO_PEDIDO, "Avance de estado de pedido"),
+        (MODIFICACION_DATOS_CLIENTE, "Modificación de datos personales del Cliente"),
+        (CAMBIO_CORREO, "Cambio de correo electrónico"),
     ]
 
     actor = models.ForeignKey(

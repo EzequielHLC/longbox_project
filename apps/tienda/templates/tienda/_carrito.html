@@ -74,12 +74,25 @@ total salen siempre del servidor.
 
     <aside class="resumen-carrito pila-3" aria-label="Resumen">
       <p class="antetitulo">{{ carrito.unidades }} unidad(es)</p>
-      <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ carrito.total|pesos }}</span></p>
-      <button type="button" class="boton-primario" disabled aria-describedby="pago-proximamente">Ir a pagar</button>
+      <dl class="resumen-compra">
+        <div><dt>Productos</dt><dd class="datos">{{ carrito.total|pesos }}</dd></div>
+        <div><dt>Envío</dt><dd class="datos">{% if carrito.envio.gratis %}Gratis{% else %}{{ carrito.envio.costo|pesos }}{% endif %}</dd></div>
+      </dl>
+      {% include "tienda/_barra_envio.html" with envio=carrito.envio %}
+      <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ carrito.total_con_envio|pesos }}</span></p>
       {% if carrito.se_puede_pagar %}
-        <p id="pago-proximamente" class="texto-chico secundario">El pago estará disponible próximamente.</p>
+        <form method="post" action="{% url 'compra:pagar' %}" class="pila-2">
+          {% csrf_token %}
+          {% if user.is_authenticated %}
+            <button type="submit" class="boton-primario">Ir a pagar</button>
+          {% else %}
+            <button type="submit" class="boton-primario">Iniciar sesión y pagar</button>
+            <button type="submit" name="modo" value="invitado" class="boton-primario">Comprar como invitado</button>
+          {% endif %}
+        </form>
       {% else %}
-        <p id="pago-proximamente" class="texto-chico secundario">Para avanzar, quitá los productos no disponibles y ajustá las cantidades marcadas.</p>
+        <button type="button" class="boton-primario" disabled aria-describedby="pago-bloqueado">Ir a pagar</button>
+        <p id="pago-bloqueado" class="texto-chico secundario">Para avanzar, quitá los productos no disponibles y ajustá las cantidades marcadas.</p>
       {% endif %}
       <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Seguir comprando</a>
     </aside>

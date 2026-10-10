@@ -42,8 +42,7 @@ calculado, y se separa de lo que escribió la persona.
       <div class="pila-1">
         <h2>Cabecera del lote</h2>
         <p class="secundario">
-          Lo que comparten todos los ítems. Si declara editorial y tipo, los ítems los
-          heredan bloqueados; si los deja en blanco, cada ítem declara los suyos.
+          La editorial y el tipo que declare se aplican a todos los ítems.
         </p>
       </div>
     </div>
@@ -109,8 +108,7 @@ calculado, y se separa de lo que escribió la persona.
         <div class="pila-1">
           <h2>Calculadora de envío</h2>
           <p class="secundario">
-            El envío del lote se reparte entre los ítems en proporción a su costo. Los dos
-            totales van en la moneda de origen.
+            Los dos totales, en la moneda de origen.
           </p>
         </div>
       </div>
@@ -210,9 +208,6 @@ calculado, y se separa de lo que escribió la persona.
     </button>
     {% url 'catalog:producto_lista' as cancelar %}
     {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
-    <p class="texto-chico secundario al-fondo">
-      Los duplicados contra el catálogo se informan al guardar y no frenan el resto del lote.
-    </p>
   </div>
 </form>
 

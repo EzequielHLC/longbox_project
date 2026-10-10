@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-05**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-09**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,46 +11,48 @@ enlazan a éste.
 
 ## Resumen
 
-Sexta fotografía. **La tienda pública quedó completa hasta la compra**, y el sistema se preparó para
-la demostración. La compra, los pedidos y el pago siguen esperando a `Pedido` y
-`TransaccionPago`.
+Octava fotografía, del mismo día que la séptima. **El pedido ya se ve de punta a punta**: el
+Administrador tiene su pantalla de pedidos y los avanza hasta Despachado (plan 08), y el Cliente
+tiene «Mi cuenta» con sus pedidos, sus puntos y sus datos (planes 10 y 11). La tienda suma la barra
+del envío gratis y el saldo de puntos siempre a la vista (plan 07, séptima parte).
 
 **Lo que más se movió.**
-- **La tienda es pública** (C-20 resuelta): portada con banners, «Lo que se viene» y filas por
-  etiqueta o grupo que arma el Administrador; catálogo con un panel de filtros de varios valores
-  que se aplican mientras se cambian; ficha con «Más de la serie»; agregar al carrito desde la
-  tarjeta; y un carrito que recalcula precios y stock solo, sin botón de actualizar
-  (B-07-009 a B-07-030).
-- **Correcciones encontradas ensayando la demostración, cada una con su prueba primero**: un
-  interbloqueo entre dos bajas de administrador simultáneas (B-13-006), el registro de auditoría
-  que ahora no se puede modificar ni desde la base (B-16-004), errores 500 por doble envío
-  (B-17-016, B-04-006), una consulta por producto en el catálogo público (B-07-007) y la zona
-  horaria, que estaba en UTC (B-03-012).
-- **Las pantallas de acceso siguen la guía** y llevan una imagen configurable en la identidad
-  visual (B-07-018, B-07-020, B-07-025).
-- **Dos desvíos consultados de la guía visual**, por pedido del responsable: el encabezado que
-  acompaña al bajar (B-07-011) y la lista propia del desplegable donde el navegador no la sabe
-  dibujar (B-00-011).
+- **Pedidos en el panel de gestión** (`CU-PED-CON`, `CU-PED-EST`): listado con filtros por estado,
+  cliente, canal, fechas y demorados; detalle con medio de pago, puntos y **línea de tiempo**;
+  avance de a un paso con confirmación, correo al cliente y auditoría. Dos administradores que
+  avanzan a la vez avanzan un solo paso. La línea de tiempo es un concepto nuevo,
+  `TransicionDePedido` (B-08-001).
+- **«Mi cuenta»** (`CU-CLI-HIS`, `CU-CLI-DAT`): pedidos activos e historial, detalle con su línea
+  de tiempo que se refresca sola, edición de datos, cambio de contraseña (cierra las otras sesiones)
+  y cambio de correo con verificación por enlace y aviso al correo anterior (B-11-002 a B-11-005).
+- **«Mis puntos»** (`CU-PTS-CON`): saldo en pesos, lotes con «Próximo a vencer», historial filtrable
+  con el pedido de cada movimiento (B-10-001). El saldo está además en el encabezado de la tienda
+  (B-10-002).
+- **El correo de confirmación de compra lleva el enlace al pedido**: `CU-TDA-CMP` queda verificado.
+- **Barra del envío gratis** en el carrito, el checkout y el resumen del invitado; el carrito ahora
+  muestra el envío (B-07-037).
+- **Textos de interfaz más directos** en todo el sistema (B-00-017), y los puntos tienen dos parámetros:
+  «1 punto = $ X» y «Y % de cada compra» en puntos (B-10-004).
 
-**Por qué varios quedan `Parcial` con todas sus pruebas de contrato.** Sus contratos declaran un
-efecto sobre los filtros del catálogo público (`CU-CAT-GRM`, `GRB`, `ETM`, `ETB`; B-02-004), o
-inician un caso de uso que no existe (`CU-TDA-CAT`: «Avisarme cuando haya stock»). La prueba cubre
-todo lo demás.
+**Por qué `CU-CLI-HIS` queda `Parcial`.** La sección Stock en Local está oculta hasta el módulo 18
+(B-11-003), y el detalle no ofrece el acceso a `CU-PED-OPC`, que no existe.
 
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 48 |
+| Verificados | 54 |
 | Construidos, sin verificar | 9 |
-| Parciales | 15 |
+| Parciales | 17 |
 | En curso | 0 |
-| Pendientes | 31 |
+| Pendientes | 23 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **95**, de los cuales **89 verificados**
-y **6 parciales** (`CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045` y `CO-060`, que por ahora
-sólo tiene la prueba de doble envío). Sin prueba: **124**. El detalle por contrato está en
-[pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 341 pruebas de contrato.
+Contratos de operación especificados: **219**. Con prueba: **119**, de los cuales **110
+verificados** y **9 parciales**: `CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`, `CO-060` (sólo
+el doble envío), `CO-130` (sin el plazo de devolución ni la sección Seguridad), `CO-192` (sin la
+sección Stock en Local) y `CO-193` (sin el acceso a `CO-095`). Sin prueba: **100**. El detalle por
+contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 500 pruebas de
+contrato.
 
 ### Cómo leer la columna «Contratos»
 
@@ -73,9 +75,9 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-ALT-IMP` | Parcial | 4 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`. `CO-031` existe y está verificado (`CU-CAT-EDI` A2). Las operaciones propias del alta no tienen prueba de contrato. |
 | `CU-ALT-NOV` | Parcial | 2 / 3 | **`CO-017` y `CO-019` verificados**: la aprobación y el reprocesamiento se disparan desde la ficha del correo (CU-PRV-COL). `CO-016`, el ciclo de monitoreo de la casilla, no existe y depende de P-05. |
 | `CU-ALT-REV` | Parcial | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. `CO-077` no tiene código. |
-| `CU-ALT-DEM` | Parcial | 0 / 3 | Los campos existen (`demorado`, `fecha_estimada`, `nota_demora`) y el inventario muestra el indicador. No hay pantalla de registro de demora (`CO-014`/`CO-015`) ni aviso a clientes: depende de Pedido. |
+| `CU-ALT-DEM` | Parcial | 0 / 3 | Los campos existen (`demorado`, `fecha_estimada`, `nota_demora`) y el inventario muestra el indicador. No hay pantalla de registro de demora (`CO-014`/`CO-015`) ni aviso a clientes: `Pedido` ya existe y falta la gestión de pedidos (módulo 08). |
 | `CU-ALT-TRA` | Pendiente | 0 / 5 | El estado Pre-venta existe. No existen los ciclos de `CO-011` y `CO-012` (P-05) ni la confirmación de ingreso de `CO-013`. |
-| `CU-ALT-CAN` | Pendiente | 0 / 3 | El estado terminal existe. La cancelación en lote y el reembolso en puntos dependen de Pedido y Puntos. |
+| `CU-ALT-CAN` | Pendiente | 0 / 3 | El estado terminal existe. `Pedido` y `LotePuntos` ya existen; falta la cancelación en lote con su reembolso. |
 
 ### `02` Catálogo
 
@@ -141,12 +143,12 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con panel de filtros de varios valores que se aplican mientras se cambian, y orden elegible (B-07-013), de a 24; ficha con galería, **precio tachado con la oferta vigente** y el filtro de precio sobre el precio que se cobra (B-03-011). «Agregar al carrito» y «Reservar» inician `CU-TDA-CRA` (R-07-001). `Parcial`: «Avisarme cuando haya stock» espera a `CU-RST-SUS`. Plan 07 |
-| `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» deshabilitado hasta `CU-TDA-CMP` (B-07-006). Plan 07, segunda parte. |
+| `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» lleva al checkout; al invitado le ofrece iniciar sesión o comprar como invitado (B-07-006 resuelta). |
 | `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta reserva sin tope (A1). El personal no tiene carrito (B-07-005). |
 | `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2), sin tope en Pre-venta. La línea de otro carrito responde 404. |
 | `CU-TDA-CRB` | Verificado | 1 / 1 | Sin confirmación. La línea de otro carrito responde 404. |
-| `CU-TDA-CMP` | Pendiente | 0 / 6 | No existen `Pedido` ni `TransaccionPago`. |
-| `CU-TDA-INV` | Pendiente | 0 / 5 | Ídem. |
+| `CU-TDA-CMP` | Verificado | 6 / 6 | `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). |
+| `CU-TDA-INV` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Sin pre-ventas (precondición), sin puntos, pedido asociado al correo; la sugerencia de iniciar sesión aparece dos veces (B-07-036). Plan 07, sexta parte. |
 
 **Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera y cuarta parte;
 B-07-009, B-07-010). El Administrador las arma por etiqueta o por grupo de etiquetas en «Tienda →
@@ -167,11 +169,11 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PED-CON` | Pendiente | 0 / 2 | No existe `Pedido`. |
-| `CU-PED-EST` | Pendiente | 0 / 3 | Ídem. |
-| `CU-PED-OPC` | Pendiente | 0 / 6 | Ídem. Su DSS muestra ahora al Temporizador disparando el vencimiento de la ventana (`CO-096`, P-05). |
-| `CU-PED-CAN` | Pendiente | 0 / 2 | Ídem. |
-| `CU-PED-CMP` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
+| `CU-PED-CON` | Verificado | 2 / 2 | `apps/pedidos/views.py`. **Todos sus contratos verificados.** Listado de a 50 con filtros (cliente por nombre o correo, B-08-003), total cobrado en la misma consulta, y detalle con medio de pago, puntos y línea de tiempo (B-08-001). Sólo el Administrador. Plan 08. |
+| `CU-PED-EST` | Verificado | 3 / 3 | `apps/pedidos/servicios.py`. **Todos sus contratos verificados**: un paso por vez con confirmación, E1, E2 con `CO-093`, líneas que avanzan salvo las demoradas, correo al cliente o al invitado (B-08-002), auditoría, y la carrera entre dos administradores. Plan 08. |
+| `CU-PED-OPC` | Pendiente | 0 / 6 | Falta la gestión de pedidos. Su DSS muestra ahora al Temporizador disparando el vencimiento de la ventana (`CO-096`, P-05). |
+| `CU-PED-CAN` | Pendiente | 0 / 2 | Falta la gestión de pedidos. |
+| `CU-PED-CMP` | Pendiente | 0 / 1 | Falta la gestión de pedidos, y depende además de P-05. |
 
 ### `09` Devoluciones
 
@@ -184,10 +186,10 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PTS-CON` | Pendiente | 0 / 2 | No existen `LotePuntos` ni `MovimientoPuntos`. |
-| `CU-PTS-CJE` | Pendiente | 0 / 3 | Ídem. |
-| `CU-PTS-CAD` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
-| `CU-PTS-ADM` | Pendiente | 0 / 2 | Ídem. |
+| `CU-PTS-CON` | Verificado | 2 / 2 | `apps/puntos/views.py`. **Todos sus contratos verificados.** Saldo con su equivalencia, lotes con «Próximo a vencer» (30 días), historial de a 50 con el pedido de cada movimiento (B-10-001) y filtros por tipo y fechas. El saldo, además, en el encabezado de la tienda (B-10-002). Plan 10. |
+| `CU-PTS-CJE` | Parcial | 3 / 3 | **Contratos verificados en el canal online**: marcar y revertir por línea entera sin tocar ningún lote, saldo restante informativo, redondeo hacia arriba (B-07-033). `Parcial`: la rama de mostrador espera a `CU-VTA-REG`. |
+| `CU-PTS-CAD` | Pendiente | 0 / 1 | Los lotes nacen con su fecha de caducidad; falta el ciclo, que depende de P-05. |
+| `CU-PTS-ADM` | Pendiente | 0 / 2 | Falta la pantalla del ajuste manual. |
 
 ### `11` Cuenta de Cliente
 
@@ -195,9 +197,9 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | --- | --- | --- | --- |
 | `CU-CLI-ALT` | Construido, sin verificar | 0 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. |
 | `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
-| `CU-CLI-DAT` | Pendiente | 0 / 4 | El Cliente no tiene panel propio. |
-| `CU-CLI-HIS` | Pendiente | 0 / 2 | No existe `Pedido`. |
-| `CU-CLI-BAJ` | Pendiente | 0 / 3 | Depende de Pedidos, Puntos y Stock Almacenado para el informe de impacto. |
+| `CU-CLI-DAT` | Verificado | 4 / 4 | `apps/accounts/views_cuenta.py`. **Todos sus contratos verificados.** Datos con las validaciones del registro; contraseña que cierra las otras sesiones; correo con `TokenCambioCorreo` de 24 h (B-11-002), confirmación por botón y aviso al correo anterior (B-11-005). Plan 11, segunda parte. |
+| `CU-CLI-HIS` | Parcial | 0 / 2 | «Mi cuenta»: pedidos activos, historial (los despachados, B-11-004) y detalle con su línea de tiempo, que se refresca cada 30 s. Los dos contratos tienen prueba y quedan parciales: Stock en Local oculta (B-11-003) y sin acceso a `CU-PED-OPC`. Plan 11, segunda parte. |
+| `CU-CLI-BAJ` | Pendiente | 0 / 3 | El informe de impacto necesita Stock Almacenado; pedidos y puntos ya existen. |
 
 ### `12` Autenticación
 
@@ -231,7 +233,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CFG-PAR` | Parcial | 1 / 3 | `ParametrosView`: stock inicial por defecto, **intervalo del carrusel** (10 s, B-17-003) y modelo de lenguaje. El margen salió a `CU-PVP-MAR` y el panel lo enlaza (A1). Faltan las secciones de los módulos no construidos y la de Seguridad (B-12-001). `CO-130` y `CO-207` sin prueba de contrato. |
+| `CU-CFG-PAR` | Parcial | 1 / 3 | `ParametrosView`: stock inicial por defecto, intervalo del carrusel (B-17-003), modelo de lenguaje y **«Compra online»**: Logística, Fidelización y pasarela (B-07-031, B-07-032). Una entrada de auditoría por parámetro modificado. El margen salió a `CU-PVP-MAR` (A1). Faltan el plazo de devolución, las secciones de los módulos no construidos y la de Seguridad (B-12-001). **`CO-130` con prueba, parcial** por esos campos; `CO-207` sin prueba. |
 | `CU-CFG-LLM` | Construido, sin verificar | 0 / 3 | `DiagnosticoLLMView` y `core/llm.py`. |
 | `CU-CFG-EDC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EditorialListaView`, pantalla propia: activas y dadas de baja, productos vinculados, filtro por estado. |
 | `CU-CFG-EDA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activa; la colisión enlaza la existente con su estado. Alta al vuelo con la misma auditoría. |
@@ -282,41 +284,47 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-05**, con PostgreSQL levantado, sobre el repositorio entero.
+Medición del **2026-10-09**, con PostgreSQL levantado, sobre el repositorio entero.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **1920 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 11 s) |
-| **Contratos** | **89 de 219 verificados**, 6 parciales, 124 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (7173 sentencias, 228 sin cubrir) |
+| Suite de pruebas | **2227 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 44 s) |
+| **Contratos** | **110 de 219 verificados**, 9 parciales, 100 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **97 %** (8590 sentencias, 274 sin cubrir). Lo nuevo: `pedidos/servicios.py` 100 %, `pedidos/views.py` 96 %, `accounts/views_cuenta.py` 95 %, `puntos/views.py` 97 %, `tienda/envio.py` 100 % |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 229 archivos sin cambios |
+| Formato | `black --check .`: 266 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas |
-| Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción y el `.env` de esta máquina: **sin advertencias** |
+| Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
 
-**Las dos verificaciones a mano.** Las migraciones de estos días (`core.0023` a `core.0026`:
-la auditoría inmutable en la base, las filas de la portada, su imagen y la imagen del ingreso)
-aplicaron sobre la base de la presentación, y `ejecutar_temporizador` corrió sobre ella. El
-disparador `auditoria_inmutable` está en la base.
-`makemigrations --check` no detecta cambios. Las restricciones están en la base:
-`linea_unica_por_producto` (restricción e índice), `linea_cantidad_minima`,
-`carrito_persistente_si_tiene_usuario`, `oferta_alcance_coherente`, `oferta_fechas_coherentes`,
-`oferta_valor_positivo` y `oferta_porcentaje_menor_a_100`.
+**Las dos verificaciones a mano.** Las migraciones nuevas (`core.0027` y `0028`, `pedidos.0001` y
+`0002`, `puntos.0001`, `tienda.0002` y `0003`, `accounts.0008`) aplicaron sobre la base de
+desarrollo; `pedidos.0002` le dio su primera transición a los pedidos que ya había, y `makemigrations --check`
+no detecta cambios. Las restricciones están en la base, consultadas en `pg_constraint` y
+`pg_indexes`: `pedido_costo_envio_no_negativo`, `pedido_online_de_cuenta_o_invitado`,
+`linea_pedido_cantidad_minima`, `linea_pedido_precio_positivo`,
+`linea_pedido_compensacion_no_negativa`, `linea_pedido_canje_coherente`,
+`transaccion_monto_no_negativo`, `lote_disponible_no_supera_lo_acreditado`,
+`lote_estado_coherente_con_disponible`, `movimiento_cantidad_positiva` y
+`cobro_importes_no_negativos`; y las unicidades `pedidos_pedido_numero_key`,
+`pedidos_transaccionpago_referencia_key` y `tienda_cobroencurso_referencia_key`. **Son las
+primeras `CheckConstraint` sobre dinero del proyecto** (I-09).
 
-**La prueba del estilo es ahora `test_estilo_vineta.py`**: `tokens.css` idéntico al del
-responsable, fuentes autoalojadas presentes, ningún color ni radio en los componentes, sombras sin
-desenfoque, sólo animaciones del catálogo, movimiento reducido declarado, las variables de la
-tienda sólo en el público y el sticker fuera del mostrador.
+**Las pantallas nuevas se revisaron con capturas de Chrome sin interfaz**: las siete de la compra;
+el carrito con la barra del envío; el listado, el detalle y la confirmación de avance de pedidos y
+el tablero; y «Mi cuenta» (pedidos, detalle, puntos y datos).
 
 ---
 
 ## Lo que esta fotografía no cubre
 
 - **Las pantallas se revisaron con capturas de Chrome sin interfaz** (portada, catálogo y ficha
-  de la tienda, panel, carga de lotes), no a mano en un navegador interactivo. El carrusel y la vista previa de la identidad visual tienen guion:
+  de la tienda, panel, carga de lotes, y las siete de la compra), no a mano en un navegador interactivo. El carrusel y la vista previa de la identidad visual tienen guion:
   sus pruebas verifican que los controles estén, no su comportamiento en el navegador.
 - **Las pantallas se revisaron con capturas**, no a mano en un navegador interactivo: panel,
   inventario, ficha de producto, ficha de correo, parámetros e inicio de sesión. El resto se
   verificó por la suite y la prueba del estilo.
 - **El estado `Parcial` es un juicio sobre el alcance, no sobre la calidad.** Dice que falta una
   parte declarada del caso de uso, no que lo construido esté mal.
+- **MercadoPago se probó contra respuestas declaradas**, no contra su API: la red está cortada en
+  la suite y no hay credenciales de prueba cargadas. El recorrido con una cuenta de prueba real y
+  el aviso llegando por el túnel queda para cuando el responsable cargue `MERCADOPAGO_ACCESS_TOKEN`.

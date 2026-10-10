@@ -43,6 +43,11 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="panel" %}
         <span>Panel</span>
       </a>
+      <a href="{% url 'pedidos:lista' %}"
+         class="menu-enlace {% if 'pedidos:' in actual %}menu-enlace--actual{% endif %}" {% if 'pedidos:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="bolsa" %}
+        <span>Pedidos</span>
+      </a>
     {% elif user.rol == 'cajero' %}
       <a href="{% url 'core:mostrador' %}"
          class="menu-enlace {% if actual == 'core:mostrador' %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' %}aria-current="page"{% endif %}>

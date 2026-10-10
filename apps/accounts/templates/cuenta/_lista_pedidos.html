@@ -1,0 +1,14 @@
+{% load moneda %}
+{% comment %}Los pedidos del Cliente, cada uno con su estado y lo cobrado. Lo usan el panel y el historial.{% endcomment %}
+<ul class="carrito__lineas" aria-label="{{ etiqueta }}">
+  {% for pedido in pedidos %}
+    <li class="tarjeta pedido-de-cuenta">
+      <div class="pila-2">
+        <a href="{% url 'cuenta:pedido' pedido.numero %}" class="linea-carrito__titulo">Pedido <span class="datos">{{ pedido.numero }}</span></a>
+        <p class="texto-chico secundario">{{ pedido.fecha|date:"d/m/Y" }}</p>
+      </div>
+      <span class="marca-estado{% if pedido.estado == 'despachado' %} marca-estado--ok{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
+      <span class="datos">{{ pedido.cobrado|pesos }}</span>
+    </li>
+  {% endfor %}
+</ul>

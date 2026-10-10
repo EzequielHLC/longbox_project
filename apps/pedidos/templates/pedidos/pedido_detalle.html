@@ -1,0 +1,75 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-PED-CON paso 5 — CO-183 consultarDetalleDePedido. Cliente, canal, ítems con
+precio efectivo, puntos canjeados, medio de pago, línea de tiempo y la acción
+que admite el estado: «Avanzar a …» (CU-PED-EST) o, en los estados de espera,
+por qué no se puede avanzar a mano (E1).
+{% endcomment %}
+
+{% block titulo %}Pedido {{ pedido.numero }} · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'pedidos:lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pedidos" atras=1 %}</span>
+    <h1>Pedido <span class="datos">{{ pedido.numero }}</span></h1>
+    <p><span class="marca-estado marca-estado--atencion">{{ pedido.get_estado_display }}</span> · {{ pedido.get_canal_display }} · {{ pedido.fecha|date:"d/m/Y H:i" }}</p>
+  </div>
+  <div class="fila-2">
+    {% if siguiente %}
+      <a href="{% url 'pedidos:avanzar' pedido.pk %}" class="boton-primario">Avanzar a {{ siguiente_display|lower }}</a>
+    {% endif %}
+  </div>
+</header>
+
+
+{% if pedido.estado == "esperando_pre_venta" %}
+  <div class="panel" role="note"><p>Esperando stock de pre-venta para el armado.</p></div>
+{% elif pedido.estado == "esperando_demorado" %}
+  <div class="panel" role="note"><p>Esperando el artículo demorado para continuar.</p></div>
+{% endif %}
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-cliente">
+    <div class="seccion__titulo"><h2 id="titulo-cliente">Cliente y envío</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Cliente</dt>
+      <dd>
+        {% if pedido.usuario %}
+          <a href="{% url 'accounts:cliente_ficha' pedido.usuario.pk %}">{{ pedido.usuario.get_full_name|default:pedido.usuario.email }}</a>
+        {% else %}
+          Invitado
+        {% endif %}
+      </dd>
+      <dt>Correo</dt>
+      <dd class="datos">{{ pedido.correo_de_contacto }}</dd>
+      <dt>Dirección de envío</dt>
+      <dd>{{ pedido.direccion_de_envio|default:"—" }}</dd>
+      <dt>Medio de pago</dt>
+      <dd>
+        {% if transaccion %}
+          {{ transaccion.get_medio_display }} · <span class="datos">{{ transaccion.monto|pesos }}</span> · {{ transaccion.get_estado_display }}
+          <span class="texto-chico secundario datos cortar-palabras">{{ transaccion.referencia }}</span>
+        {% else %}
+          Sólo puntos: no hubo pago en dinero
+        {% endif %}
+      </dd>
+      <dt>Puntos canjeados</dt>
+      <dd class="datos">{{ puntos_canjeados|default:"—" }}</dd>
+    </dl>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-linea">
+    <div class="seccion__titulo"><h2 id="titulo-linea">Línea de tiempo</h2></div>
+    {% include "_linea_de_tiempo.html" with transiciones=transiciones con_actor=1 %}
+  </section>
+</div>
+
+<section class="seccion" aria-labelledby="titulo-items">
+  <div class="seccion__titulo"><h2 id="titulo-items">Productos</h2></div>
+  {% include "pedidos/_resumen_pedido.html" %}
+</section>
+{% endblock %}

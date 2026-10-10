@@ -1,0 +1,53 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}
+CU-CLI-DAT — CO-108 actualizarDatosPersonales: nombre, teléfono y dirección de
+envío predeterminada. El correo (A1) y la contraseña (A2) tienen su propio
+flujo y se enlazan desde acá.
+{% endcomment %}
+
+{% block titulo_cuenta %}Mis datos{% endblock %}
+
+{% block cuenta %}
+<div class="carrito">
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    {% include "_campo.html" with campo=form.nombre_completo %}
+
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Teléfono · opcional</legend>
+      <div class="rejilla-3">
+        {% include "_campo.html" with campo=form.telefono_pais %}
+        {% include "_campo.html" with campo=form.telefono_area ayuda="Sin el 0" %}
+        {% include "_campo.html" with campo=form.telefono_numero ayuda="Sin el 15" %}
+      </div>
+    </fieldset>
+
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Dirección de envío predeterminada</legend>
+      {% include "_campo.html" with campo=form.direccion %}
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form.direccion_linea2 %}
+        {% include "_campo.html" with campo=form.depto %}
+      </div>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form.provincia %}
+        {% include "_campo.html" with campo=form.localidad %}
+      </div>
+      <datalist id="localidades"></datalist>
+      {% include "_sugerir_localidades.html" %}
+      <div class="rejilla-2">{% include "_campo.html" with campo=form.codigo_postal %}</div>
+      {% include "_campo.html" with campo=form.comentarios_envio %}
+    </fieldset>
+
+    <div class="acciones"><button type="submit" class="boton-primario">Guardar mis datos</button></div>
+  </form>
+
+  <aside class="resumen-carrito pila-3" aria-label="Acceso a la cuenta">
+    <p class="antetitulo">Correo</p>
+    <p class="datos cortar-palabras">{{ user.email }}</p>
+    <a href="{% url 'cuenta:correo' %}" class="boton-texto">Cambiar el correo</a>
+    <p class="antetitulo">Contraseña</p>
+    <a href="{% url 'cuenta:contrasena' %}" class="boton-texto">Cambiar la contraseña</a>
+  </aside>
+</div>
+{% endblock %}

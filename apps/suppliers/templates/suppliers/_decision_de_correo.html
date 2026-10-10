@@ -18,8 +18,7 @@ la cáscara queda visible mientras tanto.
       <div class="panel">
         <h3 class="fila-2">{% include "_iconos.html" with icono="listo" %}<span>Aprobar y procesar</span></h3>
         <p class="secundario">
-          El modelo de lenguaje lee el contenido extraído y genera un borrador por cada
-          producto nuevo. Puede tardar varios minutos.
+          Genera un borrador por producto. Puede tardar unos minutos.
         </p>
         <form method="post" action="{% url 'suppliers:correo_aprobar' correo.pk %}" class="acciones">
           {% csrf_token %}
@@ -62,8 +61,7 @@ la cáscara queda visible mientras tanto.
       <div class="panel formulario--angosto">
         <h3 class="fila-2">{% include "_iconos.html" with icono="reactivar" %}<span>Volver a procesar</span></h3>
         <p class="secundario">
-          Reemplaza los borradores de este correo que siguen abiertos. Los confirmados y los
-          rechazados no cambian. Si la extracción falla, los abiertos se conservan.
+          Reemplaza los borradores abiertos de este correo.
         </p>
         <form method="post" action="{% url 'suppliers:correo_reprocesar' correo.pk %}" class="acciones">
           {% csrf_token %}

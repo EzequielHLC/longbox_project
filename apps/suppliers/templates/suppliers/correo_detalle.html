@@ -83,10 +83,6 @@ borrador al que asociarlas.
 {% if correo.imagenes %}
   <section class="seccion" aria-labelledby="titulo-portadas">
     <div class="seccion__titulo"><h2 id="titulo-portadas">Portadas embebidas</h2></div>
-    <p class="seccion__bajada">
-      Vinieron dentro del correo, no hay nada que descargar. Cada una se asocia a su
-      producto por el identificador que aparece en la fila.
-    </p>
     <div class="tabla-desplazable">
       <table class="tabla">
         <thead>
@@ -155,16 +151,14 @@ el sistema —«esto lo descarté porque no verifica»—: son cosas distintas.
           </tbody>
         </table>
       </div>
-      <p class="texto-chico secundario">Todavía no son productos del catálogo: la confirmación es un paso aparte.</p>
     {% else %}
       <p class="mensaje">
         {% include "_iconos.html" with icono="info" %}
         <span>
           {% if correo.intencion == "novedades" %}
-            El modelo lo clasificó como novedades pero no identificó ningún producto.
-            Conviene revisar el contenido extraído de más abajo.
+            Clasificado como novedades, sin productos identificados. Revise el contenido extraído.
           {% else %}
-            No es un anuncio de novedades, así que no se extrajo ningún producto.
+            No es un anuncio de novedades.
           {% endif %}
         </span>
       </p>
@@ -184,8 +178,7 @@ las dos cosas a la vista. Confirmar y rechazar son CU-ALT-REV.
       <a href="{% url 'catalog:borrador_lista' %}" class="boton-texto texto-chico"><span>Ir a la revisión</span>{% include "_iconos.html" with icono="siguiente" %}</a>
     </div>
     <p class="seccion__bajada">
-      Esperan la revisión del Administrador. Todavía no son productos del catálogo:
-      confirmarlos es un paso aparte.
+      Pendientes de revisión.
     </p>
 
     <div class="pila-3">
@@ -239,18 +232,13 @@ las dos cosas a la vista. Confirmar y rechazar son CU-ALT-REV.
       {% endfor %}
     </div>
 
-    <p class="texto-chico secundario">
-      La editorial y el rubro salen de la ficha del proveedor. El stock inicial se
-      ajusta al confirmar.
-    </p>
   </section>
 {% endif %}
 
 <section class="seccion" aria-labelledby="titulo-contenido">
   <div class="seccion__titulo"><h2 id="titulo-contenido">Contenido extraído</h2></div>
   <p class="seccion__bajada">
-    Es lo que se le entrega al modelo. Las líneas con un filete a la izquierda son filas
-    de una tabla; si no hay ninguna, conviene revisar el original antes de procesarlo.
+    Texto que recibe el modelo.
   </p>
 
   {% if lineas %}
@@ -264,8 +252,7 @@ las dos cosas a la vista. Confirmar y rechazar son CU-ALT-REV.
       {% include "_iconos.html" with icono="atencion" %}
       <span>
         <span class="mensaje__prefijo">Atención:</span>
-        no se pudo extraer contenido de este correo. Revise el original: puede venir vacío,
-        sólo con una imagen, o en un formato que la extracción no contempla.
+        no se pudo extraer contenido de este correo. Revise el original.
       </span>
     </p>
   {% endif %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load moneda %}
 {% comment %}
 Cáscara del **modo público** (Escaparate): tienda, registro, inicio de sesión y
 demás pantallas de cara al cliente (`identidad_visual.md`, Modo público).
@@ -60,15 +61,28 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
             </a>
           {% endif %}
         {% endwith %}
+        {% with puntos=puntos_del_cliente %}
+          {% if puntos is not None %}
+            {% comment %}El saldo siempre a la vista (B-10-002): ¿me alcanza para canjear algo?{% endcomment %}
+            <a href="{% url 'cuenta:puntos' %}" class="encabezado-publico__puntos" {% if actual == 'cuenta:puntos' %}aria-current="page"{% endif %} aria-label="Tus puntos: {{ puntos.saldo }}, equivalen a {{ puntos.en_pesos|pesos }}">
+              <span class="contador">{{ puntos.saldo }}</span> <span>pts</span>
+            </a>
+          {% endif %}
+        {% endwith %}
         {% if user.is_authenticated %}
           {% comment %}
-          El Cliente todavía no tiene panel propio (CU-CLI-DAT): el menú reúne lo
-          que su cuenta ya puede hacer. Cerrar sesión es un POST (CU-AUT-FIN).
+          El menú de la cuenta: el panel del Cliente (CU-CLI-HIS) y sus secciones.
+          Cerrar sesión es un POST (CU-AUT-FIN).
           {% endcomment %}
           <details class="menu-de-cuenta">
             <summary>{% include "_iconos.html" with icono="usuario" %}<span>Mi cuenta</span></summary>
             <div class="menu-de-cuenta__panel">
               <p class="menu-de-cuenta__correo">{{ user.email }}</p>
+              {% if puntos_del_cliente is not None %}
+                <a href="{% url 'cuenta:panel' %}">Mis pedidos</a>
+                <a href="{% url 'cuenta:puntos' %}">Mis puntos · {{ puntos_del_cliente.saldo }}</a>
+                <a href="{% url 'cuenta:datos' %}">Mis datos</a>
+              {% endif %}
               {% if unidades_en_carrito is not None %}<a href="{% url 'tienda:carrito' %}">Mi carrito</a>{% endif %}
               {% if hay_faq %}<a href="{% url 'core:faq' %}">Preguntas frecuentes</a>{% endif %}
               <form method="post" action="{% url 'accounts:logout' %}">

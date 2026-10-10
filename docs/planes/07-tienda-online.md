@@ -272,3 +272,162 @@ Ningún contrato cambia de efecto. Va a la bitácora (B-07-013 a B-07-019, B-00-
 **Ajustes del 2026-10-05, a pedido del responsable:** se quita la cinta de accesos (B-07-021); la
 búsqueda marca el foco en su propio marco y «Buscar» tiene relieve; las flechas de las filas
 pierden la franja de cinta (B-07-022); el ticker nombra cada serie una vez (B-07-023).
+
+---
+---
+
+# Plan — `07` Tienda Online · sexta parte: la compra
+
+**Estado del plan:** Aprobado el 2026-10-09, con las recomendaciones de la sección 3. En la 2, el
+responsable precisó que tanto el costo como el monto mínimo de envío gratuito se fijan en la
+configuración del sistema, y que la integración con costos logísticos se ve más adelante
+(B-07-032) · **Fecha:** 2026-10-09
+
+Sexta parte del plan del módulo. Las cinco de arriba están aprobadas y no se tocan. Ésta cubre la
+compra online, con cuenta y como invitado. **Es la dependencia raíz de `docs/DEUDA.md`**: sin
+`Pedido` y `TransaccionPago` no se puede empezar ninguno de los módulos 08, 09, 10, 14 y 18, ni
+`CU-ALT-DEM`, `CU-ALT-CAN`, `CU-CLI-HIS` y `CU-CLI-BAJ`. Por eso va antes que cualquier otro módulo
+pendiente.
+
+Trae con ella la parte mínima de Puntos que `CO-089` exige para cerrarse (ambigüedad 3).
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Contratos | Operaciones de escritura | Operaciones de consulta |
+| --- | --- | --- | --- |
+| `CU-TDA-CMP` | `CO-179`, `CO-180`, `CO-087`, `CO-103`, `CO-088`, `CO-089` | 2 (`CO-088`, `CO-089`) | 4 |
+| `CU-TDA-INV` | `CO-179`, `CO-181`, `CO-090`, `CO-091`, `CO-089` | 1 (`CO-089`) | 4 |
+| `CU-PTS-CJE` (canal online) | `CO-103`, `CO-104`, `CO-190` | 0: ninguna toca `LotePuntos` hasta `CO-089` | 3 |
+| `CU-TDA-CRC` (cierre) | El paso 3 pasa a avanzar al pago: cierra B-07-006 | — | — |
+| `CU-CFG-PAR` (parcial) | Secciones Fidelización y Logística de `CO-130` | 1 | — |
+
+**Total: 11 contratos distintos**, de los cuales `CO-089` es el pesado: crea `Pedido`,
+`LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` en una sola transacción, con
+idempotencia y con bloqueo de stock.
+
+`CU-PTS-CJE` queda `Parcial`: su rama de mostrador (`CU-VTA-REG` paso 4) espera al módulo 06.
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Pedido` | **No** | Lo crea: número único, canal, estado (sólo los dos iniciales de DME-07), correo del invitado, dirección copiada (PD-09), costo de envío, fecha |
+| `LineaPedido` | **No** | La crea: cantidad, precio unitario congelado, cubierta con puntos, estado del ítem (sólo Disponible y Reservado de DME-08). Los atributos de demora y compensación nacen vacíos: son del módulo 08 |
+| `TransaccionPago` | **No** | La crea: medio Pasarela, monto, estado, referencia **única** en la base (idempotencia de `CO-089`, nota 1). `incluida en cierre` nace en no |
+| `LotePuntos` | **No** | Lo crea con origen Compra, y lo consume en orden de caducidad (FIFO) en el débito |
+| `MovimientoPuntos` | **No** | Lo crea: Acreditación y Débito, con saldo resultante |
+| `Carrito`, `LineaCarrito` | Sí | `LineaCarrito` gana `cubierta con puntos`, que está en el modelo y no se construyó (plan 07, segunda parte, §6). `CO-089` vacía el carrito |
+| `Producto` | Sí | `CO-089` descuenta stock con bloqueo de registro; el que llega a cero pasa de Activo a Agotado |
+| `ConfiguracionSistema` | Sí | Gana la equivalencia de puntos, la caducidad en meses y el monto mínimo de envío gratuito, que `CU-CFG-PAR` ya especifica. Y lo que resuelva la ambigüedad 2 |
+| `Usuario` | Sí | Sólo lo lee: la dirección predeterminada. **`CO-087` no la modifica** (postcondición negativa) |
+| Registro del cobro en curso | **No, y no está en el modelo** | Ambigüedad 4 |
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | **La Pasarela de Pago** (ACT-04; `ALCANCE.md`: «p. ej. MercadoPago») | **(a)** Sólo una pasarela simulada dentro del sistema: una pantalla «Pasarela de prueba» con el monto y los botones Aprobar y Rechazar, que avisa al sistema por el mismo webhook firmado que usaría la real, y que acepta reembolsos. **(b)** La simulada **más** un adaptador de MercadoPago Checkout Pro en modo de prueba, elegible en Parámetros: preferencia de pago, redirección, webhook que se verifica consultando el pago a la API, y reembolso por API. Todo por `core/integraciones.pedir`. Necesita credenciales de prueba de MercadoPago y que el webhook llegue por el túnel. **(c)** Sólo MercadoPago | Decisión. **Recomiendo (b), con MercadoPago en el último paso del orden**: la simulada cierra todos los contratos y es la que usan las pruebas y la demostración sin red; MercadoPago se suma detrás de la misma interfaz (RNF-07) si hay credenciales. Sin credenciales, (b) se reduce a (a) sin perder nada |
+| 2 | **El costo de envío** (`CU-TDA-CMP` paso 2, `CU-TDA-INV` paso 5, `CO-087`: «recalcular el costo de envío») | Ningún artefacto dice cómo se calcula. El único dato es el «monto mínimo de envío gratuito» de `CU-CFG-PAR`. **(a)** Un costo fijo nuevo en Parámetros, sección Logística, y gratis desde el monto mínimo. **(b)** Una tabla de costo por provincia. **(c)** Cotizar con un operador logístico | Decisión. **Recomiendo (a)**: es lo mínimo que da sentido a «recalcular» sin inventar una integración. Es un agregado a `CU-CFG-PAR` y al modelo, y va a la bitácora. Con (a) el costo no depende del destino: `CO-087` guarda la dirección y devuelve el mismo costo |
+| 3 | **Puntos**: `CO-089` (c) debita y acredita `LotePuntos`, que es del módulo 10 | **(a)** Este plan construye `LotePuntos`, `MovimientoPuntos`, la acreditación, el débito FIFO y el canje en el checkout (`CO-103`, `CO-104`, `CO-190`). La consulta de saldo, la caducidad y el ajuste manual quedan para el módulo 10. **(b)** La compra sin puntos, y `CU-TDA-CMP` queda `Parcial` | **Recomiendo (a)**: `CO-089` tiene la acreditación como postcondición incondicional del Cliente; sin ella el contrato no se verifica nunca. El canje viene casi gratis una vez que hay lotes |
+| 4 | **Dónde vive el checkout entre `CO-088` y `CO-089`**. `CO-088` declara «ninguna [postcondición] sobre el dominio» y `CO-089` exige «un checkout confirmado asociado a la referencia». El webhook llega de servidor a servidor: no trae la sesión del Cliente | **(a)** Un registro técnico fuera del modelo de dominio, `CobroEnCurso`: referencia, carrito, dirección declarada, ítems cubiertos, importes congelados al confirmar y monto. `CO-089` lo materializa y lo marca procesado. **(b)** Crear `TransaccionPago` en «Pendiente de verificación» al confirmar | **Recomiendo (a)**. (b) contradice las dos postcondiciones: `CO-088` no crea nada y `CO-089` (a) dice que **ahí** se creó `tp`. Es un agregado y va a la bitácora |
+| 5 | **Qué se materializa si el carrito cambia después de confirmar** (otra pestaña agrega algo mientras el Cliente está en la pasarela) | **(a)** Lo congelado en `CobroEnCurso` al confirmar, que es lo que se cobró; el carrito pierde sólo esas líneas. **(b)** El carrito tal como esté al llegar el webhook | **Recomiendo (a)**: el pedido tiene que ser lo que se pagó |
+| 6 | **Stock perdido entre la confirmación y el pago aprobado.** `CO-083` dice que la reserva ocurre recién en `CO-089`: dos clientes pueden pagar el último ejemplar | **(a)** El segundo webhook encuentra el stock insuficiente bajo bloqueo y se trata como E3: no se crea nada, se pide el reembolso, se restaura el carrito y se avisa. **(b)** Reservar stock al confirmar | **Recomiendo (a)**: es lo que dicen los contratos, y es exactamente la condición de verificación de RNF-06 («sólo una transacción sea confirmada»). La prueba de concurrencia lo ejerce |
+| 7 | **Redondeo de puntos.** RF-19: «M / E puntos»; `CU-PTS-CJE` paso 4: «precio del ítem dividido por la equivalencia» | **(a)** La acreditación redondea hacia abajo (no se regalan fracciones) y los puntos requeridos para un canje, hacia arriba (no se cobra de menos). **(b)** Al entero más cercano en los dos | **Recomiendo (a)**: los puntos son enteros (`MovimientoPuntos.cantidad`) y ninguna de las dos operaciones debe favorecer al error. Todo en `Decimal` |
+| 8 | **¿El envío genera puntos, y se puede pagar con puntos?** `CO-089`: «monto abonado en dinero»; RF-20: «subtotal abonado en dinero, excluyendo los ítems cubiertos» | **(a)** Los puntos se acreditan sobre los productos pagados en dinero, sin el envío; el envío no se canjea. Consecuencia: A2 (total cero) sólo ocurre con envío gratuito. **(b)** El envío suma puntos y también se puede cubrir | **Recomiendo (a)**: RF-20 dice «subtotal» y el canje es «ítem por ítem». Va a la bitácora, porque A2 queda más estrecho de lo que parece |
+| 9 | **El monto mínimo de envío gratuito** se compara contra… | **(a)** El subtotal de los productos a precio con oferta, antes del canje. **(b)** Lo que queda en dinero después del canje | **Recomiendo (a)**: es el valor de la compra; con (b), canjear puntos podría encarecer el envío, y el Cliente lo leería como una penalización |
+| 10 | **Qué es un «ítem» del canje** | **(a)** Una línea entera, con todas sus unidades: el modelo pone `cubierta con puntos` en `LineaCarrito` y en `LineaPedido`. **(b)** Una unidad | **Recomiendo (a)**: es lo que declara el modelo |
+| 11 | `CU-TDA-INV` A1: «si el usuario tiene una cuenta registrada, el sistema sugiere iniciar sesión», en el paso 1, cuando todavía no escribió su correo | **(a)** En el paso 1, siempre el enlace «¿Tenés cuenta? Iniciá sesión»; y al declarar los datos, si el correo es de una cuenta, la sugerencia explícita, que se puede ignorar. **(b)** Sólo lo primero | **Recomiendo (a)**. Ojo: (a) revela que un correo tiene cuenta, lo mismo que ya revela el aviso de duplicado del registro. Va a la bitácora |
+
+**Ninguna bloquea un caso de uso entero.** Si la 1 se decidiera por (c) y no hubiera
+credenciales, la compra no se podría demostrar; por eso la recomendación es (b).
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos`, `MovimientoPuntos`, `CobroEnCurso`, `LineaCarrito.cubierta con puntos` y los parámetros nuevos, con sus restricciones en la base: número y referencia únicos, cantidades ≥ 1, importes no negativos (I-09, la primera `CheckConstraint` sobre dinero) | — | Todo lo demás los usa |
+| 2 | La interfaz de pasarela y la pasarela simulada, con webhook firmado y reembolso | 1 | Sin ella no hay `CO-089` que probar |
+| 3 | `CO-179` y `CO-180`: «Ir a pagar» se habilita y el resumen verifica el stock (E1) | 1 | Cierra B-07-006 |
+| 4 | `CO-087`: dirección editable y costo de envío | 3 | |
+| 5 | `CO-088` y `CO-089` con cuenta, sin canje: pedido, stock, Agotado, acreditación, vaciado, correo, auditoría, idempotencia, E2, E3 y la carrera del último ejemplar | 2, 4 | El corazón del plan |
+| 6 | `CO-103`, `CO-104`, `CO-190` y el débito FIFO en `CO-089`; A2 sin pasarela | 5 | Necesita lotes, que sólo crea el paso 5 |
+| 7 | `CU-TDA-INV`: `CO-181`, `CO-090`, `CO-091` y la rama de invitado de `CO-089` | 5 | Reusa el cobro y la materialización |
+| 8 | Las secciones Fidelización y Logística de `CU-CFG-PAR` | 1 | Para que el Administrador cambie lo que la compra usa |
+| 9 | El adaptador de MercadoPago, si la ambigüedad 1 se decide por (b) y hay credenciales | 2 | Detrás de la misma interfaz; no cambia ningún contrato |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde aparece | Cómo se cubre |
+| --- | --- | --- |
+| Doble pedido por un webhook repetido | `CO-089`, nota 1 | Referencia única en la base, no sólo en el código. Prueba que envía el mismo aviso dos veces, también en paralelo |
+| Doble venta del último ejemplar | `CO-089`, RNF-06 | `select_for_update` sobre los productos, en orden de clave para no interbloquear (antecedente: B-13-006). Prueba de concurrencia con dos hilos y base real |
+| Un tercero falsifica el webhook y genera pedidos sin pagar | `CO-089` | Firma HMAC en la simulada; en MercadoPago el aviso no se cree: se consulta el pago a la API. Prueba con firma inválida por la dirección real |
+| El monto del aviso no coincide con lo cobrado | `CO-089` | Se compara contra `CobroEnCurso`; si difiere, no se materializa y se registra el incidente |
+| Un fallo a mitad de la transacción deja datos parciales | `CO-089` E3 | Todo dentro de un `atomic`; el reembolso y el aviso, fuera y después. Prueba que fuerza el fallo y verifica que no quedó **nada**: postcondición negativa |
+| Dinero con flotantes, o el redondeo de puntos a favor del error | Totales, envío, puntos | `Decimal` en todo; pruebas de borde en la equivalencia (ambigüedad 7) |
+| El canje debita antes de tiempo | `CO-103` | Postcondición negativa central: prueba que `LotePuntos` no cambia al marcar ni al revertir |
+| Un rechazo que modifica algo | `CO-089` E2, `CU-TDA-INV` E3 | Prueba que compara stock, carrito, puntos y pedidos antes y después |
+| `CO-087` pisa la dirección del perfil | `CO-087` | Postcondición negativa explícita, con prueba |
+| El correo de confirmación falla y tumba la compra | `CU-TDA-CMP` paso 7 | El correo sale después del `commit`; si falla, el pedido queda y el fallo se registra |
+| La red real en las pruebas | MercadoPago | Todo por `pedir`, que `sin_red` corta |
+| El personal compra con su cuenta de trabajo | Toda la compra | Como el carrito (segunda parte, amb. 3): prueba con el rol equivocado por la dirección real |
+
+---
+
+## 6. Fuera de alcance
+
+- **El seguimiento del pedido** (`CU-CLI-HIS`) y el listado del personal (`CU-PED-CON`): son lo
+  siguiente, porque ya va a haber pedidos. El correo de confirmación lleva el número de pedido; el
+  enlace de seguimiento se suma con `CU-CLI-HIS`.
+- La transición de Esperando stock de pre-venta a Pendiente de armado (`CO-013`, `CU-ALT-TRA`).
+- La consulta de saldo, la caducidad y el ajuste manual de puntos (`CU-PTS-CON`, `CAD`, `ADM`).
+- La rama de mostrador del canje (`CU-VTA-REG`).
+- La limpieza de cobros en curso abandonados: es un proceso periódico (P-05), como la de carritos.
+- El recordatorio de carrito abandonado.
+
+### Después de esta parte
+
+El orden propuesto para lo que sigue, por cuánto desbloquea cada uno. Cada uno con su propio plan,
+que se aprueba antes de programarlo:
+
+1. **`11` `CU-CLI-HIS` y `08` `CU-PED-CON`, `EST`**: el pedido ya existe, y es lo que hace visible
+   la compra.
+2. **`10` Puntos** (`CON`, `ADM`, `CAD`): los lotes ya existen.
+3. **`06` Ventas Presenciales** y después **`14` Caja**, que consolida las transacciones de los
+   dos canales.
+4. **`01` `CU-ALT-TRA`, `DEM`, `CAN` y `08` `OPC`, `CAN`, `CMP`**: el ciclo de la pre-venta y de
+   la demora.
+5. **`18` Stock Almacenado** y **`09` Devoluciones**.
+6. **`05` Restock**.
+
+---
+---
+
+# Plan — `07` Tienda Online · séptima parte: la barra del envío gratis
+
+**Estado del plan:** Aprobado el 2026-10-09, las seis decisiones como se proponen · **Fecha:** 2026-10-09
+
+A pedido del responsable («el envío gratis con una barrita de progreso»). Ningún contrato cambia
+de efecto: es cómo se muestra lo que ya calcula `CO-180` (B-07-032, B-07-033). Va a la bitácora
+como agregado.
+
+## 1. Decisiones
+
+| # | Punto | Propuesta |
+| --- | --- | --- |
+| 1 | Dónde | En el resumen del carrito, del checkout y del resumen del invitado. El carrito hoy no muestra el envío: pasa a mostrar «Envío» con el costo o «Gratis» |
+| 2 | Qué dice | «Te faltan $ X para el envío gratis» con la barra llena en la proporción del subtotal sobre el monto mínimo. Al alcanzarlo: «Tenés envío gratis» con la barra completa |
+| 3 | Contra qué mide | El subtotal de los productos a precio con oferta, antes del canje: lo mismo que decide el envío (B-07-033) |
+| 4 | Accesibilidad | `role="progressbar"` con `aria-valuenow`, `aria-valuemin` y `aria-valuemax`, y el texto al lado: la barra no es la única forma de enterarse |
+| 5 | En vivo | En el carrito, la barra se recalcula con el resto cuando cambia una cantidad (B-07-028), porque viaja en el mismo parcial |
+| 6 | Estilo | Sólo tokens de la guía; sin animación fuera del catálogo de la guía |

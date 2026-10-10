@@ -322,3 +322,35 @@ recientes.
 **Qué habría que cambiar.**
 `identidad_visual.md`: exceptuar el desplegable de la regla «sin reconstruirlos en JavaScript»
 mientras `base-select` no esté en todos los navegadores, con las condiciones de arriba.
+
+---
+
+### B-00-017 · Los textos de las pantallas dicen qué pasa, no por qué
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** todas las pantallas, `identidad_visual.md`
+**Estado:** Abierta — pedido del responsable el 2026-10-09
+
+**Qué apareció.**
+Muchas pantallas explicaban el funcionamiento interno del sistema con prosa: «“Esperando stock de
+pre-venta” no se avanza a mano: el pedido sigue solo cuando el sistema resuelve la espera». El
+responsable pidió un tono profesional, directo y sin descripciones documentales.
+
+**Qué dice la especificación.**
+`Nada` sobre el tono de los textos de interfaz.
+
+**Qué se hizo.**
+Se revisaron unas 120 frases de pantallas, avisos y mensajes, con este criterio:
+- **Un estado o un aviso dice lo que pasa**, sin justificarlo: «Esperando stock de pre-venta para el
+  armado.»
+- **Se quitan las bajadas** que describen para qué sirve una pantalla y las notas sobre cómo
+  funciona el sistema por dentro («La baja es lógica…», «El rol es el que la cuenta tiene hoy…»).
+- **Las confirmaciones dicen la consecuencia** en una frase: «No se puede deshacer», «Se puede
+  reactivar».
+- **Los estados vacíos** dicen sólo que no hay nada.
+- **Se mantienen** los mensajes que las fichas de casos de uso piden textualmente y los avisos de
+  error con su salida.
+
+Los comentarios del código no se tocaron: son documentación para quien mantiene el sistema.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: sumar la regla de redacción de arriba a la guía de textos.

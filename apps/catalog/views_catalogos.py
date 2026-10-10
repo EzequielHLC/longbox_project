@@ -215,8 +215,7 @@ class CatalogoBajaView(CatalogoMixin, DetailView):
         if dado_de_baja:
             messages.success(
                 request,
-                f"Se dio de baja «{registro}». Deja de ofrecerse en los formularios y "
-                "conserva lo que ya lo usa.",
+                f"Se dio de baja «{registro}».",
             )
         else:
             messages.info(request, f"«{registro}» ya estaba dado de baja.")

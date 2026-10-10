@@ -14,6 +14,7 @@ compromiso, no una operación del negocio (`CU-TDA-CRC`, Comentarios).
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from functools import cached_property
 
 from django.db import transaction
 from django.utils import timezone
@@ -21,6 +22,7 @@ from django.utils import timezone
 from apps.accounts.models import Usuario
 from apps.catalog.models import Producto
 from apps.catalog.precio_visible import OfertasDelDia, precio_visible
+from apps.tienda.envio import estado_de_envio
 from apps.tienda.models import Carrito, LineaCarrito
 
 # Dónde guarda la sesión de un invitado el identificador de su carrito. Django
@@ -169,6 +171,15 @@ class CarritoConsultado:
     @property
     def vacio(self):
         return not self.lineas
+
+    @cached_property
+    def envio(self):
+        """El envío y la barra del envío gratis (B-07-037), sobre el total de hoy."""
+        return estado_de_envio(self.total)
+
+    @property
+    def total_con_envio(self):
+        return self.total + self.envio.costo
 
     @property
     def se_puede_pagar(self):

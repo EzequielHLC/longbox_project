@@ -1,0 +1,31 @@
+{% extends "base_publico.html" %}
+{% comment %}
+CU-CLI-DAT A1 — CO-110 confirmarCambioDeCorreo. El GET no cambia nada (los
+servicios de correo abren los enlaces solos): confirmar es un botón.
+Token vencido o ya usado: se informa y se ofrece pedir otro.
+{% endcomment %}
+
+{% block titulo %}Confirmar el correo · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<div class="pila-5">
+  <div class="pila-2">
+    <p class="antetitulo">Mi cuenta</p>
+    <h1 class="titulo-1">Confirmar el correo nuevo</h1>
+  </div>
+  {% if pendiente %}
+    <div class="panel pila-3">
+      <p>Tu cuenta va a pasar a usar <span class="datos">{{ pendiente.correo_nuevo }}</span>.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="boton-primario">Confirmar el correo</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="panel panel--atencion pila-3" role="alert">
+      <p>Este enlace ya no sirve: venció o ya se usó.</p>
+    </div>
+    <p><a href="{% url 'cuenta:correo' %}" class="boton-primario">Pedir otro enlace</a></p>
+  {% endif %}
+</div>
+{% endblock %}

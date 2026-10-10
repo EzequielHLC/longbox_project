@@ -1,0 +1,19 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-PED-EST paso 4 (B-08-002). El texto es el de `pedidos/correo_estado.txt`.{% endcomment %}
+{% block asunto %}Pedido {{ pedido.numero }}{% endblock %}
+{% block preencabezado %}Tu pedido {{ pedido.numero }}: {{ pedido.get_estado_display|lower }}.{% endblock %}
+{% block rotulo %}Pedido{% endblock %}
+{% block antetitulo %}Cambio de estado{% endblock %}
+{% block titulo %}{{ pedido.get_estado_display }}{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Tu pedido <span style="{% estilo 'destacado' %}">{{ pedido.numero }}</span> pasó a <span style="{% estilo 'destacado' %}">{{ pedido.get_estado_display }}</span>.</p>
+{% if pedido.estado == "armado" %}<p style="{% estilo 'parrafo' %}">Ya juntamos todo lo que pediste.</p>
+{% elif pedido.estado == "empaquetado" %}<p style="{% estilo 'parrafo' %}">Está empaquetado y listo para salir.</p>
+{% elif pedido.estado == "despachado" %}<p style="{% estilo 'parrafo' %}">Ya salió hacia {{ pedido.direccion_de_envio }}.</p>{% endif %}
+{% if pedido.usuario %}
+<p style="{% estilo 'secundario' %}">Podés seguirlo desde «Mi cuenta», en la tienda.</p>
+{% else %}
+<p style="{% estilo 'secundario' %}">Te vamos a avisar a este correo cada vez que cambie de estado.</p>
+{% endif %}
+{% endblock %}

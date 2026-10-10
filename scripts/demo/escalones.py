@@ -9,7 +9,7 @@ supera los 2 segundos de RNF-02 o aparecen errores: **no** se sigue subiendo sin
 límite, porque cliente y servidor comparten la máquina y puede congelarse.
 
 Deja la tabla en `salida/escalones.json` y el gráfico en
-`docs/pruebas/demo/carga_escalones.svg`: percentiles por escalón, con la línea
+`salida/carga_escalones.svg`: percentiles por escalón, con la línea
 horizontal de los 2 s del requisito.
 """
 
@@ -22,7 +22,7 @@ from pathlib import Path
 
 from entorno import DIRECCION, RAIZ, SALIDA
 
-GRAFICOS = RAIZ / "docs" / "pruebas" / "demo"
+GRAFICOS = RAIZ / "scripts" / "demo" / "salida"
 UMBRAL_MS = 2000
 
 

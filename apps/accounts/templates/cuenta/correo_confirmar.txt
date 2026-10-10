@@ -1,0 +1,9 @@
+{% autoescape off %}Pediste que tu cuenta use este correo: {{ correo_nuevo }}.
+
+Para confirmarlo, abrí este enlace (vale {{ vigencia_horas|floatformat:0 }} horas):
+
+{{ enlace }}
+
+Hasta que lo confirmes, tu cuenta sigue usando el correo de siempre.
+Si no lo pediste vos, ignorá este mensaje: no cambia nada.
+{% endautoescape %}

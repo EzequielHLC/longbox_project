@@ -24,9 +24,12 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path("cuentas/", include("apps.accounts.urls")),
+    path("cuenta/", include("apps.accounts.urls_cuenta")),
     path("catalogo/", include("apps.catalog.urls")),
     path("proveedores/", include("apps.suppliers.urls")),
+    path("pedidos/", include("apps.pedidos.urls")),
     path("tienda/carrito/", include("apps.tienda.urls")),
+    path("tienda/compra/", include("apps.tienda.urls_compra")),
     path("", include("apps.core.urls")),
     # La raíz es la tienda: pública desde que se resolvió C-20 (2026-10-05).
     path("", RedirectView.as_view(pattern_name="core:tienda"), name="inicio"),

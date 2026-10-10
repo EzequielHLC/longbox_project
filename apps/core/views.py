@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from apps.core import georef, views_tienda
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import Banner, ConfiguracionSistema, RegistroAuditoria
+from apps.pedidos.models import Pedido
 
 
 def localidades(request):
@@ -117,6 +118,12 @@ class PanelAdministracionView(RolRequeridoMixin, TemplateView):
         contexto["bloqueos_del_dia"] = RegistroAuditoria.objects.filter(
             accion=RegistroAuditoria.BLOQUEO_POR_INTENTOS, ocurrido_en__gte=ultimo_dia
         ).count()
+        # Plan 08: lo que el Administrador tiene que mover hoy.
+        contexto["pedidos"] = Pedido.objects.aggregate(
+            por_armar=Count("pk", filter=Q(estado=Pedido.PENDIENTE_ARMADO)),
+            por_despachar=Count("pk", filter=Q(estado=Pedido.EMPAQUETADO)),
+            de_hoy=Count("pk", filter=Q(fecha__date=timezone.localdate())),
+        )
         # `select_related` evita una consulta por fila al mostrar el actor.
         contexto["actividad"] = RegistroAuditoria.objects.select_related("actor")[:12]
         return contexto

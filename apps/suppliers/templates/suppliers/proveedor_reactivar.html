@@ -21,20 +21,17 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
 </header>
 
 {% if proveedor.esta_activo %}
-  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está activo. No hay nada que confirmar.</span></p>
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está activo.</span></p>
 {% else %}
   <div class="panel formulario--angosto">
     <div class="seccion__titulo"><h2>Qué implica reactivarlo</h2></div>
     <ul class="lista-renglones">
       <li>
-        <span>Su correo comercial vuelve a reconocerse como remitente válido, y sus mensajes
-        de novedades vuelven a procesarse.</span>
+        <span>Sus mensajes de novedades vuelven a procesarse.</span>
       </li>
-      <li><span>Conserva sus datos, sus productos vinculados y su historial de auditoría.</span></li>
     </ul>
     <p class="texto-chico secundario">
-      Si el correo del proveedor cambió mientras estuvo de baja, corríjalo antes de
-      reactivarlo: si no, el sistema va a seguir esperando mensajes de la dirección vieja.
+      Si cambió su correo, corríjalo antes de reactivarlo.
     </p>
 
     <form method="post" class="acciones">

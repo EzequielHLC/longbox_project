@@ -180,7 +180,7 @@ def test_la_pantalla_lo_dice_antes_de_ofrecer_el_boton(client_admin):
 
     contenido = client_admin.get(url_baja(producto)).content.decode()
 
-    assert "no admite otra baja" in contenido
+    assert "cancelado por editorial y ya está fuera del catálogo" in contenido
     assert "Confirmar baja" not in contenido
 
 

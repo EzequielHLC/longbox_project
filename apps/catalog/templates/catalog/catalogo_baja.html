@@ -24,7 +24,7 @@ diría que se verificó que no hay ninguno.
 
 <div class="panel panel--atencion">
   <div class="seccion__titulo"><h2>Qué lo referencia</h2></div>
-  <p class="seccion__bajada">La baja conserva todas estas referencias: no modifica nada de lo que ya lo usa.</p>
+  <p class="seccion__bajada">Lo que ya lo usa no cambia.</p>
 
   <div class="cifras">
     {% for referencia in informe %}
@@ -41,7 +41,7 @@ diría que se verificó que no hay ninguno.
 
   <h3>Qué implica la baja</h3>
   <p>{{ consecuencia }}</p>
-  <p class="secundario">Se puede revertir: la modificación permite reactivarlo.</p>
+  <p class="secundario">Se puede reactivar después.</p>
 
   <form method="post" class="acciones">
     {% csrf_token %}

@@ -1,0 +1,74 @@
+{% load moneda %}
+{% comment %}
+Fragmento de la tabla de pedidos (CO-182). Se dibuja dentro de la pantalla y
+también solo, cuando el buscador lo pide con `?parcial=1`.
+{% endcomment %}
+{% if pedidos %}
+  <div class="pila-3">
+    <p class="texto-chico secundario">
+      {{ paginator.count }} pedido{{ paginator.count|pluralize }}{% if hay_filtro %} que coincide{{ paginator.count|pluralize }} con el filtro{% endif %}
+    </p>
+
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th>Canal</th>
+            <th>Estado</th>
+            <th class="numero">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pedido in pedidos %}
+            <tr>
+              <td class="celda-principal datos"><a href="{% url 'pedidos:detalle' pedido.pk %}">{{ pedido.numero }}</a></td>
+              <td>
+                {% if pedido.usuario %}
+                  {{ pedido.usuario.get_full_name|default:pedido.usuario.email }}
+                {% else %}
+                  Invitado <span class="texto-chico secundario cortar-palabras">{{ pedido.correo_invitado }}</span>
+                {% endif %}
+              </td>
+              <td class="datos sin-cortar secundario">{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
+              <td>{% if pedido.canal == "online" %}Online{% else %}Físico{% endif %}</td>
+              <td>
+                <span class="marca-estado{% if pedido.estado == 'despachado' %} marca-estado--apagado{% elif pedido.estado == 'esperando_pre_venta' or pedido.estado == 'esperando_demorado' %} marca-estado--dato{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
+                {% if pedido.tiene_demorados %}<span class="marca-estado marca-estado--error">Demorado</span>{% endif %}
+              </td>
+              <td class="numero">{{ pedido.cobrado|pesos }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <div class="paginacion">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if page_obj.has_previous %}
+            <a href="?{{ consulta.urlencode }}&amp;page={{ page_obj.previous_page_number }}" class="boton-texto">{% include "_iconos.html" with icono="anterior" %}<span>Anterior</span></a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?{{ consulta.urlencode }}&amp;page={{ page_obj.next_page_number }}" class="boton-texto"><span>Siguiente</span>{% include "_iconos.html" with icono="adelante" %}</a>
+          {% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="bolsa" %}
+    <p>
+      {% if hay_filtro %}
+        Ningún pedido coincide con los filtros.
+      {% else %}
+        Todavía no hay pedidos.
+      {% endif %}
+    </p>
+    {% if hay_filtro %}<p><a href="{% url 'pedidos:lista' %}" class="boton-texto">Limpiar filtros</a></p>{% endif %}
+  </div>
+{% endif %}

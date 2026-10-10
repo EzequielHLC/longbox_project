@@ -1,0 +1,35 @@
+{% extends "base_publico.html" %}
+{% comment %}
+CU-TDA-INV — los datos del invitado (CO-181 y CO-090). Correo y dirección
+completa, todos obligatorios. Con un error, el formulario vuelve con lo escrito
+(E1). A1: se ofrece iniciar sesión (B-07-036).
+{% endcomment %}
+
+{% block titulo %}Comprar como invitado · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<div class="pila-5">
+  <div class="pila-2">
+    <p class="antetitulo">Tienda · Compra</p>
+    <h1 class="titulo-1">Comprar como invitado</h1>
+    <p class="secundario">
+      El seguimiento te llega por correo.
+      ¿Tenés cuenta? <a href="{% url 'accounts:login' %}?next={% url 'compra:checkout' %}">Iniciá sesión</a>
+      y sumá puntos.
+    </p>
+  </div>
+
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    {% include "_campo.html" with campo=form.correo %}
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Dirección de envío</legend>
+      {% include "tienda/_direccion.html" %}
+    </fieldset>
+    <div class="acciones fila-2">
+      <button type="submit" class="boton-primario">Continuar</button>
+      <a href="{% url 'tienda:carrito' %}" class="boton-texto">Volver al carrito</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

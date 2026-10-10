@@ -1,0 +1,43 @@
+{% extends "base_acceso.html" %}
+{% load moneda %}
+{% comment %}
+La pasarela de prueba (B-07-031). Representa a la pasarela, no a la tienda:
+muestra el importe y aprueba o rechaza. Avisa al sistema con el mismo aviso
+firmado que procesa CO-089, y devuelve al Cliente al resultado.
+{% endcomment %}
+
+{% block titulo %}Pasarela de prueba{% endblock %}
+{% block seccion %}Pasarela de prueba{% endblock %}
+
+{% block contenido %}
+<div class="pila-2">
+  <h1>Pasarela de prueba</h1>
+  <p class="secundario">No se mueve dinero real. Elegí cómo termina el pago.</p>
+</div>
+
+<div class="panel pila-2">
+  <p class="antetitulo">Importe</p>
+  <p class="resumen-carrito__total">{{ cobro.monto|pesos }}</p>
+  <p class="texto-chico secundario datos">Referencia {{ cobro.referencia }}</p>
+</div>
+
+{% if cobro.estado == "pendiente" %}
+  <form method="post" class="pila-5">
+    {% csrf_token %}
+    <button type="submit" name="resultado" value="aprobar" class="boton-primario">Aprobar el pago</button>
+    <fieldset class="divisor pila-3">
+      <legend class="titulo-3">O rechazarlo</legend>
+      <div class="campo">
+        <label for="motivo" class="etiqueta">Motivo del rechazo</label>
+        <select id="motivo" name="motivo">
+          {% for motivo in motivos %}<option value="{{ motivo }}">{{ motivo }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" name="resultado" value="rechazar" class="boton-seccion">Rechazar el pago</button>
+    </fieldset>
+  </form>
+{% else %}
+  <p>Este pago ya se resolvió: {{ cobro.get_estado_display|lower }}.</p>
+  <p><a href="{% url 'compra:resultado' cobro.referencia %}" class="boton-primario">Volver a la tienda</a></p>
+{% endif %}
+{% endblock %}

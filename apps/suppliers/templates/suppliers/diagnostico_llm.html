@@ -139,7 +139,7 @@ Indicadores), sin latido ni color.
     <div class="acciones">
       <button type="submit" class="boton-primario">Probar extracción</button>
       {% if not estado.disponible %}
-        <p class="texto-chico fuerte">El servicio no responde. La prueba va a fallar hasta que vuelva a estar en línea.</p>
+        <p class="texto-chico fuerte">El servicio no responde.</p>
       {% endif %}
     </div>
   </form>
@@ -269,7 +269,7 @@ objeto, y adentro por si salió bien.
           </table>
         </div>
       {% else %}
-        <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>No se extrajo ningún producto. Sólo los correos de novedades los producen.</span></p>
+        <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>No se extrajo ningún producto.</span></p>
       {% endif %}
     {% else %}
       <div class="mensaje mensaje--error" role="alert">

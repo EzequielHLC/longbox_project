@@ -137,7 +137,7 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
   {% endcomment %}
   <section class="seccion formulario--angosto" aria-labelledby="titulo-rechazo">
     <div class="seccion__titulo"><h2 id="titulo-rechazo">Descartar este borrador</h2></div>
-    <p class="seccion__bajada">No crea ningún producto. El motivo queda registrado.</p>
+    <p class="seccion__bajada">El motivo queda registrado.</p>
     <form method="post" novalidate class="formulario">
       {% csrf_token %}
       {% include "_campo.html" with campo=form_rechazo.motivo %}

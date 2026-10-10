@@ -1,0 +1,26 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}
+CU-CLI-DAT A1 — CO-109 solicitarCambioDeCorreo. Con la contraseña actual. El
+enlace va al correo nuevo; hasta que se abra, la cuenta sigue con el actual.
+E1: un correo que ya tiene cuenta ofrece recuperar la contraseña.
+{% endcomment %}
+
+{% block titulo_cuenta %}Cambiar el correo{% endblock %}
+
+{% block cuenta %}
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  <p class="secundario">Correo actual: <span class="datos">{{ user.email }}</span>. Te enviamos un enlace al nuevo para confirmarlo.</p>
+  {% include "_campo.html" with campo=form.contrasena_actual %}
+  <div class="pila-2">
+    {% include "_campo.html" with campo=form.correo_nuevo %}
+    {% if form.correo_ya_registrado %}
+      <p class="texto-chico"><a href="{% url 'accounts:password_reset' %}">¿Es tuyo? Recuperá su contraseña</a></p>
+    {% endif %}
+  </div>
+  <div class="acciones fila-5">
+    <button type="submit" class="boton-primario">Mandarme el enlace</button>
+    <a href="{% url 'cuenta:datos' %}" class="boton-texto">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

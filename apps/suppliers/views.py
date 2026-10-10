@@ -193,8 +193,7 @@ class ProveedorAltaView(ProveedoresMixin, CreateView):
         self.object = proveedor
         messages.success(
             self.request,
-            f"Se registró «{proveedor.razon_social}». Su correo comercial ya está "
-            "habilitado como remitente válido.",
+            f"Se registró «{proveedor.razon_social}».",
         )
         # CU-PRV-ALT paso 6: el alta termina mostrando la ficha del proveedor creado.
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
@@ -249,8 +248,8 @@ class ProveedorEdicionView(ProveedoresMixin, UpdateView):
         if anterior.correo_comercial != proveedor.correo_comercial:
             messages.success(
                 self.request,
-                f"Se actualizó «{proveedor.razon_social}». Desde ahora solo se procesan "
-                f"los mensajes que lleguen desde {proveedor.correo_comercial}.",
+                f"Se actualizó «{proveedor.razon_social}». Nuevo remitente: "
+                f"{proveedor.correo_comercial}.",
             )
         else:
             messages.success(self.request, f"Se actualizó «{proveedor.razon_social}».")
@@ -301,8 +300,7 @@ class ProveedorBajaView(ProveedoresMixin, DetailView):
 
         messages.success(
             request,
-            f"Se dio de baja «{proveedor.razon_social}». Su correo dejó de reconocerse "
-            "como remitente válido; sus productos y su historial se conservan.",
+            f"Se dio de baja «{proveedor.razon_social}».",
         )
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
 
@@ -347,8 +345,7 @@ class ProveedorReactivarView(ProveedoresMixin, DetailView):
 
         messages.success(
             request,
-            f"Se reactivó «{proveedor.razon_social}». Sus mensajes vuelven a procesarse "
-            f"desde {proveedor.correo_comercial}.",
+            f"Se reactivó «{proveedor.razon_social}».",
         )
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
 

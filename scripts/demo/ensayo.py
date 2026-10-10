@@ -8,7 +8,7 @@ Requiere el servidor de la demostración levantado (`manejar.py servir` y Caddy 
 `Caddyfile.demo`). Corre cada herramienta, guarda su salida en
 `salida/ensayo-<fecha>/` con el tiempo y el código de salida, y restaura la base
 después de cada escenario que escribe datos. Al final imprime la tabla de
-resultados, que es la que va a `docs/pruebas/DEMO-ENSAYO.md`.
+resultados.
 """
 
 import argparse

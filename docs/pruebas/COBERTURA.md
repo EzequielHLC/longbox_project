@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-05, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-10-09, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 95 |
-| Sin ninguna | 124 |
-| Pruebas de contrato en la suite | 341 |
+| Con al menos una prueba que lleva su código | 119 |
+| Sin ninguna | 100 |
+| Pruebas de contrato en la suite | 500 |
 
 ---
 
@@ -34,7 +34,7 @@ es otra puerta y su número también vive ahí.
 
 ### `00-transversales.md` — Transversales
 
-18 contratos · 10 con prueba · 8 sin.
+18 contratos · 14 con prueba · 4 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -47,10 +47,10 @@ es otra puerta y su número también vive ahí.
 | `CO-074` | enviarPedidoConsolidado — *contrato de operación interna* | — | — |
 | `CO-077` | notificarReposicionASuscriptores — *contrato de operación interna* | — | — |
 | `CO-086` | fusionarCarritoDeSesion | 3 | `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-087` | declararDireccionDeEnvio | — | — |
-| `CO-089` | registrarResultadoDePago | — | — |
-| `CO-103` | aplicarCanjeDePuntosAItem | — | — |
-| `CO-104` | revertirCanjeDePuntosDeItem | — | — |
+| `CO-087` | declararDireccionDeEnvio | 5 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-089` | registrarResultadoDePago | 37 | `apps/tienda/tests/test_barra_envio.py`, `apps/tienda/tests/test_concurrencia_compra.py`, `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_contratos_07_invitado.py` |
+| `CO-103` | aplicarCanjeDePuntosAItem | 8 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-104` | revertirCanjeDePuntosDeItem | 1 | `apps/tienda/tests/test_contratos_07_compra.py` |
 | `CO-122` | regenerarEnlaceDeActivacion | 5 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-137` | registrarEditorial | 4 | `apps/catalog/tests/test_concurrencia_catalogos.py`, `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-141` | registrarTipoDeMaterial | 1 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
@@ -193,38 +193,38 @@ es otra puerta y su número también vive ahí.
 
 ### `07-tienda-online.md` — 07 Tienda Online
 
-12 contratos · 6 con prueba · 6 sin.
+12 contratos · 12 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-083` | agregarProductoAlCarrito | 14 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_concurrencia_carrito.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-084` | modificarCantidadDeLinea | 7 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-085` | eliminarLineaDelCarrito | 3 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-088` | confirmarPedido | — | — |
-| `CO-090` | declararDatosDeInvitado | — | — |
-| `CO-091` | confirmarPedidoDeInvitado | — | — |
+| `CO-088` | confirmarPedido | 7 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-090` | declararDatosDeInvitado | 5 | `apps/tienda/tests/test_contratos_07_invitado.py` |
+| `CO-091` | confirmarPedidoDeInvitado | 2 | `apps/tienda/tests/test_contratos_07_invitado.py` |
 | `CO-176` | consultarCatalogoPublico | 11 | `apps/core/tests/test_contratos_07_tienda.py`, `apps/core/tests/test_tienda_quinta_parte.py` |
 | `CO-177` | consultarFichaPublicaDeProducto | 3 | `apps/core/tests/test_contratos_07_tienda.py` |
 | `CO-178` | consultarCarrito | 5 | `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-179` | procederAlPago | — | — |
-| `CO-180` | iniciarCheckout | — | — |
-| `CO-181` | iniciarCompraComoInvitado | — | — |
+| `CO-179` | procederAlPago | 6 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-180` | iniciarCheckout | 4 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-181` | iniciarCompraComoInvitado | 5 | `apps/tienda/tests/test_contratos_07_invitado.py` |
 
 ### `08-gestion-de-pedidos.md` — 08 Gestión de Pedidos
 
-10 contratos · 0 con prueba · 10 sin.
+10 contratos · 4 con prueba · 6 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-092` | avanzarEstadoDePedido | — | — |
-| `CO-093` | confirmarAvancePeseADecisionPendiente | — | — |
+| `CO-092` | avanzarEstadoDePedido | 15 | `apps/pedidos/tests/test_acceso_y_concurrencia_pedidos.py`, `apps/pedidos/tests/test_contratos_08_pedidos.py` |
+| `CO-093` | confirmarAvancePeseADecisionPendiente | 1 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
 | `CO-094` | seleccionarOpcionAnteDemora | — | — |
 | `CO-095` | confirmarOpcionAnteDemora | — | — |
 | `CO-096` | ejecutarCicloDeVencimientoDeVentanaDeDecision | — | — |
 | `CO-097` | ejecutarCicloDeCompensacionPorRetraso | — | — |
 | `CO-098` | confirmarCancelacionDeArticuloDemorado | — | — |
-| `CO-182` | consultarPedidos | — | — |
-| `CO-183` | consultarDetalleDePedido | — | — |
+| `CO-182` | consultarPedidos | 8 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
+| `CO-183` | consultarDetalleDePedido | 4 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
 | `CO-184` | consultarOpcionesAnteDemora | — | — |
 
 ### `09-devoluciones.md` — 09 Devoluciones
@@ -243,32 +243,32 @@ es otra puerta y su número también vive ahí.
 
 ### `10-puntos.md` — 10 Puntos
 
-6 contratos · 0 con prueba · 6 sin.
+6 contratos · 3 con prueba · 3 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-105` | ejecutarCicloDeCaducidadDePuntos | — | — |
 | `CO-106` | registrarAjusteManualDePuntos | — | — |
-| `CO-188` | consultarPuntos | — | — |
-| `CO-189` | filtrarMovimientosDePuntos | — | — |
-| `CO-190` | confirmarSeleccionDeCanje | — | — |
+| `CO-188` | consultarPuntos | 7 | `apps/puntos/tests/test_contratos_10_puntos.py` |
+| `CO-189` | filtrarMovimientosDePuntos | 4 | `apps/puntos/tests/test_contratos_10_puntos.py` |
+| `CO-190` | confirmarSeleccionDeCanje | 1 | `apps/tienda/tests/test_contratos_07_compra.py` |
 | `CO-191` | consultarPuntosDeCliente | — | — |
 
 ### `11-cuenta-de-cliente.md` — 11 Cuenta de Cliente
 
-11 contratos · 2 con prueba · 9 sin.
+11 contratos · 8 con prueba · 3 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-107` | registrarCuentaDeCliente | — | — |
-| `CO-108` | actualizarDatosPersonales | — | — |
-| `CO-109` | solicitarCambioDeCorreo | — | — |
-| `CO-110` | confirmarCambioDeCorreo | — | — |
-| `CO-111` | cambiarContrasena | — | — |
+| `CO-108` | actualizarDatosPersonales | 5 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
+| `CO-109` | solicitarCambioDeCorreo | 6 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
+| `CO-110` | confirmarCambioDeCorreo | 7 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
+| `CO-111` | cambiarContrasena | 4 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-112` | solicitarBajaDeCuentaPropia | — | — |
 | `CO-113` | confirmarBajaDeCuentaPropia | — | — |
-| `CO-192` | consultarPanelDeCuenta | — | — |
-| `CO-193` | consultarDetalleDePedidoPropio | — | — |
+| `CO-192` | consultarPanelDeCuenta | 5 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
+| `CO-193` | consultarDetalleDePedidoPropio | 4 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-194` | consultarCuentasDeCliente | 4 | `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py` |
 | `CO-195` | consultarFichaDeCliente | 5 | `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py` |
 
@@ -335,11 +335,11 @@ es otra puerta y su número también vive ahí.
 
 ### `17-configuracion-del-sistema.md` — 17 Configuración del Sistema
 
-27 contratos · 22 con prueba · 5 sin.
+27 contratos · 23 con prueba · 4 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-130` | actualizarParametrosOperacionales | — | — |
+| `CO-130` | actualizarParametrosOperacionales | 8 | `apps/catalog/tests/test_parametros_compra.py` |
 | `CO-131` | actualizarIdentidadVisual | 8 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-132` | agregarBanner | 2 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-133` | editarBanner | 4 | `apps/core/tests/test_contratos_17_contenido.py` |
@@ -595,6 +595,148 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO086_el_personal_que_inicia_sesion_descarta_el_carrito_de_invitado` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO086_sin_carrito_propio_el_de_sesion_pasa_a_la_cuenta` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
+**`CO-087` · declararDireccionDeEnvio**
+
+- `test_CO087_devuelve_el_costo_de_envio` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO087_la_direccion_del_checkout_pasa_a_la_declarada` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO087_la_direccion_del_perfil_no_se_modifica` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO087_sin_numero_de_calle_no_se_declara` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO087_una_direccion_incoherente_no_se_declara` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-088` · confirmarPedido**
+
+- `test_CO088_A2_con_todo_cubierto_y_envio_gratis_confirma_sin_pasarela` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_A2_no_ocurre_si_hay_que_pagar_el_envio` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_con_total_mayor_que_cero_emite_la_solicitud_de_cobro_con_su_referencia` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_con_total_mayor_que_cero_no_cambia_el_dominio` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_congela_lineas_precios_direccion_y_canje` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_sin_direccion_completa_no_confirma` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO088_un_canje_que_el_saldo_ya_no_cubre_pide_revisar` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-089` · registrarResultadoDePago**
+
+- `test_CO089_E2_el_rechazo_queda_en_la_auditoria` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E2_el_rechazo_se_informa_con_el_mensaje_de_la_pasarela` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E2_un_pago_rechazado_no_modifica_nada` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E3_avisa_al_cliente_que_el_cargo_se_revierte` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E3_el_saldo_que_ya_no_alcanza_tambien_reembolsa` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E3_stock_perdido_mientras_se_pagaba_no_deja_nada_y_reembolsa` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_E3_un_fallo_tecnico_a_mitad_de_camino_no_deja_datos_parciales` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_a_crea_el_pedido_con_una_linea_por_linea_del_carrito_y_la_transaccion` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_a_el_carrito_queda_vaciado` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_b_asociaciones_del_pedido` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_acredita_los_puntos_de_lo_pagado_en_dinero_sin_el_envio` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_debita_los_lotes_de_caducidad_mas_proxima_primero` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_el_precio_unitario_queda_congelado` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_el_stock_baja_y_el_que_llega_a_cero_pasa_a_agotado` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_la_direccion_queda_copiada_y_no_sigue_al_perfil` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_la_linea_cubierta_guarda_el_valor_de_su_canje` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_la_transaccion_queda_aprobada_con_referencia_y_monto` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_c_numero_unico_canal_online_y_pendiente_de_armado` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_con_pre_venta_nace_esperando_stock_y_la_linea_reservada` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_dos_pagos_aprobados_del_ultimo_ejemplar_generan_un_solo_pedido` — `apps/tienda/tests/test_concurrencia_compra.py`
+- `test_CO089_el_mismo_aviso_repetido_en_paralelo_genera_un_solo_pedido` — `apps/tienda/tests/test_concurrencia_compra.py`
+- `test_CO089_el_mismo_saldo_canjeado_en_dos_compras_a_la_vez_se_gasta_una_sola_vez` — `apps/tienda/tests/test_concurrencia_compra.py`
+- `test_CO089_envia_la_confirmacion_despues_del_commit` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_invitado_E3_rechazo_conserva_los_datos_del_formulario` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_invitado_el_pedido_queda_asociado_al_correo_y_no_a_un_usuario` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_invitado_el_stock_baja_y_el_carrito_de_sesion_se_vacia` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_invitado_la_confirmacion_va_al_correo_declarado` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_invitado_no_se_acreditan_ni_debitan_puntos` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_invitado_queda_en_la_auditoria_con_su_correo` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO089_la_confirmacion_lleva_el_enlace_de_seguimiento` — `apps/tienda/tests/test_barra_envio.py`
+- `test_CO089_la_pantalla_de_resultado_muestra_el_numero_y_el_estado` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_los_puntos_acreditados_redondean_hacia_abajo` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_otro_carrito_cambiado_despues_de_confirmar_no_entra_al_pedido` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_queda_registrado_en_la_auditoria_con_el_actor` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_un_aviso_repetido_no_genera_un_segundo_pedido` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_un_correo_caido_no_deshace_el_pedido` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO089_un_monto_distinto_del_cobrado_no_genera_pedido` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-090` · declararDatosDeInvitado**
+
+- `test_CO090_A1_si_el_correo_es_de_una_cuenta_sugiere_iniciar_sesion` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO090_E1_un_dato_ausente_o_invalido_se_resalta_y_se_conserva_lo_escrito` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO090_E2_un_producto_sin_stock_vuelve_al_carrito` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO090_c_los_datos_quedan_asociados_al_checkout_sin_cambios_persistentes` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO090_salida_el_resumen_con_envio_y_total_sin_canje` — `apps/tienda/tests/test_contratos_07_invitado.py`
+
+**`CO-091` · confirmarPedidoDeInvitado**
+
+- `test_CO091_emite_la_solicitud_de_cobro_sin_cambios_en_el_dominio` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO091_sin_datos_declarados_vuelve_al_formulario` — `apps/tienda/tests/test_contratos_07_invitado.py`
+
+**`CO-092` · avanzarEstadoDePedido**
+
+- `test_CO092_E1_un_estado_automatico_no_se_avanza_a_mano` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_E2_con_decision_pendiente_advierte_y_no_avanza` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_c_armado_no_toca_las_lineas` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_c_el_estado_pasa_al_unico_siguiente` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_c_empaquetado_y_despachado_avanzan_las_lineas_disponibles` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_c_las_lineas_demoradas_no_avanzan` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_dos_administradores_que_avanzan_a_la_vez_avanzan_un_solo_paso` — `apps/pedidos/tests/test_acceso_y_concurrencia_pedidos.py`
+- `test_CO092_el_cliente_recibe_la_notificacion` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_el_invitado_recibe_la_notificacion_en_su_correo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_la_confirmacion_muestra_el_estado_actual_y_el_siguiente` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_no_se_saltea_un_paso_si_el_pedido_cambio_en_otra_pantalla` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_queda_en_la_auditoria_con_el_estado_anterior_y_el_nuevo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_queda_una_transicion_en_la_linea_de_tiempo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_un_correo_caido_no_deshace_el_avance` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO092_un_pedido_despachado_no_tiene_siguiente` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-093` · confirmarAvancePeseADecisionPendiente**
+
+- `test_CO093_avanza_y_los_pendientes_conservan_su_estado` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-103` · aplicarCanjeDePuntosAItem**
+
+- `test_CO103_E1_no_hay_canje_parcial_entre_dos_lineas` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_E1_saldo_insuficiente_no_cubre_y_lo_informa` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_E2_se_verifica_con_el_precio_de_hoy` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_la_linea_de_otro_carrito_responde_404` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_la_linea_queda_cubierta_y_el_total_baja_su_precio` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_los_puntos_requeridos_redondean_hacia_arriba` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_ningun_lote_de_puntos_se_modifica_ni_se_audita` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_sin_saldo_no_hay_canje` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-104` · revertirCanjeDePuntosDeItem**
+
+- `test_CO104_la_linea_vuelve_a_su_precio_sin_tocar_lotes` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-108` · actualizarDatosPersonales**
+
+- `test_CO108_c_los_atributos_modificados_pasan_a_los_declarados` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO108_el_correo_no_se_cambia_desde_aca` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO108_guardar_sin_cambios_no_audita` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO108_queda_en_la_auditoria_con_el_actor` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO108_una_direccion_incoherente_no_cambia_nada` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+
+**`CO-109` · solicitarCambioDeCorreo**
+
+- `test_CO109_E1_un_correo_con_cuenta_se_rechaza_y_ofrece_recuperar` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO109_a_se_crea_un_token_de_cambio_de_correo` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO109_con_la_contrasena_equivocada_no_se_emite_nada` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO109_el_correo_de_la_cuenta_no_cambia` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO109_el_enlace_va_al_correo_nuevo` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO109_un_pedido_nuevo_vence_el_anterior` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+
+**`CO-110` · confirmarCambioDeCorreo**
+
+- `test_CO110_abrir_el_enlace_no_cambia_nada` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_c_el_correo_pasa_al_nuevo_y_el_token_queda_consumido` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_el_correo_anterior_recibe_un_aviso` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_queda_en_la_auditoria` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_si_otra_cuenta_tomo_el_correo_en_el_medio_no_se_cambia` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_un_enlace_usado_no_sirve_dos_veces` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO110_un_enlace_vencido_no_sirve` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+
+**`CO-111` · cambiarContrasena**
+
+- `test_CO111_c_la_credencial_pasa_al_hash_nuevo` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO111_con_la_contrasena_actual_equivocada_no_cambia_nada` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO111_la_sesion_actual_sigue_y_las_otras_se_cierran` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO111_queda_en_la_auditoria` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+
 **`CO-114` · iniciarSesion**
 
 - `test_CO114_bloqueado_no_entra_ni_con_la_contrasena_correcta` — `apps/accounts/tests/test_contratos_12_autenticacion.py`
@@ -725,6 +867,17 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO129_exportar_trae_todo_el_filtro_y_no_solo_la_pagina` — `apps/core/tests/test_contratos_16_auditoria.py`
 - `test_CO129_las_celdas_no_se_interpretan_como_formulas` — `apps/core/tests/test_contratos_16_auditoria.py`
+
+**`CO-130` · actualizarParametrosOperacionales**
+
+- `test_CO130_b_la_configuracion_queda_asociada_al_administrador` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_guardar_sin_cambios_no_deja_entradas` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_la_pantalla_muestra_la_seccion_de_compra_online` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_los_parametros_de_la_compra_pasan_a_los_declarados` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_los_valores_operativos_no_cambian_al_guardar_la_compra` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_solo_se_audita_lo_que_cambio` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_un_valor_fuera_de_rango_no_se_guarda` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_una_entrada_de_auditoria_por_cada_parametro_modificado` — `apps/catalog/tests/test_parametros_compra.py`
 
 **`CO-131` · actualizarIdentidadVisual**
 
@@ -919,6 +1072,84 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO178_A4_la_pre_venta_figura_siempre_disponible` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO178_la_consulta_no_modifica_nada` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO178_presenta_las_lineas_con_precio_subtotal_y_total` — `apps/tienda/tests/test_contratos_07_carrito.py`
+
+**`CO-179` · procederAlPago**
+
+- `test_CO179_con_todas_las_lineas_disponibles_transfiere_al_checkout` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_el_invitado_que_elige_comprar_como_invitado_va_al_formulario` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_el_invitado_sin_elegir_va_a_iniciar_sesion_y_vuelve_al_checkout` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_no_modifica_el_estado_del_sistema` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_stock_insuficiente_bloquea` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_una_linea_no_disponible_bloquea_y_vuelve_al_carrito` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-180` · iniciarCheckout**
+
+- `test_CO180_E1_stock_perdido_por_compra_concurrente_vuelve_al_carrito` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO180_desde_el_monto_minimo_el_envio_es_gratis` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO180_no_modifica_el_estado_del_sistema` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO180_presenta_lineas_direccion_del_perfil_envio_y_subtotal` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-181` · iniciarCompraComoInvitado**
+
+- `test_CO181_A1_ofrece_iniciar_sesion` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO181_no_modifica_el_estado_del_sistema` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO181_presenta_el_formulario_de_datos_del_invitado` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO181_un_carrito_con_pre_venta_no_se_compra_como_invitado` — `apps/tienda/tests/test_contratos_07_invitado.py`
+- `test_CO181_un_cliente_con_sesion_va_a_su_checkout` — `apps/tienda/tests/test_contratos_07_invitado.py`
+
+**`CO-182` · consultarPedidos**
+
+- `test_CO182_E1_sin_resultados_informa_y_ofrece_limpiar` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_cada_fila_trae_cliente_o_invitado_canal_estado_y_total` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_filtra_por_estado_cliente_canal_y_demorados` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_filtra_por_rango_de_fechas` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_hace_las_mismas_consultas_con_pocos_o_muchos_pedidos` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_lista_los_pedidos_del_mas_reciente_al_mas_viejo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_no_modifica_el_estado_del_sistema` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO182_un_filtro_invalido_se_ignora` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-183` · consultarDetalleDePedido**
+
+- `test_CO183_en_un_estado_automatico_no_ofrece_avanzar` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO183_muestra_cliente_items_puntos_pago_y_linea_de_tiempo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO183_no_modifica_el_estado_del_sistema` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+- `test_CO183_un_pedido_pagado_sólo_con_puntos_lo_dice` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-188` · consultarPuntos**
+
+- `test_CO188_A1_sin_puntos_saldo_cero_y_mensajes` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_cada_lote_con_origen_monto_disponible_y_caducidad` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_destaca_los_lotes_que_vencen_dentro_de_30_dias` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_el_historial_descendente_con_saldo_resultante_y_su_pedido` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_el_saldo_con_su_equivalencia_en_pesos` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_no_modifica_el_estado_del_sistema` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO188_no_muestra_los_puntos_de_otro_cliente` — `apps/puntos/tests/test_contratos_10_puntos.py`
+
+**`CO-189` · filtrarMovimientosDePuntos**
+
+- `test_CO189_E1_sin_resultados_informa_y_ofrece_limpiar` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO189_filtra_por_rango_de_fechas` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO189_filtra_por_tipo_y_muestra_el_total` — `apps/puntos/tests/test_contratos_10_puntos.py`
+- `test_CO189_un_filtro_invalido_se_ignora` — `apps/puntos/tests/test_contratos_10_puntos.py`
+
+**`CO-190` · confirmarSeleccionDeCanje**
+
+- `test_CO190_A2_si_el_total_queda_en_cero_lo_informa_sin_cambiar_nada` — `apps/tienda/tests/test_contratos_07_compra.py`
+
+**`CO-192` · consultarPanelDeCuenta**
+
+- `test_CO192_E1_sin_pedidos_activos_informa_y_las_demas_secciones_siguen` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO192_el_historial_muestra_los_despachados` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO192_la_seccion_stock_en_local_no_se_muestra` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO192_muestra_los_pedidos_activos_del_cliente` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO192_no_modifica_el_estado_del_sistema` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+
+**`CO-193` · consultarDetalleDePedidoPropio**
+
+- `test_CO193_el_pedido_de_otro_cliente_responde_404` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO193_muestra_items_precios_estados_alcanzados_y_sus_fechas` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO193_no_modifica_el_estado_del_sistema` — `apps/accounts/tests/test_contratos_11_cuenta.py`
+- `test_CO193_un_pedido_activo_se_actualiza_solo_y_uno_despachado_no` — `apps/accounts/tests/test_contratos_11_cuenta.py`
 
 **`CO-194` · consultarCuentasDeCliente**
 

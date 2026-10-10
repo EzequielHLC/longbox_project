@@ -14,7 +14,6 @@ página. La consulta no se audita; la exportación sí.
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Log de auditoría</h1>
-    <p>Las operaciones del sistema, inmutables. Nadie puede modificar ni borrar una entrada.</p>
   </div>
   <a href="{% url 'core:auditoria_exportar' %}?{{ parametros }}" download class="boton-seccion">
     {% include "_iconos.html" with icono="descargar" %}<span>Exportar (CSV)</span>
@@ -70,7 +69,6 @@ página. La consulta no se audita; la exportación sí.
     <a href="{% url 'core:auditoria' %}" class="boton-texto">Limpiar filtros</a>
   {% endif %}
 </form>
-<p class="texto-chico secundario">El rol es el que la cuenta tiene hoy: una cuenta eliminada no aparece en ningún rol, pero sí buscándola por su correo.</p>
 
 {% if entradas %}
   <p class="texto-chico secundario">{{ paginator.count }} entrada{{ paginator.count|pluralize }}{% if filtros.activos %} con el filtro aplicado{% endif %}</p>

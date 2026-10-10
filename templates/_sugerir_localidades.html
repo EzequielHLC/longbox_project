@@ -1,0 +1,34 @@
+{% comment %}
+Sugerencias de localidad según la provincia elegida, como en el registro: se
+piden a `core:localidades` (con caché delante de georef) y llenan el
+`<datalist id="localidades">`. Sin guion o sin API, la localidad se escribe igual.
+{% endcomment %}
+<script>
+  (function () {
+    const provincia = document.getElementById("id_provincia");
+    const sugerencias = document.getElementById("localidades");
+    if (!provincia || !sugerencias) return;
+    const yaPedidas = new Map();
+    async function cargar() {
+      const elegida = provincia.value;
+      sugerencias.replaceChildren();
+      if (!elegida) return;
+      if (!yaPedidas.has(elegida)) {
+        try {
+          const url = "{% url 'core:localidades' %}?provincia=" + encodeURIComponent(elegida);
+          const datos = await (await fetch(url)).json();
+          yaPedidas.set(elegida, datos.localidades ?? []);
+        } catch {
+          return;
+        }
+      }
+      for (const nombre of yaPedidas.get(elegida)) {
+        const opcion = document.createElement("option");
+        opcion.value = nombre;
+        sugerencias.append(opcion);
+      }
+    }
+    provincia.addEventListener("change", cargar);
+    if (provincia.value) cargar();
+  })();
+</script>

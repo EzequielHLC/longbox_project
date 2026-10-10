@@ -74,3 +74,92 @@ declara el mapeo de impacto y la confirmación con contraseña.
 baja dice ahora lo que la ficha declara —la pide el Cliente desde su panel, que no existe— en vez
 de decir que no está documentada. Queda dicho también que `CO-195` no está construido: hoy la
 pantalla cubre el listado de `CO-194` y nada más.
+
+---
+
+### B-11-002 · El cambio de correo tiene su propio token: `TokenCambioCorreo`
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CO-109`, `CO-110`, Área 1 del modelo
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 11, segunda parte, amb. 1)
+
+**Qué apareció.**
+El contrato pide un token para verificar el correo nuevo y aclara que no es el de recuperación. El
+modelo no lo declara, y nadie dice cuánto dura.
+
+**Qué dice la especificación.**
+> «(a) Se creó un token de verificación de correo. El modelo de dominio declara TokenRecuperacion
+> para la recuperación de contraseña; este token de verificación de correo es un concepto
+> distinto.» (`CO-109`, postcondiciones)
+
+**Qué se hizo.**
+`TokenCambioCorreo` es hermano de `EnlaceActivacion` y `TokenRecuperacion`: se emite para una
+cuenta, viaja por correo, se usa una sola vez y vence solo; además guarda el correo nuevo. Dura
+**24 horas**. Pedir otro cambio deja vencido el anterior.
+
+**Qué habría que cambiar.**
+Modelo de dominio, Área 1: sumar `TokenCambioCorreo` (correo nuevo, emitido en, vence en, estado)
+como `<<construido>>`, asociado a `Usuario`, con su vigencia de 24 horas.
+
+---
+
+### B-11-003 · El panel del Cliente no muestra la sección Stock en Local
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-CLI-HIS` paso 7, `CO-192`
+**Estado:** Abierta — hasta que exista el módulo 18 (plan 11, segunda parte, amb. 2)
+
+**Qué apareció.**
+El panel tiene cuatro secciones y una es el stock almacenado en el local, que no existe.
+
+**Qué dice la especificación.**
+> «El sistema presenta el panel con cuatro secciones navegables: (1) Pedidos Activos, (2)
+> Historial de Pedidos, (3) Puntos, (4) Stock en Local.» (`CU-CLI-HIS`, paso 2)
+
+**Qué se hizo.**
+La sección queda oculta, por decisión del responsable: mostrarla vacía le diría al Cliente que no
+tiene nada guardado, y el sistema todavía no lo puede saber. `CU-CLI-HIS` queda `Parcial`.
+
+**Qué habría que cambiar.**
+`Nada`. Se resuelve construyendo el módulo 18.
+
+---
+
+### B-11-004 · Pedidos activos e historial, y el panel suma «Mis datos»
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-CLI-HIS` pasos 3 y 5, `CU-CLI-DAT` paso 1
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 11, segunda parte, amb. 3)
+
+**Qué apareció.**
+El historial lista «los pedidos completados y cancelados», y en DME-07 un pedido termina en
+Despachado: no hay un pedido cancelado entero.
+
+**Qué dice la especificación.**
+> «En la sección Historial de Pedidos: el sistema lista los pedidos completados y cancelados.»
+> (`CU-CLI-HIS`, paso 5)
+
+**Qué se hizo.**
+- Activos son todos los que todavía no se despacharon; el historial, los Despachados.
+- El panel suma una quinta pestaña, «Mis datos», que es la puerta de `CU-CLI-DAT` («desde su
+  panel de cuenta»).
+
+**Qué habría que cambiar.**
+`CU-CLI-HIS` paso 5: «los pedidos despachados». Paso 2: sumar el acceso a «Mis datos».
+
+---
+
+### B-11-005 · Cuando el correo cambia, el anterior recibe un aviso
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CO-110`
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 11, segunda parte, amb. 4)
+
+**Qué apareció.**
+Si alguien con la sesión de otro cambia su correo, el titular pierde la cuenta sin enterarse.
+
+**Qué dice la especificación.**
+`Nada`. `CO-110` cambia el correo y lo audita.
+
+**Qué se hizo.**
+Al confirmarse el cambio, el correo anterior recibe un aviso con el correo nuevo enmascarado y la
+indicación de escribir a la tienda si no fue el titular.
+
+**Qué habría que cambiar.**
+`CO-110`, postcondiciones: «se envió un aviso al correo anterior».

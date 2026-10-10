@@ -1,6 +1,7 @@
 > **Tipo: Normativo** una vez aprobado. Antes de la aprobación es una propuesta.
 > Se escribe **antes** de construir y **no se reescribe** después: lo que cambie durante el ensayo
-> va a `docs/pruebas/DEMO-ENSAYO.md` y, si es una decisión de construcción, a la bitácora del módulo.
+> va a la bitácora del módulo. El registro del ensayo (`DEMO-ENSAYO.md`) se retiró el 2026-10-07:
+> sus hallazgos están en las bitácoras y sus escenarios, en `docs/pruebas/CASOS_DE_PRUEBA.md`.
 
 # Plan — `00` Demostración de resistencia
 
@@ -134,7 +135,7 @@ Cada carrera que pase queda como prueba de contrato de la suite.
 | D5-04 | Volumen: cada listado paginado hace las mismas consultas con 10 que con 20 000 (`django_assert_max_num_queries`). Queda en la suite | V (como pruebas) | 1 min |
 | D5-05 | RNF-02: toda operación de más de 1 s muestra el indicador de carga | V | 1 min |
 
-Gráfico en `docs/pruebas/demo/`: percentiles por escalón con la línea de los 2 s.
+Gráfico en `scripts/demo/salida/`: percentiles por escalón con la línea de los 2 s.
 
 ### Acto 6 · Dependencias caídas y recuperación
 

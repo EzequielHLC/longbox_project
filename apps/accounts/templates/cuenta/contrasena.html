@@ -1,0 +1,18 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}CU-CLI-DAT A2 — CO-111 cambiarContrasena. Con la actual; se cierran las demás sesiones.{% endcomment %}
+
+{% block titulo_cuenta %}Cambiar la contraseña{% endblock %}
+
+{% block cuenta %}
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  {% include "_campo.html" with campo=form.old_password %}
+  {% include "_campo.html" with campo=form.new_password1 %}
+  {% include "_campo.html" with campo=form.new_password2 %}
+  <p class="texto-chico secundario">Se cierra tu sesión en los demás dispositivos.</p>
+  <div class="acciones fila-5">
+    <button type="submit" class="boton-primario">Cambiar la contraseña</button>
+    <a href="{% url 'cuenta:datos' %}" class="boton-texto">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -108,10 +108,6 @@ acciones viven en esta pantalla y no repartidas por el listado.
 
 <section class="seccion" aria-labelledby="titulo-productos">
   <div class="seccion__titulo"><h2 id="titulo-productos">Productos del catálogo</h2></div>
-  <p class="seccion__bajada">
-    Los que entraron al catálogo por este proveedor. Se conservan aunque el proveedor se
-    dé de baja.
-  </p>
 
   {% if productos %}
     <div class="tabla-desplazable">
@@ -145,8 +141,7 @@ acciones viven en esta pantalla y no repartidas por el listado.
     <div class="vacio">
       {% include "_iconos.html" with icono="catalogo" %}
       <p>
-        Todavía no hay productos vinculados a este proveedor. El vínculo se establece al
-        confirmar las altas que llegan por el procesamiento automático de sus novedades.
+        Todavía no hay productos vinculados.
       </p>
     </div>
   {% endif %}
@@ -159,6 +154,6 @@ vez de mostrar una tabla vacía que se leería como «nunca se le pidió nada».
 {% endcomment %}
 <section class="seccion" aria-labelledby="titulo-pedidos">
   <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos de reposición</h2></div>
-  <p class="secundario">No disponible: el historial de pedidos de reposición se va a mostrar acá.</p>
+  <p class="secundario">No disponible.</p>
 </section>
 {% endblock %}

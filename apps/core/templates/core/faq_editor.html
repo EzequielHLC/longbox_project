@@ -13,8 +13,6 @@ cargar lo publicado (A1). Publicar vacío pide confirmación explícita (A2).
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Preguntas frecuentes</h1>
-    <p>Lo que se publica acá reemplaza la sección de la tienda.
-      {% if faq.actualizado_en %}Publicada por última vez el <span class="datos">{{ faq.actualizado_en|date:"d/m/Y H:i" }}</span>.{% endif %}</p>
   </div>
   <a href="{% url 'core:faq' %}" class="boton-texto" target="_blank" rel="noopener">{% include "_iconos.html" with icono="ver" %}<span>Ver en la tienda</span></a>
 </header>
@@ -43,7 +41,7 @@ cargar lo publicado (A1). Publicar vacío pide confirmación explícita (A2).
   {% if vista_previa is not None %}
     <section class="seccion" aria-labelledby="titulo-vista-previa">
       <div class="seccion__titulo"><h2 id="titulo-vista-previa">Vista previa</h2></div>
-      <p class="seccion__bajada">Así se va a ver en la tienda. Todavía no está publicada.</p>
+      <p class="seccion__bajada">Vista previa: todavía no está publicada.</p>
       <article class="contenido-markdown panel">{{ vista_previa|safe }}</article>
     </section>
   {% endif %}

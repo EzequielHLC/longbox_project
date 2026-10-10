@@ -1,0 +1,36 @@
+{% extends "correo/base.html" %}
+{% load correo moneda %}
+{% comment %}CU-TDA-CMP paso 7, CU-TDA-INV paso 9. El texto es el de `tienda/correo_pedido.txt`.{% endcomment %}
+{% block asunto %}Pedido {{ pedido.numero }}{% endblock %}
+{% block preencabezado %}Recibimos tu pedido {{ pedido.numero }}: {{ pedido.get_estado_display|lower }}.{% endblock %}
+{% block rotulo %}Pedido{% endblock %}
+{% block antetitulo %}Compra confirmada{% endblock %}
+{% block titulo %}Pedido {{ pedido.numero }}{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Recibimos tu pedido. Estado: <span style="{% estilo 'destacado' %}">{{ pedido.get_estado_display }}</span>.</p>
+{% if pedido.estado == "esperando_pre_venta" %}
+<p style="{% estilo 'secundario' %}">Incluye pre-ventas: lo armamos cuando llegue todo.</p>
+{% endif %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="{% estilo 'tabla' %}">
+  <tr>
+    <th style="{% estilo 'th' %}">Producto</th>
+    <th style="{% estilo 'th-cifra' %}">Cant.</th>
+    <th style="{% estilo 'th-cifra' %}">Importe</th>
+  </tr>
+  {% for linea in lineas %}
+  <tr>
+    <td style="{% estilo 'td' %}">{{ linea.producto.titulo }}</td>
+    <td style="{% estilo 'td-cifra' %}">{{ linea.cantidad }}</td>
+    <td style="{% estilo 'td-cifra' %}">{% if linea.cubierta_con_puntos %}{{ linea.puntos_canjeados }} pts{% else %}{{ linea.subtotal|pesos }}{% endif %}</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td colspan="3" style="{% estilo 'total' %}">Envío: {% if pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}gratis{% endif %} &middot; Total: {{ pedido.total|pesos }}</td>
+  </tr>
+</table>
+<p style="{% estilo 'parrafo' %}">Se envía a <span style="{% estilo 'destacado' %}">{{ pedido.direccion_de_envio }}</span>.</p>
+{% if enlace %}{% include "correo/_boton.html" with url=enlace texto="Seguir mi pedido" %}{% endif %}
+{% if pedido.correo_invitado %}
+<p style="{% estilo 'secundario' %}">Compraste como invitado: te vamos a avisar a este correo cada vez que el pedido cambie de estado.</p>
+{% endif %}
+{% endblock %}

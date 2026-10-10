@@ -34,9 +34,9 @@ queda el producto antes de aceptar.
     </div>
     <p>
       {% if restauracion.fila %}
-        Sale de la tabla de precios ({{ restauracion.fila.editorial }} · {{ restauracion.fila.tipo }} · {{ restauracion.fila.formato }}). El producto queda vinculado a esa fila y sigue sus cambios.
+        Sale de la tabla de precios ({{ restauracion.fila.editorial }} · {{ restauracion.fila.tipo }} · {{ restauracion.fila.formato }}). Vuelve a seguir sus cambios.
       {% else %}
-        Sale del precio base almacenado y del margen global vigente. El producto vuelve a seguir los cambios de margen.
+        Precio base × margen vigente. Vuelve a seguir los cambios del margen.
       {% endif %}
     </p>
     <form method="post" class="acciones">

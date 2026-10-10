@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load formularios moneda %}
 {% load l10n %}
 {% comment %}
 Parámetros globales: lo que el negocio ajusta sin tocar código.
@@ -15,16 +16,11 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Parámetros globales</h1>
-    <p>Precios, catálogos de clasificación, modelo de lenguaje y valores por defecto del sistema.</p>
   </div>
 </header>
 
 <section class="seccion" aria-labelledby="titulo-calculo">
   <div class="seccion__titulo"><h2 id="titulo-calculo">{% include "_iconos.html" with icono="precios" %}Precios</h2></div>
-  <p class="seccion__bajada">
-    Cambiar un precio de referencia o el margen propaga el valor a los productos que lo
-    usan. Por eso cada uno tiene su pantalla, que informa el alcance antes de confirmar.
-  </p>
 
   <ul class="lista-renglones">
     <li>
@@ -67,6 +63,57 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
   </form>
 </section>
 
+<section class="seccion" aria-labelledby="titulo-compra">
+  <div class="seccion__titulo"><h2 id="titulo-compra">{% include "_iconos.html" with icono="parametros" %}Compra online</h2></div>
+
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Logística</legend>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form_compra.costo_envio %}
+        {% include "_campo.html" with campo=form_compra.monto_minimo_envio_gratuito %}
+      </div>
+    </fieldset>
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Fidelización</legend>
+      <div class="rejilla-2">
+        {% with campo=form_compra.equivalencia_puntos %}
+          <div class="campo">
+            <label for="{{ campo.id_for_label }}" class="etiqueta">Valor del punto<span class="obligatorio" aria-hidden="true"> *</span></label>
+            <div class="campo-con-prefijo">
+              <span class="prefijo">1 punto = $</span>{{ campo|con_estado_de_error }}
+            </div>
+            <div class="ayuda">{{ campo.help_text }}</div>
+            {% for error in campo.errors %}<p class="error-de-campo">Error: {{ error }}</p>{% endfor %}
+          </div>
+        {% endwith %}
+        {% with campo=form_compra.porcentaje_puntos %}
+          <div class="campo">
+            <label for="{{ campo.id_for_label }}" class="etiqueta">Reintegro en puntos<span class="obligatorio" aria-hidden="true"> *</span></label>
+            <div class="campo-con-prefijo">
+              {{ campo|con_estado_de_error }}<span class="prefijo">% de cada compra</span>
+            </div>
+            <div class="ayuda">{{ campo.help_text }}</div>
+            {% for error in campo.errors %}<p class="error-de-campo">Error: {{ error }}</p>{% endfor %}
+          </div>
+        {% endwith %}
+        {% include "_campo.html" with campo=form_compra.caducidad_puntos_meses %}
+      </div>
+      <p class="texto-chico secundario">Hoy, una compra de {{ ejemplo_puntos.compra|pesos }} suma <span class="datos">{{ ejemplo_puntos.puntos }}</span> puntos, que valen {{ ejemplo_puntos.valen|pesos }}.</p>
+    </fieldset>
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Pago</legend>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form_compra.pasarela %}
+      </div>
+    </fieldset>
+    <div class="acciones">
+      <button type="submit" name="guardar_compra" value="1" class="boton-seccion">Guardar compra online</button>
+    </div>
+  </form>
+</section>
+
 {% comment %}
 El modelo de lenguaje: un parámetro operativo más, en su propio formulario
 porque se toca por otro motivo que el margen y una de sus mitades es una
@@ -78,8 +125,7 @@ credencial. Es configurable desde acá porque el sistema se demuestra desplegado
     <a href="{% url 'suppliers:diagnostico_llm' %}" class="boton-texto texto-chico"><span>Diagnóstico del modelo</span>{% include "_iconos.html" with icono="siguiente" %}</a>
   </div>
   <p class="seccion__bajada">
-    Servicio que extrae los datos de los correos de novedades. Después de cambiarlo,
-    verifíquelo en <a href="{% url 'suppliers:diagnostico_llm' %}">Diagnóstico del modelo</a>.
+    Después de cambiarlo, verifíquelo en <a href="{% url 'suppliers:diagnostico_llm' %}">Diagnóstico del modelo</a>.
   </p>
 
   <form method="post" novalidate class="formulario">
@@ -120,9 +166,6 @@ Acá queda el acceso, con lo que hay en cada uno.
   <div class="seccion__titulo">
     <h2 id="titulo-catalogos">{% include "_iconos.html" with icono="catalogo" %}Catálogos de clasificación</h2>
   </div>
-  <p class="seccion__bajada">
-    Qué es cada producto, qué tamaño tiene, quién lo publica y cómo se lo encuentra.
-  </p>
 
   <ul class="lista-renglones">
     {% for catalogo, icono, activos, total in catalogos %}

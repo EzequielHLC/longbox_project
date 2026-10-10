@@ -174,7 +174,7 @@ class OfertaAltaView(_FormularioDeOferta):
             messages.warning(
                 request,
                 "El tipo de material seleccionado no tiene productos activos en este momento. "
-                "La oferta quedó registrada y se aplicará automáticamente cuando los haya.",
+                "La oferta se aplica cuando haya productos.",
             )
         return redirect("catalog:oferta_ficha", oferta.pk)
 

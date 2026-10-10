@@ -1,0 +1,14 @@
+{% load moneda %}
+{% comment %}
+Cuánto falta para el envío gratis (B-07-037). Es un `<progress>` nativo: se
+anuncia solo como barra de progreso, y el texto va al lado, así que no depende
+del color ni de verla.
+
+    {% include "tienda/_barra_envio.html" with envio=resumen.estado_envio %}
+{% endcomment %}
+<div class="barra-envio pila-2">
+  <progress class="barra-envio__pista{% if envio.gratis %} barra-envio__pista--completa{% endif %}" max="100" value="{{ envio.porcentaje }}" aria-label="Avance hacia el envío gratis">{{ envio.porcentaje }} %</progress>
+  <p class="texto-chico">
+    {% if envio.gratis %}<strong>Tenés envío gratis.</strong>{% else %}Te faltan <span class="datos">{{ envio.falta|pesos }}</span> para el envío gratis.{% endif %}
+  </p>
+</div>

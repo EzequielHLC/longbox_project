@@ -135,9 +135,7 @@ class BannerCrearView(ContenidoAdminMixin, View):
         banner = contenido.agregar_banner(
             formulario.cleaned_data["imagen"], actor=request.user, ip=obtener_ip(request)
         )
-        messages.success(
-            request, f"Se agregó el banner en la posición {banner.numero}. Ya está en la tienda."
-        )
+        messages.success(request, f"Se agregó el banner en la posición {banner.numero}.")
         return redirect("core:banner_lista")
 
 
@@ -166,7 +164,7 @@ class BannerEditarView(ContenidoAdminMixin, View):
             imagen_procesada=formulario.cleaned_data.get("imagen"),
             numero=formulario.cleaned_data.get("numero"),
         )
-        messages.success(request, "Se guardaron los cambios del banner. Ya se ven en la tienda.")
+        messages.success(request, "Se guardaron los cambios del banner.")
         return redirect("core:banner_lista")
 
 

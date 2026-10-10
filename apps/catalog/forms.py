@@ -1841,6 +1841,40 @@ class ConfiguracionForm(forms.ModelForm):
         return stock
 
 
+class CompraOnlineForm(forms.ModelForm):
+    """Lo que usa la compra online (plan 07, sexta parte), en su propio formulario.
+
+    Las secciones Logística y Fidelización de `CU-CFG-PAR`, más el costo de envío
+    (B-07-032) y la pasarela de pago (B-07-031). Van aparte de los valores
+    operativos por la misma razón que el modelo de lenguaje: se tocan por otro
+    motivo, y un error en uno no tiene por qué borrar lo escrito en el otro.
+    """
+
+    class Meta:
+        model = ConfiguracionSistema
+        fields = [
+            "costo_envio",
+            "monto_minimo_envio_gratuito",
+            "equivalencia_puntos",
+            "porcentaje_puntos",
+            "caducidad_puntos_meses",
+            "pasarela",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for campo in (
+            "costo_envio",
+            "monto_minimo_envio_gratuito",
+            "equivalencia_puntos",
+            "porcentaje_puntos",
+        ):
+            self.fields[campo].widget.attrs.update({"inputmode": "decimal"})
+        self.fields["caducidad_puntos_meses"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "1"}
+        )
+
+
 class BorradorForm(forms.ModelForm):
     """Edición de un borrador antes de confirmarlo (CU-ALT-REV paso 2).
 

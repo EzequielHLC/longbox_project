@@ -1,0 +1,106 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-PTS-CON — CO-188 consultarPuntos y CO-189 filtrarMovimientosDePuntos.
+(a) Saldo con su equivalencia en pesos. (b) Lotes, con «Próximo a vencer» si
+caducan dentro de 30 días. (c) Historial, filtrable por tipo y fechas, con el
+pedido que originó cada movimiento (B-10-001). A1: sin puntos, un mensaje.
+{% endcomment %}
+
+{% block titulo_cuenta %}Mis puntos{% endblock %}
+
+{% block cuenta %}
+<div class="carrito">
+  <div class="pila-5">
+    <section class="pila-3" aria-labelledby="titulo-lotes">
+      <h2 id="titulo-lotes" class="titulo-2">Por lote</h2>
+      {% if lotes %}
+        <ul class="carrito__lineas" aria-label="Lotes de puntos">
+          {% for lote in lotes %}
+            <li class="tarjeta pedido-de-cuenta">
+              <div class="pila-2">
+                <span class="datos">{{ lote.disponible }} de {{ lote.cantidad_acreditada }} pts</span>
+                <span class="texto-chico secundario">{{ lote.get_origen_display }} · {{ lote.acreditado_en|date:"d/m/Y" }}</span>
+              </div>
+              <span class="texto-chico">Vencen el <span class="datos">{{ lote.caduca_el|date:"d/m/Y" }}</span></span>
+              {% if lote.proximo_a_vencer %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="vacio"><p>Todavía no tenés puntos. Cada compra te devuelve el {{ porcentaje|floatformat:'-2' }} % en puntos.</p></div>
+      {% endif %}
+    </section>
+
+    <section class="pila-3" aria-labelledby="titulo-movimientos">
+      <h2 id="titulo-movimientos" class="titulo-2">Movimientos</h2>
+      <form method="get" class="barra-de-herramientas">
+        <div class="campo">
+          <label for="tipo" class="etiqueta">Tipo</label>
+          <select id="tipo" name="tipo">
+            <option value="">Todos</option>
+            {% for valor, etiqueta in tipos %}<option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="campo">
+          <label for="desde" class="etiqueta">Desde</label>
+          <input type="date" id="desde" name="desde" value="{{ filtros.desde|date:'Y-m-d' }}">
+        </div>
+        <div class="campo">
+          <label for="hasta" class="etiqueta">Hasta</label>
+          <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta|date:'Y-m-d' }}">
+        </div>
+        <button type="submit" class="boton-seccion boton-seccion--tenue">Filtrar</button>
+        {% if hay_filtro %}<a href="{% url 'cuenta:puntos' %}" class="boton-texto">Limpiar filtros</a>{% endif %}
+      </form>
+
+      {% if movimientos %}
+        <p class="texto-chico secundario">{{ pagina.paginator.count }} movimiento{{ pagina.paginator.count|pluralize }}</p>
+        <div class="tabla-desplazable">
+          <table class="tabla">
+            <thead>
+              <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th class="numero">Puntos</th><th class="numero">Saldo</th></tr>
+            </thead>
+            <tbody>
+              {% for movimiento in movimientos %}
+                <tr>
+                  <td class="datos sin-cortar">{{ movimiento.ocurrido_en|date:"d/m/Y H:i" }}</td>
+                  <td>{{ movimiento.get_tipo_display }}</td>
+                  <td>
+                    {% if movimiento.pedido %}<a href="{% url 'cuenta:pedido' movimiento.pedido.numero %}">Pedido {{ movimiento.pedido.numero }}</a>{% else %}{{ movimiento.motivo|default:"—" }}{% endif %}
+                  </td>
+                  <td class="numero">{% if movimiento.tipo == "debito" %}−{% else %}+{% endif %}{{ movimiento.cantidad }}</td>
+                  <td class="numero">{{ movimiento.saldo_resultante }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if pagina.has_other_pages %}
+          <div class="paginacion">
+            <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+            <span class="fila-5">
+              {% if pagina.has_previous %}<a href="?{{ consulta.urlencode }}&amp;page={{ pagina.previous_page_number }}" class="boton-texto">Anterior</a>{% endif %}
+              {% if pagina.has_next %}<a href="?{{ consulta.urlencode }}&amp;page={{ pagina.next_page_number }}" class="boton-texto">Siguiente</a>{% endif %}
+            </span>
+          </div>
+        {% endif %}
+      {% elif hay_filtro %}
+        <div class="vacio pila-3">
+          <p>Ningún movimiento coincide con el filtro.</p>
+          <p><a href="{% url 'cuenta:puntos' %}" class="boton-texto">Limpiar filtros</a></p>
+        </div>
+      {% else %}
+        <div class="vacio"><p>Todavía no hay movimientos en tu cuenta.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="resumen-carrito pila-3" aria-label="Saldo">
+    <p class="antetitulo">Saldo disponible</p>
+    <p class="resumen-carrito__total"><span class="sin-envolver">{{ saldo }} pts</span></p>
+    <p class="secundario">Equivalen a <span class="datos">{{ saldo_en_pesos|pesos }}</span>.</p>
+    <p class="texto-chico secundario">1 punto = {{ equivalencia|pesos }}. Cada compra te devuelve el {{ porcentaje|floatformat:'-2' }} % en puntos. Se canjean por productos enteros al pagar.</p>
+  </aside>
+</div>
+{% endblock %}

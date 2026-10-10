@@ -100,8 +100,7 @@ estado y cantidad de productos vinculados.
       <a href="{% url 'suppliers:proveedor_lista' %}" class="boton-texto">Limpiar filtros</a>
     {% else %}
       <p>
-        No hay proveedores registrados. Sin al menos uno con correo configurado, el
-        procesamiento automático de novedades no tiene remitentes que reconocer.
+        No hay proveedores registrados.
       </p>
       <a href="{% url 'suppliers:proveedor_alta' %}" class="boton-texto"><span>Registrar el primero</span>{% include "_iconos.html" with icono="siguiente" %}</a>
     {% endif %}

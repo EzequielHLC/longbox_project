@@ -1,0 +1,66 @@
+{% extends "base_publico.html" %}
+{% load moneda %}
+{% comment %}
+CU-TDA-INV pasos 5 y 6 — el resumen de la salida de CO-090, sin canje de
+puntos, y «Confirmar y pagar» (CO-091). Si el correo es de una cuenta, se
+sugiere iniciar sesión (A1; B-07-036).
+{% endcomment %}
+
+{% block titulo %}Resumen del pedido · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block secciones %}
+<section class="seccion-publica superficie-noche" aria-labelledby="titulo-resumen">
+  <div class="columna-publica pila-5">
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Compra como invitado</p>
+      <h1 id="titulo-resumen" class="titulo-1">Resumen del pedido</h1>
+    </div>
+    {% include "_mensajes.html" %}
+
+    {% if tiene_cuenta %}
+      <div class="panel" role="note">
+        <p><strong>{{ datos.correo }}</strong> ya tiene una cuenta.
+          <a href="{% url 'accounts:login' %}?next={% url 'compra:checkout' %}">Iniciá sesión</a>
+          para sumar puntos, o seguí como invitado.</p>
+      </div>
+    {% endif %}
+
+    <div class="carrito">
+      <div class="pila-5">
+        <section class="pila-2" aria-labelledby="titulo-datos">
+          <h2 id="titulo-datos" class="titulo-2">Envío</h2>
+          <p class="datos">{{ texto_direccion }}</p>
+          <p class="secundario">Confirmación y seguimiento a <span class="datos">{{ datos.correo }}</span>.</p>
+          <p><a href="{% url 'compra:invitado' %}" class="boton-texto">Modificar datos</a></p>
+        </section>
+        <section class="pila-3" aria-labelledby="titulo-productos">
+          <h2 id="titulo-productos" class="titulo-2">Productos</h2>
+          <ul class="carrito__lineas" aria-label="Productos de la compra">
+            {% for item in resumen.lineas %}
+              <li class="linea-carrito">
+                <span class="linea-carrito__portada" aria-hidden="true">
+                  {% if item.producto.portada %}<img src="{{ item.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+                </span>
+                <div class="linea-carrito__datos pila-2">
+                  <span class="linea-carrito__titulo">{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</span>
+                  <p class="linea-carrito__precio texto-chico">{{ item.linea.cantidad }} × <span class="datos">{{ item.precio|pesos }}</span></p>
+                </div>
+                <p class="linea-carrito__subtotal">{{ item.importe|pesos }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      </div>
+
+      <aside class="resumen-carrito pila-3" aria-label="Resumen de la compra">
+        {% include "tienda/_resumen_compra.html" %}
+        <form method="post" action="{% url 'compra:invitado_confirmar' %}">
+          {% csrf_token %}
+          <button type="submit" class="boton-primario">Confirmar y pagar</button>
+        </form>
+        <a href="{% url 'tienda:carrito' %}" class="boton-texto">Volver al carrito</a>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

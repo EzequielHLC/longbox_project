@@ -1,0 +1,12 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}B-11-005, al correo anterior. El texto es el de `cuenta/correo_cambiado.txt`.{% endcomment %}
+{% block asunto %}El correo de tu cuenta cambió{% endblock %}
+{% block preencabezado %}Tu cuenta ahora usa {{ correo_nuevo }}.{% endblock %}
+{% block rotulo %}Cuenta{% endblock %}
+{% block antetitulo %}Aviso de seguridad{% endblock %}
+{% block titulo %}El correo de tu cuenta cambió{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Tu cuenta ahora usa <span style="{% estilo 'destacado' %}">{{ correo_nuevo }}</span>.</p>
+<p style="{% estilo 'aviso' %}"><span style="{% estilo 'aviso-prefijo' %}">Atención:</span> si no lo cambiaste vos, respondé este mensaje para que podamos ayudarte a recuperar la cuenta.</p>
+{% endblock %}

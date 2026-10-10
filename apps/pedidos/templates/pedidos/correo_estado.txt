@@ -1,0 +1,9 @@
+{% autoescape off %}Tu pedido {{ pedido.numero }} cambió de estado: {{ pedido.get_estado_display }}.
+{% if pedido.estado == "armado" %}
+Ya juntamos todo lo que pediste.{% elif pedido.estado == "empaquetado" %}
+Está empaquetado y listo para salir.{% elif pedido.estado == "despachado" %}
+Ya salió hacia {{ pedido.direccion_de_envio }}.{% endif %}
+{% if pedido.usuario %}
+Podés seguirlo desde «Mi cuenta», en la tienda.{% else %}
+Te vamos a avisar a este correo cada vez que cambie de estado.{% endif %}
+{% endautoescape %}

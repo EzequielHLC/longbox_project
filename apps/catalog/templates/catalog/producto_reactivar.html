@@ -22,13 +22,12 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
 </header>
 
 {% if producto.estado != "descatalogado" %}
-  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está en el catálogo. No hay nada que confirmar.</span></p>
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está en el catálogo.</span></p>
 {% else %}
   <div class="panel formulario--angosto">
     <div class="seccion__titulo"><h2>Qué implica reactivarlo</h2></div>
     <ul class="lista-renglones">
       <li><span>Vuelve al catálogo público y se puede vender.</span></li>
-      <li><span>Conserva su código, su stock, su precio y su historial.</span></li>
       <li><span>Vuelve como <strong>Activo</strong>, no al estado que tenía antes de la baja.</span></li>
     </ul>
 

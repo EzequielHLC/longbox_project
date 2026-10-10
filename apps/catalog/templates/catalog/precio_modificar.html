@@ -52,9 +52,9 @@ La combinación es la identidad de la fila y no se modifica.
       </div>
     </div>
     {% if informe %}
-      <p>Los productos vinculados a esta combinación pasan a {{ nuevo|pesos }}. Los que tienen precio fijado a mano y los cancelados por la editorial no cambian. Los pedidos ya confirmados no se modifican.</p>
+      <p>Los productos vinculados a esta combinación pasan a {{ nuevo|pesos }}. Salvo los de precio a mano y los cancelados por la editorial.</p>
     {% else %}
-      <p>Ningún producto está vinculado a esta combinación: la modificación sólo afecta a la tabla.</p>
+      <p>Ningún producto vinculado.</p>
     {% endif %}
 
     <form method="post" class="acciones">

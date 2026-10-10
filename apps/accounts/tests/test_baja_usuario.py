@@ -23,7 +23,7 @@ def test_la_pantalla_pide_confirmacion_explicita(client_admin, cajero):
     contenido = respuesta.content.decode()
     assert "Confirmar baja" in contenido
     # El CU pide avisar que las sesiones se cierran de inmediato.
-    assert "todas las sesiones abiertas de la cuenta" in contenido
+    assert "Se cierran todas sus sesiones abiertas." in contenido
     cajero.refresh_from_db()
     assert cajero.estado == Usuario.ACTIVO  # el GET no da de baja nada
 

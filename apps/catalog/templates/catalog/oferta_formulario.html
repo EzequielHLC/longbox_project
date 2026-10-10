@@ -21,7 +21,7 @@ primero porque es lo que identifica (regla 1 del dominio).
   <div class="encabezado-de-pantalla__textos">
     <span class="miga">{% include "_boton_texto.html" with url=volver texto=oferta|yesno:"Ficha de la oferta,Gestión de ofertas" atras=1 %}</span>
     <h1>{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %}</h1>
-    {% if oferta %}<p>«{{ oferta.descripcion }}»</p>{% else %}<p>Un descuento con fechas, sobre un producto o sobre todo un tipo de material. Empieza y termina solo.</p>{% endif %}
+    {% if oferta %}<p>«{{ oferta.descripcion }}»</p>{% else %}{% endif %}
   </div>
 </header>
 

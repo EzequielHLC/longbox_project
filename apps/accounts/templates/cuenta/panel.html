@@ -1,0 +1,13 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}CU-CLI-HIS paso 3 — los pedidos en curso, del más reciente al más viejo. E1: sin pedidos, un mensaje.{% endcomment %}
+
+{% block cuenta %}
+{% if pedidos %}
+  {% include "cuenta/_lista_pedidos.html" with etiqueta="Pedidos activos" %}
+{% else %}
+  <div class="vacio pila-3">
+    <p>No tenés pedidos en curso.</p>
+    <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Ver el catálogo</a></p>
+  </div>
+{% endif %}
+{% endblock %}

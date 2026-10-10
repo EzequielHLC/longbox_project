@@ -155,7 +155,7 @@ carrito». `CO-086`, Notas: el caso del producto sin stock.
 ### B-07-006 · El carrito quedó construido; el pago espera a `CU-TDA-CMP`
 
 **Tipo:** Agregado · **Fecha:** 2026-10-03 · **Alcance:** `CU-TDA-CRC`, `CO-179`
-**Estado:** Abierta — hasta que exista `CU-TDA-CMP`
+**Estado:** Resuelta — el 2026-10-09 existe `CU-TDA-CMP` y «Ir a pagar» lleva al checkout (plan 07, sexta parte)
 
 **Qué apareció.**
 `CU-TDA-CRC` paso 3 ofrece avanzar al pago, que inicia `CU-TDA-CMP`.
@@ -816,3 +816,231 @@ para eso tenía que volver al catálogo y buscar la serie.
 
 **Qué habría que cambiar.**
 `CO-177`: sumar a la salida de la ficha los demás tomos de la serie.
+
+---
+
+### B-07-031 · La Pasarela de Pago tiene una versión simulada, y MercadoPago va detrás de la misma interfaz
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-TDA-CMP`, `CU-TDA-INV`, `CO-088`, `CO-089`, `CO-091`, ACT-04
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 1)
+
+**Qué apareció.**
+Para cobrar hace falta una pasarela concreta. Con una sola pasarela real, la compra no se puede
+probar sin red ni demostrar sin una cuenta del proveedor.
+
+**Qué dice la especificación.**
+> «Pasarela de Pago: Sistema externo (p. ej. MercadoPago) que procesa y confirma las transacciones
+> de pago online (ACT-04).» (Glosario)
+
+> «el sistema debe estar diseñado con una arquitectura modular que permita incorporar nuevas
+> funcionalidades o integraciones con servicios externos (como nuevas pasarelas de pago […])»
+> (RNF-07)
+
+**Qué se hizo.**
+- Hay **dos pasarelas** detrás de una misma interfaz: una **pasarela de prueba**, que es parte del
+  sistema, y **MercadoPago** en modo de prueba. Cuál se usa se elige en Parámetros.
+- La pasarela de prueba muestra el importe y dos botones, «Aprobar» y «Rechazar» (con el motivo).
+  Avisa el resultado por el mismo aviso firmado que usaría una pasarela real, y acepta reembolsos.
+  Es la que usan las pruebas y la demostración sin red.
+- **Un aviso de pago no se cree por sí mismo**: el de la pasarela de prueba lleva firma, y el de
+  MercadoPago se confirma consultando el pago a la API antes de generar el pedido.
+
+**Qué habría que cambiar.**
+ACT-04 y el glosario: declarar que la pasarela es intercambiable y que el sistema incluye una de
+prueba. Si se quiere, `CU-CFG-PAR`: sumar la elección de pasarela a la ficha.
+
+---
+
+### B-07-032 · El costo de envío es un importe fijo de Parámetros, gratis desde el monto mínimo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-TDA-CMP` paso 2, `CU-TDA-INV` paso 5, `CO-087`, `CU-CFG-PAR`
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 2)
+
+**Qué apareció.**
+La compra presenta un «costo de envío calculado», y `CO-087` lo recalcula al cambiar la
+dirección. Ningún artefacto dice cómo se calcula.
+
+**Qué dice la especificación.**
+> «dirección de envío predeterminada del perfil del Cliente (editable en este paso), costo de envío
+> calculado y subtotal monetario» (`CU-TDA-CMP`, paso 2)
+
+> «Logística: […] Monto mínimo para envío gratuito en $ ARS (decimal > 0)» (`CU-CFG-PAR`, paso 2)
+
+Sobre el costo en sí: `Nada`.
+
+**Qué se hizo.**
+- Parámetros, sección Logística, suma el **costo de envío** (un importe fijo, mayor o igual a
+  cero) junto al **monto mínimo de envío gratuito**, que ya estaba especificado. Los dos los fija
+  el Administrador.
+- Una compra cuyo subtotal de productos alcanza el monto mínimo no paga envío; las demás pagan el
+  costo fijo. El costo no depende del destino: cambiar la dirección la guarda y devuelve el mismo
+  costo.
+- **Correo Argentino, verificado a pedido del responsable.** Tiene una API de cotización (MiCorreo,
+  operación `/rates`), pero exige una cuenta comercial de MiCorreo y **el peso y las medidas del
+  paquete**, que el sistema no registra: `Producto` no tiene peso, y `Formato` tiene medidas pero
+  no peso. Sus tarifas públicas dependen del peso y de la zona (regional o nacional). Las dos
+  opciones necesitan, como mínimo, el peso de cada producto. Queda para más adelante, como pidió el
+  responsable.
+
+**Qué habría que cambiar.**
+`CU-CFG-PAR` paso 2, sección Logística: sumar el costo de envío. `ConfiguracionSistema`: sumar el
+atributo. `CU-TDA-CMP` paso 2: «costo de envío según la política de Parámetros». Si más adelante
+se cotiza con un operador logístico, `Producto` (o `Formato`) tiene que ganar el peso.
+
+---
+
+### B-07-033 · Cómo se calculan los puntos y el envío en la compra
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CO-089`, `CO-103`, RF-19, RF-20, `CU-TDA-CMP` A2, `CU-PTS-CJE`
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 7 a 10)
+
+**Qué apareció.**
+Para acreditar puntos, canjearlos y cobrar el envío hay que decidir cuatro cosas que la
+especificación deja abiertas.
+
+**Qué dice la especificación.**
+> «el saldo del cliente debe incrementarse en M / E puntos» (RF-19, condición de verificación)
+
+> «calcula los puntos a debitar (precio del ítem dividido por la equivalencia ARS por punto
+> configurada)» (`CU-PTS-CJE`, paso 4)
+
+> «Los puntos se acreditan únicamente sobre el subtotal abonado en dinero, excluyendo los ítems
+> cubiertos con puntos.» (RF-20)
+
+> «si el total monetario es cero porque todos los ítems fueron cubiertos con puntos, el sistema
+> omite la redirección a la Pasarela de Pago» (`CU-TDA-CMP`, A2)
+
+**Qué se hizo.**
+1. **Redondeo.** Los puntos son enteros. La acreditación redondea **hacia abajo** (M / E sin la
+   fracción) y los puntos que pide un canje, **hacia arriba**: ninguna de las dos operaciones
+   favorece al error.
+2. **El envío no genera puntos ni se paga con puntos.** Se acredita sobre los productos pagados en
+   dinero. Consecuencia: **A2 sólo ocurre con envío gratuito**; con envío a pagar, aun con todos los
+   productos cubiertos, la compra pasa por la pasarela por el costo del envío.
+3. **El monto mínimo de envío gratuito se compara con el subtotal de los productos** a su precio
+   con oferta, antes del canje: canjear puntos nunca encarece el envío.
+4. **Un ítem del canje es una línea entera**, con todas sus unidades, como declara el modelo
+   (`cubierta con puntos` está en `LineaCarrito` y en `LineaPedido`).
+
+**Qué habría que cambiar.**
+RF-19: declarar el redondeo hacia abajo. `CU-PTS-CJE` paso 4: «redondeado hacia arriba».
+`CU-TDA-CMP` A2: «si el total monetario es cero porque todos los ítems fueron cubiertos con
+puntos **y el envío es gratuito**». `CU-CFG-PAR`, Logística: aclarar contra qué se compara el monto
+mínimo.
+
+---
+
+### B-07-034 · Lo que se cobra queda congelado al confirmar, en un registro fuera del modelo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CO-088`, `CO-089`, `CO-091`
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 4 y 5)
+
+**Qué apareció.**
+Entre «Confirmar y pagar» y el aviso de la pasarela pasa tiempo, y el aviso llega de servidor a
+servidor, sin la sesión del Cliente. Algo tiene que recordar qué se cobró, a quién y a dónde se
+envía. Mientras tanto, el Cliente puede cambiar el carrito en otra pestaña.
+
+**Qué dice la especificación.**
+> «Si el total es mayor que cero: ninguna [postcondición] sobre el dominio. Se emitió una
+> solicitud de cobro con su referencia.» (`CO-088`)
+
+> «Existe un checkout confirmado asociado a la referencia.» (`CO-089`, precondiciones)
+
+> «(a) Se creó pe : Pedido […] y tp : TransaccionPago.» (`CO-089`, postcondiciones)
+
+**Qué se hizo.**
+- Al confirmar, el sistema guarda un **cobro en curso**: la referencia, quién compra, la dirección,
+  las líneas con su precio de ese momento y si están cubiertas con puntos, el envío y el total. No
+  es un concepto del dominio, como no lo es la sesión. `TransaccionPago` se crea recién con el
+  pago aprobado, como dice `CO-089`.
+- **El pedido es lo que se cobró**, no el carrito como esté al llegar el aviso. El carrito pierde
+  sólo las líneas que se compraron; si en otra pestaña se agregó algo después de confirmar, queda.
+- Un cobro que ya se procesó no se procesa otra vez: un aviso repetido no hace nada.
+
+**Qué habría que cambiar.**
+`CO-088`: «Se emitió una solicitud de cobro con su referencia, **y quedó registrado lo que se
+cobra**». `CO-089` (a): «El Carrito del Cliente perdió las líneas compradas» en vez de «quedó
+vaciado».
+
+---
+
+### B-07-035 · El último ejemplar pagado por dos clientes: el segundo se reembolsa
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CO-089` E3, RNF-06
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 6)
+
+**Qué apareció.**
+Agregar al carrito no reserva stock, y confirmar el pedido tampoco: la reserva ocurre al
+aprobarse el pago. Dos clientes pueden estar pagando el último ejemplar a la vez.
+
+**Qué dice la especificación.**
+> «Agregar al carrito no reserva stock: la reserva ocurre en la transacción de CO-089» (`CO-083`,
+> notas)
+
+> «Ejecutando simultáneamente dos solicitudes de compra del último ejemplar disponible de un
+> producto, el motor de base de datos debe garantizar que solo una transacción sea confirmada y la
+> otra sea rechazada» (RNF-06)
+
+> «si la transacción atómica falla después de la confirmación de pago (error técnico del sistema)»
+> (`CU-TDA-CMP`, E3)
+
+**Qué se hizo.**
+El primer pago aprobado se lleva el ejemplar. El segundo encuentra el stock insuficiente y sigue
+el camino de E3: no se crea nada, se pide el reembolso a la pasarela, el carrito queda como estaba
+y el Cliente recibe el aviso de que el cargo se revierte. Lo mismo si el producto dejó de venderse
+(se descatalogó, por ejemplo) mientras el Cliente pagaba.
+
+**Qué habría que cambiar.**
+`CU-TDA-CMP` E3 y `CU-TDA-INV` E4: «si la transacción atómica falla después de la confirmación de
+pago (error técnico del sistema **o stock perdido mientras se pagaba**)».
+
+---
+
+### B-07-036 · El invitado ve la sugerencia de iniciar sesión dos veces
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-TDA-INV` A1, `CO-181`
+**Estado:** Abierta — decidida por el responsable el 2026-10-09 (plan 07, sexta parte, amb. 11)
+
+**Qué apareció.**
+A1 sugiere iniciar sesión «si el usuario tiene una cuenta registrada», en el paso 1, cuando el
+sistema todavía no sabe quién es.
+
+**Qué dice la especificación.**
+> «En el paso 1, si el usuario tiene una cuenta registrada, el sistema sugiere iniciar sesión para
+> completar la compra con su cuenta […]. El usuario puede ignorar la sugerencia y continuar como
+> invitado.» (`CU-TDA-INV`, A1)
+
+**Qué se hizo.**
+- En el paso 1, el formulario del invitado ofrece siempre «¿Tenés cuenta? Iniciá sesión».
+- Al declarar los datos, si el correo es de una cuenta de cliente, el resumen lo dice y vuelve a
+  ofrecer el inicio de sesión. Se puede seguir como invitado.
+
+Revela que un correo tiene cuenta, lo mismo que ya revela el aviso de duplicado del registro.
+
+**Qué habría que cambiar.**
+`CU-TDA-INV` A1: «En el paso 1, el sistema ofrece iniciar sesión. En el paso 4, si el correo
+declarado pertenece a una cuenta, lo sugiere de nuevo».
+
+---
+
+### B-07-037 · Una barra muestra cuánto falta para el envío gratis
+
+**Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-TDA-CRC`, `CO-178`, `CO-180`, `CO-090`
+**Estado:** Abierta — pedido del responsable el 2026-10-09 (plan 07, séptima parte)
+
+**Qué apareció.**
+El responsable pidió mostrar el envío gratis «con una barrita de progreso». El carrito, además, no
+mostraba el envío.
+
+**Qué dice la especificación.**
+`Nada`. `CU-CFG-PAR` declara el monto mínimo de envío gratuito y B-07-032 dice cómo se usa.
+
+**Qué se hizo.**
+- El carrito, el checkout y el resumen del invitado muestran el envío y una barra que se llena con
+  el subtotal de los productos (a precio con oferta, antes del canje) sobre el monto mínimo:
+  «Te faltan $ X para el envío gratis», o «Tenés envío gratis» al alcanzarlo.
+- En el carrito se recalcula junto con todo lo demás cuando cambia una cantidad.
+- La barra se anuncia como barra de progreso y el texto va al lado: no depende del color.
+
+**Qué habría que cambiar.**
+`CO-178`, salida: sumar el costo de envío y lo que falta para el envío gratis.

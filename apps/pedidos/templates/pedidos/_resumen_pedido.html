@@ -1,0 +1,43 @@
+{% load moneda %}
+{% comment %}
+Las líneas del pedido con su precio efectivo, el envío y lo cobrado. Lo usan el
+detalle del Administrador (CO-183) y el del Cliente (CO-193).
+{% endcomment %}
+<div class="tabla-desplazable">
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th class="numero">Cant.</th>
+        <th class="numero">Precio</th>
+        <th class="numero">Importe</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linea in lineas %}
+        <tr>
+          <td>{{ linea.producto.titulo }}{% if linea.producto.productoeditorial.volumen %} #{{ linea.producto.productoeditorial.volumen }}{% endif %}</td>
+          <td class="numero">{{ linea.cantidad }}</td>
+          <td class="numero">{{ linea.precio_unitario|pesos }}</td>
+          <td class="numero">
+            {% if linea.cubierta_con_puntos %}<span class="secundario">{{ linea.puntos_canjeados }} pts</span>{% else %}{{ linea.subtotal|pesos }}{% endif %}
+          </td>
+          <td><span class="texto-chico">{{ linea.get_estado_display }}</span></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Envío</td>
+        <td class="numero">{% if pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="3"><strong>Cobrado</strong></td>
+        <td class="numero"><strong>{{ cobrado|pesos }}</strong></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

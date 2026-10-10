@@ -592,3 +592,142 @@ class FormularioRegistroCliente(BaseUserCreationForm):
         if commit:
             usuario.save()
         return usuario
+
+
+# ---------------------------------------------------------------------------
+# CU-CLI-DAT — el Cliente edita su cuenta desde «Mi cuenta»
+# ---------------------------------------------------------------------------
+
+
+class DatosPersonalesForm(forms.ModelForm):
+    """`CO-108`: nombre, teléfono y dirección de envío predeterminada.
+
+    Las validaciones son las del registro (`FormularioRegistroCliente`): el
+    teléfono y la dirección son opcionales pero no van a medias, y la letra del
+    código postal tiene que ser la de la provincia. Se toman de ahí y no se
+    copian, para que las dos pantallas no puedan discrepar. El correo y la
+    contraseña no están: tienen sus propios flujos (`CO-109`, `CO-111`).
+    """
+
+    nombre_completo = forms.CharField(
+        label="Nombre completo",
+        max_length=150,
+        widget=forms.TextInput(attrs={"autocomplete": "name"}),
+    )
+
+    CAMPOS = (  # noqa: RUF012
+        "telefono_pais",
+        "telefono_area",
+        "telefono_numero",
+        "direccion",
+        "direccion_linea2",
+        "depto",
+        "provincia",
+        "localidad",
+        "codigo_postal",
+        "comentarios_envio",
+    )
+
+    class Meta:
+        model = Usuario
+        fields = [  # noqa: RUF012
+            "telefono_pais",
+            "telefono_area",
+            "telefono_numero",
+            "direccion",
+            "direccion_linea2",
+            "depto",
+            "provincia",
+            "localidad",
+            "codigo_postal",
+            "comentarios_envio",
+        ]
+        labels = FormularioRegistroCliente.Meta.labels
+        widgets = FormularioRegistroCliente.Meta.widgets
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["nombre_completo"].initial = self.instance.get_full_name()
+        provincias = [("", "Seleccionar…"), *georef.provincias_para_select()]
+        # Una provincia que ya no figura en la lista viva se ofrece igual.
+        actual = self.instance.provincia
+        if actual and actual not in {valor for valor, _ in provincias}:
+            provincias.append((actual, actual))
+        self.fields["provincia"] = forms.ChoiceField(
+            label="Provincia", required=False, choices=provincias
+        )
+        self.fields["telefono_pais"] = forms.ChoiceField(
+            label="País",
+            required=False,
+            initial=PAIS_TELEFONO_PREDETERMINADO,
+            choices=paises.paises_para_select(),
+        )
+        self.order_fields(["nombre_completo", *self.CAMPOS])
+
+    clean_nombre_completo = FormularioRegistroCliente.clean_nombre_completo
+    clean_telefono_pais = FormularioRegistroCliente.clean_telefono_pais
+    clean_telefono_area = FormularioRegistroCliente.clean_telefono_area
+    clean_telefono_numero = FormularioRegistroCliente.clean_telefono_numero
+    clean_codigo_postal = FormularioRegistroCliente.clean_codigo_postal
+    clean_localidad = FormularioRegistroCliente.clean_localidad
+    _validar_telefono_completo = FormularioRegistroCliente._validar_telefono_completo
+    _validar_direccion_completa = FormularioRegistroCliente._validar_direccion_completa
+    _validar_codigo_postal_con_provincia = (
+        FormularioRegistroCliente._validar_codigo_postal_con_provincia
+    )
+
+    def clean(self):
+        datos = super().clean()
+        self._validar_telefono_completo(datos)
+        self._validar_direccion_completa(datos)
+        self._validar_codigo_postal_con_provincia(datos)
+        return datos
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        usuario.first_name, usuario.last_name = partir_nombre(self.cleaned_data["nombre_completo"])
+        if commit:
+            usuario.save()
+        return usuario
+
+
+class CambioDeCorreoForm(forms.Form):
+    """`CO-109`: la contraseña actual y el correo nuevo.
+
+    El correo nuevo no puede ser de ninguna cuenta, en cualquier estado (I-10).
+    Ese rechazo tiene código propio: la pantalla ofrece recuperar la contraseña
+    (E1), y ningún otro error tiene que ver con eso.
+    """
+
+    contrasena_actual = forms.CharField(
+        label="Contraseña actual",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+    correo_nuevo = forms.EmailField(
+        label="Correo nuevo",
+        max_length=254,
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
+
+    def __init__(self, usuario, *args, **kwargs):
+        self.usuario = usuario
+        super().__init__(*args, **kwargs)
+
+    def clean_contrasena_actual(self):
+        contrasena = self.cleaned_data["contrasena_actual"]
+        if not self.usuario.check_password(contrasena):
+            raise ValidationError("La contraseña actual no coincide.", code="contrasena")
+        return contrasena
+
+    def clean_correo_nuevo(self):
+        correo = self.cleaned_data["correo_nuevo"].strip().lower()
+        if correo == self.usuario.email:
+            raise ValidationError("Ese ya es el correo de tu cuenta.", code="mismo")
+        if Usuario.objects.filter(email__iexact=correo).exists():
+            raise ValidationError(MENSAJE_CORREO_YA_REGISTRADO, code="correo_en_uso")
+        return correo
+
+    @property
+    def correo_ya_registrado(self):
+        return any(e.code == "correo_en_uso" for e in self.errors.as_data().get("correo_nuevo", []))

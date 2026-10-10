@@ -1,0 +1,31 @@
+{% extends "base_publico.html" %}
+{% comment %}
+«Mi cuenta» (CU-CLI-HIS, CO-192). Las secciones del panel: pedidos activos,
+historial, puntos (CU-PTS-CON) y mis datos (CU-CLI-DAT). La de stock en el
+local no se muestra hasta que exista el módulo 18 (B-11-003).
+
+Cada pantalla del panel extiende ésta, fija `seccion` y llena `cuenta`.
+{% endcomment %}
+
+{% block titulo %}Mi cuenta · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block secciones %}
+<section class="seccion-publica superficie-noche" aria-labelledby="titulo-cuenta">
+  <div class="columna-publica pila-5">
+    <div class="pila-2">
+      <p class="antetitulo">Mi cuenta · {{ user.get_full_name|default:user.email }}</p>
+      <h1 id="titulo-cuenta" class="titulo-1">{% block titulo_cuenta %}Mi cuenta{% endblock %}</h1>
+    </div>
+
+    <nav class="pestanas-cuenta" aria-label="Secciones de mi cuenta">
+      <a href="{% url 'cuenta:panel' %}" {% if seccion == "activos" %}aria-current="page"{% endif %}>Pedidos activos</a>
+      <a href="{% url 'cuenta:historial' %}" {% if seccion == "historial" %}aria-current="page"{% endif %}>Historial</a>
+      <a href="{% url 'cuenta:puntos' %}" {% if seccion == "puntos" %}aria-current="page"{% endif %}>Puntos</a>
+      <a href="{% url 'cuenta:datos' %}" {% if seccion == "datos" %}aria-current="page"{% endif %}>Mis datos</a>
+    </nav>
+
+    {% include "_mensajes.html" %}
+    {% block cuenta %}{% endblock %}
+  </div>
+</section>
+{% endblock %}

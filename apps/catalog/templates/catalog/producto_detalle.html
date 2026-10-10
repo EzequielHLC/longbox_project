@@ -146,16 +146,14 @@ esconderse con CSS.
         {% if producto.precio_manual %}
           <p class="mensaje">
             {% include "_iconos.html" with icono="atencion" %}
-            <span>El precio final se fijó a mano: este producto queda excluido de la propagación
-            automática ante cambios del margen global.</span>
+            <span>Precio a mano: no sigue los cambios del margen.</span>
           </p>
         {% endif %}
       </section>
     {% elif producto.precio_manual %}
       <p class="mensaje">
         {% include "_iconos.html" with icono="atencion" %}
-        <span>El precio se fijó a mano al dar de alta el producto: no se actualiza con la tabla de
-        precios de referencia de su editorial y formato.</span>
+        <span>Precio a mano: no sigue la tabla de precios.</span>
       </p>
     {% endif %}
 

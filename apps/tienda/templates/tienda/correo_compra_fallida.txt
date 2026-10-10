@@ -1,0 +1,8 @@
+{% load moneda %}{% autoescape off %}No pudimos completar tu compra.
+
+El pago por {{ cobro.monto|pesos }} se aprobó, pero no pudimos generar el pedido. El cargo se revierte: lo vas a ver en tu medio de pago en los próximos días.
+
+Tu carrito quedó como estaba, por si querés volver a intentarlo.
+
+Referencia del pago: {{ cobro.referencia }}
+{% endautoescape %}

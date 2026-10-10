@@ -437,3 +437,31 @@ class TokenRecuperacion(EnlaceDeCorreo):
         abstract = False
         verbose_name = "token de recuperación"
         verbose_name_plural = "tokens de recuperación"
+
+
+class TokenCambioCorreo(EnlaceDeCorreo):
+    """El enlace que confirma un correo nuevo (`CO-109`, `CO-110`; B-11-002).
+
+    `CO-109` lo declara «un concepto distinto» de `TokenRecuperacion`: además del
+    ciclo de todo enlace por correo, guarda **a qué correo** se quiere pasar. El
+    correo de la cuenta no cambia hasta que se confirma: el anterior sigue siendo
+    el de las notificaciones. Vigencia de 24 horas.
+    """
+
+    VIGENCIA = timedelta(seconds=settings.VIGENCIA_CAMBIO_CORREO)
+
+    usuario = models.ForeignKey(
+        "accounts.Usuario", on_delete=models.CASCADE, related_name="tokens_de_cambio_de_correo"
+    )
+    correo_nuevo = models.EmailField("correo nuevo")
+
+    class Meta(EnlaceDeCorreo.Meta):
+        abstract = False
+        verbose_name = "token de cambio de correo"
+        verbose_name_plural = "tokens de cambio de correo"
+
+    @classmethod
+    def emitir(cls, usuario, correo_nuevo):
+        """Uno nuevo para ese correo; el que estuviera vigente pasa a Vencido."""
+        cls.objects.filter(usuario=usuario, estado=cls.VIGENTE).update(estado=cls.VENCIDO)
+        return cls.objects.create(usuario=usuario, correo_nuevo=correo_nuevo.strip().lower())

@@ -19,7 +19,7 @@ Sin importados, la precondición de CO-052 no se cumple y el cambio no se ofrece
   <div class="encabezado-de-pantalla__textos">
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
     <h1>Margen de ganancia de importados</h1>
-    <p>Precio final = precio base × (1 + margen). El precio base no cambia: es el que quedó fijado en el alta con el CRE de su lote.</p>
+    <p>Precio final = precio base × (1 + margen).</p>
   </div>
 </header>
 
@@ -44,14 +44,14 @@ Sin importados, la precondición de CO-052 no se cumple y el cambio no se ofrece
 {% if not hay_importados %}
   <p class="mensaje" role="status">
     {% include "_iconos.html" with icono="info" %}
-    <span>Todavía no hay productos importados. El margen se puede cambiar cuando exista al menos uno con precio base.</span>
+    <span>Todavía no hay productos importados: el margen se habilita con el primero.</span>
   </p>
 {% elif a_confirmar %}
   <div class="panel panel--atencion formulario--angosto">
     <div class="seccion__titulo"><h2>Confirmar el cambio</h2></div>
     <p><strong>{{ vigente }} → {{ nuevo }}</strong></p>
     {% if simulacion.no_afecta_a_ninguno %}
-      <p>Todos los importados tienen precio fijado a mano: la propagación no afecta a ninguno. El margen nuevo rige para las próximas altas de importados.</p>
+      <p>Todos los importados tienen precio a mano: el margen nuevo rige para las próximas altas.</p>
     {% else %}
       <p>Se recalcula el precio final de {{ simulacion.a_recalcular }} producto{{ simulacion.a_recalcular|pluralize }} desde su precio base. {{ simulacion.excluidos_por_precio_manual }} con precio fijado a mano no cambia{{ simulacion.excluidos_por_precio_manual|pluralize:"n" }}.</p>
     {% endif %}

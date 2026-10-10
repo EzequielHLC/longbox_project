@@ -33,8 +33,7 @@ de baja no ofrece ninguna de sus etiquetas, aunque cada una conserve el suyo.
 {% if not grupo.activo %}
   <p class="mensaje" role="status">
     {% include "_iconos.html" with icono="atencion" %}
-    <span><span class="mensaje__prefijo">Atención:</span> el grupo está dado de baja: ninguna de
-    sus etiquetas se ofrece en los formularios. Para volver a usarlas, reactive primero el grupo.</span>
+    <span><span class="mensaje__prefijo">Atención:</span> el grupo está dado de baja. Reactívelo para usar sus etiquetas.</span>
   </p>
 {% endif %}
 

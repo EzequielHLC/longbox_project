@@ -1,0 +1,13 @@
+{% extends "correo/base.html" %}
+{% load correo moneda %}
+{% comment %}CU-TDA-CMP E3, CU-TDA-INV E4. El texto es el de `tienda/correo_compra_fallida.txt`.{% endcomment %}
+{% block asunto %}No pudimos completar tu compra{% endblock %}
+{% block preencabezado %}El cargo de {{ cobro.monto|pesos }} se revierte.{% endblock %}
+{% block rotulo %}Compra{% endblock %}
+{% block antetitulo %}Compra no completada{% endblock %}
+{% block titulo %}El cargo se revierte{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'aviso' %}"><span style="{% estilo 'aviso-prefijo' %}">Atención:</span> el pago por {{ cobro.monto|pesos }} se aprobó, pero no pudimos generar el pedido.</p>
+<p style="{% estilo 'parrafo' %}">El cargo se revierte: lo vas a ver en tu medio de pago en los próximos días. Tu carrito quedó como estaba, por si querés volver a intentarlo.</p>
+<p style="{% estilo 'secundario' %}">Referencia del pago: {{ cobro.referencia }}</p>
+{% endblock %}

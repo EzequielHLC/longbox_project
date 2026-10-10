@@ -1,0 +1,18 @@
+{% comment %}
+La línea de tiempo de un pedido (B-08-001): cada estado que alcanzó, con su
+fecha. La ven el Administrador (CO-183) y el Cliente (CO-193). Con `con_actor`,
+dice además quién lo avanzó.
+
+    {% include "_linea_de_tiempo.html" with transiciones=transiciones %}
+{% endcomment %}
+<ol class="linea-de-tiempo">
+  {% for paso in transiciones %}
+    <li class="linea-de-tiempo__paso{% if forloop.last %} linea-de-tiempo__paso--actual{% endif %}">
+      <span class="linea-de-tiempo__estado">{{ paso.get_estado_nuevo_display }}</span>
+      <time class="datos texto-chico secundario" datetime="{{ paso.ocurrida_en|date:'c' }}">{{ paso.ocurrida_en|date:"d/m/Y H:i" }}</time>
+      {% if con_actor %}
+        <span class="texto-chico secundario">{% if not paso.estado_anterior %}Compra{% elif paso.actor %}{{ paso.actor.get_full_name|default:paso.actor.email }}{% else %}El sistema{% endif %}</span>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ol>

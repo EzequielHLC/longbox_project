@@ -22,7 +22,7 @@ y el borde fuerte del recuadro.
 </header>
 
 {% if not proveedor.esta_activo %}
-  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está dado de baja. No hay nada que confirmar.</span></p>
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está dado de baja.</span></p>
 {% else %}
   <div class="panel panel--atencion formulario--angosto">
     <div class="seccion__titulo"><h2>Qué implica la baja</h2></div>
@@ -32,10 +32,9 @@ y el borde fuerte del recuadro.
         los mensajes de novedades que envíe no se procesan más.</span>
       </li>
       <li>
-        <span>Los productos que entraron por este proveedor se conservan, y conservan la
-        referencia a él en el historial.</span>
+        <span>Sus productos se conservan.</span>
       </li>
-      <li><span>La baja es lógica: no se borra nada y se puede revertir reactivándolo.</span></li>
+      <li><span>Se puede reactivar.</span></li>
     </ul>
 
     {% comment %}

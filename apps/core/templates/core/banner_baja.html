@@ -19,7 +19,7 @@ confirmar no cambia nada.
 
 <div class="panel panel--atencion formulario--angosto">
   <img src="{{ banner.imagen.url }}" alt="Banner {{ banner.numero }}" class="miniatura-banner miniatura-banner--grande">
-  <p>Deja de mostrarse en la portada. Los demás conservan su orden. Para volver a publicarlo hay que cargar la imagen otra vez.</p>
+  <p>Se quita de la portada. Para volver a publicarlo hay que cargarlo de nuevo.</p>
   <form method="post" class="acciones">
     {% csrf_token %}
     <button type="submit" class="boton-primario">Confirmar baja</button>

@@ -1,0 +1,5 @@
+{% autoescape off %}El correo de tu cuenta cambió: ahora es {{ correo_nuevo }}.
+
+Si lo cambiaste vos, no hace falta que hagas nada.
+Si no fuiste vos, respondé este mensaje para que podamos ayudarte a recuperar la cuenta.
+{% endautoescape %}

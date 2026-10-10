@@ -1,0 +1,15 @@
+{% comment %}
+Los campos de la dirección de envío (CO-087, CO-090), con las sugerencias de
+localidad según la provincia, como en el registro.
+{% endcomment %}
+{% include "_campo.html" with campo=form.direccion %}
+<div class="rejilla-2">
+  {% include "_campo.html" with campo=form.depto %}
+  {% include "_campo.html" with campo=form.codigo_postal %}
+</div>
+<div class="rejilla-2">
+  {% include "_campo.html" with campo=form.provincia %}
+  {% include "_campo.html" with campo=form.localidad ayuda="Se sugiere al elegir la provincia" %}
+</div>
+<datalist id="localidades"></datalist>
+{% include "_sugerir_localidades.html" %}

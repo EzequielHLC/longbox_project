@@ -22,14 +22,13 @@ plantilla. Lo que todavía no se puede calcular se dice «No disponible», nunca
 </header>
 
 {% if producto.estado == "descatalogado" %}
-  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está fuera del catálogo. No hay nada que confirmar.</span></p>
+  <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está fuera del catálogo.</span></p>
 {% elif producto.estado == "cancelado_editorial" %}
   <p class="mensaje mensaje--error" role="alert">
     {% include "_iconos.html" with icono="error" %}
     <span>
       <span class="mensaje__prefijo">Error:</span>
-      este producto está cancelado por editorial. Ese estado ya lo mantiene fuera del
-      catálogo y no admite otra baja.
+      este producto está cancelado por editorial y ya está fuera del catálogo.
     </span>
   </p>
 {% else %}
@@ -37,8 +36,8 @@ plantilla. Lo que todavía no se puede calcular se dice «No disponible», nunca
     <div class="seccion__titulo"><h2>Qué implica la baja</h2></div>
     <ul class="lista-renglones">
       <li><span>Deja de <strong>verse en el catálogo público</strong> y no se puede vender.</span></li>
-      <li><span>Se conserva en el inventario interno, con su stock, su código y su historial de ventas.</span></li>
-      <li><span>Se puede revertir reactivándolo, y vuelve con la misma identidad.</span></li>
+      <li><span>Queda en el inventario interno.</span></li>
+      <li><span>Se puede reactivar.</span></li>
     </ul>
 
     <div class="cifras">
@@ -70,8 +69,7 @@ plantilla. Lo que todavía no se puede calcular se dice «No disponible», nunca
     {% if impacto.todo_sin_determinar %}
       <p class="fila-2 fuerte">
         {% include "_iconos.html" with icono="atencion" %}
-        <span>Ninguna de estas referencias se puede consultar todavía. Revise por fuera del
-        sistema si hay compromisos pendientes con este producto antes de confirmar.</span>
+        <span>Estas referencias todavía no se pueden consultar.</span>
       </p>
     {% endif %}
 

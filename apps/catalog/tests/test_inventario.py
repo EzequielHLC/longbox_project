@@ -180,7 +180,7 @@ def test_la_ficha_avisa_cuando_el_precio_es_manual(client_admin):
 
     respuesta = client_admin.get(url_ficha(producto))
 
-    assert "fijó a mano" in respuesta.content.decode()
+    assert "Precio a mano" in respuesta.content.decode()
 
 
 def test_el_inventario_avisa_cuando_esta_vacio(client_admin):

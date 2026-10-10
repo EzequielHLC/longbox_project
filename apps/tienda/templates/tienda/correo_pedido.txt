@@ -1,0 +1,17 @@
+{% load moneda %}{% autoescape off %}Recibimos tu pedido {{ pedido.numero }}.
+
+Estado: {{ pedido.get_estado_display }}{% if pedido.estado == "esperando_pre_venta" %} (incluye pre-ventas: lo armamos cuando llegue todo){% endif %}.
+
+{% for linea in lineas %}- {{ linea.cantidad }} x {{ linea.producto.titulo }}{% if linea.cubierta_con_puntos %}: cubierto con {{ linea.puntos_canjeados }} puntos{% else %}: {{ linea.subtotal|pesos }}{% endif %}
+{% endfor %}
+Envío: {% if pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}gratis{% endif %}
+Total pagado: {{ pedido.total|pesos }}
+
+Se envía a: {{ pedido.direccion_de_envio }}
+{% if enlace %}
+Seguí tu pedido desde tu cuenta: {{ enlace }}
+{% endif %}{% if pedido.correo_invitado %}
+Compraste como invitado: te vamos a avisar a este correo cada vez que el pedido cambie de estado.
+{% endif %}
+Gracias por tu compra.
+{% endautoescape %}

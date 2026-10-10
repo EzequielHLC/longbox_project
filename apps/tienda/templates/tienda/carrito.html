@@ -6,8 +6,8 @@ CU-TDA-CRB (CO-085) en cada línea.
 
 El precio de cada línea es el visible hoy. Si no es el que el Cliente vio al
 agregarla, la línea avisa (A2). La disponibilidad se deriva del producto (A3,
-A4). Avanzar al pago inicia CU-TDA-CMP, que no existe: el botón se muestra
-deshabilitado (plan 07, segunda parte, ambigüedad 5).
+A4). Avanzar al pago es CO-179: el Cliente va al checkout (CU-TDA-CMP) y el
+invitado elige entre iniciar sesión o comprar como invitado (CU-TDA-INV).
 {% endcomment %}
 
 {% block titulo %}Carrito · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
@@ -19,6 +19,7 @@ deshabilitado (plan 07, segunda parte, ambigüedad 5).
       <p class="antetitulo">Tienda</p>
       <h1 id="titulo-carrito" class="titulo-1">Carrito</h1>
     </div>
+    {% include "_mensajes.html" %}
 
     <div data-carrito>
       {% include "tienda/_carrito.html" %}

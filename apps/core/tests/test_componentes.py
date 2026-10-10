@@ -204,7 +204,8 @@ def test_los_desplegables_son_nativos_y_el_propio_solo_falta_base_select(client_
 
 
 # Pantallas con dos caminos de igual peso, que llevan los dos en el nivel 1.
-DOS_CAMINOS = {"_decision_de_correo.html", "producto_lista.html"}
+# El invitado elige entre iniciar sesión y comprar como invitado (CU-TDA-INV paso 1).
+DOS_CAMINOS = {"_decision_de_correo.html", "producto_lista.html", "_carrito.html"}
 
 # Las plantillas que dibujan filas: son las unicas donde una acción de nivel 3
 # se lee como "esta fila tiene acciones" y no como ruido.
@@ -222,6 +223,8 @@ CON_FILAS = {
     # Cada línea del carrito actualiza su cantidad (CU-TDA-CRM); sin guion, con
     # «Actualizar». Las líneas viven en el parcial desde B-07-028.
     "_carrito.html",
+    # Cada línea del checkout se cubre con puntos o vuelve a pagarse (CO-103, CO-104).
+    "checkout.html",
 }
 
 

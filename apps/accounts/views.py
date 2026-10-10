@@ -556,8 +556,8 @@ class UsuarioEdicionView(GestionDeUsuariosMixin, UpdateView):
 
         messages.success(
             self.request,
-            f"Se actualizó la cuenta de {usuario.email}. Dado que se modificó el rol, se "
-            "cerraron las sesiones activas de la cuenta y deberá volver a iniciar sesión.",
+            f"Se actualizó la cuenta de {usuario.email}. Por el cambio de rol, se "
+            "cerraron sus sesiones.",
         )
         return redirect(self.get_success_url())
 

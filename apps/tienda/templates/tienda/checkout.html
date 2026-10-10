@@ -1,0 +1,128 @@
+{% extends "base_publico.html" %}
+{% load moneda %}
+{% comment %}
+CU-TDA-CMP — el checkout del Cliente (CO-180).
+
+Paso 2: las líneas con su precio de hoy y la dirección predeterminada, editable
+(CO-087, que no toca el perfil). Paso 3: el canje por línea entera (CO-103,
+CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
+(CO-088). Nada de esto cambia el dominio hasta que la pasarela apruebe el pago.
+{% endcomment %}
+
+{% block titulo %}Finalizar compra · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block secciones %}
+<section class="seccion-publica superficie-noche" aria-labelledby="titulo-checkout">
+  <div class="columna-publica pila-5">
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Compra</p>
+      <h1 id="titulo-checkout" class="titulo-1">Finalizar compra</h1>
+    </div>
+    {% include "_mensajes.html" %}
+
+    <div class="carrito">
+      <div class="pila-5">
+        <section class="pila-3" aria-labelledby="titulo-envio">
+          <h2 id="titulo-envio" class="titulo-2">Envío</h2>
+          {% if editar_direccion %}
+            <form method="post" novalidate class="formulario">
+              {% csrf_token %}
+              {% if not resumen.direccion_completa and not form.is_bound %}
+                <p class="secundario">Ingresá la dirección de envío.</p>
+              {% endif %}
+              {% include "tienda/_direccion.html" %}
+              <div class="acciones fila-2">
+                <button type="submit" class="boton-seccion">Usar esta dirección</button>
+                {% if resumen.direccion_completa %}<a href="{% url 'compra:checkout' %}" class="boton-texto">Cancelar</a>{% endif %}
+              </div>
+            </form>
+          {% else %}
+            <div class="pila-2">
+              <p class="datos">{{ texto_direccion }}</p>
+              <details class="pila-3">
+                <summary class="boton-texto">Enviar a otra dirección</summary>
+                <form method="post" novalidate class="formulario">
+                  {% csrf_token %}
+                  <p class="texto-chico secundario">Sólo para esta compra.</p>
+                  {% include "tienda/_direccion.html" %}
+                  <div class="acciones"><button type="submit" class="boton-seccion">Usar esta dirección</button></div>
+                </form>
+              </details>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="pila-3" aria-labelledby="titulo-productos">
+          <h2 id="titulo-productos" class="titulo-2">Productos</h2>
+          {% if resumen.saldo > 0 %}
+            <p class="secundario">
+              Tenés <span class="datos">{{ resumen.saldo }}</span> puntos.
+              {% if resumen.puntos_aplicados %}Después de este canje te quedarían <span class="datos">{{ resumen.saldo_restante }}</span>.{% endif %}
+              Se canjean por productos enteros.
+            </p>
+          {% endif %}
+          <ul class="carrito__lineas" aria-label="Productos de la compra">
+            {% for item in resumen.lineas %}
+              <li class="linea-carrito">
+                <span class="linea-carrito__portada" aria-hidden="true">
+                  {% if item.producto.portada %}<img src="{{ item.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+                </span>
+                <div class="linea-carrito__datos pila-2">
+                  <span class="linea-carrito__titulo">{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</span>
+                  <div class="fila-2">
+                    {% if item.consultada.pre_venta %}<span class="marca-estado marca-estado--dato">Pre-venta · se envía cuando llegue</span>{% endif %}
+                    {% if item.cubierta %}<span class="marca-estado marca-estado--ok">Cubierto con {{ item.puntos_necesarios }} puntos</span>{% endif %}
+                  </div>
+                  <p class="linea-carrito__precio texto-chico">{{ item.linea.cantidad }} × <span class="datos">{{ item.precio|pesos }}</span></p>
+                </div>
+                <div class="linea-carrito__acciones">
+                  {% if item.cubierta %}
+                    <form method="post" action="{% url 'compra:canje' item.linea.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="accion" value="revertir">
+                      <button type="submit" class="boton-texto">Pagar en dinero</button>
+                    </form>
+                  {% elif resumen.saldo > 0 %}
+                    <form method="post" action="{% url 'compra:canje' item.linea.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="boton-menor"{% if item.puntos_necesarios > resumen.saldo_restante %} aria-describedby="sin-saldo-{{ item.linea.pk }}"{% endif %}>Cubrir con {{ item.puntos_necesarios }} pts</button>
+                    </form>
+                    {% if item.puntos_necesarios > resumen.saldo_restante %}<span id="sin-saldo-{{ item.linea.pk }}" class="texto-chico secundario">No alcanza el saldo</span>{% endif %}
+                  {% endif %}
+                </div>
+                <p class="linea-carrito__subtotal">
+                  {% if item.cubierta %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ item.importe|pesos }}</s>{{ 0|pesos }}{% else %}{{ item.importe|pesos }}{% endif %}
+                </p>
+              </li>
+            {% endfor %}
+          </ul>
+          {% if resumen.puntos_aplicados %}
+            <form method="post" action="{% url 'compra:canje_listo' %}">
+              {% csrf_token %}
+              <button type="submit" class="boton-texto">Listo con los puntos</button>
+            </form>
+          {% endif %}
+        </section>
+      </div>
+
+      <aside class="resumen-carrito pila-3" aria-label="Resumen de la compra">
+        {% include "tienda/_resumen_compra.html" %}
+        {% if resumen.puntos_a_acreditar %}
+          <p class="texto-chico secundario">Con esta compra sumás {{ resumen.puntos_a_acreditar }} puntos.</p>
+        {% endif %}
+        {% if resumen.tiene_pre_venta %}
+          <p class="texto-chico secundario">Tu pedido incluye pre-ventas: se arma cuando lleguen todas.</p>
+        {% endif %}
+        <form method="post" action="{% url 'compra:confirmar' %}">
+          {% csrf_token %}
+          <button type="submit" class="boton-primario"{% if not resumen.direccion_completa %} disabled aria-describedby="falta-direccion"{% endif %}>
+            {% if resumen.total %}Confirmar y pagar{% else %}Confirmar con puntos{% endif %}
+          </button>
+        </form>
+        {% if not resumen.direccion_completa %}<p id="falta-direccion" class="texto-chico secundario">Falta la dirección de envío.</p>{% endif %}
+        <a href="{% url 'tienda:carrito' %}" class="boton-texto">Volver al carrito</a>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

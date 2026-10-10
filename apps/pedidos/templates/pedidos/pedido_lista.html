@@ -1,0 +1,79 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PED-CON — CO-182 consultarPedidos. Todos los pedidos, los más recientes
+primero, con filtros por estado, cliente, canal, fechas y artículos demorados.
+Cada fila lleva al detalle (CO-183), desde donde se avanza el estado.
+{% endcomment %}
+
+{% block titulo %}Pedidos · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Pedidos</h1>
+  </div>
+</header>
+
+<section class="seccion">
+  <form id="filtros" method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="q" class="etiqueta">Buscar</label>
+      <input type="text" id="q" name="q" value="{{ filtros.q }}"
+             placeholder="Número, nombre o correo — atajo: /" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="canal" class="etiqueta">Canal</label>
+      <select id="canal" name="canal">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in canales %}
+          <option value="{{ valor }}" {% if filtros.canal == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="desde" class="etiqueta">Desde</label>
+      <input type="date" id="desde" name="desde" value="{{ filtros.desde|date:'Y-m-d' }}">
+    </div>
+
+    <div class="campo">
+      <label for="hasta" class="etiqueta">Hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta|date:'Y-m-d' }}">
+    </div>
+
+    <label class="casilla">
+      <input type="checkbox" name="demorados" value="1" {% if filtros.demorados %}checked{% endif %}>
+      <span>Con artículos demorados</span>
+    </label>
+
+    <button type="submit" class="boton-seccion boton-seccion--tenue">
+      {% include "_iconos.html" with icono="buscar" %}<span>Buscar</span>
+    </button>
+
+    {% if hay_filtro %}
+      <a href="{% url 'pedidos:lista' %}" class="boton-texto">Limpiar filtros</a>
+    {% endif %}
+  </form>
+
+  <div class="contenedor-tabla">
+    <div id="capa-tabla" class="capa-tabla">{% include "_loader.html" %}</div>
+    <div id="tabla">
+      {% include "pedidos/_tabla_pedidos.html" %}
+    </div>
+  </div>
+</section>
+
+{% include "_tabla_filtrable.html" %}
+{% endblock %}

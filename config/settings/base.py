@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.suppliers",
     "apps.tienda",
+    "apps.pedidos",
+    "apps.puntos",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
@@ -174,6 +176,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 # generador en `apps/accounts/tokens.py`.
 VIGENCIA_ENLACE_RECUPERACION = 30 * 60  # CU-AUT-REC
 VIGENCIA_ENLACE_ACTIVACION = 48 * 60 * 60  # CU-USR-ALT
+VIGENCIA_CAMBIO_CORREO = 24 * 60 * 60  # CU-CLI-DAT A1 (B-11-002)
 PASSWORD_RESET_TIMEOUT = VIGENCIA_ENLACE_ACTIVACION
 
 # CU-AUT-INI, excepción de intentos fallidos. Queda como constante hasta que el
@@ -308,3 +311,12 @@ CACHES = {
 # de lo que ayuda; en un servidor conviene apuntarlo a otro disco, que es de lo
 # que protege un respaldo.
 RESPALDOS_DIR = config("RESPALDOS_DIR", default=str(BASE_DIR / "respaldos"))
+
+# ---------------------------------------------------------------------------
+# Pasarela de pago (plan 07, sexta parte; B-07-031)
+# ---------------------------------------------------------------------------
+# Cuál se usa se elige en Parámetros. La de prueba no necesita nada. MercadoPago
+# necesita la credencial de la cuenta de prueba del vendedor, y que el aviso de
+# pago llegue al sistema: en la demostración, por el túnel.
+MERCADOPAGO_ACCESS_TOKEN = config("MERCADOPAGO_ACCESS_TOKEN", default="")
+MERCADOPAGO_TIMEOUT = config("MERCADOPAGO_TIMEOUT", default=10, cast=int)

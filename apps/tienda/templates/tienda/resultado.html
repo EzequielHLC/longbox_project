@@ -1,0 +1,63 @@
+{% extends "base_publico.html" %}
+{% load moneda %}
+{% comment %}
+Cómo terminó el cobro. Procesado: la confirmación con el número de pedido y
+su estado inicial (CU-TDA-CMP paso 8, CU-TDA-INV paso 10). Rechazado: el
+mensaje de la pasarela y el carrito intacto (E2, E3). Reembolsado: el pedido no
+se pudo generar y el cargo se revierte (E3, E4). Pendiente: todavía no llegó
+el aviso, y la pantalla se vuelve a pedir sola.
+{% endcomment %}
+
+{% block titulo %}{% if pedido %}Pedido {{ pedido.numero }}{% else %}Tu pago{% endif %} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block cabecera_extra %}
+  {{ block.super }}
+  {% if cobro.estado == "pendiente" %}<meta http-equiv="refresh" content="3">{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="pila-5">
+  {% if cobro.estado == "procesado" %}
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Compra confirmada</p>
+      <h1 class="titulo-1">¡Gracias por tu compra!</h1>
+    </div>
+    <div class="panel pila-3">
+      <p>Pedido <span class="datos">{{ pedido.numero }}</span> · <span class="marca-estado marca-estado--ok">{{ pedido.get_estado_display }}</span></p>
+      <p class="secundario">Te mandamos el detalle a <span class="datos">{{ pedido.correo_de_contacto }}</span>.</p>
+      {% if pedido.estado == "esperando_pre_venta" %}
+        <p class="secundario">El pedido incluye pre-ventas: lo armamos cuando llegue todo.</p>
+      {% endif %}
+      <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobro.monto|pesos }}</span></p>
+      {% if cobro.puntos_a_debitar %}<p class="texto-chico secundario">Usaste {{ cobro.puntos_a_debitar }} puntos.</p>{% endif %}
+    </div>
+    <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Seguir comprando</a></p>
+  {% elif cobro.estado == "rechazado" %}
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Pago rechazado</p>
+      <h1 class="titulo-1">El pago no se aprobó</h1>
+    </div>
+    <div class="panel panel--atencion pila-3" role="alert">
+      <p>{{ cobro.mensaje|default:"La pasarela rechazó el pago." }}</p>
+      <p class="secundario">No se te cobró nada y tu carrito quedó como estaba.</p>
+    </div>
+    <p><a href="{% url volver %}" class="boton-primario">Volver a intentar</a></p>
+  {% elif cobro.estado == "reembolsado" %}
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Compra no completada</p>
+      <h1 class="titulo-1">No pudimos completar tu compra</h1>
+    </div>
+    <div class="panel panel--atencion pila-3" role="alert">
+      <p>El pago se aprobó, pero no pudimos generar el pedido. <strong>El cargo se revierte</strong>: lo vas a ver en tu medio de pago en los próximos días.</p>
+      <p class="secundario">Tu carrito quedó como estaba.</p>
+    </div>
+    <p><a href="{% url 'tienda:carrito' %}" class="boton-primario">Volver al carrito</a></p>
+  {% else %}
+    <div class="pila-2">
+      <p class="antetitulo">Tienda · Pago en curso</p>
+      <h1 class="titulo-1">Esperando la confirmación del pago</h1>
+    </div>
+    <p class="secundario" role="status">Esta pantalla se actualiza sola en unos segundos.</p>
+  {% endif %}
+</div>
+{% endblock %}

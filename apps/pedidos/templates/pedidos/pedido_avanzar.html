@@ -1,0 +1,43 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-PED-EST pasos 2 y 3 — la confirmación de CO-092. Muestra el estado actual y
+el único siguiente. Si se avanza a Empaquetado con artículos demorados sin
+decisión del Cliente, advierte (E2) y confirmar es CO-093.
+
+`estado_visto` viaja con el formulario: si otro Administrador avanzó el pedido
+mientras tanto, el servidor lo rechaza en vez de saltear un paso.
+{% endcomment %}
+
+{% block titulo %}Avanzar el pedido {{ pedido.numero }} · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'pedidos:detalle' pedido.pk as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pedido "|add:pedido.numero atras=1 %}</span>
+    <h1>Avanzar el pedido <span class="datos">{{ pedido.numero }}</span></h1>
+  </div>
+</header>
+
+<div class="panel{% if pendientes %} panel--atencion{% endif %} formulario--angosto pila-4">
+  <p>De <strong>{{ pedido.get_estado_display }}</strong> a <strong>{{ siguiente_display }}</strong>. No se puede deshacer. El cliente recibe un correo.</p>
+
+  {% if pendientes %}
+    <div class="pila-2" role="alert">
+      <p><strong>Artículos demorados sin decisión del cliente.</strong> Quedan pendientes; el resto se empaqueta.</p>
+      <ul>
+        {% for linea in pendientes %}<li>{{ linea.producto.titulo }} · {{ linea.cantidad }} unidad(es)</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" class="fila-5">
+    {% csrf_token %}
+    <input type="hidden" name="estado_visto" value="{{ pedido.estado }}">
+    {% if pendientes %}<input type="hidden" name="confirmado" value="1">{% endif %}
+    <button type="submit" class="boton-primario">{% if pendientes %}Empaquetar igual{% else %}Avanzar a {{ siguiente_display|lower }}{% endif %}</button>
+    <a href="{% url 'pedidos:detalle' pedido.pk %}" class="boton-texto">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

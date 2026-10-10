@@ -1,0 +1,13 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}CU-CLI-DAT A1, CO-109. El texto es el de `cuenta/correo_confirmar.txt`.{% endcomment %}
+{% block asunto %}Confirmá tu correo nuevo{% endblock %}
+{% block preencabezado %}Confirmá que tu cuenta use {{ correo_nuevo }}.{% endblock %}
+{% block rotulo %}Cuenta{% endblock %}
+{% block antetitulo %}Cambio de correo{% endblock %}
+{% block titulo %}Confirmá tu correo nuevo{% endblock %}
+{% block contenido %}
+<p style="{% estilo 'parrafo' %}">Pediste que tu cuenta use <span style="{% estilo 'destacado' %}">{{ correo_nuevo }}</span>. El enlace vale {{ vigencia_horas|floatformat:0 }} horas.</p>
+{% include "correo/_boton.html" with url=enlace texto="Confirmar el correo" %}
+<p style="{% estilo 'secundario' %}">Hasta que lo confirmes, tu cuenta sigue usando el correo de siempre. Si no lo pediste vos, ignorá este mensaje: no cambia nada.</p>
+{% endblock %}

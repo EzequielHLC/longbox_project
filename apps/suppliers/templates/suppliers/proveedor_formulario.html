@@ -70,8 +70,7 @@ el enlace es lo que convierte el aviso en algo accionable.
   {% if form.confirma_cambio_de_correo %}
     <div class="panel panel--atencion">
       <p>
-        El correo anterior dejará de ser reconocido como remitente válido. Los mensajes
-        del proveedor deben enviarse al correo nuevo a partir de este cambio.
+        El correo anterior deja de reconocerse como remitente.
       </p>
       {% include "_casilla.html" with campo=form.confirma_cambio_de_correo critico=1 %}
     </div>
@@ -84,10 +83,6 @@ el enlace es lo que convierte el aviso en algo accionable.
   {% endcomment %}
   <fieldset class="grupo-de-campos">
     <legend>Procesamiento automático de novedades</legend>
-    <p class="secundario">
-      Los correos de novedades no declaran la editorial ni el rubro: los aporta esta
-      ficha y los heredan sus borradores.
-    </p>
 
     <div class="rejilla-2">
       <div class="pila-2">

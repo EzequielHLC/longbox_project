@@ -6,6 +6,7 @@ operativo**: ninguna pantalla de este módulo es pública.
 """
 
 import csv
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
@@ -24,6 +25,7 @@ from apps.catalog.forms import (
     BorradorForm,
     CabeceraLoteForm,
     CabeceraLoteImportadoForm,
+    CompraOnlineForm,
     ConfiguracionForm,
     EditorialForm,
     FormatoForm,
@@ -54,6 +56,7 @@ from apps.core import cambios, cotizaciones
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import celda_csv, obtener_ip
+from apps.puntos.servicios import puntos_por_monto
 from apps.suppliers.models import Proveedor
 
 MENSAJE_BORRADOR_YA_RESUELTO = "Este borrador ya fue confirmado o rechazado."
@@ -430,8 +433,19 @@ class ParametrosView(CatalogoAdminMixin, View):
 
     template_name = "catalog/parametros.html"
 
-    def get(self, request, formulario=None, form_modelo=None):
-        return render(request, self.template_name, self._contexto(request, formulario, form_modelo))
+    def get(self, request, formulario=None, form_modelo=None, form_compra=None):
+        contexto = self._contexto(request, formulario, form_modelo)
+        configuracion = ConfiguracionSistema.obtener()
+        contexto["form_compra"] = form_compra or CompraOnlineForm(instance=configuracion)
+        # Para que el Administrador vea qué significan los dos números juntos.
+        ejemplo = Decimal("10000")
+        puntos_del_ejemplo = puntos_por_monto(ejemplo)
+        contexto["ejemplo_puntos"] = {
+            "compra": ejemplo,
+            "puntos": puntos_del_ejemplo,
+            "valen": puntos_del_ejemplo * configuracion.equivalencia_puntos,
+        }
+        return render(request, self.template_name, contexto)
 
     def post(self, request):
         # Dos formularios en la misma pantalla, distinguidos por el botón que
@@ -441,46 +455,59 @@ class ParametrosView(CatalogoAdminMixin, View):
         # el otro.
         if "guardar_modelo" in request.POST:
             return self._guardar_modelo(request)
-        return self._guardar_parametros(request)
+        if "guardar_compra" in request.POST:
+            return self._guardar_parametros(request, CompraOnlineForm)
+        return self._guardar_parametros(request, ConfiguracionForm)
 
-    def _guardar_parametros(self, request):
+    # Cómo se nombra cada parámetro en el detalle de la auditoría; los demás,
+    # por el nombre de su campo.
+    NOMBRES = {  # noqa: RUF012
+        "stock_inicial_por_defecto": "stock por defecto",
+        "intervalo_carrusel": "intervalo del carrusel (s)",
+        "equivalencia_puntos": "valor del punto ($)",
+        "porcentaje_puntos": "reintegro en puntos (%)",
+    }
+
+    def _guardar_parametros(self, request, formulario_de):
         configuracion = ConfiguracionSistema.obtener()
-        anterior = (configuracion.stock_inicial_por_defecto, configuracion.intervalo_carrusel)
-        formulario = ConfiguracionForm(request.POST, instance=configuracion)
+        campos = formulario_de.Meta.fields
+        anterior = {campo: self._legible(configuracion, campo) for campo in campos}
+        formulario = formulario_de(request.POST, instance=configuracion)
 
         if not formulario.is_valid():
+            if formulario_de is CompraOnlineForm:
+                return self.get(request, form_compra=formulario)
             return self.get(request, formulario=formulario)
 
         with transaction.atomic():
             configuracion = formulario.save(commit=False)
             configuracion.actualizado_por = request.user
             configuracion.save()
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
-                actor=request.user,
-                objetivo=configuracion,
-                ip=obtener_ip(request),
-                detalle="; ".join(
-                    f"{nombre}: {antes} → {despues}"
-                    for nombre, antes, despues in (
-                        (
-                            "stock por defecto",
-                            anterior[0],
-                            configuracion.stock_inicial_por_defecto,
-                        ),
-                        (
-                            "intervalo del carrusel (s)",
-                            anterior[1],
-                            configuracion.intervalo_carrusel,
-                        ),
-                    )
-                    if antes != despues
+            # CO-130: una entrada por cada parámetro efectivamente modificado, con
+            # su valor anterior y el nuevo. Guardar sin cambios no deja ninguna.
+            for campo in campos:
+                nuevo = self._legible(configuracion, campo)
+                if anterior[campo] == nuevo:
+                    continue
+                RegistroAuditoria.registrar(
+                    accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
+                    actor=request.user,
+                    objetivo=configuracion,
+                    ip=obtener_ip(request),
+                    detalle=f"{self._nombre(campo)}: {anterior[campo]} → {nuevo}",
                 )
-                or "sin cambios",
-            )
 
         messages.success(request, "Se actualizaron los parámetros.")
         return redirect("catalog:parametros")
+
+    def _nombre(self, campo):
+        return self.NOMBRES.get(campo) or ConfiguracionSistema._meta.get_field(campo).verbose_name
+
+    @staticmethod
+    def _legible(configuracion, campo):
+        if campo == "pasarela":
+            return configuracion.get_pasarela_display()
+        return getattr(configuracion, campo)
 
     def _guardar_modelo(self, request):
         """A qué modelo de lenguaje le habla el sistema.
@@ -525,8 +552,7 @@ class ParametrosView(CatalogoAdminMixin, View):
 
         messages.success(
             request,
-            "Se actualizó la configuración del modelo. Conviene verificarla en "
-            "Proveedores → Diagnóstico del modelo antes de procesar un correo.",
+            "Se actualizó la configuración del modelo. Verifíquela en Diagnóstico del modelo.",
         )
         return redirect("catalog:parametros")
 

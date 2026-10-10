@@ -45,8 +45,7 @@ con su estado: si está dado de baja, desde ahí se lo reactiva.
 {% if form.esta_dado_de_baja %}
   <p class="mensaje" role="status">
     {% include "_iconos.html" with icono="atencion" %}
-    <span><span class="mensaje__prefijo">Atención:</span> está dado de baja y no se ofrece en los
-    formularios. Marque «Reactivar» para que vuelva a ofrecerse.</span>
+    <span><span class="mensaje__prefijo">Atención:</span> está dado de baja. Marque «Reactivar» para volver a usarlo.</span>
   </p>
 {% endif %}
 
@@ -67,7 +66,7 @@ con su estado: si está dado de baja, desde ahí se lo reactiva.
             {% endfor %}
           </div>
         {% else %}
-          <p class="secundario">No hay formatos que se declaren tipo por tipo: los activos aplican a todos.</p>
+          <p class="secundario">Todos los formatos activos aplican a todos los tipos.</p>
         {% endif %}
         {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
         {% for error in campo.errors %}<p class="error-de-campo">Error: {{ error }}</p>{% endfor %}
@@ -92,7 +91,7 @@ con su estado: si está dado de baja, desde ahí se lo reactiva.
   {% endcomment %}
   <section class="seccion">
     <div class="seccion__titulo"><h2>Dar de baja</h2></div>
-    <p class="seccion__bajada">Deja de ofrecerse en los formularios y conserva lo que ya lo usa. Antes de confirmar se informa qué lo referencia.</p>
+    <p class="seccion__bajada">Deja de ofrecerse en los formularios.</p>
     <a href="{{ catalogo|url_baja:object }}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Ir a la baja</span></a>
   </section>
 {% endif %}

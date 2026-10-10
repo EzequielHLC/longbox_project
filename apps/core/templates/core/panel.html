@@ -21,6 +21,27 @@ No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
   </a>
 </header>
 
+<section class="seccion" aria-labelledby="titulo-pedidos">
+  <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos</h2></div>
+  <div class="cifras">
+    <a class="cifra" href="{% url 'pedidos:lista' %}?estado=pendiente_armado">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Por armar</span>
+      <span class="cifra__valor">{{ pedidos.por_armar }}</span>
+      <span class="cifra__nota">Ver pedidos</span>
+    </a>
+    <a class="cifra" href="{% url 'pedidos:lista' %}?estado=empaquetado">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Por despachar</span>
+      <span class="cifra__valor">{{ pedidos.por_despachar }}</span>
+      <span class="cifra__nota">Empaquetados</span>
+    </a>
+    <a class="cifra" href="{% url 'pedidos:lista' %}">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Pedidos de hoy</span>
+      <span class="cifra__valor">{{ pedidos.de_hoy }}</span>
+      <span class="cifra__nota">Todos los pedidos</span>
+    </a>
+  </div>
+</section>
+
 <section class="seccion" aria-labelledby="titulo-cifras">
   <div class="seccion__titulo"><h2 id="titulo-cifras">Cuentas</h2></div>
   <div class="cifras">

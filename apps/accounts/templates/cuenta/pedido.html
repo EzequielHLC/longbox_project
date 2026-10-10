@@ -1,0 +1,53 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-CLI-HIS paso 3 — CO-193 consultarDetalleDePedidoPropio: ítems, precios
+efectivos, estados alcanzados y la fecha de cada uno. Un pedido activo se
+vuelve a pedir cada 30 segundos (RF-18; B-08-002).
+{% endcomment %}
+
+{% block cabecera_extra %}
+  {{ block.super }}
+  {% if activo %}<meta http-equiv="refresh" content="30">{% endif %}
+{% endblock %}
+
+{% block titulo %}Pedido {{ pedido.numero }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+{% block titulo_cuenta %}Pedido <span class="datos">{{ pedido.numero }}</span>{% endblock %}
+
+{% block cuenta %}
+<div class="carrito">
+  <div class="pila-5">
+    <section class="pila-3" aria-labelledby="titulo-productos">
+      <h2 id="titulo-productos" class="titulo-2">Productos</h2>
+      <ul class="carrito__lineas" aria-label="Productos del pedido">
+        {% for linea in lineas %}
+          <li class="linea-carrito">
+            <span class="linea-carrito__portada" aria-hidden="true">
+              {% if linea.producto.portada %}<img src="{{ linea.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+            </span>
+            <div class="linea-carrito__datos pila-2">
+              <span class="linea-carrito__titulo">{{ linea.producto.titulo }}{% if linea.producto.productoeditorial.volumen %} #{{ linea.producto.productoeditorial.volumen }}{% endif %}</span>
+              <p class="texto-chico secundario">{{ linea.get_estado_display }}</p>
+              <p class="linea-carrito__precio texto-chico">{{ linea.cantidad }} × <span class="datos">{{ linea.precio_unitario|pesos }}</span></p>
+            </div>
+            <p class="linea-carrito__subtotal">
+              {% if linea.cubierta_con_puntos %}<span class="texto-chico secundario">{{ linea.puntos_canjeados }} pts</span>{% else %}{{ linea.subtotal|pesos }}{% endif %}
+            </p>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="secundario">Se envía a <span class="datos">{{ pedido.direccion_de_envio }}</span>.</p>
+    </section>
+  </div>
+
+  <aside class="resumen-carrito pila-3" aria-label="Estado del pedido">
+    <p class="antetitulo">Estado</p>
+    <p><span class="marca-estado marca-estado--atencion">{{ pedido.get_estado_display }}</span></p>
+    {% include "_linea_de_tiempo.html" with transiciones=transiciones %}
+    <dl class="resumen-compra">
+      <div><dt>Envío</dt><dd class="datos">{% if pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</dd></div>
+    </dl>
+    <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobrado|pesos }}</span></p>
+  </aside>
+</div>
+{% endblock %}

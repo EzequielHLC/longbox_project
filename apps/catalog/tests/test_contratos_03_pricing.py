@@ -202,7 +202,7 @@ def test_CO047_sin_vinculados_informa_que_solo_afecta_a_la_tabla(client_admin):
 
     respuesta = client_admin.post(reverse("catalog:precio_editar", args=[fila.pk]), {"pvp": "500"})
 
-    assert "sólo afecta a la tabla" in respuesta.content.decode()
+    assert "Ningún producto vinculado." in respuesta.content.decode()
 
 
 def test_CO047_E1_un_precio_no_mayor_que_cero_se_rechaza(client_admin):
@@ -438,7 +438,7 @@ def test_CO052_A1_todos_a_mano_avisa_que_no_afecta_a_ninguno(client_admin):
 
     respuesta = client_admin.post(reverse("catalog:margen"), {"margen": "50"})
 
-    assert "la propagación no afecta a ninguno" in respuesta.content.decode()
+    assert "Todos los importados tienen precio a mano" in respuesta.content.decode()
 
 
 def test_CO053_confirmar_recalcula_desde_el_precio_base_con_decimal_exacto(

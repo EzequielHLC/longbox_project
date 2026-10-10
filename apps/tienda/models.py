@@ -77,6 +77,9 @@ class LineaCarrito(models.Model):
         "precio visto", max_digits=12, decimal_places=2, validators=[POSITIVO]
     )
     agregada_en = models.DateTimeField("agregada en", auto_now_add=True)
+    # `CO-103`: la línea entera se paga con puntos (B-07-033). Marcarla no debita
+    # nada; el débito ocurre en `CO-089`.
+    cubierta_con_puntos = models.BooleanField("cubierta con puntos", default=False)
 
     class Meta:
         verbose_name = "línea de carrito"
@@ -93,3 +96,76 @@ class LineaCarrito(models.Model):
 
     def __str__(self):
         return f"{self.cantidad} × {self.producto}"
+
+
+class CobroEnCurso(models.Model):
+    """Lo que se cobra, congelado al confirmar el pedido (B-07-034).
+
+    **No es un concepto del dominio**, como no lo es la sesión: es lo que
+    recuerda el checkout mientras el Cliente está en la pasarela, porque el aviso
+    del pago llega de servidor a servidor y no trae su sesión. `CO-088` lo crea y
+    `CO-089` lo materializa en un `Pedido`.
+
+    El pedido es lo que se cobró: las líneas se copian acá con su precio y su
+    canje, y un cambio posterior del carrito no las alcanza.
+    """
+
+    PENDIENTE = "pendiente"
+    PROCESADO = "procesado"
+    RECHAZADO = "rechazado"
+    REEMBOLSADO = "reembolsado"
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (PENDIENTE, "Esperando el pago"),
+        (PROCESADO, "Pedido generado"),
+        (RECHAZADO, "Pago rechazado"),
+        (REEMBOLSADO, "Pago reembolsado"),
+    ]
+
+    referencia = models.CharField("referencia", max_length=64, unique=True)
+    pasarela = models.CharField("pasarela", max_length=15)
+    estado = models.CharField("estado", max_length=12, choices=ESTADO_CHOICES, default=PENDIENTE)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cobros_en_curso",
+    )
+    correo_invitado = models.EmailField("correo del invitado", blank=True)
+    carrito = models.ForeignKey(
+        Carrito, on_delete=models.SET_NULL, null=True, blank=True, related_name="cobros"
+    )
+    envio = models.JSONField("dirección de envío", default=dict)
+    # Por línea: producto, cantidad, precio unitario y puntos del canje (0 si no).
+    lineas = models.JSONField("líneas", default=list)
+    costo_envio = models.DecimalField("costo de envío", max_digits=12, decimal_places=2)
+    monto = models.DecimalField("monto a cobrar", max_digits=12, decimal_places=2)
+    puntos_a_debitar = models.PositiveIntegerField("puntos a debitar", default=0)
+    # Lo que la pasarela devuelve al iniciar el cobro (en MercadoPago, la preferencia).
+    id_externo = models.CharField("identificador en la pasarela", max_length=100, blank=True)
+    mensaje = models.CharField("mensaje de la pasarela", max_length=300, blank=True)
+    # La dirección de la tienda desde la que se compró: el aviso de la pasarela
+    # no trae la petición del Cliente, y el correo necesita el enlace al pedido.
+    origen = models.CharField("dirección de la tienda", max_length=200, blank=True)
+    pedido = models.OneToOneField(
+        "pedidos.Pedido", on_delete=models.PROTECT, null=True, blank=True, related_name="cobro"
+    )
+    creado_en = models.DateTimeField("creado en", auto_now_add=True)
+    resuelto_en = models.DateTimeField("resuelto en", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "cobro en curso"
+        verbose_name_plural = "cobros en curso"
+        constraints = [  # noqa: RUF012
+            models.CheckConstraint(
+                condition=models.Q(monto__gte=0, costo_envio__gte=0),
+                name="cobro_importes_no_negativos",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Cobro {self.referencia} ({self.get_estado_display()})"
+
+    @property
+    def correo_de_contacto(self):
+        return self.usuario.email if self.usuario_id else self.correo_invitado

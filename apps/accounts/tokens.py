@@ -42,3 +42,26 @@ token_de_recuperacion = TokenConVigencia(settings.VIGENCIA_ENLACE_RECUPERACION)
 
 # CU-USR-ALT — "Activá tu cuenta": 48 horas.
 token_de_activacion = TokenConVigencia(settings.VIGENCIA_ENLACE_ACTIVACION)
+
+
+class TokenDeCambioDeCorreo(TokenConVigencia):
+    """El token del enlace que confirma un correo nuevo (CU-CLI-DAT A1, `CO-110`).
+
+    Usa su propia sal —un token de recuperación no tiene que servir para cambiar
+    el correo— y firma también el correo pedido y la fila que lo guarda: pedir
+    otro cambio invalida el enlace anterior. Como el hash de Django incluye el
+    correo de la cuenta, el enlace deja de servir en cuanto se usa.
+    """
+
+    key_salt = "longbox.accounts.cambio-de-correo"
+
+    def _make_hash_value(self, user, timestamp):
+        from apps.accounts.models import TokenCambioCorreo
+
+        pendiente = TokenCambioCorreo.vigente_de(user)
+        propio = f"{pendiente.pk}{pendiente.correo_nuevo}" if pendiente else ""
+        return super()._make_hash_value(user, timestamp) + propio
+
+
+# CU-CLI-DAT A1 — "Confirmá tu correo nuevo": 24 horas.
+token_de_cambio_de_correo = TokenDeCambioDeCorreo(settings.VIGENCIA_CAMBIO_CORREO)

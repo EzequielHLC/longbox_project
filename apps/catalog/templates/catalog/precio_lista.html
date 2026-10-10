@@ -17,7 +17,6 @@ a cómo llega una lista de precios, que es por editorial.
   <div class="encabezado-de-pantalla__textos">
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Parámetros globales" atras=1 %}</span>
     <h1>Tabla de precios de referencia</h1>
-    <p>El precio de venta por editorial, tipo y formato. Es el que toman las altas nacionales y el que se propaga al cambiarlo.</p>
   </div>
   <a href="{% url 'catalog:precio_crear' %}" class="boton-primario">
     {% include "_iconos.html" with icono="agregar" %}<span>Nueva combinación</span>
@@ -100,7 +99,7 @@ a cómo llega una lista de precios, que es por editorial.
       <p>Ninguna combinación cumple los filtros.</p>
       <a href="{% url 'catalog:precio_lista' %}" class="boton-texto">Limpiar filtros</a>
     {% else %}
-      <p>La tabla todavía no tiene combinaciones. Sin ellas, cada alta nacional pide el precio a mano.</p>
+      <p>La tabla todavía no tiene combinaciones.</p>
       <a href="{% url 'catalog:precio_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Dar de alta una combinación</span></a>
     {% endif %}
   </div>

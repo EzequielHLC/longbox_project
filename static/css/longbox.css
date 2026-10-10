@@ -513,7 +513,8 @@ em, i { font-style: normal; }
 }
 .encabezado-publico nav a[aria-current="page"]::after,
 .encabezado-publico nav :is(a, .boton-texto):hover::after { transform: skewX(var(--sesgo)) scaleX(1); }
-.encabezado-publico__carrito { gap: var(--esp-1); }
+.encabezado-publico__carrito,
+.encabezado-publico__puntos { gap: var(--esp-1); }
 /* El encabezado ocupa todo el ancho: en una pantalla ancha la marca va al borde
    izquierdo y el menú al derecho, no encerrados en la columna (B-07-026). */
 .encabezado-publico > .encabezado-publico__barra { max-width: none; }
@@ -1336,7 +1337,8 @@ input[role="switch"]::after {
 input[role="switch"]:checked::after { transform: translateX(22px); background: var(--sobre-acento); }
 
 .campo-con-prefijo { display: flex; align-items: center; gap: var(--esp-2); }
-.campo-con-prefijo > .prefijo { font-family: var(--fuente-datos); color: var(--texto-2); }
+.campo-con-prefijo > .prefijo { font-family: var(--fuente-datos); color: var(--texto-2); white-space: nowrap; }
+.campo-con-prefijo > input { flex: 1 1 6rem; min-width: 0; }
 
 .grupo-de-campos {
   display: flex;
@@ -2638,6 +2640,60 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   font: 700 var(--pub-titulo-2) / 1 var(--fuente-datos);
   color: var(--texto-fuerte);
 }
+
+/* Línea de tiempo de un pedido (B-08-001): cada estado alcanzado, con su fecha. */
+.linea-de-tiempo { display: grid; gap: var(--esp-3); margin: 0; padding: 0; list-style: none; }
+.linea-de-tiempo__paso {
+  display: grid;
+  gap: var(--esp-1);
+  padding-left: var(--esp-4);
+  border-left: var(--trazo-grueso) var(--linea);
+}
+.linea-de-tiempo__paso--actual { border-left-color: var(--acento); }
+.linea-de-tiempo__estado { font-weight: 700; color: var(--texto-fuerte); }
+
+/* Barra del envío gratis (B-07-037): un <progress> con el subtotal sobre el monto mínimo. */
+.barra-envio__pista {
+  display: block;
+  width: 100%;
+  height: var(--esp-2);
+  appearance: none;
+  border: var(--trazo) var(--linea);
+  background: var(--fondo);
+  color: var(--acento);
+}
+.barra-envio__pista::-webkit-progress-bar { background: var(--fondo); }
+.barra-envio__pista::-webkit-progress-value { background: var(--acento); }
+.barra-envio__pista::-moz-progress-bar { background: var(--acento); }
+.barra-envio__pista--completa { color: var(--ok); }
+.barra-envio__pista--completa::-webkit-progress-value { background: var(--ok); }
+.barra-envio__pista--completa::-moz-progress-bar { background: var(--ok); }
+
+/* «Mi cuenta» (CU-CLI-HIS): las secciones del panel, como el menú de la tienda. */
+.pestanas-cuenta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-5);
+  border-bottom: var(--trazo) var(--linea);
+}
+.pestanas-cuenta a {
+  padding-block: var(--esp-2);
+  border-bottom: var(--trazo-grueso) transparent;
+  margin-bottom: -1px;
+  color: var(--texto-2);
+  font-weight: 700;
+  text-decoration: none;
+}
+.pestanas-cuenta a:hover { color: var(--texto-fuerte); }
+.pestanas-cuenta a[aria-current="page"] { color: var(--texto-fuerte); border-bottom-color: var(--acento); }
+/* Una fila de la cuenta: un pedido o un lote, con su estado y su cifra a la derecha. */
+.pedido-de-cuenta { flex-wrap: wrap; align-items: center; justify-content: space-between; }
+
+/* Resumen de la compra (CU-TDA-CMP, CU-TDA-INV): concepto a la izquierda, importe a la derecha. */
+.resumen-compra { display: grid; gap: var(--esp-2); margin: 0; }
+.resumen-compra > div { display: flex; justify-content: space-between; gap: var(--esp-3); }
+.resumen-compra dt { color: var(--texto-2); }
+.resumen-compra dd { margin: 0; text-align: right; }
 
 /* El precio sin la oferta, tachado y en segundo plano. La guía no lo dibuja (B-03-011). */
 .precio-anterior {

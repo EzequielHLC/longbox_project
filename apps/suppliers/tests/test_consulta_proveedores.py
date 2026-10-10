@@ -216,7 +216,7 @@ def test_la_ficha_avisa_que_falta_el_historial_de_restock(client_admin):
 
     contenido = client_admin.get(url_ficha(proveedor)).content.decode()
 
-    assert "historial de pedidos de reposición" in contenido
+    assert "No disponible." in contenido
 
 
 # ---------------------------------------------------------------------------

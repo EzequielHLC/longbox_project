@@ -14,7 +14,7 @@ las mismas imágenes ya procesadas.
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Banners de la portada</h1>
-    <p>Se alternan en este orden, cada {{ intervalo }} segundo{{ intervalo|pluralize }}. El intervalo se cambia en Parámetros globales.</p>
+    <p>Se alternan en este orden, cada {{ intervalo }} segundo{{ intervalo|pluralize }}.</p>
   </div>
   <a href="{% url 'core:banner_crear' %}" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo banner</span></a>
 </header>
@@ -49,7 +49,7 @@ las mismas imágenes ya procesadas.
 {% else %}
   <div class="vacio">
     {% include "_iconos.html" with icono="imagen" %}
-    <p>Todavía no hay banners. La portada se muestra sin carrusel.</p>
+    <p>Todavía no hay banners.</p>
     <a href="{% url 'core:banner_crear' %}" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Cargar el primero</span></a>
   </div>
 {% endif %}

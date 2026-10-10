@@ -78,8 +78,7 @@ class PrecioCrearView(CatalogoAdminMixin, CreateView):
         )
         messages.success(
             self.request,
-            f"Se agregó {tabla_de_precios.combinacion(fila)} a ${fila.pvp}. El alta no cambia "
-            "el precio de ningún producto.",
+            f"Se agregó {tabla_de_precios.combinacion(fila)} a ${fila.pvp}.",
         )
         return redirect("catalog:precio_lista")
 
@@ -186,7 +185,7 @@ class RestaurarPrecioView(CatalogoAdminMixin, View):
             messages.success(
                 request,
                 f"El precio volvió al calculado: ${restauracion.precio_actual} → "
-                f"${restauracion.precio_recalculado}. Desde ahora sigue a su fuente.",
+                f"${restauracion.precio_recalculado}.",
             )
         else:
             messages.info(request, restauracion.motivo)
