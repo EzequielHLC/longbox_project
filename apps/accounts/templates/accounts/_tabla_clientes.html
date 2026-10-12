@@ -19,6 +19,7 @@ No lleva columna de acciones: la pantalla es de consulta (ver `ClienteListaView`
         <thead>
           <tr>
             <th>Nombre</th>
+            <th>Código</th>
             <th>Correo</th>
             <th>Teléfono</th>
             <th>Envío</th>
@@ -33,6 +34,7 @@ No lleva columna de acciones: la pantalla es de consulta (ver `ClienteListaView`
               <td class="celda-principal">
                 <a href="{% url 'accounts:cliente_ficha' cliente.pk %}">{{ cliente.get_full_name|default:"Sin nombre cargado" }}</a>
               </td>
+              <td class="datos sin-cortar">{{ cliente.codigo_cliente|default:"—" }}</td>
               <td class="cortar-palabras">{{ cliente.email }}</td>
               <td class="datos sin-cortar">{{ cliente.telefono|default:"—" }}</td>
               <td>

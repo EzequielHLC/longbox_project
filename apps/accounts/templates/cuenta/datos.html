@@ -43,6 +43,9 @@ flujo y se enlazan desde acá.
   </form>
 
   <aside class="resumen-carrito pila-3" aria-label="Acceso a la cuenta">
+    <p class="antetitulo">Código de cliente</p>
+    <p class="resumen-carrito__total"><span class="sin-envolver">{{ user.codigo_cliente }}</span></p>
+    <p class="texto-chico secundario">Decilo en el local para sumar y canjear puntos.</p>
     <p class="antetitulo">Correo</p>
     <p class="datos cortar-palabras">{{ user.email }}</p>
     <a href="{% url 'cuenta:correo' %}" class="boton-texto">Cambiar el correo</a>

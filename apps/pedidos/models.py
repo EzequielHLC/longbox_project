@@ -223,6 +223,14 @@ class TransaccionPago(models.Model):
         "referencia de la pasarela", max_length=100, unique=True, null=True, blank=True
     )
     incluida_en_cierre = models.BooleanField("incluida en cierre", default=False)
+    # CierreDeCaja "0..1" -- "0..*" TransaccionPago (CO-126 b).
+    cierre = models.ForeignKey(
+        "caja.CierreDeCaja",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="transacciones",
+    )
     registrada_en = models.DateTimeField("registrada en", default=timezone.now)
 
     class Meta:

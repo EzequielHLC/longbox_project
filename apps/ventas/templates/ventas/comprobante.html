@@ -1,0 +1,43 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}CU-VTA-REG paso 8 — el comprobante de CO-082 (B-06-004). Imprimible desde el navegador.{% endcomment %}
+
+{% block titulo %}Venta {{ pedido.numero }} · Longbox{% endblock %}
+{% block seccion %}Mostrador{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Venta <span class="datos">{{ pedido.numero }}</span></h1>
+    <p>{{ pedido.fecha|date:"d/m/Y H:i" }} · {{ transaccion.get_medio_display }}{% if pedido.usuario %} · {{ pedido.usuario.get_full_name|default:pedido.usuario.email }} ({{ pedido.usuario.codigo_cliente }}){% endif %}</p>
+  </div>
+  <div class="fila-2">
+    <a href="{% url 'core:mostrador' %}" class="boton-primario">Nueva venta</a>
+    <button type="button" class="boton-seccion" onclick="window.print()">Imprimir</button>
+  </div>
+</header>
+
+<section class="seccion">
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead><tr><th>Producto</th><th class="numero">Cant.</th><th class="numero">Precio</th><th class="numero">Importe</th></tr></thead>
+      <tbody>
+        {% for linea in lineas %}
+          <tr>
+            <td>{{ linea.producto.titulo }}</td>
+            <td class="numero">{{ linea.cantidad }}</td>
+            <td class="numero">{{ linea.precio_unitario|pesos }}</td>
+            <td class="numero">{% if linea.cubierta_con_puntos %}{{ linea.puntos_canjeados }} pts{% else %}{{ linea.subtotal|pesos }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3"><strong>Cobrado</strong></td><td class="numero"><strong>{{ transaccion.monto|pesos }}</strong></td></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% if pedido.usuario %}
+    <p class="secundario">Puntos canjeados: <span class="datos">{{ puntos_canjeados }}</span> · Puntos sumados: <span class="datos">{{ puntos_acreditados }}</span></p>
+  {% endif %}
+</section>
+{% endblock %}

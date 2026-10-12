@@ -4,6 +4,7 @@ from apps.core import views
 from apps.core import views_auditoria as auditoria
 from apps.core import views_contenido as contenido
 from apps.core import views_tienda as tienda
+from apps.ventas.views import MostradorView
 
 app_name = "core"
 
@@ -42,7 +43,7 @@ urlpatterns = [
         contenido.IdentidadVisualView.as_view(),
         name="identidad_visual",
     ),
-    path("mostrador/", views.MostradorView.as_view(), name="mostrador"),
+    path("mostrador/", MostradorView.as_view(), name="mostrador"),
     path("panel/", views.PanelAdministracionView.as_view(), name="panel"),
     # CU-AUD-CON — el log se consulta y se exporta; no se escribe desde acá.
     path("auditoria/", auditoria.LogListaView.as_view(), name="auditoria"),

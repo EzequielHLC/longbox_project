@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     "apps.tienda",
     "apps.pedidos",
     "apps.puntos",
+    "apps.ventas",
+    "apps.caja",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"

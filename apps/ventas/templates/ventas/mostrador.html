@@ -1,0 +1,165 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-VTA-REG — el mostrador. Paso 2: agregar por código o por título (CO-079,
+B-06-003). Pasos 3 y 4: vincular la cuenta y canjear por ítem (CO-081, CO-103,
+CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
+(CO-082). El ticket vive en la sesión (B-06-002).
+{% endcomment %}
+
+{% block titulo %}Mostrador · Longbox{% endblock %}
+{% block seccion %}Mostrador{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Mostrador</h1>
+  </div>
+  {% if not ticket.vacio %}
+    <form method="post" action="{% url 'ventas:nueva' %}">
+      {% csrf_token %}
+      <button type="submit" class="boton-texto">Descartar y empezar otra venta</button>
+    </form>
+  {% endif %}
+</header>
+
+<div class="carrito">
+  <div class="pila-5">
+    <section class="seccion" aria-labelledby="titulo-agregar">
+      <div class="seccion__titulo"><h2 id="titulo-agregar">Agregar producto</h2></div>
+      <form method="post" action="{% url 'ventas:agregar' %}" class="barra-de-herramientas">
+        {% csrf_token %}
+        <div class="campo campo--principal">
+          <label for="q" class="etiqueta">Código, código de barras, ISBN o título</label>
+          <input type="text" id="q" name="q" value="{{ busqueda }}" autocomplete="off" autofocus>
+        </div>
+        <div class="campo">
+          <label for="cantidad" class="etiqueta">Cantidad</label>
+          <input type="number" id="cantidad" name="cantidad" value="1" min="1" inputmode="numeric">
+        </div>
+        <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="agregar" %}<span>Agregar</span></button>
+      </form>
+
+      {% if busqueda %}
+        {% if resultados %}
+          <div class="tabla-desplazable">
+            <table class="tabla" aria-label="Coincidencias">
+              <thead><tr><th>Producto</th><th>Código</th><th class="numero">Stock</th><th class="numero">Precio</th><th></th></tr></thead>
+              <tbody>
+                {% for producto in resultados %}
+                  <tr>
+                    <td class="celda-principal">{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</td>
+                    <td class="datos sin-cortar">{{ producto.codigo }}</td>
+                    <td class="numero">{{ producto.stock }}</td>
+                    <td class="numero">{{ producto.precio|pesos }}</td>
+                    <td>
+                      <form method="post" action="{% url 'ventas:agregar' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="producto" value="{{ producto.pk }}">
+                        <button type="submit" class="boton-menor">Agregar</button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="secundario">Ningún producto a la venta coincide con «{{ busqueda }}».</p>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    <section class="seccion" aria-labelledby="titulo-ticket">
+      <div class="seccion__titulo"><h2 id="titulo-ticket">Ticket</h2></div>
+      {% if ticket.vacio %}
+        <p class="secundario">Todavía no hay productos en el ticket.</p>
+      {% else %}
+        <div class="tabla-desplazable">
+          <table class="tabla">
+            <thead>
+              <tr><th>Producto</th><th class="numero">Cant.</th><th class="numero">Precio</th><th class="numero">Importe</th><th>Puntos</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for item in ticket.items %}
+                <tr>
+                  <td class="celda-principal">{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</td>
+                  <td class="numero">{{ item.cantidad }}</td>
+                  <td class="numero">{{ item.precio|pesos }}</td>
+                  <td class="numero">{% if item.cubierta %}<s class="secundario">{{ item.importe|pesos }}</s> {{ 0|pesos }}{% else %}{{ item.importe|pesos }}{% endif %}</td>
+                  <td>
+                    {% if ticket.cliente %}
+                      <form method="post" action="{% url 'ventas:canje' item.producto.pk %}">
+                        {% csrf_token %}
+                        {% if item.cubierta %}
+                          <input type="hidden" name="accion" value="revertir">
+                          <button type="submit" class="boton-menor">Quitar canje ({{ item.puntos_necesarios }} pts)</button>
+                        {% else %}
+                          <button type="submit" class="boton-menor">Canjear {{ item.puntos_necesarios }} pts</button>
+                        {% endif %}
+                      </form>
+                    {% else %}
+                      <span class="secundario">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <form method="post" action="{% url 'ventas:quitar' item.producto.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="boton-texto boton-texto--critico">Quitar</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="resumen-carrito pila-4" aria-label="Cobro">
+    <div class="pila-2">
+      <p class="antetitulo">Cliente</p>
+      {% if ticket.cliente %}
+        <p><strong>{{ ticket.cliente.get_full_name|default:ticket.cliente.email }}</strong></p>
+        <p class="texto-chico secundario">Código <span class="datos">{{ ticket.cliente.codigo_cliente }}</span> · {{ ticket.saldo }} pts{% if ticket.puntos_aplicados %} · quedan {{ ticket.saldo_restante }}{% endif %}</p>
+        <form method="post" action="{% url 'ventas:cliente' %}">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="quitar">
+          <button type="submit" class="boton-texto">Quitar cliente</button>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'ventas:cliente' %}" class="pila-2">
+          {% csrf_token %}
+          <div class="campo">
+            <label for="cliente" class="etiqueta">Código de cliente o correo</label>
+            <input type="text" id="cliente" name="cliente" autocomplete="off" inputmode="text">
+          </div>
+          <button type="submit" class="boton-seccion boton-seccion--tenue">Vincular</button>
+        </form>
+        <p class="texto-chico secundario">Sin cuenta no se suman puntos.</p>
+      {% endif %}
+    </div>
+
+    <dl class="resumen-compra">
+      <div><dt>Unidades</dt><dd class="datos">{{ ticket.unidades }}</dd></div>
+      {% if ticket.puntos_aplicados %}<div><dt>Canjeado</dt><dd class="datos">{{ ticket.puntos_aplicados }} pts</dd></div>{% endif %}
+      {% if ticket.puntos_a_acreditar %}<div><dt>Suma</dt><dd class="datos">{{ ticket.puntos_a_acreditar }} pts</dd></div>{% endif %}
+    </dl>
+    <p class="resumen-carrito__total"><span class="etiqueta">Total a cobrar</span> <span class="sin-envolver">{{ ticket.total|pesos }}</span></p>
+
+    <form method="post" action="{% url 'ventas:confirmar' %}" class="pila-3">
+      {% csrf_token %}
+      {% if ticket.total %}
+        <fieldset class="pila-2">
+          <legend class="etiqueta">Medio de pago</legend>
+          {% for valor, etiqueta in medios %}
+            <label class="casilla"><input type="radio" name="medio" value="{{ valor }}" {% if forloop.first %}checked{% endif %}><span>{{ etiqueta }}</span></label>
+          {% endfor %}
+        </fieldset>
+      {% endif %}
+      <button type="submit" class="boton-primario"{% if ticket.vacio %} disabled{% endif %}>Confirmar venta</button>
+    </form>
+  </aside>
+</div>
+{% endblock %}

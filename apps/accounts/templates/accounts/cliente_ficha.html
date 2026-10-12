@@ -25,6 +25,9 @@ cuenta. Las operaciones pertenecen a su titular.
       <dt>Nombre</dt>
       <dd>{{ cliente.get_full_name|default:"—" }}</dd>
 
+      <dt>Código de cliente</dt>
+      <dd class="datos">{{ cliente.codigo_cliente|default:"—" }}</dd>
+
       <dt>Correo</dt>
       <dd class="datos">{{ cliente.email }}</dd>
 

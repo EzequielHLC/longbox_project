@@ -1,0 +1,52 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-CAJ-CIE — CO-203 solicitarCierreDeCaja: el resumen previo y «Confirmar cierre de
+caja» (CO-126). E1: la caja de hoy ya está cerrada; lo cobrado después espera el
+próximo cierre (B-14-001). E2: sin movimientos. A1: pendientes de verificación.
+{% endcomment %}
+
+{% block titulo %}Caja · Longbox{% endblock %}
+{% block seccion %}Caja{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Caja</h1>
+  </div>
+  <a href="{% url 'caja:cierres' %}" class="boton-texto">Cierres anteriores</a>
+</header>
+
+{% if resumen.cierre_de_hoy %}
+  <div class="panel pila-2" role="note">
+    <p>La caja de hoy ya está cerrada. <a href="{% url 'caja:cierre' resumen.cierre_de_hoy.pk %}">Ver el cierre</a>.</p>
+    {% if resumen.incluidas %}<p class="secundario">{{ resumen.incluidas|length }} transacción(es) posteriores esperan el próximo cierre.</p>{% endif %}
+  </div>
+{% elif not resumen.incluidas %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="caja" %}
+    <p>No hay movimientos para consolidar.</p>
+  </div>
+{% endif %}
+
+{% if resumen.incluidas and not resumen.cierre_de_hoy %}
+  <section class="seccion" aria-labelledby="titulo-resumen">
+    <div class="seccion__titulo"><h2 id="titulo-resumen">Resumen previo al cierre</h2></div>
+    {% include "caja/_totales.html" with fuente=resumen %}
+    <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ resumen.total_global|pesos }}</span></p>
+    <p class="secundario">{{ resumen.incluidas|length }} transacción(es){% if resumen.de_dias_anteriores %} · {{ resumen.de_dias_anteriores }} de días anteriores sin cerrar{% endif %}{% if resumen.solo_puntos %} · {{ resumen.solo_puntos }} compra(s) pagadas sólo con puntos, sin dinero{% endif %}.</p>
+
+    {% if resumen.pendientes %}
+      <div class="panel panel--atencion pila-2" role="alert">
+        <p><strong>{{ resumen.pendientes|length }} transacción(es) pendientes de verificación.</strong> Quedan fuera de este cierre y pasan al próximo.</p>
+        <ul>{% for t in resumen.pendientes %}<li>Pedido {{ t.pedido.numero }} · {{ t.get_medio_display }} · {{ t.monto|pesos }}</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'caja:cerrar' %}">
+      {% csrf_token %}
+      <button type="submit" class="boton-primario">Confirmar cierre de caja</button>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

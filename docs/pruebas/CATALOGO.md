@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-09 de una corrida real de la suite.
+> **Tipo: Fotografía.** Tomada el 2026-10-10 de una corrida real de la suite.
 > **Generado por `scripts/generar_catalogo.py`.** No lo edites: la próxima corrida lo pisa.
 
 # Catálogo de pruebas
@@ -11,14 +11,14 @@ qué casos de prueba verifican, en [`CASOS_DE_PRUEBA.md`](CASOS_DE_PRUEBA.md).
 
 | | |
 | --- | ---: |
-| Archivos de prueba | 100 |
-| Funciones de prueba | 1755 |
-| Casos, contando cada valor de `parametrize` | 2031 |
-| Pasan | 1755 |
+| Archivos de prueba | 105 |
+| Funciones de prueba | 1825 |
+| Casos, contando cada valor de `parametrize` | 2113 |
+| Pasan | 1825 |
 | Fallan | 0 |
 | Omitidas | 0 |
 | No corrieron | 0 |
-| Duración de la corrida | 129 s |
+| Duración de la corrida | 138 s |
 | Scripts de resistencia en `scripts/demo/` | 23 |
 
 ---
@@ -108,6 +108,19 @@ Todo rol con sesión tiene a la vista cómo cerrarla (CU-AUT-FIN).
 | `test_el_menu_del_cajero_no_ofrece_el_panel_del_administrador` | El Panel le respondería 403: el menú no ofrece caminos que no existen. | 1 | Pasa |
 | `test_el_cajero_puede_abrir_el_inventario_que_le_ofrece_el_menu` | El cajero puede abrir el inventario que le ofrece el menu | 1 | Pasa |
 | `test_el_administrador_tambien_tiene_la_salida_en_el_menu` | El administrador tambien tiene la salida en el menu | 1 | Pasa |
+
+### `test_codigo_cliente.py`
+
+El código de cliente (B-06-001): seis cifras, único, sólo para cuentas de Cliente.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_una_cuenta_de_cliente_nace_con_un_codigo_de_seis_cifras` | Una cuenta de cliente nace con un codigo de seis cifras | 1 | Pasa |
+| `test_el_personal_no_tiene_codigo_de_cliente` | El personal no tiene codigo de cliente | 2 | Pasa |
+| `test_el_codigo_no_cambia_al_volver_a_guardar` | El codigo no cambia al volver a guardar | 1 | Pasa |
+| `test_la_base_no_admite_dos_cuentas_con_el_mismo_codigo` | La base no admite dos cuentas con el mismo codigo | 1 | Pasa |
+| `test_el_cliente_ve_su_codigo_en_mi_cuenta` | El cliente ve su codigo en mi cuenta | 1 | Pasa |
+| `test_el_administrador_busca_un_cliente_por_su_codigo` | El administrador busca un cliente por su codigo | 1 | Pasa |
 
 ### `test_concurrencia_ultimo_administrador.py`
 
@@ -552,6 +565,46 @@ CU-AUT-INI, comportamiento adicional: expiración por inactividad y renovación.
 | `test_renovar_extiende_la_sesion_del_usuario_autenticado` | Renovar extiende la sesion del usuario autenticado | 1 | Pasa |
 | `test_renovar_sin_sesion_redirige_al_login` | Renovar sin sesion redirige al login | 1 | Pasa |
 | `test_renovar_no_acepta_get` | Renovar no acepta get | 1 | Pasa |
+
+---
+
+## caja — `apps/caja`
+
+### `test_concurrencia_caja.py`
+
+`CO-126` bajo concurrencia real: dos usuarios cierran la caja a la vez.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO126_dos_cierres_a_la_vez_dejan_uno_solo_con_cada_transaccion_una_vez` | CO126 dos cierres a la vez dejan uno solo con cada transaccion una vez | 1 | Pasa |
+
+### `test_contratos_14_caja.py`
+
+Pruebas de contrato de la caja (`CU-CAJ-CIE`, plan 14): `CO-203`, `CO-126`, `CO-127`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO203_el_resumen_previo_totaliza_por_canal_y_por_medio` | CO203 el resumen previo totaliza por canal y por medio | 1 | Pasa |
+| `test_CO203_A1_lista_las_pendientes_de_verificacion_aparte` | CO203 A1 lista las pendientes de verificacion aparte | 1 | Pasa |
+| `test_CO203_avisa_lo_de_dias_anteriores_sin_cerrar` | CO203 avisa lo de dias anteriores sin cerrar | 1 | Pasa |
+| `test_CO203_cuenta_las_compras_pagadas_solo_con_puntos` | CO203 cuenta las compras pagadas solo con puntos | 1 | Pasa |
+| `test_CO203_E2_sin_movimientos` | CO203 E2 sin movimientos | 1 | Pasa |
+| `test_CO203_no_modifica_el_estado_del_sistema` | CO203 no modifica el estado del sistema | 1 | Pasa |
+| `test_CO126_a_se_crea_el_cierre` | CO126 a se crea el cierre | 1 | Pasa |
+| `test_CO126_b_el_cierre_queda_asociado_a_las_transacciones_incluidas` | CO126 b el cierre queda asociado a las transacciones incluidas | 1 | Pasa |
+| `test_CO126_c_fecha_totales_y_cuentas` | CO126 c fecha totales y cuentas | 1 | Pasa |
+| `test_CO126_c_las_incluidas_pasan_a_incluidas_en_cierre` | CO126 c las incluidas pasan a incluidas en cierre | 1 | Pasa |
+| `test_CO126_c_las_pendientes_y_rechazadas_quedan_fuera` | CO126 c las pendientes y rechazadas quedan fuera | 1 | Pasa |
+| `test_CO126_queda_en_la_auditoria_con_los_totales` | CO126 queda en la auditoria con los totales | 1 | Pasa |
+| `test_CO126_E1_no_hay_segundo_cierre_en_el_dia` | CO126 E1 no hay segundo cierre en el dia | 1 | Pasa |
+| `test_CO126_lo_vendido_despues_entra_en_el_cierre_siguiente` | CO126 lo vendido despues entra en el cierre siguiente | 1 | Pasa |
+| `test_CO126_E2_sin_movimientos_no_hay_cierre` | CO126 E2 sin movimientos no hay cierre | 1 | Pasa |
+| `test_CO126_la_base_no_admite_dos_cierres_de_la_misma_fecha` | CO126 la base no admite dos cierres de la misma fecha | 1 | Pasa |
+| `test_CO127_el_csv_trae_cada_transaccion_y_los_totales` | CO127 el csv trae cada transaccion y los totales | 1 | Pasa |
+| `test_CO127_queda_en_la_auditoria` | CO127 queda en la auditoria | 1 | Pasa |
+| `test_acceso_el_cliente_recibe_403_en_la_caja` | Acceso el cliente recibe 403 en la caja | 2 | Pasa |
+| `test_acceso_el_cliente_no_puede_cerrar` | Acceso el cliente no puede cerrar | 1 | Pasa |
+| `test_acceso_el_administrador_tambien_cierra` | Acceso el administrador tambien cierra | 1 | Pasa |
 
 ---
 
@@ -1304,9 +1357,10 @@ Parámetros globales: clasificación del catálogo, precios y configuración.
 | `test_CO130_guardar_sin_cambios_no_deja_entradas` | CO130 guardar sin cambios no deja entradas | 1 | Pasa |
 | `test_CO130_b_la_configuracion_queda_asociada_al_administrador` | CO130 b la configuracion queda asociada al administrador | 1 | Pasa |
 | `test_CO130_los_valores_operativos_no_cambian_al_guardar_la_compra` | CO130 los valores operativos no cambian al guardar la compra | 1 | Pasa |
-| `test_CO130_un_valor_fuera_de_rango_no_se_guarda` | CO130 un valor fuera de rango no se guarda | 5 | Pasa |
+| `test_CO130_un_valor_fuera_de_rango_no_se_guarda` | CO130 un valor fuera de rango no se guarda | 7 | Pasa |
 | `test_CO130_la_pantalla_muestra_la_seccion_de_compra_online` | CO130 la pantalla muestra la seccion de compra online | 1 | Pasa |
 | `test_acceso_solo_el_administrador_guarda_la_compra_online` | Acceso solo el administrador guarda la compra online | 2 | Pasa |
+| `test_la_pantalla_muestra_que_significan_los_dos_numeros` | La pantalla muestra que significan los dos numeros | 1 | Pasa |
 
 ### `test_precios.py`
 
@@ -1911,7 +1965,9 @@ Unidad: la conversión de dinero a puntos, la caducidad y el débito FIFO (B-07-
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
-| `test_la_acreditacion_redondea_hacia_abajo` | La acreditacion redondea hacia abajo | 6 | Pasa |
+| `test_la_acreditacion_es_el_reintegro_en_pesos_convertido_a_puntos` | 10 % de reintegro y 1 punto = $10: cada $100 pagados suman 1 punto, hacia abajo. | 6 | Pasa |
+| `test_el_ejemplo_de_parametros_5_por_ciento_y_10_pesos` | El ejemplo de parametros 5 por ciento y 10 pesos | 1 | Pasa |
+| `test_cambiar_el_valor_del_punto_no_cambia_el_reintegro_en_pesos` | Cambiar el valor del punto no cambia el reintegro en pesos | 1 | Pasa |
 | `test_el_canje_redondea_hacia_arriba` | El canje redondea hacia arriba | 5 | Pasa |
 | `test_una_equivalencia_con_centavos_no_pierde_precision` | Una equivalencia con centavos no pierde precision | 1 | Pasa |
 | `test_la_caducidad_suma_meses_de_calendario` | La caducidad suma meses de calendario | 4 | Pasa |
@@ -2531,6 +2587,63 @@ Frontera con MercadoPago (B-07-031).
 | `test_frontera_mp_la_preferencia_usa_direcciones_absolutas` | Frontera mp la preferencia usa direcciones absolutas | 1 | Pasa |
 | `test_frontera_una_pasarela_desconocida_no_existe` | Frontera una pasarela desconocida no existe | 1 | Pasa |
 | `test_frontera_mercadopago_se_elige_por_su_clave` | Frontera mercadopago se elige por su clave | 1 | Pasa |
+
+---
+
+## ventas — `apps/ventas`
+
+### `test_concurrencia_ventas.py`
+
+`CO-082` bajo concurrencia real (RNF-06).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO082_el_ultimo_ejemplar_vendido_a_la_vez_en_dos_cajas_y_en_la_tienda` | CO082 el ultimo ejemplar vendido a la vez en dos cajas y en la tienda | 1 | Pasa |
+
+### `test_contratos_06_ventas.py`
+
+Pruebas de contrato del mostrador (`CU-VTA-REG`, plan 06).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO078_abre_un_ticket_en_blanco_sin_tocar_el_dominio` | CO078 abre un ticket en blanco sin tocar el dominio | 1 | Pasa |
+| `test_CO078_sin_productos_con_stock_no_se_abre` | CO078 sin productos con stock no se abre | 1 | Pasa |
+| `test_CO079_a_agrega_el_item_y_el_stock_no_cambia` | CO079 a agrega el item y el stock no cambia | 1 | Pasa |
+| `test_CO079_un_codigo_exacto_agrega_directo` | CO079 un codigo exacto agrega directo | 3 | Pasa |
+| `test_CO079_un_texto_que_no_es_codigo_lista_coincidencias_sin_agregar` | CO079 un texto que no es codigo lista coincidencias sin agregar | 1 | Pasa |
+| `test_CO079_repetir_un_producto_suma_la_cantidad` | CO079 repetir un producto suma la cantidad | 1 | Pasa |
+| `test_CO079_E1_un_producto_sin_stock_no_se_agrega` | CO079 E1 un producto sin stock no se agrega | 1 | Pasa |
+| `test_CO079_no_se_agrega_mas_que_el_stock` | CO079 no se agrega mas que el stock | 1 | Pasa |
+| `test_CO079_una_pre_venta_no_se_vende_en_el_local` | CO079 una pre venta no se vende en el local | 1 | Pasa |
+| `test_CO080_a_se_retira_el_item` | CO080 a se retira el item | 1 | Pasa |
+| `test_CO080_si_estaba_cubierto_el_canje_se_va_sin_tocar_lotes` | CO080 si estaba cubierto el canje se va sin tocar lotes | 1 | Pasa |
+| `test_CO081_b_se_asocia_el_cliente_por_su_codigo` | CO081 b se asocia el cliente por su codigo | 1 | Pasa |
+| `test_CO081_tambien_por_correo` | CO081 tambien por correo | 1 | Pasa |
+| `test_CO081_sin_un_cliente_activo_no_se_vincula` | CO081 sin un cliente activo no se vincula | 3 | Pasa |
+| `test_CO081_no_hay_cambios_persistentes` | CO081 no hay cambios persistentes | 1 | Pasa |
+| `test_CO103_mostrador_el_item_queda_cubierto_y_el_total_baja` | CO103 mostrador el item queda cubierto y el total baja | 1 | Pasa |
+| `test_CO103_mostrador_ningun_lote_cambia` | CO103 mostrador ningun lote cambia | 1 | Pasa |
+| `test_CO103_mostrador_E2_saldo_insuficiente_no_cubre` | CO103 mostrador E2 saldo insuficiente no cubre | 1 | Pasa |
+| `test_CO103_mostrador_sin_cliente_no_hay_canje` | CO103 mostrador sin cliente no hay canje | 1 | Pasa |
+| `test_CO104_mostrador_el_item_vuelve_a_su_precio` | CO104 mostrador el item vuelve a su precio | 1 | Pasa |
+| `test_CO082_a_crea_el_pedido_con_sus_lineas_y_la_transaccion` | CO082 a crea el pedido con sus lineas y la transaccion | 1 | Pasa |
+| `test_CO082_b_el_pedido_queda_asociado_al_cliente` | CO082 b el pedido queda asociado al cliente | 1 | Pasa |
+| `test_CO082_c_canal_presencial_y_nace_despachado` | CO082 c canal presencial y nace despachado | 1 | Pasa |
+| `test_CO082_c_precio_congelado_y_canje_registrado` | CO082 c precio congelado y canje registrado | 1 | Pasa |
+| `test_CO082_c_la_transaccion_tiene_el_medio_el_subtotal_monetario_y_aprobado` | CO082 c la transaccion tiene el medio el subtotal monetario y aprobado | 1 | Pasa |
+| `test_CO082_c_el_stock_baja_y_el_que_llega_a_cero_pasa_a_agotado` | CO082 c el stock baja y el que llega a cero pasa a agotado | 1 | Pasa |
+| `test_CO082_c_debita_los_lotes_que_vencen_antes` | CO082 c debita los lotes que vencen antes | 1 | Pasa |
+| `test_CO082_c_acredita_el_reintegro_de_lo_pagado_en_dinero` | CO082 c acredita el reintegro de lo pagado en dinero | 1 | Pasa |
+| `test_CO082_queda_en_la_auditoria_con_el_detalle` | CO082 queda en la auditoria con el detalle | 1 | Pasa |
+| `test_CO082_el_ticket_queda_vacio_y_se_muestra_el_comprobante` | CO082 el ticket queda vacio y se muestra el comprobante | 1 | Pasa |
+| `test_CO082_sin_cliente_no_hay_puntos_ni_asociacion` | CO082 sin cliente no hay puntos ni asociacion | 1 | Pasa |
+| `test_CO082_todo_cubierto_con_puntos_registra_la_transaccion_en_cero` | CO082 todo cubierto con puntos registra la transaccion en cero | 1 | Pasa |
+| `test_CO082_con_importe_hay_que_elegir_el_medio_de_pago` | CO082 con importe hay que elegir el medio de pago | 1 | Pasa |
+| `test_CO082_si_el_stock_se_perdio_no_se_vende_nada` | CO082 si el stock se perdio no se vende nada | 1 | Pasa |
+| `test_CO082_si_el_saldo_cambio_no_se_confirma` | CO082 si el saldo cambio no se confirma | 1 | Pasa |
+| `test_acceso_el_cliente_recibe_403_en_el_mostrador` | Acceso el cliente recibe 403 en el mostrador | 5 | Pasa |
+| `test_acceso_el_administrador_tambien_vende` | Acceso el administrador tambien vende | 1 | Pasa |
+| `test_acceso_sin_sesion_va_al_ingreso` | Acceso sin sesion va al ingreso | 1 | Pasa |
 
 ---
 

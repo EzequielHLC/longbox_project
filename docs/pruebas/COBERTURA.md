@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-09, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-10-10, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 119 |
-| Sin ninguna | 100 |
-| Pruebas de contrato en la suite | 500 |
+| Con al menos una prueba que lleva su código | 127 |
+| Sin ninguna | 92 |
+| Pruebas de contrato en la suite | 555 |
 
 ---
 
@@ -49,8 +49,8 @@ es otra puerta y su número también vive ahí.
 | `CO-086` | fusionarCarritoDeSesion | 3 | `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-087` | declararDireccionDeEnvio | 5 | `apps/tienda/tests/test_contratos_07_compra.py` |
 | `CO-089` | registrarResultadoDePago | 37 | `apps/tienda/tests/test_barra_envio.py`, `apps/tienda/tests/test_concurrencia_compra.py`, `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_contratos_07_invitado.py` |
-| `CO-103` | aplicarCanjeDePuntosAItem | 8 | `apps/tienda/tests/test_contratos_07_compra.py` |
-| `CO-104` | revertirCanjeDePuntosDeItem | 1 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-103` | aplicarCanjeDePuntosAItem | 12 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/ventas/tests/test_contratos_06_ventas.py` |
+| `CO-104` | revertirCanjeDePuntosDeItem | 2 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/ventas/tests/test_contratos_06_ventas.py` |
 | `CO-122` | regenerarEnlaceDeActivacion | 5 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-137` | registrarEditorial | 4 | `apps/catalog/tests/test_concurrencia_catalogos.py`, `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-141` | registrarTipoDeMaterial | 1 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
@@ -181,15 +181,15 @@ es otra puerta y su número también vive ahí.
 
 ### `06-ventas-presenciales.md` — 06 Ventas Presenciales
 
-5 contratos · 0 con prueba · 5 sin.
+5 contratos · 5 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-078` | abrirVentaPresencial | — | — |
-| `CO-079` | agregarItemAlTicket | — | — |
-| `CO-080` | quitarItemDelTicket | — | — |
-| `CO-081` | vincularCuentaDeCliente | — | — |
-| `CO-082` | confirmarVentaPresencial | — | — |
+| `CO-078` | abrirVentaPresencial | 2 | `apps/ventas/tests/test_contratos_06_ventas.py` |
+| `CO-079` | agregarItemAlTicket | 7 | `apps/ventas/tests/test_contratos_06_ventas.py` |
+| `CO-080` | quitarItemDelTicket | 2 | `apps/ventas/tests/test_contratos_06_ventas.py` |
+| `CO-081` | vincularCuentaDeCliente | 4 | `apps/ventas/tests/test_contratos_06_ventas.py` |
+| `CO-082` | confirmarVentaPresencial | 16 | `apps/ventas/tests/test_concurrencia_ventas.py`, `apps/ventas/tests/test_contratos_06_ventas.py` |
 
 ### `07-tienda-online.md` — 07 Tienda Online
 
@@ -306,13 +306,13 @@ es otra puerta y su número también vive ahí.
 
 ### `14-caja.md` — 14 Caja
 
-3 contratos · 0 con prueba · 3 sin.
+3 contratos · 3 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-126` | confirmarCierreDeCaja | — | — |
-| `CO-127` | exportarCierreDeCaja | — | — |
-| `CO-203` | solicitarCierreDeCaja | — | — |
+| `CO-126` | confirmarCierreDeCaja | 11 | `apps/caja/tests/test_concurrencia_caja.py`, `apps/caja/tests/test_contratos_14_caja.py` |
+| `CO-127` | exportarCierreDeCaja | 2 | `apps/caja/tests/test_contratos_14_caja.py` |
+| `CO-203` | solicitarCierreDeCaja | 6 | `apps/caja/tests/test_contratos_14_caja.py` |
 
 ### `15-reportes.md` — 15 Reportes
 
@@ -556,6 +556,52 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO060_doble_envio_del_alta_deja_uno_y_avisa_sin_error` — `apps/suppliers/tests/test_concurrencia_proveedores.py`
 
+**`CO-078` · abrirVentaPresencial**
+
+- `test_CO078_abre_un_ticket_en_blanco_sin_tocar_el_dominio` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO078_sin_productos_con_stock_no_se_abre` — `apps/ventas/tests/test_contratos_06_ventas.py`
+
+**`CO-079` · agregarItemAlTicket**
+
+- `test_CO079_E1_un_producto_sin_stock_no_se_agrega` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_a_agrega_el_item_y_el_stock_no_cambia` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_no_se_agrega_mas_que_el_stock` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_repetir_un_producto_suma_la_cantidad` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_un_codigo_exacto_agrega_directo` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_un_texto_que_no_es_codigo_lista_coincidencias_sin_agregar` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO079_una_pre_venta_no_se_vende_en_el_local` — `apps/ventas/tests/test_contratos_06_ventas.py`
+
+**`CO-080` · quitarItemDelTicket**
+
+- `test_CO080_a_se_retira_el_item` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO080_si_estaba_cubierto_el_canje_se_va_sin_tocar_lotes` — `apps/ventas/tests/test_contratos_06_ventas.py`
+
+**`CO-081` · vincularCuentaDeCliente**
+
+- `test_CO081_b_se_asocia_el_cliente_por_su_codigo` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO081_no_hay_cambios_persistentes` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO081_sin_un_cliente_activo_no_se_vincula` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO081_tambien_por_correo` — `apps/ventas/tests/test_contratos_06_ventas.py`
+
+**`CO-082` · confirmarVentaPresencial**
+
+- `test_CO082_a_crea_el_pedido_con_sus_lineas_y_la_transaccion` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_b_el_pedido_queda_asociado_al_cliente` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_acredita_el_reintegro_de_lo_pagado_en_dinero` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_canal_presencial_y_nace_despachado` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_debita_los_lotes_que_vencen_antes` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_el_stock_baja_y_el_que_llega_a_cero_pasa_a_agotado` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_la_transaccion_tiene_el_medio_el_subtotal_monetario_y_aprobado` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_c_precio_congelado_y_canje_registrado` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_con_importe_hay_que_elegir_el_medio_de_pago` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_el_ticket_queda_vacio_y_se_muestra_el_comprobante` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_el_ultimo_ejemplar_vendido_a_la_vez_en_dos_cajas_y_en_la_tienda` — `apps/ventas/tests/test_concurrencia_ventas.py`
+- `test_CO082_queda_en_la_auditoria_con_el_detalle` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_si_el_saldo_cambio_no_se_confirma` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_si_el_stock_se_perdio_no_se_vende_nada` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_sin_cliente_no_hay_puntos_ni_asociacion` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO082_todo_cubierto_con_puntos_registra_la_transaccion_en_cero` — `apps/ventas/tests/test_contratos_06_ventas.py`
+
 **`CO-083` · agregarProductoAlCarrito**
 
 - `test_CO083_A1_la_pre_venta_se_reserva_sin_tope_de_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
@@ -696,12 +742,17 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO103_la_linea_de_otro_carrito_responde_404` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO103_la_linea_queda_cubierta_y_el_total_baja_su_precio` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO103_los_puntos_requeridos_redondean_hacia_arriba` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO103_mostrador_E2_saldo_insuficiente_no_cubre` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO103_mostrador_el_item_queda_cubierto_y_el_total_baja` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO103_mostrador_ningun_lote_cambia` — `apps/ventas/tests/test_contratos_06_ventas.py`
+- `test_CO103_mostrador_sin_cliente_no_hay_canje` — `apps/ventas/tests/test_contratos_06_ventas.py`
 - `test_CO103_ningun_lote_de_puntos_se_modifica_ni_se_audita` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO103_sin_saldo_no_hay_canje` — `apps/tienda/tests/test_contratos_07_compra.py`
 
 **`CO-104` · revertirCanjeDePuntosDeItem**
 
 - `test_CO104_la_linea_vuelve_a_su_precio_sin_tocar_lotes` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO104_mostrador_el_item_vuelve_a_su_precio` — `apps/ventas/tests/test_contratos_06_ventas.py`
 
 **`CO-108` · actualizarDatosPersonales**
 
@@ -862,6 +913,25 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO125_una_cuenta_activa_no_se_elimina` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO125_una_cuenta_inactiva_no_se_elimina` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO125_una_pendiente_que_ya_inicio_sesion_no_se_elimina` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+
+**`CO-126` · confirmarCierreDeCaja**
+
+- `test_CO126_E1_no_hay_segundo_cierre_en_el_dia` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_E2_sin_movimientos_no_hay_cierre` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_a_se_crea_el_cierre` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_b_el_cierre_queda_asociado_a_las_transacciones_incluidas` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_c_fecha_totales_y_cuentas` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_c_las_incluidas_pasan_a_incluidas_en_cierre` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_c_las_pendientes_y_rechazadas_quedan_fuera` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_dos_cierres_a_la_vez_dejan_uno_solo_con_cada_transaccion_una_vez` — `apps/caja/tests/test_concurrencia_caja.py`
+- `test_CO126_la_base_no_admite_dos_cierres_de_la_misma_fecha` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_lo_vendido_despues_entra_en_el_cierre_siguiente` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO126_queda_en_la_auditoria_con_los_totales` — `apps/caja/tests/test_contratos_14_caja.py`
+
+**`CO-127` · exportarCierreDeCaja**
+
+- `test_CO127_el_csv_trae_cada_transaccion_y_los_totales` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO127_queda_en_la_auditoria` — `apps/caja/tests/test_contratos_14_caja.py`
 
 **`CO-129` · exportarLogDeAuditoria**
 
@@ -1203,6 +1273,15 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO202_una_cuenta_de_cliente_no_tiene_ficha_de_personal` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO202_una_cuenta_inactiva_ofrece_unicamente_reactivar` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO202_una_cuenta_pendiente_ofrece_reenviar_y_eliminar` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+
+**`CO-203` · solicitarCierreDeCaja**
+
+- `test_CO203_A1_lista_las_pendientes_de_verificacion_aparte` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO203_E2_sin_movimientos` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO203_avisa_lo_de_dias_anteriores_sin_cerrar` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO203_cuenta_las_compras_pagadas_solo_con_puntos` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO203_el_resumen_previo_totaliza_por_canal_y_por_medio` — `apps/caja/tests/test_contratos_14_caja.py`
+- `test_CO203_no_modifica_el_estado_del_sistema` — `apps/caja/tests/test_contratos_14_caja.py`
 
 **`CO-205` · consultarLogDeAuditoria**
 

@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-09**.
+> **Tipo: Fotografía.** Tomada el **2026-10-10**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -102,14 +102,13 @@ del documento.
 Fuente: `MODELO_DE_DOMINIO.md` contrastado contra las clases del código. Desde la fotografía
 anterior se construyeron `Oferta` (plan 03), `Carrito` y `LineaCarrito` (plan 07, segunda parte),
 y `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` (plan 07, sexta
-parte). Quedan 7:
+parte), y `CierreDeCaja` (plan 14). Quedan 6:
 
 | Concepto | Área | Módulo que lo introduce | Conceptos que dependen de él |
 | --- | --- | --- | --- |
 | `CasoDevolucion` | A5 Comercio | 09 Devoluciones | `DevolucionFisica` |
 | `DevolucionFisica` | A5 Comercio | 09 Devoluciones | — |
 | `ArticuloRetenido` | A5 Comercio | 18 Stock Almacenado en Local | — |
-| `CierreDeCaja` | A5 Comercio | 14 Caja | — |
 | `PropuestaRestock` | A4 Pipeline | 05 Restock | `LineaPropuestaRestock` |
 | `LineaPropuestaRestock` | A4 Pipeline | 05 Restock | — |
 | `SuscripcionReposicion` | A3 Producto | 05 Restock | — |
@@ -134,7 +133,7 @@ archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y n
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 100 de 219.** 119 tienen al menos una prueba que lleva su código; de esos, nueve no
+**Faltan 92 de 219.** 127 tienen al menos una prueba que lleva su código; de esos, nueve no
 cierran del todo: `CO-114` (B-12-001), `CO-060` (sólo el doble envío), `CO-130` (el plazo de
 devolución y la sección Seguridad no existen), `CO-192` (la sección Stock en Local está oculta,
 B-11-003), `CO-193` (el acceso a `CO-095` no existe), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en
@@ -204,16 +203,18 @@ alcance sigue pendiente.
 | `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
 | `bitacora/03-pricing.md` | 12 | 10 | 10 agregados, 2 correcciones |
 | `bitacora/04-proveedores.md` | 6 | 0 | 4 agregados, 1 corrección, 1 desvío |
+| `bitacora/06-ventas-presenciales.md` | 4 | 4 | 3 agregados, 1 corrección |
 | `bitacora/07-tienda-online.md` | 37 | 29 | 32 agregados, 4 correcciones, 1 desvío |
 | `bitacora/08-gestion-de-pedidos.md` | 3 | 3 | 3 agregados |
 | `bitacora/10-puntos.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/11-cuenta-de-cliente.md` | 5 | 4 | 5 agregados |
 | `bitacora/12-autenticacion.md` | 3 | 0 | 1 agregado, 1 corrección, 1 desvío |
 | `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
+| `bitacora/14-caja.md` | 2 | 2 | 1 agregado, 1 corrección |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/17-configuracion-del-sistema.md` | 17 | 11 | 12 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección |
-| **Total** | **125** | **80** | |
+| **Total** | **131** | **86** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es
@@ -243,6 +244,9 @@ código sin terminar.
 | El origen de cada movimiento de puntos y el saldo en el encabezado | B-10-001, B-10-002 |
 | RF-19 y `CU-CFG-PAR`: valor del punto y reintegro en puntos como dos parámetros | B-10-004 |
 | `identidad_visual.md`: la regla de redacción de los textos de interfaz | B-00-017 |
+| RF-13, `CU-VTA-REG`, `CO-081` y `Usuario`: el código de cliente en lugar del DNI | B-06-001 |
+| `CU-VTA-REG`: alta por código exacto, comprobante y la «corrección de transacciones» sin caso de uso | B-06-003, B-06-004 |
+| `CU-CAJ-CIE` E1 y paso 2: lo posterior al cierre va al siguiente; qué entra en un cierre | B-14-001, B-14-002 |
 | `CO-178`: el envío y lo que falta para el envío gratis | B-07-037 |
 
 ---

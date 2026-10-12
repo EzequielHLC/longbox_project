@@ -225,6 +225,8 @@ CON_FILAS = {
     "_carrito.html",
     # Cada línea del checkout se cubre con puntos o vuelve a pagarse (CO-103, CO-104).
     "checkout.html",
+    # El mostrador: agregar cada coincidencia y canjear cada ítem del ticket (CU-VTA-REG).
+    "mostrador.html",
 }
 
 

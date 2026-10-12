@@ -357,6 +357,7 @@ class ClienteListaView(GestionDeUsuariosMixin, ListView):
                 | Q(first_name__icontains=busqueda)
                 | Q(last_name__icontains=busqueda)
                 | Q(telefono_numero__icontains=busqueda)
+                | Q(codigo_cliente=busqueda)
             )
 
         estado = self.request.GET.get("estado", "")

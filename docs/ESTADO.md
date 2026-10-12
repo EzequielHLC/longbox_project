@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-09**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-10**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,10 +11,19 @@ enlazan a éste.
 
 ## Resumen
 
-Octava fotografía, del mismo día que la séptima. **El pedido ya se ve de punta a punta**: el
-Administrador tiene su pantalla de pedidos y los avanza hasta Despachado (plan 08), y el Cliente
-tiene «Mi cuenta» con sus pedidos, sus puntos y sus datos (planes 10 y 11). La tienda suma la barra
-del envío gratis y el saldo de puntos siempre a la vista (plan 07, séptima parte).
+Novena fotografía. **El local vende y cierra la caja**: el mostrador registra ventas con canje de
+puntos por ítem, y el cierre del día consolida esas ventas con las de la tienda por canal y por
+medio de pago (planes 06 y 14). Antes, del 2026-10-09: el pedido de punta a punta (planes 08, 10 y
+11) y la barra del envío gratis.
+
+- **Mostrador** (`CU-VTA-REG`): agregar por código, código de barras, ISBN o título; vincular la
+  cuenta por **código de cliente** (6 cifras, visible en «Mi cuenta», B-06-001) o correo; canjear
+  puntos por ítem; cobrar en efectivo, transferencia o tarjeta; comprobante imprimible. El último
+  ejemplar vendido a la vez en dos cajas y en la tienda genera una sola venta.
+- **Caja** (`CU-CAJ-CIE`): resumen previo, cierre con un solo cierre por día (I-23; lo posterior va
+  al siguiente, B-14-001), pendientes de verificación excluidas y CSV auditado. Dos cierres a la
+  vez dejan uno.
+- `CU-PTS-CJE` queda verificado: el canje funciona en la tienda y en el mostrador.
 
 **Lo que más se movió.**
 - **Pedidos en el panel de gestión** (`CU-PED-CON`, `CU-PED-EST`): listado con filtros por estado,
@@ -40,18 +49,18 @@ del envío gratis y el saldo de puntos siempre a la vista (plan 07, séptima par
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 54 |
+| Verificados | 57 |
 | Construidos, sin verificar | 9 |
-| Parciales | 17 |
+| Parciales | 16 |
 | En curso | 0 |
-| Pendientes | 23 |
+| Pendientes | 21 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **119**, de los cuales **110
+Contratos de operación especificados: **219**. Con prueba: **127**, de los cuales **118
 verificados** y **9 parciales**: `CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`, `CO-060` (sólo
 el doble envío), `CO-130` (sin el plazo de devolución ni la sección Seguridad), `CO-192` (sin la
-sección Stock en Local) y `CO-193` (sin el acceso a `CO-095`). Sin prueba: **100**. El detalle por
-contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 500 pruebas de
+sección Stock en Local) y `CO-193` (sin el acceso a `CO-095`). Sin prueba: **92**. El detalle por
+contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 555 pruebas de
 contrato.
 
 ### Cómo leer la columna «Contratos»
@@ -136,7 +145,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-VTA-REG` | Pendiente | 0 / 7 | `MostradorView` es una pantalla de relleno: sólo fija el control de acceso del rol Cajero. |
+| `CU-VTA-REG` | Verificado | 7 / 7 | `apps/ventas`. **Todos sus contratos verificados**: ticket en sesión (B-06-002), alta por código exacto o título (B-06-003), vínculo por código de cliente o correo (B-06-001), canje por ítem, cobro con bloqueo de stock y concurrencia contra la tienda, comprobante imprimible (B-06-004). Cajero y Administrador. Plan 06. |
 
 ### `07` Tienda Online
 
@@ -187,7 +196,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-PTS-CON` | Verificado | 2 / 2 | `apps/puntos/views.py`. **Todos sus contratos verificados.** Saldo con su equivalencia, lotes con «Próximo a vencer» (30 días), historial de a 50 con el pedido de cada movimiento (B-10-001) y filtros por tipo y fechas. El saldo, además, en el encabezado de la tienda (B-10-002). Plan 10. |
-| `CU-PTS-CJE` | Parcial | 3 / 3 | **Contratos verificados en el canal online**: marcar y revertir por línea entera sin tocar ningún lote, saldo restante informativo, redondeo hacia arriba (B-07-033). `Parcial`: la rama de mostrador espera a `CU-VTA-REG`. |
+| `CU-PTS-CJE` | Verificado | 3 / 3 | **Todos sus contratos verificados en los dos canales**: la tienda (plan 07) y el mostrador (plan 06), por línea entera, sin tocar ningún lote hasta confirmar. |
 | `CU-PTS-CAD` | Pendiente | 0 / 1 | Los lotes nacen con su fecha de caducidad; falta el ciclo, que depende de P-05. |
 | `CU-PTS-ADM` | Pendiente | 0 / 2 | Falta la pantalla del ajuste manual. |
 
@@ -225,7 +234,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CAJ-CIE` | Pendiente | 0 / 3 | No existe `CierreDeCaja`. Depende de Ventas Presenciales. |
+| `CU-CAJ-CIE` | Verificado | 3 / 3 | `apps/caja`. **Todos sus contratos verificados**: resumen por canal y por medio, un cierre por día (lo posterior va al siguiente, B-14-001), lo de días anteriores sin cerrar entra y se avisa (B-14-002), A1, CSV auditado, y dos cierres a la vez. Plan 14. |
 | `CU-REP-GEN` | Pendiente | 0 / 2 | No hay generación de reportes. |
 | `CU-AUD-CON` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `LogListaView` de a 50 con filtros por actor, rol, acción, entidad y fechas (B-16-001, B-16-002); `LogDetalleView`; exportación CSV en flujo de todo el filtro, auditada. Toda escritura responde 403. |
 
@@ -284,17 +293,24 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-09**, con PostgreSQL levantado, sobre el repositorio entero.
+Medición del **2026-10-10**, con PostgreSQL levantado, sobre el repositorio entero.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **2227 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 44 s) |
-| **Contratos** | **110 de 219 verificados**, 9 parciales, 100 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (8590 sentencias, 274 sin cubrir). Lo nuevo: `pedidos/servicios.py` 100 %, `pedidos/views.py` 96 %, `accounts/views_cuenta.py` 95 %, `puntos/views.py` 97 %, `tienda/envio.py` 100 % |
+| Suite de pruebas | **2309 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 34 s) |
+| **Contratos** | **118 de 219 verificados**, 9 parciales, 92 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
+| Cobertura sobre código de aplicación | **97 %** (9023 sentencias, 287 sin cubrir). Lo nuevo: `ventas/ticket.py` 94 %, `ventas/views.py` 96 %, `caja/servicios.py` 99 %, `caja/views.py` 95 % |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 266 archivos sin cambios |
+| Formato | `black --check .`: 284 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
+
+**Mostrador y caja, verificaciones a mano (2026-10-10).** `accounts.0009` (con el código de los
+clientes existentes), `caja.0001`, `core.0031` y `pedidos.0003` aplicaron sobre la base de
+desarrollo; los tres clientes que había recibieron su código. En la base están
+`accounts_usuario_codigo_cliente_key`, `caja_cierredecaja_fecha_jornada_key` (I-23) y
+`cierre_totales_no_negativos`. Las pantallas del mostrador, el comprobante, la caja y el cierre
+se revisaron con capturas de Chrome sin interfaz.
 
 **Las dos verificaciones a mano.** Las migraciones nuevas (`core.0027` y `0028`, `pedidos.0001` y
 `0002`, `puntos.0001`, `tienda.0002` y `0003`, `accounts.0008`) aplicaron sobre la base de

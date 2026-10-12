@@ -1,0 +1,44 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}CU-CAJ-CIE paso 7 — el resumen definitivo, con la exportación a CSV (CO-127).{% endcomment %}
+
+{% block titulo %}{{ cierre }} · Longbox{% endblock %}
+{% block seccion %}Caja{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'caja:cierres' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Cierres" atras=1 %}</span>
+    <h1>{{ cierre }}</h1>
+    <p>{{ cierre.realizado_en|date:"d/m/Y H:i" }} · {{ cierre.realizado_por.get_full_name|default:cierre.realizado_por.email }}</p>
+  </div>
+  <a href="{% url 'caja:exportar' cierre.pk %}" class="boton-primario">{% include "_iconos.html" with icono="descargar" %}<span>Exportar CSV</span></a>
+</header>
+
+<section class="seccion">
+  {% include "caja/_totales.html" with fuente=cierre %}
+  <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ cierre.total_global|pesos }}</span></p>
+  <p class="secundario">{{ cierre.transacciones_incluidas }} transacción(es){% if cierre.transacciones_excluidas %} · {{ cierre.transacciones_excluidas }} excluida(s) por verificar{% endif %}.</p>
+</section>
+
+<section class="seccion" aria-labelledby="titulo-transacciones">
+  <div class="seccion__titulo"><h2 id="titulo-transacciones">Transacciones</h2></div>
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead><tr><th>Fecha</th><th>Pedido</th><th>Canal</th><th>Medio</th><th class="numero">Monto</th></tr></thead>
+      <tbody>
+        {% for t in transacciones %}
+          <tr>
+            <td class="datos sin-cortar">{{ t.registrada_en|date:"d/m/Y H:i" }}</td>
+            <td class="datos">{{ t.pedido.numero }}</td>
+            <td>{% if t.pedido.canal == "online" %}Online{% else %}Físico{% endif %}</td>
+            <td>{{ t.get_medio_display }}</td>
+            <td class="numero">{{ t.monto|pesos }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

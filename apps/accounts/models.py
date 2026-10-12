@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -86,6 +87,19 @@ def provincia_del_codigo_postal(codigo_postal):
     return LETRA_CPA_POR_PROVINCIA.get(primera)
 
 
+def codigo_de_cliente_libre():
+    """Seis cifras al azar que ninguna otra cuenta tenga (B-06-001).
+
+    Al azar y no correlativo: un código correlativo dice cuántos clientes hay
+    y deja adivinar el de otro. No empieza con 0, para que no se pierda al
+    dictarlo o al guardarlo como número en una planilla.
+    """
+    while True:
+        codigo = str(secrets.randbelow(900000) + 100000)
+        if not Usuario.objects.filter(codigo_cliente=codigo).exists():
+            return codigo
+
+
 class Usuario(AbstractUser):
     CLIENTE = "cliente"
     CAJERO = "cajero"
@@ -122,6 +136,12 @@ class Usuario(AbstractUser):
     # ser único e identificar a una sola cuenta. `username` se conserva como
     # identificador interno heredado de AbstractUser.
     email = models.EmailField("correo electrónico", unique=True)
+
+    # Con este código se vincula la cuenta en el mostrador (B-06-001): seis
+    # cifras, fáciles de dictar. Sólo las cuentas de Cliente lo tienen.
+    codigo_cliente = models.CharField(
+        "código de cliente", max_length=6, unique=True, null=True, blank=True
+    )
 
     # Columna "última modificación" de la tabla de usuarios (CU-USR-MOD).
     actualizado_en = models.DateTimeField("última modificación", auto_now=True)
@@ -182,6 +202,8 @@ class Usuario(AbstractUser):
         # de activación todavía no eligió contraseña, y una cuenta dada de baja
         # no debe poder volver a entrar (CU-USR-BAJ).
         self.is_active = self.estado == self.ACTIVO
+        if self.rol == self.CLIENTE and not self.codigo_cliente:
+            self.codigo_cliente = codigo_de_cliente_libre()
         return super().save(*args, **kwargs)
 
     @property

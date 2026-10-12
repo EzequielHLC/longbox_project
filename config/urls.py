@@ -28,6 +28,8 @@ urlpatterns = [
     path("catalogo/", include("apps.catalog.urls")),
     path("proveedores/", include("apps.suppliers.urls")),
     path("pedidos/", include("apps.pedidos.urls")),
+    path("mostrador/", include("apps.ventas.urls")),
+    path("caja/", include("apps.caja.urls")),
     path("tienda/carrito/", include("apps.tienda.urls")),
     path("tienda/compra/", include("apps.tienda.urls_compra")),
     path("", include("apps.core.urls")),

@@ -345,6 +345,10 @@ class RegistroAuditoria(models.Model):
     # Plan 11, segunda parte: el Cliente edita su cuenta (CU-CLI-DAT).
     MODIFICACION_DATOS_CLIENTE = "modificacion_datos_cliente"
     CAMBIO_CORREO = "cambio_correo"
+    # Planes 06 y 14: el mostrador y la caja.
+    VENTA_PRESENCIAL = "venta_presencial"
+    CIERRE_CAJA = "cierre_caja"
+    EXPORTACION_CIERRE = "exportacion_cierre"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -399,6 +403,9 @@ class RegistroAuditoria(models.Model):
         (AVANCE_ESTADO_PEDIDO, "Avance de estado de pedido"),
         (MODIFICACION_DATOS_CLIENTE, "Modificación de datos personales del Cliente"),
         (CAMBIO_CORREO, "Cambio de correo electrónico"),
+        (VENTA_PRESENCIAL, "Venta presencial"),
+        (CIERRE_CAJA, "Cierre de caja"),
+        (EXPORTACION_CIERRE, "Exportación de cierre de caja"),
     ]
 
     actor = models.ForeignKey(

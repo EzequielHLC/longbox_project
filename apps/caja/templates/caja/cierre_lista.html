@@ -1,0 +1,38 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}Los cierres anteriores, el más reciente primero.{% endcomment %}
+
+{% block titulo %}Cierres de caja · Longbox{% endblock %}
+{% block seccion %}Caja{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'caja:caja' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Caja" atras=1 %}</span>
+    <h1>Cierres de caja</h1>
+  </div>
+</header>
+
+<section class="seccion">
+  {% if cierres %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead><tr><th>Jornada</th><th>Realizado por</th><th class="numero">Transacciones</th><th class="numero">Total</th></tr></thead>
+        <tbody>
+          {% for cierre in cierres %}
+            <tr>
+              <td class="celda-principal datos"><a href="{% url 'caja:cierre' cierre.pk %}">{{ cierre.fecha_jornada|date:"d/m/Y" }}</a></td>
+              <td>{{ cierre.realizado_por.get_full_name|default:cierre.realizado_por.email }}</td>
+              <td class="numero">{{ cierre.transacciones_incluidas }}</td>
+              <td class="numero">{{ cierre.total_global|pesos }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio"><p>Todavía no hay cierres.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

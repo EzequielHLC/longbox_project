@@ -70,11 +70,6 @@ class TiendaView(TemplateView):
         return contexto
 
 
-class MostradorView(RolRequeridoMixin, TemplateView):
-    template_name = "core/mostrador.html"
-    roles_permitidos = ("cajero",)
-
-
 class PanelAdministracionView(RolRequeridoMixin, TemplateView):
     """Tablero de entrada del Administrador.
 
