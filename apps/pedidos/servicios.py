@@ -114,9 +114,12 @@ def avanzar(pedido, actor, *, estado_visto, confirmado=False):
         pedido.save(update_fields=["estado"])
         if destino in ESTADO_DE_LINEA:
             # Las líneas demoradas no avanzan (CO-092 c, CO-093).
+            # Tampoco la que llegó para el despacho diferido (B-08-007).
             pedido.lineas.filter(
                 estado__in=(LineaPedido.DISPONIBLE, LineaPedido.EMPAQUETADO)
-            ).update(estado=ESTADO_DE_LINEA[destino])
+            ).exclude(decision_demora=LineaPedido.DESPACHO_DIFERIDO).update(
+                estado=ESTADO_DE_LINEA[destino]
+            )
         registrar_transicion(pedido, anterior, actor, momento)
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.AVANCE_ESTADO_PEDIDO,

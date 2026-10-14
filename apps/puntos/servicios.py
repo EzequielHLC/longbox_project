@@ -60,7 +60,7 @@ def _sumar_meses(dia, meses):
     return date(anio, mes, min(dia.day, calendar.monthrange(anio, mes)[1]))
 
 
-def acreditar(usuario, cantidad, *, origen, pedido=None, motivo=""):
+def acreditar(usuario, cantidad, *, origen, pedido=None, linea=None, motivo=""):
     """Un lote nuevo con la caducidad estándar y su movimiento de Acreditación.
 
     Se llama dentro de la transacción de quien acredita (`CO-089`): si la
@@ -86,6 +86,7 @@ def acreditar(usuario, cantidad, *, origen, pedido=None, motivo=""):
         motivo=motivo,
         ocurrido_en=ahora,
         pedido=pedido,
+        linea_pedido=linea,
     )
     movimiento.lotes.add(lote)
     return movimiento

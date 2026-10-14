@@ -1825,7 +1825,7 @@ class ConfiguracionForm(forms.ModelForm):
 
     class Meta:
         model = ConfiguracionSistema
-        fields = ["stock_inicial_por_defecto", "intervalo_carrusel"]
+        fields = ["stock_inicial_por_defecto", "intervalo_carrusel", "dias_aviso_preventa"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1833,6 +1833,7 @@ class ConfiguracionForm(forms.ModelForm):
             {"inputmode": "numeric", "min": "0", "max": str(STOCK_MAXIMO)}
         )
         self.fields["intervalo_carrusel"].widget.attrs.update({"inputmode": "numeric", "min": "1"})
+        self.fields["dias_aviso_preventa"].widget.attrs.update({"inputmode": "numeric", "min": "0"})
 
     def clean_stock_inicial_por_defecto(self):
         stock = self.cleaned_data["stock_inicial_por_defecto"]
@@ -1855,6 +1856,7 @@ class CompraOnlineForm(forms.ModelForm):
         fields = [
             "costo_envio",
             "monto_minimo_envio_gratuito",
+            "ventana_decision_horas",
             "equivalencia_puntos",
             "porcentaje_puntos",
             "caducidad_puntos_meses",
@@ -1870,9 +1872,8 @@ class CompraOnlineForm(forms.ModelForm):
             "porcentaje_puntos",
         ):
             self.fields[campo].widget.attrs.update({"inputmode": "decimal"})
-        self.fields["caducidad_puntos_meses"].widget.attrs.update(
-            {"inputmode": "numeric", "min": "1"}
-        )
+        for campo in ("caducidad_puntos_meses", "ventana_decision_horas"):
+            self.fields[campo].widget.attrs.update({"inputmode": "numeric", "min": "1"})
 
 
 class BorradorForm(forms.ModelForm):

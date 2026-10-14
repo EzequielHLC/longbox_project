@@ -45,8 +45,10 @@ def con_totales(pedidos):
         default=CERO,
         output_field=DecimalField(max_digits=12, decimal_places=2),
     )
-    demorados = LineaPedido.objects.filter(
-        pedido=OuterRef("pk"), estado=LineaPedido.ESPERANDO_DEMORADO
+    # También el artículo que llegó para el despacho diferido (B-08-007).
+    demorados = LineaPedido.objects.filter(pedido=OuterRef("pk")).filter(
+        Q(estado=LineaPedido.ESPERANDO_DEMORADO)
+        | Q(estado=LineaPedido.DISPONIBLE, decision_demora=LineaPedido.DESPACHO_DIFERIDO)
     )
     return pedidos.annotate(
         cobrado_productos=Coalesce(Sum(importe), CERO),

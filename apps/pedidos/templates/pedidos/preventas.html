@@ -1,0 +1,74 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-ALT-TRA pasos 4 y 5 — las pre-ventas por fecha de llegada y editorial
+(B-01-006). Cada grupo es un lote: se cargan las unidades recibidas y lo que
+queda vacío es faltante (A1). Confirmar pasa antes por el resumen de CO-013.
+{% endcomment %}
+
+{% block titulo %}Pre-ventas por llegar · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'pedidos:lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pedidos" atras=1 %}</span>
+    <h1>Pre-ventas por llegar</h1>
+  </div>
+</header>
+
+{% for grupo in grupos %}
+  <section class="seccion{% if grupo.vencido %} panel--atencion{% endif %}" aria-labelledby="grupo-{{ grupo.clave }}">
+    <div class="seccion__titulo">
+      <h2 id="grupo-{{ grupo.clave }}">
+        <span class="datos">{{ grupo.llegada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ grupo.editorial }}
+      </h2>
+      {% if grupo.vencido %}<span class="marca-estado marca-estado--atencion">Atrasado</span>
+      {% elif grupo.es_hoy %}<span class="marca-estado marca-estado--dato">Llega hoy</span>{% endif %}
+    </div>
+    <form method="post" action="{% url 'pedidos:ingreso' %}" class="pila-3">
+      {% csrf_token %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Código</th>
+              <th class="numero">Reservadas</th>
+              <th class="numero">En el local</th>
+              <th class="numero">Unidades recibidas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in grupo.filas %}
+              <tr>
+                <td class="celda-principal">
+                  <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a>
+                  {% if fila.producto.demorado %}<br><span class="texto-chico estado estado--atencion">Demorado</span>{% endif %}
+                </td>
+                <td class="datos sin-cortar">{{ fila.producto.codigo }}</td>
+                <td class="numero">{{ fila.reservadas }}<span class="texto-chico secundario"> · {{ fila.pedidos }} ped.</span></td>
+                <td class="numero">{{ fila.producto.stock }}</td>
+                <td class="numero">
+                  <input type="hidden" name="producto" value="{{ fila.producto.pk }}">
+                  <label class="sr-only" for="unidades-{{ fila.producto.pk }}">Unidades recibidas de {{ fila.producto }}</label>
+                  <input type="number" id="unidades-{{ fila.producto.pk }}" name="unidades_{{ fila.producto.pk }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra">
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="fila-5">
+        <button type="submit" class="boton-seccion">Revisar ingreso</button>
+        <span class="texto-chico secundario">Vacío o 0: no llegó.</span>
+      </div>
+    </form>
+  </section>
+{% empty %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="inventario" %}
+    <p>No hay pre-ventas pendientes.</p>
+  </div>
+{% endfor %}
+{% endblock %}

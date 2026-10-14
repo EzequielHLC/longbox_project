@@ -1,0 +1,23 @@
+{% extends "correo/base.html" %}
+{% load correo %}
+{% comment %}Los avisos del ciclo de la pre-venta y de la demora (`apps/pedidos/avisos.py`).{% endcomment %}
+{% block asunto %}{{ asunto }}{% endblock %}
+{% block preencabezado %}{{ parrafos.0 }}{% endblock %}
+{% block rotulo %}{{ rotulo }}{% endblock %}
+{% block antetitulo %}{{ antetitulo }}{% endblock %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+{% for parrafo in parrafos %}<p style="{% estilo 'parrafo' %}">{{ parrafo }}</p>
+{% endfor %}
+{% if filas %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="{% estilo 'tabla' %}">
+  {% for izquierda, derecha in filas %}
+  <tr>
+    <td style="{% estilo 'td' %}">{{ izquierda }}</td>
+    <td style="{% estilo 'td-cifra' %}">{{ derecha }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% if enlace %}{% include "correo/_boton.html" with url=enlace texto=texto_enlace %}{% endif %}
+{% endblock %}

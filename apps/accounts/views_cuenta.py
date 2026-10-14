@@ -9,6 +9,8 @@ La única excepción es la confirmación del correo nuevo (`CO-110`), que se abr
 desde el enlace del correo y se autentica por su token, no por la sesión.
 """
 
+import logging
+
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -29,9 +31,12 @@ from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import RegistroAuditoria
 from apps.core.utils import obtener_ip
-from apps.pedidos.models import Pedido
+from apps.pedidos import demora
+from apps.pedidos.models import LineaPedido, Pedido
 from apps.pedidos.servicios import ACTIVOS
 from apps.pedidos.views import con_totales
+
+logger = logging.getLogger(__name__)
 
 
 class ClienteMixin(RolRequeridoMixin):
@@ -62,7 +67,7 @@ class PanelView(ClienteMixin, View):
 
 
 class HistorialView(ClienteMixin, View):
-    """Los pedidos despachados (B-11-004)."""
+    """Los pedidos despachados (B-11-004) y los cancelados (B-08-008)."""
 
     def get(self, request):
         return render(
@@ -70,7 +75,9 @@ class HistorialView(ClienteMixin, View):
             "cuenta/historial.html",
             {
                 "seccion": "historial",
-                "pedidos": _pedidos_de(request.user).filter(estado=Pedido.DESPACHADO),
+                "pedidos": _pedidos_de(request.user).filter(
+                    estado__in=(Pedido.DESPACHADO, Pedido.CANCELADO)
+                ),
             },
         )
 
@@ -84,6 +91,9 @@ class PedidoPropioView(ClienteMixin, View):
     def get(self, request, numero):
         pedido = get_object_or_404(Pedido, numero=numero, usuario=request.user)
         lineas = list(pedido.lineas.select_related("producto", "producto__productoeditorial"))
+        for linea in lineas:
+            linea.pedido = pedido
+            linea.puede_decidir = demora.puede_decidir(linea)
         return render(
             request,
             "cuenta/pedido.html",
@@ -96,6 +106,91 @@ class PedidoPropioView(ClienteMixin, View):
                 "activo": pedido.estado in ACTIVOS,
             },
         )
+
+
+# ---------------------------------------------------------------------------
+# CU-PED-OPC — CO-184, CO-094, CO-095 · CU-PED-CAN — CO-098
+# ---------------------------------------------------------------------------
+
+
+class DemoraView(ClienteMixin, View):
+    """El Cliente elige qué hacer con un artículo demorado de su pedido.
+
+    GET es `CO-184`; el primer POST, `CO-094` (la confirmación con su
+    consecuencia); el segundo, `CO-095` o, si cancela, `CO-098`. Volver sin
+    confirmar es `CO-156`: no queda nada registrado.
+    """
+
+    template_name = "cuenta/demora.html"
+
+    def _linea(self, request, numero, linea):
+        pedido = get_object_or_404(Pedido, numero=numero, usuario=request.user)
+        linea = get_object_or_404(pedido.lineas.select_related("producto"), pk=linea)
+        linea.pedido = pedido
+        return pedido, linea
+
+    def _situacion(self, request, linea):
+        try:
+            return demora.consultar_opciones(linea)
+        except demora.DecisionRechazada as rechazo:
+            messages.error(request, str(rechazo))
+            return None
+
+    def get(self, request, numero, linea):
+        pedido, linea = self._linea(request, numero, linea)
+        situacion = self._situacion(request, linea)
+        if situacion is None:
+            return redirect("cuenta:pedido", numero=numero)
+        return render(
+            request,
+            self.template_name,
+            {"seccion": "activos", "pedido": pedido, "situacion": situacion},
+        )
+
+    def post(self, request, numero, linea):
+        pedido, linea = self._linea(request, numero, linea)
+        clave = request.POST.get("opcion", "")
+        if "confirmar" not in request.POST:
+            situacion = self._situacion(request, linea)
+            if situacion is None:
+                return redirect("cuenta:pedido", numero=numero)
+            try:
+                elegida = demora.seleccionar_opcion(linea, clave)
+            except demora.DecisionRechazada as rechazo:
+                messages.error(request, str(rechazo))
+                return redirect("cuenta:demora", numero=numero, linea=linea.pk)
+            return render(
+                request,
+                self.template_name,
+                {
+                    "seccion": "activos",
+                    "pedido": pedido,
+                    "situacion": situacion,
+                    "elegida": elegida,
+                },
+            )
+        try:
+            confirmacion = demora.confirmar_opcion(pedido, linea.pk, request.user, clave)
+        except demora.DecisionRechazada as rechazo:
+            messages.error(request, str(rechazo))
+            return redirect("cuenta:pedido", numero=numero)
+        except Exception:  # noqa: BLE001 - E1 de CO-098: la transacción se deshizo entera
+            logger.exception("Falló la decisión sobre la línea %s.", linea.pk)
+            if clave == LineaPedido.CANCELAR:
+                demora.avisar_fallo_de_cancelacion(pedido, linea)
+            messages.error(
+                request, "No se pudo completar. No quedó ningún cambio: intentá de nuevo."
+            )
+            return redirect("cuenta:demora", numero=numero, linea=linea.pk)
+        if confirmacion.opcion is demora.CANCELAR:
+            messages.success(
+                request,
+                f"Artículo cancelado. Te acreditamos {confirmacion.puntos} pts; "
+                f"tu saldo es de {confirmacion.saldo} pts.",
+            )
+        else:
+            messages.success(request, confirmacion.opcion.consecuencia)
+        return redirect("cuenta:pedido", numero=numero)
 
 
 # ---------------------------------------------------------------------------

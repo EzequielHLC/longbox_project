@@ -1,0 +1,66 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-PED-OPC paso 2 (CO-184): el artículo, sus fechas y las opciones con sus
+consecuencias. Pasos 4 y 5 (CO-094, CO-095): la confirmación en una oración.
+Si cancela, CU-PED-CAN paso 1 (CO-098): el reembolso y que no se deshace.
+Volver sin confirmar es CO-156 (A1).
+{% endcomment %}
+
+{% block titulo %}Artículo demorado · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+{% block titulo_cuenta %}Artículo demorado{% endblock %}
+
+{% block cuenta %}
+{% with linea=situacion.linea %}
+<div class="formulario--angosto pila-5">
+  <dl class="datos-de-ficha">
+    <dt>Artículo</dt>
+    <dd>{{ linea.producto.especifico }}</dd>
+    <dt>Pedido</dt>
+    <dd class="datos">{{ pedido.numero }}</dd>
+    <dt>Llegada prevista</dt>
+    <dd class="datos">{{ linea.fecha_llegada_original|date:"d/m/Y"|default:"—" }}</dd>
+    <dt>Nueva fecha estimada</dt>
+    <dd class="datos">{{ situacion.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</dd>
+    <dt>Elegí antes del</dt>
+    <dd class="datos">{{ linea.decision_vence_en|date:"d/m/Y H:i" }}</dd>
+  </dl>
+
+  {% if elegida %}
+    <div class="panel{% if elegida.clave == 'cancelar' %} panel--atencion{% endif %} pila-4">
+      <p class="titulo-3">{{ elegida.titulo }}</p>
+      <p>{{ elegida.consecuencia }}</p>
+      {% if elegida.clave == "cancelar" %}
+        <p>Reembolso: <strong class="datos">{{ situacion.reembolso }} pts</strong>.</p>
+      {% endif %}
+      <form method="post" class="fila-5">
+        {% csrf_token %}
+        <input type="hidden" name="opcion" value="{{ elegida.clave }}">
+        <button type="submit" name="confirmar" value="1" class="boton-primario{% if elegida.clave == 'cancelar' %} boton-primario--critico{% endif %}">Confirmar</button>
+        <a href="{% url 'cuenta:demora' pedido.numero linea.pk %}" class="boton-texto">Volver</a>
+      </form>
+    </div>
+  {% else %}
+    <form method="post" class="pila-4">
+      {% csrf_token %}
+      <fieldset class="pila-3">
+        <legend class="titulo-3">¿Qué hacemos con tu pedido?</legend>
+        {% for opcion in situacion.opciones %}
+          <label class="casilla casilla--opcion">
+            <input type="radio" name="opcion" value="{{ opcion.clave }}" required {% if forloop.first %}checked{% endif %}>
+            <span class="pila-1">
+              <strong>{{ opcion.titulo }}</strong>
+              <span class="texto-chico secundario">{{ opcion.descripcion }}{% if opcion.clave == "cancelar" %} Son {{ situacion.reembolso }} pts.{% endif %}</span>
+            </span>
+          </label>
+        {% endfor %}
+      </fieldset>
+      <div class="fila-5">
+        <button type="submit" class="boton-primario">Continuar</button>
+        <a href="{% url 'cuenta:pedido' pedido.numero %}" class="boton-texto">Volver al pedido</a>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endwith %}
+{% endblock %}

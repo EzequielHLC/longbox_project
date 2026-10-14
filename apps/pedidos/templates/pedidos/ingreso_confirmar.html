@@ -1,0 +1,66 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-ALT-TRA pasos 5 y 6 — lo que va a hacer CO-013 con cada producto, antes de
+confirmarlo. Las unidades viajan ocultas con el formulario.
+{% endcomment %}
+
+{% block titulo %}Confirmar ingreso · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'pedidos:preventas' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pre-ventas por llegar" atras=1 %}</span>
+    <h1>Confirmar ingreso</h1>
+  </div>
+</header>
+
+<div class="panel pila-4">
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="numero">Recibidas</th>
+          <th class="numero">Reservas cubiertas</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in filas %}
+          <tr>
+            <td class="celda-principal">{{ fila.producto }}</td>
+            <td class="numero">{{ fila.unidades }}</td>
+            <td class="numero">{{ fila.cubiertas }} de {{ fila.reservas }}</td>
+            <td>
+              {% if fila.unidades and fila.completa %}
+                <span class="marca-estado marca-estado--ok">Pasa a la venta</span>
+                <span class="texto-chico secundario">· {{ fila.a_la_venta }} disponible{{ fila.a_la_venta|pluralize }}</span>
+              {% elif fila.unidades %}
+                <span class="marca-estado marca-estado--atencion">Ingreso parcial</span>
+                <span class="texto-chico secundario">· sigue en pre-venta{% if fila.se_demora %}, las reservas sin cubrir se demoran{% endif %}</span>
+              {% elif fila.se_demora %}
+                <span class="marca-estado marca-estado--atencion">Se demora</span>
+                <span class="texto-chico secundario">· se avisa a los clientes</span>
+              {% else %}
+                <span class="marca-estado marca-estado--apagado">Sin cambios</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="{% url 'pedidos:ingreso' %}" class="fila-5">
+    {% csrf_token %}
+    {% for fila in filas %}
+      <input type="hidden" name="producto" value="{{ fila.producto.pk }}">
+      <input type="hidden" name="unidades_{{ fila.producto.pk }}" value="{{ fila.unidades }}">
+    {% endfor %}
+    <button type="submit" name="confirmar" value="1" class="boton-primario">Confirmar ingreso</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

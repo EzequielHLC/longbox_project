@@ -182,7 +182,8 @@ def test_la_configuracion_no_se_borra():
 
 def test_guardar_el_stock_por_defecto_lo_deja_vigente_y_auditado(client_admin, administrador):
     respuesta = client_admin.post(
-        URL_PARAMETROS, {"stock_inicial_por_defecto": "4", "intervalo_carrusel": "10"}
+        URL_PARAMETROS,
+        {"stock_inicial_por_defecto": "4", "intervalo_carrusel": "10", "dias_aviso_preventa": "2"},
     )
 
     assert respuesta.status_code == 302

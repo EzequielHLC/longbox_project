@@ -219,3 +219,162 @@ medidas cargadas.
 
 **Qué habría que cambiar.**
 Nada.
+
+---
+
+### B-01-006 · El lote que se confirma es la fecha de llegada de una editorial
+
+**Tipo:** Agregado · **Fecha:** 2026-10-12 · **Alcance:** `CU-ALT-TRA` pasos 2 a 5, `CO-013`
+**Estado:** Abierta — decidida por el responsable el 2026-10-12 (plan 01, amb. 1)
+
+**Qué apareció.**
+`CO-013` recibe «el lote», pero las pre-ventas entran por la carga de lotes o por los borradores de
+los correos de proveedores, y muchas no quedan atadas a un `LoteAlta`.
+
+**Qué dice la especificación.**
+> «confirmarIngresoDeLote(lote, unidadesPorProducto, productosFaltantes)» (`CO-013`)
+
+Qué es un lote para esta operación: `Nada`.
+
+**Qué se hizo.**
+La pantalla «Pre-ventas por llegar» agrupa todas las pre-ventas por fecha de llegada vigente (la
+estimada si hay demora, si no la programada) y por editorial. Cada grupo es un lote: el
+Administrador carga las unidades recibidas de cada producto y lo que queda sin unidades es
+faltante (A1).
+
+**Qué habría que cambiar.**
+`CO-013`: «el lote es el conjunto de pre-ventas de una editorial con la misma fecha de llegada».
+
+---
+
+### B-01-007 · Lo que llega cubre primero las reservas
+
+**Tipo:** Corrección · **Fecha:** 2026-10-12 · **Alcance:** `CO-013`, `CU-ALT-TRA` paso 6
+**Estado:** Abierta — decidida por el responsable el 2026-10-12
+
+**Qué apareció.**
+La compra de una pre-venta no descuenta stock. Si al llegar se suman todas las unidades, las ya
+reservadas quedan a la venta otra vez y la tienda o el mostrador las venden dos veces.
+
+**Qué dice la especificación.**
+> «p.estado pasó de Pre-venta a Activo. p.stock pasó de su valor anterior a ese valor más las
+> unidades recibidas» (`CO-013`, Postcondiciones)
+
+**Qué se hizo.**
+Las unidades recibidas cubren las reservas en el orden en que se compraron, línea entera por
+línea entera; el orden no se saltea. Lo que sobra es el stock a la venta. Si alcanza para todas,
+el producto pasa a Activo (o a Agotado si no sobra nada). Si no alcanza, el producto sigue en
+Pre-venta, las reservas sin cubrir quedan demoradas (con la cascada de `CO-015` si el producto no
+lo estaba) y las unidades que sobraron quedan en el stock del producto para la próxima llegada.
+
+**Qué habría que cambiar.**
+`CO-013` Postcondiciones: «p.stock pasó a las unidades recibidas menos las reservadas que
+cubren. p.estado pasó a Activo sólo si cubrieron todas las reservas».
+
+---
+
+### B-01-008 · Un faltante sólo se demora si su fecha ya llegó
+
+**Tipo:** Agregado · **Fecha:** 2026-10-12 · **Alcance:** `CU-ALT-TRA` A1, `CO-013`
+**Estado:** Abierta
+
+**Qué apareció.**
+Un lote puede llegar antes de su fecha. Lo que no vino con él todavía no está atrasado.
+
+**Qué dice la especificación.**
+> «los productos no incluidos en el lote recibido son marcados automáticamente como demorados»
+> (`CU-ALT-TRA`, A1)
+
+Qué pasa si la fecha de llegada todavía no llegó: `Nada`.
+
+**Qué se hizo.**
+Los faltantes se demoran sólo si su fecha de llegada es hoy o ya pasó. Si es futura, siguen en
+Pre-venta sin cambios. Un faltante que ya estaba demorado tampoco cambia: la cascada no se repite.
+
+**Qué habría que cambiar.**
+`CU-ALT-TRA` A1: «… cuya fecha de llegada ya se cumplió».
+
+---
+
+### B-01-009 · Avisos al Administrador y escalado sin período de gracia
+
+**Tipo:** Desvío · **Fecha:** 2026-10-12 · **Alcance:** `CO-011`, `CO-012`, `CU-ALT-TRA` E2
+**Estado:** Abierta — consultado y aprobado por el responsable el 2026-10-12 (plan 01, amb. 2 y 3)
+
+**Qué apareció.**
+El Temporizador corre una vez por día. Un escalado «a las 23:59» y un período de gracia
+configurable exigen un reloj que no existe.
+
+**Qué dice la especificación.**
+> «El período de gracia es configurable, con valor por defecto las 23:59 del día de llegada
+> programada» (`CO-012`, Notas)
+
+**Qué se hizo.**
+El escalado sale en la primera corrida posterior al día de llegada y se repite una vez por día
+mientras el producto siga sin resolver. El período de gracia no es parámetro: `CU-CFG-PAR` no lo
+declara. Los avisos van por correo a cada Administrador activo y se ven también en el bloque
+«Pre-ventas por llegar» del panel. El sistema recuerda qué avisó: correr el ciclo dos veces el
+mismo día no repite ningún correo.
+
+**Qué habría que cambiar.**
+`CO-012` Notas: quitar el período de gracia configurable.
+
+---
+
+### B-01-010 · Cómo se calcula el reembolso en puntos
+
+**Tipo:** Agregado · **Fecha:** 2026-10-12 · **Alcance:** `CO-026`, `CO-027`, `CO-098`
+**Estado:** Abierta — decidida por el responsable el 2026-10-12 (plan 01, amb. 4 y 5)
+
+**Qué apareció.**
+Una reserva se puede haber pagado en dinero o con puntos, y convertir pesos a puntos deja resto.
+
+**Qué dice la especificación.**
+> «la suma de los valores abonados por cada reserva activa» (`CU-ALT-CAN`, paso 2)
+
+Cómo se convierte ni cómo se redondea: `Nada`.
+
+**Qué se hizo.**
+Lo pagado en dinero vuelve convertido a puntos con el valor del punto vigente, redondeado hacia
+arriba. Lo pagado con puntos vuelve con los mismos puntos. Cada cliente recibe un solo lote por
+cancelación, con todas sus reservas del título. Las reservas que ya estaban demoradas también se
+cancelan y se reembolsan: siguen siendo reservas del título. Los puntos que el cliente ganó al
+comprar no se descuentan.
+
+**Qué habría que cambiar.**
+`CO-026` Notas y `CO-027` Postcondiciones: la regla de conversión y de redondeo.
+
+---
+
+### B-01-011 · El ingreso se revisa antes de confirmarse
+
+**Tipo:** Agregado · **Fecha:** 2026-10-12 · **Alcance:** `CU-ALT-TRA` pasos 4 a 6, `CO-013`
+**Estado:** Abierta
+
+**Qué apareció.**
+Confirmar un lote dispara avisos a clientes y demoras que no se deshacen. Un número mal tipeado o
+un casillero vacío por olvido demora un título que sí llegó.
+
+**Qué dice la especificación.**
+> «El Administrador recibe el lote físico, verifica su contenido y confirma el ingreso de stock en
+> el sistema, indicando las unidades recibidas por producto.» (`CU-ALT-TRA`, paso 4)
+
+Si hay un paso de revisión antes de ejecutar: `Nada`.
+
+**Qué se hizo.**
+Antes de ejecutar, la pantalla muestra qué va a pasar con cada producto: pasa a la venta (con
+cuántas unidades libres), ingreso parcial, se demora o sin cambios, y cuántas reservas cubre. El
+Administrador confirma o vuelve. No registra nada hasta confirmar.
+
+**Qué habría que cambiar.**
+`CU-ALT-TRA` paso 5: «el sistema presenta el resumen de lo que va a ejecutar y el Administrador lo
+confirma».
+
+---
+
+### Nota de cierre de tanda · 2026-10-12
+
+El ciclo de la pre-venta está completo: avisos y escalado, confirmación del ingreso, demora y
+cancelación por la editorial. Queda en el módulo: las pruebas de contrato de las altas de lote
+(`CO-001` a `CO-010`), el monitoreo automático de la casilla (`CO-016`) y el aviso a suscriptores
+de reposición (`CO-077`, módulo 05).

@@ -62,3 +62,78 @@ def crear_pedido(
         pedido=pedido, estado_nuevo=estado, actor=usuario, ocurrida_en=fecha
     )
     return pedido
+
+
+# ---------------------------------------------------------------------------
+# Pre-ventas y reservas (planes 01 y 08, segunda parte)
+# ---------------------------------------------------------------------------
+
+
+def crear_preventa(*, dias=5, precio="10000", stock=0, **extra):
+    """Un tomo en Pre-venta que llega dentro de `dias` días (negativo: ya pasó)."""
+    from apps.catalog.models import Producto
+
+    return ProductoFactory(
+        estado=Producto.PRE_VENTA,
+        stock=stock,
+        precio=Decimal(precio),
+        fecha_llegada=timezone.localdate() + timedelta(days=dias),
+        **extra,
+    )
+
+
+def reservar(
+    usuario, producto, *, cantidad=1, puntos=0, otros=(), costo_envio="1500", hace_minutos=0
+):
+    """Un pedido Esperando pre-venta con una reserva de `producto`.
+
+    `otros` son líneas Disponibles de productos en stock, como `(precio, cantidad)`.
+    Devuelve el pedido y la línea reservada.
+    """
+    fecha = timezone.now() - timedelta(minutes=hace_minutos)
+    pedido = Pedido.objects.create(
+        canal=Pedido.ONLINE,
+        estado=Pedido.ESPERANDO_PRE_VENTA,
+        usuario=usuario,
+        envio_direccion="Av. Colón 1234",
+        envio_localidad="Córdoba",
+        envio_provincia="Córdoba",
+        envio_codigo_postal="X5000ABC",
+        costo_envio=Decimal(costo_envio),
+        fecha=fecha,
+    )
+    pedido.asignar_numero()
+    linea = LineaPedido.objects.create(
+        pedido=pedido,
+        producto=producto,
+        cantidad=cantidad,
+        precio_unitario=producto.precio,
+        cubierta_con_puntos=bool(puntos),
+        puntos_canjeados=puntos,
+        estado=LineaPedido.RESERVADO,
+    )
+    for precio, unidades in otros:
+        LineaPedido.objects.create(
+            pedido=pedido,
+            producto=ProductoFactory(stock=5, precio=Decimal(precio)),
+            cantidad=unidades,
+            precio_unitario=Decimal(precio),
+            estado=LineaPedido.DISPONIBLE,
+        )
+    TransicionDePedido.objects.create(
+        pedido=pedido, estado_nuevo=pedido.estado, actor=usuario, ocurrida_en=fecha
+    )
+    return pedido, linea
+
+
+def demorar(usuario, *, otros=(("5000", 1),), dias=3, precio="10000", puntos=0, costo_envio="1500"):
+    """Un pedido con un artículo demorado sin decisión, por `CO-015`."""
+    from apps.pedidos import preventa
+
+    producto = crear_preventa(dias=dias, precio=precio)
+    pedido, linea = reservar(usuario, producto, otros=otros, puntos=puntos, costo_envio=costo_envio)
+    preventa.registrar_demora(producto, None)
+    pedido.refresh_from_db()
+    linea.refresh_from_db()
+    producto.refresh_from_db()
+    return producto, pedido, linea

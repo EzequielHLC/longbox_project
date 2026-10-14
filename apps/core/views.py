@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from apps.core import georef, views_tienda
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import Banner, ConfiguracionSistema, RegistroAuditoria
+from apps.pedidos import preventa
 from apps.pedidos.models import Pedido
 
 
@@ -119,6 +120,9 @@ class PanelAdministracionView(RolRequeridoMixin, TemplateView):
             por_despachar=Count("pk", filter=Q(estado=Pedido.EMPAQUETADO)),
             de_hoy=Count("pk", filter=Q(fecha__date=timezone.localdate())),
         )
+        # Plan 01: lo atrasado, lo de hoy y lo de los próximos días (B-01-009).
+        contexto["preventas"] = preventa.proximas_para_el_panel()
+        contexto["dias_aviso"] = ConfiguracionSistema.obtener().dias_aviso_preventa
         # `select_related` evita una consulta por fila al mostrar el actor.
         contexto["actividad"] = RegistroAuditoria.objects.select_related("actor")[:12]
         return contexto

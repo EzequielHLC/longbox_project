@@ -124,6 +124,16 @@ class ConfiguracionSistema(models.Model):
     )
 
     # ------------------------------------------------------------------
+    # Catálogo y pre-venta (CU-CFG-PAR; CO-011)
+    # ------------------------------------------------------------------
+
+    dias_aviso_preventa = models.PositiveIntegerField(
+        "aviso previo de pre-venta (días)",
+        default=2,
+        help_text="Con cuántos días de anticipación se avisa la llegada de una pre-venta.",
+    )
+
+    # ------------------------------------------------------------------
     # Tienda (CU-CFG-PAR, sección Tienda; B-17-003)
     # ------------------------------------------------------------------
 
@@ -153,6 +163,13 @@ class ConfiguracionSistema(models.Model):
         default=Decimal("100000"),
         validators=[MinValueValidator(Decimal("0.01"))],
         help_text="Desde este subtotal de productos, el envío no se cobra.",
+    )
+    # B-08-004: corre desde que se registra la demora de la línea.
+    ventana_decision_horas = models.PositiveIntegerField(
+        "ventana de decisión ante demora (horas)",
+        default=72,
+        validators=[MinValueValidator(1)],
+        help_text="Cuánto tiene el Cliente para elegir qué hacer con un artículo demorado.",
     )
 
     # ------------------------------------------------------------------
@@ -349,6 +366,17 @@ class RegistroAuditoria(models.Model):
     VENTA_PRESENCIAL = "venta_presencial"
     CIERRE_CAJA = "cierre_caja"
     EXPORTACION_CIERRE = "exportacion_cierre"
+    # Plan 01, ciclo de la pre-venta, y plan 08, segunda parte.
+    CONFIRMACION_INGRESO = "confirmacion_ingreso"
+    TRANSICION_PEDIDO = "transicion_pedido"
+    INCIDENTE_PREVENTA = "incidente_preventa"
+    REGISTRO_DEMORA = "registro_demora"
+    ESCALADO_PREVENTA = "escalado_preventa"
+    CANCELACION_PREVENTA_LOTE = "cancelacion_preventa_lote"
+    DECISION_DEMORA = "decision_demora"
+    VENCIMIENTO_VENTANA = "vencimiento_ventana"
+    COMPENSACION_RETRASO = "compensacion_retraso"
+    CANCELACION_ARTICULO_DEMORADO = "cancelacion_articulo_demorado"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -406,6 +434,16 @@ class RegistroAuditoria(models.Model):
         (VENTA_PRESENCIAL, "Venta presencial"),
         (CIERRE_CAJA, "Cierre de caja"),
         (EXPORTACION_CIERRE, "Exportación de cierre de caja"),
+        (CONFIRMACION_INGRESO, "Confirmación de ingreso de pre-venta"),
+        (TRANSICION_PEDIDO, "Transición de pedido"),
+        (INCIDENTE_PREVENTA, "Fallo en una operación de pre-venta"),
+        (REGISTRO_DEMORA, "Registro de demora en artículo de pre-venta"),
+        (ESCALADO_PREVENTA, "Escalado por inacción sobre pre-venta"),
+        (CANCELACION_PREVENTA_LOTE, "Cancelación de pre-ventas en lote"),
+        (DECISION_DEMORA, "Decisión ante artículo demorado"),
+        (VENCIMIENTO_VENTANA, "Vencimiento de la ventana de decisión"),
+        (COMPENSACION_RETRASO, "Compensación por retraso"),
+        (CANCELACION_ARTICULO_DEMORADO, "Cancelación de artículo demorado"),
     ]
 
     actor = models.ForeignKey(

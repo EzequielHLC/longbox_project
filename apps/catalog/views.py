@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -56,6 +56,7 @@ from apps.core import cambios, cotizaciones
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import celda_csv, obtener_ip
+from apps.pedidos import preventa
 from apps.puntos.servicios import puntos_por_monto
 from apps.suppliers.models import Proveedor
 
@@ -464,6 +465,8 @@ class ParametrosView(CatalogoAdminMixin, View):
     NOMBRES = {  # noqa: RUF012
         "stock_inicial_por_defecto": "stock por defecto",
         "intervalo_carrusel": "intervalo del carrusel (s)",
+        "dias_aviso_preventa": "aviso previo de pre-venta (días)",
+        "ventana_decision_horas": "ventana de decisión (h)",
         "equivalencia_puntos": "valor del punto ($)",
         "porcentaje_puntos": "reintegro en puntos (%)",
     }
@@ -929,7 +932,20 @@ class ProductoDetalleView(InventarioMixin, DetailView):
         if contexto["es_administrador"]:
             contexto["historial"] = self._historial()
             contexto["restauracion"] = tabla_de_precios.restauracion_de(self.object)
+            contexto["reservadas"] = (
+                preventa.reservas_pendientes(self.object).aggregate(total=Sum("cantidad"))["total"]
+                or 0
+            )
+            contexto["puede_demorar"] = self._puede_demorar()
         return contexto
+
+    def _puede_demorar(self):
+        """Las precondiciones de `CO-014`, para ofrecer la acción sólo cuando aplica."""
+        try:
+            preventa.validar_demora(self.object)
+        except (preventa.OperacionRechazada, AttributeError):
+            return False
+        return True
 
     def _historial(self):
         """Lo que se hizo sobre este producto, de lo más nuevo a lo más viejo.

@@ -44,9 +44,14 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         <span>Panel</span>
       </a>
       <a href="{% url 'pedidos:lista' %}"
-         class="menu-enlace {% if 'pedidos:' in actual %}menu-enlace--actual{% endif %}" {% if 'pedidos:' in actual %}aria-current="page"{% endif %}>
+         class="menu-enlace {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="bolsa" %}
         <span>Pedidos</span>
+      </a>
+      <a href="{% url 'pedidos:preventas' %}"
+         class="menu-enlace {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="inventario" %}
+        <span>Pre-ventas</span>
       </a>
       <a href="{% url 'core:mostrador' %}"
          class="menu-enlace {% if actual == 'core:mostrador' or 'ventas:' in actual %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' or 'ventas:' in actual %}aria-current="page"{% endif %}>

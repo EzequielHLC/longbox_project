@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-10**.
+> **Tipo: Fotografía.** Tomada el **2026-10-12**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -52,7 +52,7 @@ al plan o a la sección donde está desarrollada.
 
 | Ítem | Decisión pendiente | Qué bloquea | Desde |
 | --- | --- | --- | --- |
-| **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`. Falta sumar cada proceso cuando exista su caso de uso | `CO-016`, `CO-155`, `CU-ALT-TRA`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-PED-CMP`, `CU-STK-VEN`, `CO-096` de `CU-PED-OPC`, y la limpieza de carritos de invitado y de cobros en curso abandonados | — |
+| **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`, `CO-011`, `CO-012`, `CO-096` y `CO-097`. Falta sumar cada proceso cuando exista su caso de uso | `CO-016`, `CO-155`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-STK-VEN`, y la limpieza de carritos de invitado y de cobros en curso abandonados | — |
 | Parámetros de seguridad | Resuelto en B-12-001; falta construirlo | La sección Seguridad de `CU-CFG-PAR` y la mitad de `CO-114` | — |
 | ~~Pedido como dependencia raíz~~ | **Resuelta el 2026-10-09**: la compra online crea `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` (plan 07, sexta parte). El orden propuesto para lo que sigue está al final de ese plan | — | — |
 | MercadoPago sin probar contra su API | El adaptador está construido y probado contra respuestas declaradas (B-07-031). Falta cargar `MERCADOPAGO_ACCESS_TOKEN` de una cuenta de prueba y recorrer un pago real con el aviso llegando por el túnel | Mostrar un pago real en la demostración | 2026-10-09 |
@@ -133,10 +133,11 @@ archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y n
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 92 de 219.** 127 tienen al menos una prueba que lleva su código; de esos, nueve no
-cierran del todo: `CO-114` (B-12-001), `CO-060` (sólo el doble envío), `CO-130` (el plazo de
+**Faltan 79 de 219.** 140 tienen al menos una prueba que lleva su código; de esos, diez no
+cierran del todo: `CO-013` (el aviso a suscriptores, `CO-077`, es del módulo 05), `CO-095` (el
+artículo diferido no pasa a `ArticuloRetenido` hasta el módulo 18, B-08-007), `CO-114` (B-12-001), `CO-060` (sólo el doble envío), `CO-130` (el plazo de
 devolución y la sección Seguridad no existen), `CO-192` (la sección Stock en Local está oculta,
-B-11-003), `CO-193` (el acceso a `CO-095` no existe), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en
+B-11-003), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en
 su parte sobre los filtros del catálogo público (B-02-004).
 
 `CO-089 registrarResultadoDePago` y `CO-087 declararDireccionDeEnvio` están verificados en la
@@ -199,13 +200,13 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
-| `bitacora/01-alta-editorial.md` | 5 | 3 | 5 agregados |
+| `bitacora/01-alta-editorial.md` | 11 | 9 | 9 agregados, 1 corrección, 1 desvío |
 | `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
 | `bitacora/03-pricing.md` | 12 | 10 | 10 agregados, 2 correcciones |
 | `bitacora/04-proveedores.md` | 6 | 0 | 4 agregados, 1 corrección, 1 desvío |
 | `bitacora/06-ventas-presenciales.md` | 4 | 4 | 3 agregados, 1 corrección |
 | `bitacora/07-tienda-online.md` | 37 | 29 | 32 agregados, 4 correcciones, 1 desvío |
-| `bitacora/08-gestion-de-pedidos.md` | 3 | 3 | 3 agregados |
+| `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
 | `bitacora/10-puntos.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/11-cuenta-de-cliente.md` | 5 | 4 | 5 agregados |
 | `bitacora/12-autenticacion.md` | 3 | 0 | 1 agregado, 1 corrección, 1 desvío |
@@ -214,7 +215,7 @@ alcance sigue pendiente.
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/17-configuracion-del-sistema.md` | 17 | 11 | 12 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección |
-| **Total** | **131** | **86** | |
+| **Total** | **144** | **99** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es
@@ -248,6 +249,16 @@ código sin terminar.
 | `CU-VTA-REG`: alta por código exacto, comprobante y la «corrección de transacciones» sin caso de uso | B-06-003, B-06-004 |
 | `CU-CAJ-CIE` E1 y paso 2: lo posterior al cierre va al siguiente; qué entra en un cierre | B-14-001, B-14-002 |
 | `CO-178`: el envío y lo que falta para el envío gratis | B-07-037 |
+| `CO-013`: qué es el lote, lo recibido cubre primero las reservas, faltantes sólo vencidos, revisión previa | B-01-006, B-01-007, B-01-008, B-01-011 |
+| `CO-012`: sin período de gracia configurable | B-01-009 |
+| `CO-026`, `CO-027`, `CO-098`: conversión y redondeo del reembolso a puntos | B-01-010 |
+| `LineaPedido` gana la ventana de decisión; `CU-CFG-PAR` fija 72 h por defecto | B-08-004 |
+| `CO-098`, `CU-PED-CAN` y RF-17: cancelar una pre-venta demorada no suma stock | B-08-005 |
+| RF-16 y `CU-PED-CMP` E1: la compensación corre hasta que el artículo llega | B-08-006 |
+| `CO-095` opción 2: el pedido pasa a Empaquetado | B-08-007 |
+| DME-07: el estado Cancelado y el reembolso del envío | B-08-008 |
+| `CU-PED-OPC` paso 2: qué opciones se ofrecen | B-08-009 |
+| `CO-097`: cálculo por semanas cumplidas contra lo acreditado | B-08-010 |
 
 ---
 

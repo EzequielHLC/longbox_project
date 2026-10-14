@@ -51,6 +51,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
     <div class="rejilla-2">
       {% include "_campo.html" with campo=form.stock_inicial_por_defecto %}
       {% include "_campo.html" with campo=form.intervalo_carrusel %}
+      {% include "_campo.html" with campo=form.dias_aviso_preventa %}
     </div>
 
     <div class="acciones">
@@ -73,6 +74,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       <div class="rejilla-2">
         {% include "_campo.html" with campo=form_compra.costo_envio %}
         {% include "_campo.html" with campo=form_compra.monto_minimo_envio_gratuito %}
+        {% include "_campo.html" with campo=form_compra.ventana_decision_horas %}
       </div>
     </fieldset>
     <fieldset class="divisor pila">

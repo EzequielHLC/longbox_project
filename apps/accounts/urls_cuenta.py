@@ -11,6 +11,7 @@ urlpatterns = [
     path("", views.PanelView.as_view(), name="panel"),
     path("historial/", views.HistorialView.as_view(), name="historial"),
     path("pedidos/<str:numero>/", views.PedidoPropioView.as_view(), name="pedido"),
+    path("pedidos/<str:numero>/demora/<int:linea>/", views.DemoraView.as_view(), name="demora"),
     path("puntos/", PuntosView.as_view(), name="puntos"),
     path("datos/", views.DatosView.as_view(), name="datos"),
     path("contrasena/", views.ContrasenaView.as_view(), name="contrasena"),

@@ -30,6 +30,8 @@ por qué no se puede avanzar a mano (E1).
   <div class="panel" role="note"><p>Esperando stock de pre-venta para el armado.</p></div>
 {% elif pedido.estado == "esperando_demorado" %}
   <div class="panel" role="note"><p>Esperando el artículo demorado para continuar.</p></div>
+{% elif pedido.estado == "cancelado" %}
+  <div class="panel" role="note"><p>Pedido cancelado. Sus artículos se reembolsaron en puntos.</p></div>
 {% endif %}
 
 <div class="rejilla-2">

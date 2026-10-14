@@ -1,0 +1,62 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-ALT-CAN — paso 2, el informe de impacto (CO-026), y paso 3, la confirmación
+(CO-027). Cancelar vuelve a la ficha sin efecto (A1, CO-156).
+{% endcomment %}
+
+{% block titulo %}Cancelar pre-venta · Longbox{% endblock %}
+{% block seccion %}Catálogo{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:producto_detalle' producto.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>Cancelar pre-venta</h1>
+    <p>{{ producto }} · {{ producto.editorial }}</p>
+  </div>
+</header>
+
+<div class="panel panel--atencion pila-4">
+  <p>La editorial canceló el título. El producto pasa a <strong>Cancelado por editorial</strong>, sale de la tienda y no se puede reactivar.</p>
+
+  <div class="cifras">
+    <div class="cifra{% if informe.reservas %} cifra--atencion{% endif %}">
+      <span class="cifra__rotulo">Reservas activas</span>
+      <span class="cifra__valor">{{ informe.reservas }}</span>
+    </div>
+    <div class="cifra">
+      <span class="cifra__rotulo">Puntos a reembolsar</span>
+      <span class="cifra__valor">{{ informe.total_puntos }}</span>
+    </div>
+  </div>
+
+  {% if informe.clientes %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Cliente</th><th>Pedidos</th><th class="numero">Reservas</th><th class="numero">Puntos</th></tr>
+        </thead>
+        <tbody>
+          {% for cliente in informe.clientes %}
+            <tr>
+              <td class="celda-principal">{{ cliente.usuario.get_full_name|default:cliente.usuario.email }}</td>
+              <td class="datos">{% for linea in cliente.reservas %}{{ linea.pedido.numero }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+              <td class="numero">{{ cliente.reservas|length }}</td>
+              <td class="numero">{{ cliente.puntos }}{% if cliente.puntos_envio %}<span class="texto-chico secundario"> · incl. envío</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>Sin reservas activas: no hay nada que reembolsar.</p>
+  {% endif %}
+
+  <form method="post" class="fila-5">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario boton-primario--critico">Confirmar cancelación</button>
+    {% include "_boton_texto.html" with url=volver texto="Volver" %}
+  </form>
+</div>
+{% endblock %}

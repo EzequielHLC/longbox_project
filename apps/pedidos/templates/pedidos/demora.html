@@ -1,0 +1,57 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-ALT-DEM — pasos 2 y 3 (formulario), 4 (informe de impacto, CO-014) y 5
+(confirmación, CO-015). Cancelar vuelve a la ficha sin registrar nada (A2, CO-156).
+{% endcomment %}
+
+{% block titulo %}Registrar demora · Longbox{% endblock %}
+{% block seccion %}Catálogo{% endblock %}
+
+{% block contenido %}
+{% url 'catalog:producto_detalle' producto.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <h1>Registrar demora</h1>
+    <p>{{ producto }} · {{ producto.editorial }} · llegada {{ producto.fecha_llegada|date:"d/m/Y"|default:"sin fecha" }}</p>
+  </div>
+</header>
+
+{% if informe %}
+  <div class="panel panel--atencion formulario--angosto pila-4">
+    <div class="cifras">
+      <div class="cifra{% if informe.pedidos %} cifra--atencion{% endif %}">
+        <span class="cifra__rotulo">Pedidos afectados</span>
+        <span class="cifra__valor">{{ informe.pedidos }}</span>
+      </div>
+      <div class="cifra">
+        <span class="cifra__rotulo">Clientes a notificar</span>
+        <span class="cifra__valor">{{ informe.clientes }}</span>
+      </div>
+    </div>
+    {% if not informe.pedidos %}<p>Sin pedidos activos: se registra la demora sin avisos.</p>{% endif %}
+    <dl class="datos-de-ficha">
+      <dt>Nueva fecha estimada</dt>
+      <dd class="datos">{{ form.cleaned_data.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</dd>
+      {% if form.cleaned_data.nota %}<dt>Nota interna</dt><dd>{{ form.cleaned_data.nota }}</dd>{% endif %}
+    </dl>
+    <form method="post" class="fila-5">
+      {% csrf_token %}
+      <input type="hidden" name="fecha_estimada" value="{{ form.cleaned_data.fecha_estimada|date:'Y-m-d' }}">
+      <input type="hidden" name="nota" value="{{ form.cleaned_data.nota }}">
+      <button type="submit" name="confirmar" value="1" class="boton-primario">Confirmar demora</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  </div>
+{% else %}
+  <form method="post" novalidate class="formulario formulario--angosto">
+    {% csrf_token %}
+    {% include "_campo.html" with campo=form.fecha_estimada %}
+    {% include "_campo.html" with campo=form.nota %}
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Continuar</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

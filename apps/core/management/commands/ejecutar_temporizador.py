@@ -1,9 +1,10 @@
 """El Temporizador del Sistema: la puerta unica de los procesos periodicos (P-05).
 
-Hoy corre un solo proceso, el ciclo de vigencia de ofertas (`CO-059`). Los otros
-que declara la especificacion (`CO-016`, `CO-155`, `CU-PTS-CAD` y los demas de
-P-05) se suman aca a medida que existan, cada uno como una funcion mas en
-`PROCESOS`.
+Corre el ciclo de vigencia de ofertas (`CO-059`), la vigilancia de la pre-venta
+(`CO-011`, `CO-012`), el vencimiento de las ventanas de decision (`CO-096`) y la
+compensacion por demora (`CO-097`). Los otros que declara la especificacion
+(`CO-016`, `CO-155`, `CU-PTS-CAD` y los demas de P-05) se suman aca a medida que
+existan, cada uno como una funcion mas en `PROCESOS`.
 
 Correrlo dos veces el mismo dia no hace dano: cada proceso mira el estado
 guardado y solo toca lo que todavia no se actualizo.
@@ -20,6 +21,7 @@ La salida va en ASCII por la consola de Windows (ver `respaldar_base`).
 from django.core.management.base import BaseCommand
 
 from apps.catalog import ofertas
+from apps.pedidos import demora, preventa
 
 
 def ciclo_de_ofertas():
@@ -27,7 +29,23 @@ def ciclo_de_ofertas():
     return f"ofertas: {len(resultado.activadas)} activadas, {len(resultado.vencidas)} vencidas"
 
 
-PROCESOS = (ciclo_de_ofertas,)
+def ciclo_de_preventa():
+    resultado = preventa.ciclo_de_vigilancia()
+    return (
+        f"pre-venta: {len(resultado.proximas)} proximas, {len(resultado.de_hoy)} para hoy, "
+        f"{len(resultado.escaladas)} escaladas"
+    )
+
+
+def ciclo_de_ventanas():
+    return f"ventanas de decision: {len(demora.ciclo_de_ventanas())} vencidas"
+
+
+def ciclo_de_compensacion():
+    return f"compensacion por demora: {len(demora.ciclo_de_compensacion())} acreditadas"
+
+
+PROCESOS = (ciclo_de_ofertas, ciclo_de_preventa, ciclo_de_ventanas, ciclo_de_compensacion)
 
 
 class Command(BaseCommand):

@@ -401,7 +401,7 @@ def test_el_intervalo_del_carrusel_nace_en_10_y_se_edita_en_parametros(client_ad
 
     client_admin.post(
         reverse("catalog:parametros"),
-        {"stock_inicial_por_defecto": "1", "intervalo_carrusel": "6"},
+        {"stock_inicial_por_defecto": "1", "intervalo_carrusel": "6", "dias_aviso_preventa": "2"},
     )
 
     assert ConfiguracionSistema.obtener().intervalo_carrusel == 6
@@ -410,7 +410,7 @@ def test_el_intervalo_del_carrusel_nace_en_10_y_se_edita_en_parametros(client_ad
 def test_el_intervalo_no_puede_ser_cero(client_admin):
     respuesta = client_admin.post(
         reverse("catalog:parametros"),
-        {"stock_inicial_por_defecto": "1", "intervalo_carrusel": "0"},
+        {"stock_inicial_por_defecto": "1", "intervalo_carrusel": "0", "dias_aviso_preventa": "2"},
     )
 
     assert respuesta.context["form"].errors["intervalo_carrusel"]

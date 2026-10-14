@@ -36,6 +36,8 @@ class Pedido(models.Model):
     ESPERANDO_DEMORADO = "esperando_demorado"
     EMPAQUETADO = "empaquetado"
     DESPACHADO = "despachado"
+    # B-08-008: un pedido que se queda sin artículos. Terminal.
+    CANCELADO = "cancelado"
     ESTADO_CHOICES = [  # noqa: RUF012
         (ESPERANDO_PRE_VENTA, "Esperando stock de pre-venta"),
         (PENDIENTE_ARMADO, "Pendiente de armado"),
@@ -43,6 +45,7 @@ class Pedido(models.Model):
         (ESPERANDO_DEMORADO, "Esperando artículo demorado"),
         (EMPAQUETADO, "Empaquetado"),
         (DESPACHADO, "Despachado"),
+        (CANCELADO, "Cancelado"),
     ]
 
     # Se asigna dentro de la misma transacción que crea el pedido, a partir de
@@ -158,6 +161,10 @@ class LineaPedido(models.Model):
         "compensación acumulada", max_digits=12, decimal_places=2, default=Decimal("0")
     )
     fecha_llegada_original = models.DateField("fecha de llegada original", null=True, blank=True)
+    # B-08-004: la ventana se abre al registrarse la demora de la línea.
+    decision_vence_en = models.DateTimeField("la decisión vence", null=True, blank=True)
+    ventana_cerrada = models.BooleanField("ventana de decisión cerrada", default=False)
+    compensacion_cerrada = models.BooleanField("compensación cerrada", default=False)
 
     class Meta:
         verbose_name = "línea de pedido"
@@ -183,6 +190,15 @@ class LineaPedido(models.Model):
 
     def __str__(self):
         return f"{self.cantidad} × {self.producto}"
+
+    @property
+    def valor(self):
+        """El valor original del artículo, pagado como sea (`CO-097`, `CO-098`)."""
+        return self.precio_unitario * self.cantidad
+
+    @property
+    def despacho_diferido(self):
+        return self.decision_demora == self.DESPACHO_DIFERIDO
 
     @property
     def subtotal(self):
@@ -275,3 +291,37 @@ class TransicionDePedido(models.Model):
 
     def __str__(self):
         return f"{self.pedido} → {self.get_estado_nuevo_display()}"
+
+
+class AvisoDePreVenta(models.Model):
+    """Lo que el Temporizador ya avisó (`CO-011`, `CO-012`; B-01-009).
+
+    Correr el ciclo dos veces el mismo día no repite un correo: cada aviso se
+    anota con el producto, su tipo y la fecha a la que se refiere.
+    """
+
+    PROXIMIDAD = "proximidad"
+    LLEGADA = "llegada"
+    ESCALADO = "escalado"
+    TIPO_CHOICES = [  # noqa: RUF012
+        (PROXIMIDAD, "Llegada próxima"),
+        (LLEGADA, "Llega hoy"),
+        (ESCALADO, "Sin resolver"),
+    ]
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="avisos_preventa")
+    tipo = models.CharField("tipo", max_length=12, choices=TIPO_CHOICES)
+    fecha = models.DateField("fecha")
+    enviado_en = models.DateTimeField("enviado en", default=timezone.now)
+
+    class Meta:
+        verbose_name = "aviso de pre-venta"
+        verbose_name_plural = "avisos de pre-venta"
+        constraints = [  # noqa: RUF012
+            models.UniqueConstraint(
+                fields=["producto", "tipo", "fecha"], name="aviso_preventa_unico"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} · {self.producto} · {self.fecha}"

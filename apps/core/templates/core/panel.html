@@ -42,6 +42,28 @@ No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
   </div>
 </section>
 
+<section class="seccion" aria-labelledby="titulo-preventas">
+  <div class="seccion__titulo"><h2 id="titulo-preventas">Pre-ventas por llegar</h2></div>
+  <div class="cifras">
+    <a class="cifra{% if preventas.vencidas %} cifra--atencion{% endif %}" href="{% url 'pedidos:preventas' %}">
+      {% if preventas.vencidas %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasadas</span>
+      <span class="cifra__valor">{{ preventas.vencidas|length }}</span>
+      <span class="cifra__nota">Sin ingreso confirmado</span>
+    </a>
+    <a class="cifra" href="{% url 'pedidos:preventas' %}">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Llegan hoy</span>
+      <span class="cifra__valor">{{ preventas.hoy|length }}</span>
+      <span class="cifra__nota">Confirmar ingreso</span>
+    </a>
+    <a class="cifra" href="{% url 'pedidos:preventas' %}">
+      <span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Próximas</span>
+      <span class="cifra__valor">{{ preventas.proximas|length }}</span>
+      <span class="cifra__nota">En {{ dias_aviso }} día{{ dias_aviso|pluralize }}</span>
+    </a>
+  </div>
+</section>
+
 <section class="seccion" aria-labelledby="titulo-cifras">
   <div class="seccion__titulo"><h2 id="titulo-cifras">Cuentas</h2></div>
   <div class="cifras">

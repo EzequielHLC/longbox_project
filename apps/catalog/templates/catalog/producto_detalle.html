@@ -70,6 +70,13 @@ esconderse con CSS.
           {# CO-031: sólo cuando hay un precio calculado al cual volver. #}
           <li><a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado ({{ restauracion.precio_recalculado|pesos }})</span></a></li>
         {% endif %}
+        {% if puede_demorar %}
+          <li><a href="{% url 'pedidos:demora' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="atencion" %}<span>Registrar demora</span></a></li>
+        {% endif %}
+        {% if producto.esta_en_pre_venta %}
+          <li><a href="{% url 'pedidos:preventas' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Confirmar ingreso</span></a></li>
+          <li><a href="{% url 'pedidos:cancelar_preventa' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Cancelar pre-venta</span></a></li>
+        {% endif %}
         {% if producto.estado == "descatalogado" %}
           <li><a href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
         {% elif producto.estado != "cancelado_editorial" %}
@@ -112,6 +119,15 @@ esconderse con CSS.
 
           <dt>Fecha de llegada</dt>
           <dd class="datos">{{ producto.fecha_llegada|date:"d/m/Y"|default:"—" }}</dd>
+
+          {% if producto.esta_demorado %}
+            <dt>Demora</dt>
+            <dd>
+              <span class="estado estado--atencion">Demorado</span>
+              {% if producto.fecha_estimada %}· nueva fecha <span class="datos">{{ producto.fecha_estimada|date:"d/m/Y" }}</span>{% endif %}
+              {% if es_administrador and producto.nota_demora %}<br><span class="texto-chico secundario">{{ producto.nota_demora }}</span>{% endif %}
+            </dd>
+          {% endif %}
         {% endif %}
       </dl>
     </section>
@@ -203,7 +219,7 @@ esconderse con CSS.
         <div class="seccion__titulo"><h2 id="titulo-interna">Información interna</h2></div>
         <dl class="datos-de-ficha">
           <dt>Stock reservado en pedidos</dt>
-          <dd class="secundario">No disponible todavía.</dd>
+          <dd class="datos">{{ reservadas }}</dd>
           <dt>Suscriptores de reposición</dt>
           <dd class="secundario">No disponible todavía.</dd>
         </dl>

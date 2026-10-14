@@ -1363,6 +1363,9 @@ input[role="switch"]:checked::after { transform: translateX(22px); background: v
 .casilla > input { margin-top: 2px; }
 .casilla--critica > span { font-weight: 700; color: var(--texto-fuerte); }
 .casilla--critica > input { border-color: var(--error); }
+/* Una opción con su explicación debajo (CU-PED-OPC). */
+.casilla--opcion { padding: var(--esp-3); border: var(--trazo) var(--linea); }
+.casilla--opcion:has(> input:checked) { border-color: var(--acento); }
 .casilla-estado {
   min-width: 6ch;
   font-weight: 700;
@@ -1895,6 +1898,8 @@ table { border-collapse: collapse; width: 100%; }
   border-bottom: var(--trazo) var(--linea);
   vertical-align: top;
 }
+/* Un número que se carga dentro de una fila (unidades recibidas, plan 01). */
+.tabla .entrada-cifra { width: 7rem; text-align: right; }
 .tabla tbody td { transition: background-color var(--dur-1) var(--curva-golpe), box-shadow var(--dur-1) var(--curva-golpe); }
 .tabla tbody tr:hover > td { background: var(--fondo-3); }
 .tabla tbody tr:hover > td:first-child { box-shadow: inset 3px 0 0 var(--acento); }

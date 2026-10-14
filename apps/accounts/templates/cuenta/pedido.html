@@ -27,7 +27,11 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
             </span>
             <div class="linea-carrito__datos pila-2">
               <span class="linea-carrito__titulo">{{ linea.producto.titulo }}{% if linea.producto.productoeditorial.volumen %} #{{ linea.producto.productoeditorial.volumen }}{% endif %}</span>
-              <p class="texto-chico secundario">{{ linea.get_estado_display }}</p>
+              <p class="texto-chico secundario">{{ linea.get_estado_display }}{% if linea.decision_demora and linea.estado != "cancelado_reembolso" %} · {{ linea.get_decision_demora_display }}{% endif %}</p>
+              {% if linea.puede_decidir %}
+                <p class="texto-chico"><strong>Se demora.</strong> Elegí qué hacer antes del {{ linea.decision_vence_en|date:"d/m H:i" }}.</p>
+                <p><a href="{% url 'cuenta:demora' pedido.numero linea.pk %}" class="boton-seccion">Elegir qué hacer</a></p>
+              {% endif %}
               <p class="linea-carrito__precio texto-chico">{{ linea.cantidad }} × <span class="datos">{{ linea.precio_unitario|pesos }}</span></p>
             </div>
             <p class="linea-carrito__subtotal">

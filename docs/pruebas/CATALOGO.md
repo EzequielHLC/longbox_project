@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-10 de una corrida real de la suite.
+> **Tipo: Fotografía.** Tomada el 2026-10-12 de una corrida real de la suite.
 > **Generado por `scripts/generar_catalogo.py`.** No lo edites: la próxima corrida lo pisa.
 
 # Catálogo de pruebas
@@ -11,14 +11,14 @@ qué casos de prueba verifican, en [`CASOS_DE_PRUEBA.md`](CASOS_DE_PRUEBA.md).
 
 | | |
 | --- | ---: |
-| Archivos de prueba | 105 |
-| Funciones de prueba | 1825 |
-| Casos, contando cada valor de `parametrize` | 2113 |
-| Pasan | 1825 |
+| Archivos de prueba | 108 |
+| Funciones de prueba | 1905 |
+| Casos, contando cada valor de `parametrize` | 2200 |
+| Pasan | 1905 |
 | Fallan | 0 |
 | Omitidas | 0 |
 | No corrieron | 0 |
-| Duración de la corrida | 138 s |
+| Duración de la corrida | 165 s |
 | Scripts de resistencia en `scripts/demo/` | 23 |
 
 ---
@@ -1357,7 +1357,7 @@ Parámetros globales: clasificación del catálogo, precios y configuración.
 | `test_CO130_guardar_sin_cambios_no_deja_entradas` | CO130 guardar sin cambios no deja entradas | 1 | Pasa |
 | `test_CO130_b_la_configuracion_queda_asociada_al_administrador` | CO130 b la configuracion queda asociada al administrador | 1 | Pasa |
 | `test_CO130_los_valores_operativos_no_cambian_al_guardar_la_compra` | CO130 los valores operativos no cambian al guardar la compra | 1 | Pasa |
-| `test_CO130_un_valor_fuera_de_rango_no_se_guarda` | CO130 un valor fuera de rango no se guarda | 7 | Pasa |
+| `test_CO130_un_valor_fuera_de_rango_no_se_guarda` | CO130 un valor fuera de rango no se guarda | 8 | Pasa |
 | `test_CO130_la_pantalla_muestra_la_seccion_de_compra_online` | CO130 la pantalla muestra la seccion de compra online | 1 | Pasa |
 | `test_acceso_solo_el_administrador_guarda_la_compra_online` | Acceso solo el administrador guarda la compra online | 2 | Pasa |
 | `test_la_pantalla_muestra_que_significan_los_dos_numeros` | La pantalla muestra que significan los dos numeros | 1 | Pasa |
@@ -1899,6 +1899,107 @@ Acceso a la gestión de pedidos por la dirección real, y dos administradores a 
 | `test_acceso_sin_sesion_va_al_ingreso` | Acceso sin sesion va al ingreso | 1 | Pasa |
 | `test_acceso_el_menu_del_administrador_lleva_a_pedidos` | Acceso el menu del administrador lleva a pedidos | 1 | Pasa |
 | `test_CO092_dos_administradores_que_avanzan_a_la_vez_avanzan_un_solo_paso` | CO092 dos administradores que avanzan a la vez avanzan un solo paso | 1 | Pasa |
+
+### `test_acceso_y_concurrencia_preventa.py`
+
+Acceso al ciclo de la pre-venta y a la demora por la dirección real, y escrituras a la vez.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_acceso_solo_el_administrador_opera_la_preventa` | Acceso solo el administrador opera la preventa | 2 | Pasa |
+| `test_acceso_la_ficha_ofrece_las_acciones_de_preventa_solo_cuando_aplican` | Acceso la ficha ofrece las acciones de preventa solo cuando aplican | 1 | Pasa |
+| `test_acceso_el_panel_muestra_las_preventas_por_llegar` | Acceso el panel muestra las preventas por llegar | 1 | Pasa |
+| `test_acceso_los_parametros_de_la_preventa_se_guardan_y_se_auditan` | Acceso los parametros de la preventa se guardan y se auditan | 1 | Pasa |
+| `test_acceso_un_cliente_no_decide_sobre_el_pedido_de_otro` | Acceso un cliente no decide sobre el pedido de otro | 1 | Pasa |
+| `test_acceso_el_personal_no_decide_por_el_cliente` | Acceso el personal no decide por el cliente | 2 | Pasa |
+| `test_acceso_sin_sesion_la_decision_va_al_ingreso` | Acceso sin sesion la decision va al ingreso | 1 | Pasa |
+| `test_concurrencia_dos_pestanas_que_confirman_registran_una_sola_decision` | Concurrencia dos pestanas que confirman registran una sola decision | 1 | Pasa |
+| `test_concurrencia_la_llegada_y_la_cancelacion_del_cliente_no_se_pisan` | Concurrencia la llegada y la cancelacion del cliente no se pisan | 1 | Pasa |
+| `test_concurrencia_dos_administradores_que_confirman_el_mismo_ingreso_lo_cuentan_una_vez` | Concurrencia dos administradores que confirman el mismo ingreso lo cuentan una vez | 1 | Pasa |
+| `test_concurrencia_la_cancelacion_por_la_editorial_y_la_compra_no_dejan_reservas_vivas` | Concurrencia la cancelacion por la editorial y la compra no dejan reservas vivas | 1 | Pasa |
+
+### `test_contratos_01_preventa.py`
+
+Contratos del ciclo de la pre-venta (plan 01): `CO-011` a `CO-015`, `CO-026`, `CO-027`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO011_avisa_las_proximas_y_las_de_hoy_sin_cambiar_nada` | CO011 avisa las proximas y las de hoy sin cambiar nada | 1 | Pasa |
+| `test_CO011_correr_dos_veces_el_mismo_dia_no_repite_avisos` | CO011 correr dos veces el mismo dia no repite avisos | 1 | Pasa |
+| `test_CO011_fuera_del_horizonte_o_sin_preventas_no_avisa` | CO011 fuera del horizonte o sin preventas no avisa | 1 | Pasa |
+| `test_CO011_una_demorada_cuya_fecha_estimada_paso_se_recuerda_una_vez` | CO011 una demorada cuya fecha estimada paso se recuerda una vez | 1 | Pasa |
+| `test_CO011_el_temporizador_corre_los_ciclos_de_la_preventa_y_la_demora` | CO011 el temporizador corre los ciclos de la preventa y la demora | 1 | Pasa |
+| `test_CO012_escala_lo_vencido_sin_ingreso_ni_demora_y_lo_audita` | CO012 escala lo vencido sin ingreso ni demora y lo audita | 1 | Pasa |
+| `test_CO012_escala_una_vez_por_dia_mientras_siga_sin_resolver` | CO012 escala una vez por dia mientras siga sin resolver | 1 | Pasa |
+| `test_CO012_no_escala_lo_que_tiene_demora_registrada` | CO012 no escala lo que tiene demora registrada | 1 | Pasa |
+| `test_CO013_confirmar_ingreso_activa_productos_y_pasa_pedidos_a_pendiente_de_armado` | CO013 confirmar ingreso activa productos y pasa pedidos a pendiente de armado | 1 | Pasa |
+| `test_CO013_lo_recibido_cubre_las_reservas_en_orden_de_compra` | CO013 lo recibido cubre las reservas en orden de compra | 1 | Pasa |
+| `test_CO013_no_saltea_una_reserva_que_no_alcanza` | CO013 no saltea una reserva que no alcanza | 1 | Pasa |
+| `test_CO013_un_pedido_con_otra_preventa_sigue_esperando` | CO013 un pedido con otra preventa sigue esperando | 1 | Pasa |
+| `test_CO013_A1_un_faltante_vencido_se_demora_con_la_cascada_de_CO015` | CO013 A1 un faltante vencido se demora con la cascada de CO015 | 1 | Pasa |
+| `test_CO013_un_faltante_que_todavia_no_vence_no_cambia` | CO013 un faltante que todavia no vence no cambia | 1 | Pasa |
+| `test_CO013_E3_un_producto_que_falla_queda_en_preventa_y_los_demas_siguen` | CO013 E3 un producto que falla queda en preventa y los demas siguen | 1 | Pasa |
+| `test_CO013_rechaza_unidades_negativas` | CO013 rechaza unidades negativas | 1 | Pasa |
+| `test_CO013_el_articulo_de_despacho_diferido_llega_disponible_y_cierra_la_compensacion` | CO013 el articulo de despacho diferido llega disponible y cierra la compensacion | 1 | Pasa |
+| `test_CO013_por_la_pantalla_se_revisa_y_despues_se_confirma` | CO013 por la pantalla se revisa y despues se confirma | 1 | Pasa |
+| `test_CO013_la_pantalla_rechaza_unidades_invalidas` | CO013 la pantalla rechaza unidades invalidas | 3 | Pasa |
+| `test_CO013_la_pantalla_agrupa_por_fecha_y_editorial` | CO013 la pantalla agrupa por fecha y editorial | 1 | Pasa |
+| `test_CO013_un_producto_que_ya_no_esta_en_preventa_se_informa` | CO013 un producto que ya no esta en preventa se informa | 1 | Pasa |
+| `test_CO014_informa_pedidos_y_clientes_sin_registrar_nada` | CO014 informa pedidos y clientes sin registrar nada | 1 | Pasa |
+| `test_CO014_A3_sin_pedidos_lo_dice` | CO014 A3 sin pedidos lo dice | 1 | Pasa |
+| `test_CO014_E1_la_fecha_estimada_debe_ser_posterior_a_hoy` | CO014 E1 la fecha estimada debe ser posterior a hoy | 2 | Pasa |
+| `test_CO014_rechaza_lo_ya_demorado_lo_vencido_y_lo_que_no_es_preventa` | CO014 rechaza lo ya demorado lo vencido y lo que no es preventa | 1 | Pasa |
+| `test_CO015_confirmar_demora_marca_el_producto_y_transiciona_los_pedidos` | CO015 confirmar demora marca el producto y transiciona los pedidos | 1 | Pasa |
+| `test_CO015_A1_sin_fecha_estimada_el_aviso_la_omite` | CO015 A1 sin fecha estimada el aviso la omite | 1 | Pasa |
+| `test_CO015_A3_sin_pedidos_registra_la_demora_sin_avisos` | CO015 A3 sin pedidos registra la demora sin avisos | 1 | Pasa |
+| `test_CO015_E2_un_pedido_que_falla_no_frena_a_los_demas` | CO015 E2 un pedido que falla no frena a los demas | 1 | Pasa |
+| `test_CO156_volver_desde_el_informe_de_demora_no_registra_nada` | CO156 volver desde el informe de demora no registra nada | 1 | Pasa |
+| `test_CO026_informa_reservas_por_cliente_y_los_puntos_a_reembolsar` | CO026 informa reservas por cliente y los puntos a reembolsar | 1 | Pasa |
+| `test_CO026_sin_reservas_lo_dice_con_cero` | CO026 sin reservas lo dice con cero | 1 | Pasa |
+| `test_CO027_cancela_reservas_reembolsa_en_puntos_y_cancela_el_producto` | CO027 cancela reservas reembolsa en puntos y cancela el producto | 1 | Pasa |
+| `test_CO027_sin_reservas_solo_cambia_el_estado` | CO027 sin reservas solo cambia el estado | 1 | Pasa |
+| `test_CO027_incluye_las_reservas_ya_demoradas` | CO027 incluye las reservas ya demoradas | 1 | Pasa |
+| `test_CO027_E1_si_falla_un_reembolso_no_queda_nada` | CO027 E1 si falla un reembolso no queda nada | 1 | Pasa |
+| `test_CO027_no_se_cancela_lo_que_no_esta_en_preventa` | CO027 no se cancela lo que no esta en preventa | 1 | Pasa |
+| `test_CO156_volver_desde_la_cancelacion_no_cambia_nada` | CO156 volver desde la cancelacion no cambia nada | 1 | Pasa |
+| `test_CO013_la_revision_dice_que_faltante_se_demora_y_cual_no_cambia` | CO013 la revision dice que faltante se demora y cual no cambia | 1 | Pasa |
+| `test_CO015_el_servicio_rechaza_una_fecha_estimada_que_no_es_futura` | CO015 el servicio rechaza una fecha estimada que no es futura | 1 | Pasa |
+
+### `test_contratos_08_demora.py`
+
+Contratos del Cliente ante una demora (plan 08, segunda parte).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO184_muestra_el_articulo_sus_fechas_y_las_tres_opciones` | CO184 muestra el articulo sus fechas y las tres opciones | 1 | Pasa |
+| `test_CO184_el_detalle_del_pedido_ofrece_elegir_que_hacer` | CO184 el detalle del pedido ofrece elegir que hacer | 1 | Pasa |
+| `test_CO184_E1_con_la_ventana_vencida_no_hay_opciones` | CO184 E1 con la ventana vencida no hay opciones | 1 | Pasa |
+| `test_CO184_sin_nada_para_despachar_no_ofrece_recibir_lo_disponible` | CO184 sin nada para despachar no ofrece recibir lo disponible | 1 | Pasa |
+| `test_CO184_con_otra_preventa_esperando_no_ofrece_recibir_lo_disponible` | CO184 con otra preventa esperando no ofrece recibir lo disponible | 1 | Pasa |
+| `test_CO094_pide_confirmar_con_la_consecuencia_sin_registrar` | CO094 pide confirmar con la consecuencia sin registrar | 2 | Pasa |
+| `test_CO094_una_opcion_que_no_corresponde_se_rechaza` | CO094 una opcion que no corresponde se rechaza | 1 | Pasa |
+| `test_CO095_pausar_registra_la_decision_y_el_pedido_sigue_esperando` | CO095 pausar registra la decision y el pedido sigue esperando | 1 | Pasa |
+| `test_CO095_al_llegar_el_articulo_pausado_el_pedido_pasa_a_pendiente_de_armado` | CO095 al llegar el articulo pausado el pedido pasa a pendiente de armado | 1 | Pasa |
+| `test_CO095_despacho_diferido_empaqueta_lo_disponible_y_el_pedido` | CO095 despacho diferido empaqueta lo disponible y el pedido | 1 | Pasa |
+| `test_CO095_el_despacho_no_arrastra_al_articulo_diferido` | CO095 el despacho no arrastra al articulo diferido | 1 | Pasa |
+| `test_CO095_no_se_decide_dos_veces` | CO095 no se decide dos veces | 1 | Pasa |
+| `test_CO095_con_la_ventana_vencida_se_rechaza_en_el_servidor` | CO095 con la ventana vencida se rechaza en el servidor | 1 | Pasa |
+| `test_CO156_volver_desde_la_confirmacion_no_registra_nada` | CO156 volver desde la confirmacion no registra nada | 1 | Pasa |
+| `test_CO098_cancelar_reembolsa_el_valor_en_puntos_y_no_toca_el_stock` | CO098 cancelar reembolsa el valor en puntos y no toca el stock | 1 | Pasa |
+| `test_CO098_pagado_con_puntos_devuelve_los_mismos_puntos` | CO098 pagado con puntos devuelve los mismos puntos | 1 | Pasa |
+| `test_CO098_un_pedido_sin_otros_articulos_se_cancela_y_devuelve_el_envio` | CO098 un pedido sin otros articulos se cancela y devuelve el envio | 1 | Pasa |
+| `test_CO098_E1_si_falla_no_queda_nada_y_avisa_al_administrador` | CO098 E1 si falla no queda nada y avisa al administrador | 1 | Pasa |
+| `test_CO098_cancelado_el_articulo_sale_del_historial_activo` | CO098 cancelado el articulo sale del historial activo | 1 | Pasa |
+| `test_CO096_cierra_las_ventanas_vencidas_y_avisa_al_administrador` | CO096 cierra las ventanas vencidas y avisa al administrador | 1 | Pasa |
+| `test_CO096_mira_la_decision_y_no_el_estado` | CO096 mira la decision y no el estado | 1 | Pasa |
+| `test_CO096_no_repite_ni_toca_las_vigentes` | CO096 no repite ni toca las vigentes | 1 | Pasa |
+| `test_CO097_acredita_el_5_por_ciento_por_semana_cumplida` | CO097 acredita el 5 por ciento por semana cumplida | 1 | Pasa |
+| `test_CO097_correr_dos_veces_o_antes_de_la_semana_no_acredita_de_mas` | CO097 correr dos veces o antes de la semana no acredita de mas | 1 | Pasa |
+| `test_CO097_el_tope_del_25_por_ciento_cierra_el_acumulador` | CO097 el tope del 25 por ciento cierra el acumulador | 1 | Pasa |
+| `test_CO097_E1_un_articulo_que_llego_o_se_cancelo_no_acredita` | CO097 E1 un articulo que llego o se cancelo no acredita | 1 | Pasa |
+| `test_CO097_E2_un_acumulador_en_el_tope_y_abierto_se_cierra_sin_acreditar` | CO097 E2 un acumulador en el tope y abierto se cierra sin acreditar | 1 | Pasa |
+| `test_CO097_E3_sin_acumuladores_no_hace_nada` | CO097 E3 sin acumuladores no hace nada | 1 | Pasa |
+| `test_CO098_con_envio_gratis_el_pedido_cancelado_solo_devuelve_el_articulo` | CO098 con envio gratis el pedido cancelado solo devuelve el articulo | 1 | Pasa |
 
 ### `test_contratos_08_pedidos.py`
 

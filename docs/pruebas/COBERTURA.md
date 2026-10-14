@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-10, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-10-12, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 127 |
-| Sin ninguna | 92 |
-| Pruebas de contrato en la suite | 555 |
+| Con al menos una prueba que lleva su código | 140 |
+| Sin ninguna | 79 |
+| Pruebas de contrato en la suite | 624 |
 
 ---
 
@@ -55,11 +55,11 @@ es otra puerta y su número también vive ahí.
 | `CO-137` | registrarEditorial | 4 | `apps/catalog/tests/test_concurrencia_catalogos.py`, `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-141` | registrarTipoDeMaterial | 1 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-144` | registrarFormato | 2 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
-| `CO-156` | cancelarOperacion | 9 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-156` | cancelarOperacion | 12 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/pedidos/tests/test_contratos_08_demora.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 
 ### `01-alta-editorial.md` — 01 Alta Editorial
 
-24 contratos · 0 con prueba · 24 sin.
+24 contratos · 7 con prueba · 17 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -72,19 +72,19 @@ es otra puerta y su número también vive ahí.
 | `CO-008` | sobrescribirCotizacion | — | — |
 | `CO-009` | agregarItemLoteImportado | — | — |
 | `CO-010` | fijarPrecioFinalManual | — | — |
-| `CO-011` | ejecutarCicloVigilanciaPreventa | — | — |
-| `CO-012` | ejecutarCicloEscaladoPorInaccion | — | — |
-| `CO-013` | confirmarIngresoDeLote | — | — |
-| `CO-014` | solicitarRegistroDeDemora | — | — |
-| `CO-015` | confirmarRegistroDeDemora | — | — |
+| `CO-011` | ejecutarCicloVigilanciaPreventa | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
+| `CO-012` | ejecutarCicloEscaladoPorInaccion | 3 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
+| `CO-013` | confirmarIngresoDeLote | 14 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
+| `CO-014` | solicitarRegistroDeDemora | 4 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
+| `CO-015` | confirmarRegistroDeDemora | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
 | `CO-016` | ejecutarCicloMonitoreoCasilla | — | — |
 | `CO-020` | editarBorrador | — | — |
 | `CO-021` | marcarCampoRevisado | — | — |
 | `CO-022` | confirmarBorrador | — | — |
 | `CO-023` | confirmarBorradoresEnLote | — | — |
 | `CO-024` | rechazarBorrador | — | — |
-| `CO-026` | solicitarCancelacionDePreventaEnLote | — | — |
-| `CO-027` | confirmarCancelacionDePreventaEnLote | — | — |
+| `CO-026` | solicitarCancelacionDePreventaEnLote | 2 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
+| `CO-027` | confirmarCancelacionDePreventaEnLote | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
 | `CO-159` | consultarColaDeBorradores | — | — |
 | `CO-160` | abrirBorrador | — | — |
 
@@ -212,20 +212,20 @@ es otra puerta y su número también vive ahí.
 
 ### `08-gestion-de-pedidos.md` — 08 Gestión de Pedidos
 
-10 contratos · 4 con prueba · 6 sin.
+10 contratos · 10 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-092` | avanzarEstadoDePedido | 15 | `apps/pedidos/tests/test_acceso_y_concurrencia_pedidos.py`, `apps/pedidos/tests/test_contratos_08_pedidos.py` |
 | `CO-093` | confirmarAvancePeseADecisionPendiente | 1 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
-| `CO-094` | seleccionarOpcionAnteDemora | — | — |
-| `CO-095` | confirmarOpcionAnteDemora | — | — |
-| `CO-096` | ejecutarCicloDeVencimientoDeVentanaDeDecision | — | — |
-| `CO-097` | ejecutarCicloDeCompensacionPorRetraso | — | — |
-| `CO-098` | confirmarCancelacionDeArticuloDemorado | — | — |
+| `CO-094` | seleccionarOpcionAnteDemora | 2 | `apps/pedidos/tests/test_contratos_08_demora.py` |
+| `CO-095` | confirmarOpcionAnteDemora | 6 | `apps/pedidos/tests/test_contratos_08_demora.py` |
+| `CO-096` | ejecutarCicloDeVencimientoDeVentanaDeDecision | 3 | `apps/pedidos/tests/test_contratos_08_demora.py` |
+| `CO-097` | ejecutarCicloDeCompensacionPorRetraso | 6 | `apps/pedidos/tests/test_contratos_08_demora.py` |
+| `CO-098` | confirmarCancelacionDeArticuloDemorado | 6 | `apps/pedidos/tests/test_contratos_08_demora.py` |
 | `CO-182` | consultarPedidos | 8 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
 | `CO-183` | consultarDetalleDePedido | 4 | `apps/pedidos/tests/test_contratos_08_pedidos.py` |
-| `CO-184` | consultarOpcionesAnteDemora | — | — |
+| `CO-184` | consultarOpcionesAnteDemora | 5 | `apps/pedidos/tests/test_contratos_08_demora.py` |
 
 ### `09-devoluciones.md` — 09 Devoluciones
 
@@ -390,6 +390,52 @@ es otra puerta y su número también vive ahí.
 
 Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición verifica cada una, que es lo que hace consultable la trazabilidad sin abrir un archivo.
 
+**`CO-011` · ejecutarCicloVigilanciaPreventa**
+
+- `test_CO011_avisa_las_proximas_y_las_de_hoy_sin_cambiar_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO011_correr_dos_veces_el_mismo_dia_no_repite_avisos` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO011_el_temporizador_corre_los_ciclos_de_la_preventa_y_la_demora` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO011_fuera_del_horizonte_o_sin_preventas_no_avisa` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO011_una_demorada_cuya_fecha_estimada_paso_se_recuerda_una_vez` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
+**`CO-012` · ejecutarCicloEscaladoPorInaccion**
+
+- `test_CO012_escala_lo_vencido_sin_ingreso_ni_demora_y_lo_audita` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO012_escala_una_vez_por_dia_mientras_siga_sin_resolver` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO012_no_escala_lo_que_tiene_demora_registrada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
+**`CO-013` · confirmarIngresoDeLote**
+
+- `test_CO013_A1_un_faltante_vencido_se_demora_con_la_cascada_de_CO015` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_E3_un_producto_que_falla_queda_en_preventa_y_los_demas_siguen` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_confirmar_ingreso_activa_productos_y_pasa_pedidos_a_pendiente_de_armado` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_el_articulo_de_despacho_diferido_llega_disponible_y_cierra_la_compensacion` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_la_pantalla_agrupa_por_fecha_y_editorial` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_la_pantalla_rechaza_unidades_invalidas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_la_revision_dice_que_faltante_se_demora_y_cual_no_cambia` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_lo_recibido_cubre_las_reservas_en_orden_de_compra` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_no_saltea_una_reserva_que_no_alcanza` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_por_la_pantalla_se_revisa_y_despues_se_confirma` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_rechaza_unidades_negativas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_un_faltante_que_todavia_no_vence_no_cambia` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_un_pedido_con_otra_preventa_sigue_esperando` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_un_producto_que_ya_no_esta_en_preventa_se_informa` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
+**`CO-014` · solicitarRegistroDeDemora**
+
+- `test_CO014_A3_sin_pedidos_lo_dice` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO014_E1_la_fecha_estimada_debe_ser_posterior_a_hoy` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO014_informa_pedidos_y_clientes_sin_registrar_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO014_rechaza_lo_ya_demorado_lo_vencido_y_lo_que_no_es_preventa` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
+**`CO-015` · confirmarRegistroDeDemora**
+
+- `test_CO015_A1_sin_fecha_estimada_el_aviso_la_omite` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_A3_sin_pedidos_registra_la_demora_sin_avisos` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_E2_un_pedido_que_falla_no_frena_a_los_demas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_confirmar_demora_marca_el_producto_y_transiciona_los_pedidos` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_el_servicio_rechaza_una_fecha_estimada_que_no_es_futura` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
 **`CO-017` · aprobarCorreoParaProcesamiento**
 
 - `test_CO017_E1_la_segunda_aprobacion_encuentra_el_correo_tomado` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
@@ -416,6 +462,19 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO019_reemplaza_solo_los_borradores_abiertos` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO019_si_la_extraccion_falla_los_abiertos_se_conservan` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO019_un_correo_pendiente_no_se_reprocesa` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+
+**`CO-026` · solicitarCancelacionDePreventaEnLote**
+
+- `test_CO026_informa_reservas_por_cliente_y_los_puntos_a_reembolsar` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO026_sin_reservas_lo_dice_con_cero` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+
+**`CO-027` · confirmarCancelacionDePreventaEnLote**
+
+- `test_CO027_E1_si_falla_un_reembolso_no_queda_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO027_cancela_reservas_reembolsa_en_puntos_y_cancela_el_producto` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO027_incluye_las_reservas_ya_demoradas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO027_no_se_cancela_lo_que_no_esta_en_preventa` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO027_sin_reservas_solo_cambia_el_estado` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 
 **`CO-031` · restaurarPrecioCalculado**
 
@@ -733,6 +792,44 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-093` · confirmarAvancePeseADecisionPendiente**
 
 - `test_CO093_avanza_y_los_pendientes_conservan_su_estado` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-094` · seleccionarOpcionAnteDemora**
+
+- `test_CO094_pide_confirmar_con_la_consecuencia_sin_registrar` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO094_una_opcion_que_no_corresponde_se_rechaza` — `apps/pedidos/tests/test_contratos_08_demora.py`
+
+**`CO-095` · confirmarOpcionAnteDemora**
+
+- `test_CO095_al_llegar_el_articulo_pausado_el_pedido_pasa_a_pendiente_de_armado` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO095_con_la_ventana_vencida_se_rechaza_en_el_servidor` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO095_despacho_diferido_empaqueta_lo_disponible_y_el_pedido` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO095_el_despacho_no_arrastra_al_articulo_diferido` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO095_no_se_decide_dos_veces` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO095_pausar_registra_la_decision_y_el_pedido_sigue_esperando` — `apps/pedidos/tests/test_contratos_08_demora.py`
+
+**`CO-096` · ejecutarCicloDeVencimientoDeVentanaDeDecision**
+
+- `test_CO096_cierra_las_ventanas_vencidas_y_avisa_al_administrador` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO096_mira_la_decision_y_no_el_estado` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO096_no_repite_ni_toca_las_vigentes` — `apps/pedidos/tests/test_contratos_08_demora.py`
+
+**`CO-097` · ejecutarCicloDeCompensacionPorRetraso**
+
+- `test_CO097_E1_un_articulo_que_llego_o_se_cancelo_no_acredita` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO097_E2_un_acumulador_en_el_tope_y_abierto_se_cierra_sin_acreditar` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO097_E3_sin_acumuladores_no_hace_nada` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO097_acredita_el_5_por_ciento_por_semana_cumplida` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO097_correr_dos_veces_o_antes_de_la_semana_no_acredita_de_mas` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO097_el_tope_del_25_por_ciento_cierra_el_acumulador` — `apps/pedidos/tests/test_contratos_08_demora.py`
+
+**`CO-098` · confirmarCancelacionDeArticuloDemorado**
+
+- `test_CO098_E1_si_falla_no_queda_nada_y_avisa_al_administrador` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO098_cancelado_el_articulo_sale_del_historial_activo` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO098_cancelar_reembolsa_el_valor_en_puntos_y_no_toca_el_stock` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO098_con_envio_gratis_el_pedido_cancelado_solo_devuelve_el_articulo` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO098_pagado_con_puntos_devuelve_los_mismos_puntos` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO098_un_pedido_sin_otros_articulos_se_cancela_y_devuelve_el_envio` — `apps/pedidos/tests/test_contratos_08_demora.py`
 
 **`CO-103` · aplicarCanjeDePuntosAItem**
 
@@ -1062,6 +1159,9 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO156_abandonar_la_confirmacion_no_cambia_el_proveedor` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO156_abandonar_la_modificacion_no_cambia_el_precio` — `apps/catalog/tests/test_contratos_03_pricing.py`
 - `test_CO156_cancelar_la_baja_no_cambia_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO156_volver_desde_el_informe_de_demora_no_registra_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO156_volver_desde_la_cancelacion_no_cambia_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO156_volver_desde_la_confirmacion_no_registra_nada` — `apps/pedidos/tests/test_contratos_08_demora.py`
 
 **`CO-157` · consultarColaDeCorreos**
 
@@ -1184,6 +1284,14 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO183_muestra_cliente_items_puntos_pago_y_linea_de_tiempo` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
 - `test_CO183_no_modifica_el_estado_del_sistema` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
 - `test_CO183_un_pedido_pagado_sólo_con_puntos_lo_dice` — `apps/pedidos/tests/test_contratos_08_pedidos.py`
+
+**`CO-184` · consultarOpcionesAnteDemora**
+
+- `test_CO184_E1_con_la_ventana_vencida_no_hay_opciones` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO184_con_otra_preventa_esperando_no_ofrece_recibir_lo_disponible` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO184_el_detalle_del_pedido_ofrece_elegir_que_hacer` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO184_muestra_el_articulo_sus_fechas_y_las_tres_opciones` — `apps/pedidos/tests/test_contratos_08_demora.py`
+- `test_CO184_sin_nada_para_despachar_no_ofrece_recibir_lo_disponible` — `apps/pedidos/tests/test_contratos_08_demora.py`
 
 **`CO-188` · consultarPuntos**
 
