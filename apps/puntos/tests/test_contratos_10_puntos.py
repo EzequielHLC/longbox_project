@@ -67,7 +67,8 @@ def test_CO188_cada_lote_con_origen_monto_disponible_y_caducidad(navegador, titu
     contenido = respuesta.content.decode()
     assert "120 de 200 pts" in contenido
     assert "Ajuste manual" in contenido
-    assert lote.caduca_el.strftime("%d/%m/%Y") in contenido
+    # Plan 10, segunda parte, ambigüedad 3: se usan hasta el día anterior al de caducidad.
+    assert (lote.caduca_el - timedelta(days=1)).strftime("%d/%m/%Y") in contenido
 
 
 def test_CO188_destaca_los_lotes_que_vencen_dentro_de_30_dias(navegador, titular):

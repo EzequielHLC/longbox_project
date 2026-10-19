@@ -180,6 +180,23 @@ def resumen_para_pantalla():
     }
 
 
+def sincronizar():
+    """`CO-155` (plan 00, A2): la cotización del día al respaldo local.
+
+    Lo corre el Temporizador. Si la API no responde, el respaldo anterior queda
+    intacto: una cotización vieja se ve con su fecha; una vacía dejaría el alta
+    de importados sin sugerencia. Devuelve el catálogo, o `None` si no hubo.
+    """
+    from django.core.cache import cache
+
+    catalogo = descargar_cotizaciones()
+    if not catalogo:
+        return None
+    guardar_respaldo({"cotizaciones": catalogo})
+    cache.delete(CLAVE_COTIZACIONES)
+    return catalogo
+
+
 def guardar_respaldo(datos):
     integraciones.guardar_respaldo(RUTA_RESPALDO, datos)
 

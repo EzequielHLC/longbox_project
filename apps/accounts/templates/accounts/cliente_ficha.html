@@ -1,8 +1,9 @@
 {% extends "base_operativo.html" %}
 {% comment %}
 CU-CLI-CON paso 6 — `CO-195 consultarFichaDeCliente`. De sólo lectura por
-diseño: no hay ningún formulario ni ningún enlace a una operación sobre la
-cuenta. Las operaciones pertenecen a su titular.
+diseño: no hay ningún formulario ni ningún enlace a una operación sobre los
+datos de la cuenta, que pertenecen a su titular. El único enlace a otra pantalla
+es el de sus puntos (`CU-PTS-ADM` paso 1; B-10-011), que no toca datos personales.
 {% endcomment %}
 
 {% block titulo %}{{ cliente.get_full_name|default:cliente.email }} · Longbox{% endblock %}
@@ -16,6 +17,11 @@ cuenta. Las operaciones pertenecen a su titular.
     <h1>{{ cliente.get_full_name|default:"Sin nombre cargado" }}</h1>
     <p>Cuenta de cliente · sólo lectura</p>
   </div>
+  {% if cliente.estado == "activo" %}
+    <div class="fila-2">
+      <a href="{% url 'accounts:cliente_puntos' cliente.pk %}" class="boton-seccion">{% include "_iconos.html" with icono="puntos" %}<span>Puntos</span></a>
+    </div>
+  {% endif %}
 </header>
 
 <div class="rejilla-2">

@@ -10,8 +10,8 @@ envío y total. Lo dibujan el checkout y el resumen del invitado.
   {% endif %}
   <div>
     <dt>Envío</dt>
-    <dd class="datos">{% if resumen.envio_gratis %}Gratis{% else %}{{ resumen.costo_envio|pesos }}{% endif %}</dd>
+    <dd class="datos">{% if resumen.retiro %}Retiro en el local{% elif resumen.envio_gratis %}Gratis{% else %}{{ resumen.costo_envio|pesos }}{% endif %}</dd>
   </div>
 </dl>
-{% include "tienda/_barra_envio.html" with envio=resumen.estado_envio %}
+{% if not resumen.retiro %}{% include "tienda/_barra_envio.html" with envio=resumen.estado_envio %}{% endif %}
 <p class="resumen-carrito__total"><span class="etiqueta">Total a pagar</span> <span class="sin-envolver">{{ resumen.total|pesos }}</span></p>

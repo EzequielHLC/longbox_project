@@ -16,7 +16,8 @@ una rutina de copia.
 | Qué | Por qué | Se pierde si falta |
 | --- | --- | --- |
 | Base de datos | Es el sistema | Todo |
-| `media/` | Portadas, evidencias de devolución, banners, correos originales archivados | Los archivos subidos. **No se regeneran**: la evidencia de un reclamo y el correo original de un proveedor son únicos |
+| `media/` | Portadas, banners, correos originales archivados | Los archivos subidos. **No se regeneran**: el correo original de un proveedor es único |
+| `privado/` | Las fotos de los reclamos de devolución, fuera de lo que publica el servidor web (plan 09) | La evidencia de un reclamo. **No se regenera** y es del Cliente |
 | `.env` | Credenciales y configuración del entorno | El despliegue no arranca |
 
 **Lo que no se respalda, a propósito:** el código y las migraciones viven en el repositorio, los

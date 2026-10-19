@@ -97,8 +97,9 @@ def test_CO192_E1_sin_pedidos_activos_informa_y_las_demas_secciones_siguen(naveg
         assert url in contenido
 
 
-def test_CO192_la_seccion_stock_en_local_no_se_muestra(navegador):
-    assert "Stock en local" not in navegador.get(URL_PANEL).content.decode()
+def test_CO192_la_seccion_stock_en_local_se_muestra(navegador):
+    """Plan 18: la sección oculta por B-11-003 ya existe."""
+    assert reverse("cuenta:stock") in navegador.get(URL_PANEL).content.decode()
 
 
 def test_CO192_no_modifica_el_estado_del_sistema(navegador, titular):

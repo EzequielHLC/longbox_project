@@ -49,12 +49,9 @@ CAMPOS_AUDITADOS = {  # noqa: RUF012
 class ImpactoDeBaja:
     """Lo que CU-PRV-BAJ paso 3 le tiene que mostrar al Administrador antes de bajar.
 
-    El CU pide dos cifras: las propuestas de restock afectadas y los productos
-    del catálogo vinculados. La segunda se puede calcular; la primera no, porque
-    el módulo 05, Restock, todavía no existe. Se declara igual
-    y en `None` —no en cero— para que la pantalla pueda decir "no se puede
-    calcular todavía" en vez de afirmar que no hay ninguna, que sería mentir
-    sobre un dato que el CU considera parte de la decisión.
+    El CU pide dos cifras: las propuestas de restock afectadas —la pendiente, si
+    tiene un pedido sin despachar a este proveedor (B-04-001)— y los productos
+    del catálogo vinculados.
     """
 
     productos_vinculados: int
@@ -67,7 +64,19 @@ class ImpactoDeBaja:
 
 def calcular_impacto_de_baja(proveedor):
     """CU-PRV-BAJ paso 2 — el mapeo de impacto previo a la confirmación."""
-    return ImpactoDeBaja(productos_vinculados=proveedor.productos.count())
+    from apps.restock import servicios as restock
+
+    propuesta = restock.pendiente()
+    afectadas = 0
+    if propuesta is not None:
+        afectadas = sum(
+            1
+            for grupo in restock.agrupar(propuesta)
+            if grupo.clave == proveedor.pk and grupo.pendiente
+        )
+    return ImpactoDeBaja(
+        productos_vinculados=proveedor.productos.count(), propuestas_de_restock=afectadas
+    )
 
 
 def cambios_entre(anterior, nuevo):

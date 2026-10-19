@@ -1,0 +1,88 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-DEV-RES pasos 3 y 4 — CO-187 consultarDetalleDeCasoDeDevolucion: contacto,
+pedido, ítem, motivo, descripción y las fotos. Si sigue Pendiente, las
+resoluciones que admite (plan 00, C1): el cambio (CO-100), el reembolso en
+puntos (CO-101), por el medio de pago, o el rechazo (CO-102). La coordinación
+con el Cliente (prueba de destrucción, devolución) va por correo o teléfono.
+{% endcomment %}
+
+{% block titulo %}Caso {{ caso.numero }} · Devoluciones · Longbox{% endblock %}
+{% block seccion %}Devoluciones{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'devoluciones:lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Devoluciones" atras=1 %}</span>
+    <h1>Caso <span class="datos">{{ caso.numero }}</span></h1>
+    <p>
+      <span class="marca-estado{% if caso.estado == 'pendiente' %} marca-estado--atencion{% elif caso.estado == 'resuelto' %} marca-estado--ok{% else %} marca-estado--dato{% endif %}">{{ caso.get_estado_display }}</span>
+      {% if caso.resolucion %}<span class="marca-estado marca-estado--dato">{{ caso.get_resolucion_display }}</span>{% endif %}
+    </p>
+  </div>
+  {% if caso.abierto %}
+    <div class="fila-2">
+      {% if opciones.cambio %}<a href="{% url 'devoluciones:cambio' caso.pk %}" class="boton-primario">Autorizar cambio</a>{% endif %}
+      {% if opciones.medio %}<a href="{% url 'devoluciones:reembolso_medio' caso.pk %}" class="{% if opciones.cambio %}boton-seccion{% else %}boton-primario{% endif %}">Reembolsar por el medio de pago</a>{% endif %}
+      {% if opciones.puntos %}<a href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>{% endif %}
+      <a href="{% url 'devoluciones:rechazo' caso.pk %}" class="boton-texto">Rechazar</a>
+    </div>
+  {% endif %}
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Reclamo</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Contacto</dt>
+      <dd>
+        {% if caso.usuario %}<a href="{% url 'accounts:cliente_ficha' caso.usuario.pk %}">{{ caso.usuario.get_full_name|default:caso.usuario.email }}</a>{% else %}Invitado{% endif %}
+        <br><span class="texto-chico">Correo <span class="datos">{{ caso.correo }}</span>{% if caso.telefono %} · teléfono <span class="datos">{{ caso.telefono }}</span>{% endif %}</span>
+        <br><span class="texto-chico secundario">{% if caso.es_arrepentimiento %}Coordiná la devolución del artículo antes de reembolsar.{% else %}Pedí y revisá la prueba de destrucción por correo antes de resolver.{% endif %}</span>
+      </dd>
+      <dt>Pedido</dt>
+      <dd><a href="{% url 'pedidos:detalle' pedido.pk %}" class="datos">{{ pedido.numero }}</a> · {{ pedido.get_canal_display }}</dd>
+      <dt>Artículo</dt>
+      <dd>{{ linea.producto.especifico }}<br><span class="texto-chico secundario">{{ linea.cantidad }} × <span class="datos">{{ linea.precio_unitario|pesos }}</span>{% if linea.cubierta_con_puntos %} · pagado con {{ linea.puntos_canjeados }} pts{% endif %}</span></dd>
+      <dt>Motivo</dt>
+      <dd>{{ caso.get_motivo_display }} · {{ caso.unidades }} unidad{{ caso.unidades|pluralize:"es" }}</dd>
+      <dt>Descripción</dt>
+      <dd>{{ caso.descripcion|default:"—"|linebreaksbr }}</dd>
+      <dt>Abierto</dt>
+      <dd class="datos">{{ caso.abierto_en|date:"d/m/Y H:i" }}</dd>
+      {% if not caso.abierto %}
+        <dt>{% if caso.estado == "rechazado" %}Rechazado{% else %}Resuelto{% endif %}</dt>
+        <dd><span class="datos">{{ caso.resuelto_en|date:"d/m/Y H:i" }}</span>{% if caso.resuelto_por %} · {{ caso.resuelto_por.get_full_name|default:caso.resuelto_por.email }}{% endif %}</dd>
+      {% endif %}
+      {% if caso.producto_reemplazo %}
+        <dt>Reemplazo</dt>
+        <dd>{{ caso.producto_reemplazo.especifico }}<br><span class="texto-chico secundario">A nombre del Cliente en el stock en local, con envío sin costo.</span></dd>
+      {% endif %}
+      {% if caso.monto_reembolsado %}
+        <dt>Reembolsado</dt>
+        <dd class="datos">{{ caso.monto_reembolsado|pesos }}</dd>
+      {% endif %}
+      {% if caso.motivo_rechazo %}
+        <dt>Motivo del rechazo</dt>
+        <dd>{{ caso.motivo_rechazo|linebreaksbr }}</dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  {% if caso.evidencias.all %}
+  <section class="seccion" aria-labelledby="titulo-fotos">
+    <div class="seccion__titulo"><h2 id="titulo-fotos">Fotos del artículo</h2></div>
+    <div class="galeria-producto" aria-label="Fotos del artículo">
+      {% for evidencia in caso.evidencias.all %}
+        {% url 'devoluciones:evidencia' caso.pk evidencia.pk as foto %}
+        <a href="{{ foto }}" class="galeria-producto__item" target="_blank" rel="noopener">
+          <img src="{{ foto }}" alt="Foto {{ forloop.counter }} del artículo reclamado">
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

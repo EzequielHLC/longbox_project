@@ -48,7 +48,11 @@ def con_totales(pedidos):
     # También el artículo que llegó para el despacho diferido (B-08-007).
     demorados = LineaPedido.objects.filter(pedido=OuterRef("pk")).filter(
         Q(estado=LineaPedido.ESPERANDO_DEMORADO)
-        | Q(estado=LineaPedido.DISPONIBLE, decision_demora=LineaPedido.DESPACHO_DIFERIDO)
+        | Q(
+            estado=LineaPedido.DISPONIBLE,
+            decision_demora=LineaPedido.DESPACHO_DIFERIDO,
+            articulos_retenidos__isnull=True,
+        )
     )
     return pedidos.annotate(
         cobrado_productos=Coalesce(Sum(importe), CERO),
@@ -163,7 +167,7 @@ class AvanzarView(PedidosMixin, View):
 
     def _contexto(self, pedido, pendientes=None):
         contexto = _detalle(pedido)
-        if pendientes is None and contexto["siguiente"] == Pedido.EMPAQUETADO:
+        if pendientes is None and contexto["siguiente"] in (Pedido.EMPAQUETADO, Pedido.EN_LOCAL):
             pendientes = servicios.pendientes_de_decision(pedido)
         contexto["pendientes"] = pendientes or []
         return contexto

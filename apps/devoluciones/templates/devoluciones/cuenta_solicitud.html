@@ -1,0 +1,69 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}
+CU-DEV-SOL pasos 2 a 4 — CO-185 iniciarSolicitudDeDevolucion y CO-099
+registrarCasoDeDevolucion. El artículo (entre los que todavía no tienen
+reclamo), el motivo, una descripción opcional y al menos una foto. E3 y E4: el
+formulario sigue abierto con el problema de las fotos señalado.
+{% endcomment %}
+
+{% block titulo %}Reclamar un defecto · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+{% block titulo_cuenta %}Reclamar un defecto{% endblock %}
+
+{% block cuenta %}
+<div class="formulario--angosto pila-5">
+  <p class="secundario">Pedido <a href="{% url 'cuenta:pedido' pedido.numero %}" class="datos">{{ pedido.numero }}</a> · podés reclamar hasta el <span class="datos">{{ solicitud.vence|date:"d/m/Y" }}</span>. Después te escribimos para revisar el defecto y coordinar el cambio o el reintegro.</p>
+
+  {% if solicitud.existentes %}
+    <ul class="lista-renglones texto-chico">
+      {% for caso in solicitud.existentes %}
+        <li>Ya reclamaste {{ caso.linea.producto.especifico }}: <span class="datos">{{ caso.numero }}</span>, {{ caso.get_estado_display|lower }}.</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if errores.general %}
+    <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ errores.general }}</span></p>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate class="pila-4">
+    {% csrf_token %}
+    <fieldset class="pila-3">
+      <legend class="titulo-3">¿Qué artículo?</legend>
+      {% for linea in solicitud.lineas %}
+        <label class="casilla casilla--opcion">
+          <input type="radio" name="linea" value="{{ linea.pk }}" required {% if datos.linea == linea.pk|stringformat:"d" or forloop.first and not datos.linea %}checked{% endif %}>
+          <span>{{ linea.producto.especifico }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="pila-3">
+      <legend class="titulo-3">Motivo</legend>
+      {% for valor, etiqueta in solicitud.motivos %}
+        <label class="casilla casilla--opcion">
+          <input type="radio" name="motivo" value="{{ valor }}" required {% if datos.motivo == valor or forloop.first and not datos.motivo %}checked{% endif %}>
+          <span>{{ etiqueta }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <div class="campo">
+      <label for="descripcion" class="etiqueta">Contanos qué pasó</label>
+      <textarea id="descripcion" name="descripcion" rows="4" maxlength="2000">{{ datos.descripcion }}</textarea>
+      <div class="ayuda">Opcional.</div>
+    </div>
+
+    <div class="campo">
+      <label for="fotos" class="etiqueta">Fotos del artículo<span class="obligatorio" aria-hidden="true"> *</span></label>
+      <input type="file" id="fotos" name="fotos" accept="image/jpeg,image/png,image/webp" multiple required aria-describedby="fotos_ayuda{% if errores.fotos %} fotos_error{% endif %}"{% if errores.fotos %} aria-invalid="true"{% endif %}>
+      <div id="fotos_ayuda" class="ayuda">De 1 a {{ maximo_fotos }} fotos, JPG, PNG o WebP de hasta 5 MB cada una.</div>
+      {% if errores.fotos %}<p id="fotos_error" class="error-de-campo">Error: {{ errores.fotos }}</p>{% endif %}
+    </div>
+
+    <div class="fila-5">
+      <button type="submit" class="boton-primario">Enviar el reclamo</button>
+      <a href="{% url 'cuenta:pedido' pedido.numero %}" class="boton-texto">Volver al pedido</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

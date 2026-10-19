@@ -10,7 +10,8 @@
 <p style="{% estilo 'parrafo' %}">Tu pedido <span style="{% estilo 'destacado' %}">{{ pedido.numero }}</span> pasó a <span style="{% estilo 'destacado' %}">{{ pedido.get_estado_display }}</span>.</p>
 {% if pedido.estado == "armado" %}<p style="{% estilo 'parrafo' %}">Ya juntamos todo lo que pediste.</p>
 {% elif pedido.estado == "empaquetado" %}<p style="{% estilo 'parrafo' %}">Está empaquetado y listo para salir.</p>
-{% elif pedido.estado == "despachado" %}<p style="{% estilo 'parrafo' %}">Ya salió hacia {{ pedido.direccion_de_envio }}.</p>{% endif %}
+{% elif pedido.estado == "despachado" %}<p style="{% estilo 'parrafo' %}">Ya salió hacia {{ pedido.direccion_de_envio }}.</p>
+{% elif pedido.estado == "en_local" %}<p style="{% estilo 'parrafo' %}">Está listo para retirar en el local. Lo ves en «Mi cuenta», en Stock en local, con la fecha hasta la que te lo guardamos.</p>{% endif %}
 {% if pedido.usuario %}
 <p style="{% estilo 'secundario' %}">Podés seguirlo desde «Mi cuenta», en la tienda.</p>
 {% else %}

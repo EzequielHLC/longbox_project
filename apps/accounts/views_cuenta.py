@@ -31,6 +31,7 @@ from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import RegistroAuditoria
 from apps.core.utils import obtener_ip
+from apps.devoluciones import servicios as devoluciones
 from apps.pedidos import demora
 from apps.pedidos.models import LineaPedido, Pedido
 from apps.pedidos.servicios import ACTIVOS
@@ -90,10 +91,19 @@ class PedidoPropioView(ClienteMixin, View):
 
     def get(self, request, numero):
         pedido = get_object_or_404(Pedido, numero=numero, usuario=request.user)
-        lineas = list(pedido.lineas.select_related("producto", "producto__productoeditorial"))
+        lineas = list(
+            pedido.lineas.select_related(
+                "producto", "producto__productoeditorial", "caso_devolucion"
+            )
+        )
         for linea in lineas:
             linea.pedido = pedido
             linea.puede_decidir = demora.puede_decidir(linea)
+            # Plan 09, ambigüedad 11: el reclamo se sigue al lado de su línea.
+            linea.caso = getattr(linea, "caso_devolucion", None)
+        # Plan 00, C1: la garantía desde acá; el arrepentimiento, por su botón.
+        reclamo = devoluciones.estado_de_reclamo(pedido, devoluciones.GARANTIA)
+        arrepentimiento = devoluciones.estado_de_reclamo(pedido, devoluciones.ARREPENTIMIENTO)
         return render(
             request,
             "cuenta/pedido.html",
@@ -104,6 +114,11 @@ class PedidoPropioView(ClienteMixin, View):
                 "transiciones": list(pedido.transiciones.all()),
                 "cobrado": sum((linea.subtotal for linea in lineas), pedido.costo_envio),
                 "activo": pedido.estado in ACTIVOS,
+                "puede_reclamar": bool(reclamo and reclamo.puede),
+                "reclamo_vencido": bool(reclamo and not reclamo.puede),
+                "reclamo_hasta": reclamo.hasta if reclamo else None,
+                "puede_arrepentirse": bool(arrepentimiento and arrepentimiento.puede),
+                "arrepentimiento_hasta": arrepentimiento.hasta if arrepentimiento else None,
             },
         )
 

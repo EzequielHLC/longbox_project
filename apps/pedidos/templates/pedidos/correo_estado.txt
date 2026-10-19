@@ -2,7 +2,8 @@
 {% if pedido.estado == "armado" %}
 Ya juntamos todo lo que pediste.{% elif pedido.estado == "empaquetado" %}
 Está empaquetado y listo para salir.{% elif pedido.estado == "despachado" %}
-Ya salió hacia {{ pedido.direccion_de_envio }}.{% endif %}
+Ya salió hacia {{ pedido.direccion_de_envio }}.{% elif pedido.estado == "en_local" %}
+Está listo para retirar en el local. Lo ves en «Mi cuenta», en Stock en local, con la fecha hasta la que te lo guardamos.{% endif %}
 {% if pedido.usuario %}
 Podés seguirlo desde «Mi cuenta», en la tienda.{% else %}
 Te vamos a avisar a este correo cada vez que cambie de estado.{% endif %}

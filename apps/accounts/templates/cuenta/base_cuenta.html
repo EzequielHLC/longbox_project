@@ -1,8 +1,8 @@
 {% extends "base_publico.html" %}
 {% comment %}
 «Mi cuenta» (CU-CLI-HIS, CO-192). Las secciones del panel: pedidos activos,
-historial, puntos (CU-PTS-CON) y mis datos (CU-CLI-DAT). La de stock en el
-local no se muestra hasta que exista el módulo 18 (B-11-003).
+historial, puntos (CU-PTS-CON), stock en el local (CU-STK-CON) y mis datos
+(CU-CLI-DAT).
 
 Cada pantalla del panel extiende ésta, fija `seccion` y llena `cuenta`.
 {% endcomment %}
@@ -21,6 +21,7 @@ Cada pantalla del panel extiende ésta, fija `seccion` y llena `cuenta`.
       <a href="{% url 'cuenta:panel' %}" {% if seccion == "activos" %}aria-current="page"{% endif %}>Pedidos activos</a>
       <a href="{% url 'cuenta:historial' %}" {% if seccion == "historial" %}aria-current="page"{% endif %}>Historial</a>
       <a href="{% url 'cuenta:puntos' %}" {% if seccion == "puntos" %}aria-current="page"{% endif %}>Puntos</a>
+      <a href="{% url 'cuenta:stock' %}" {% if seccion == "stock" %}aria-current="page"{% endif %}>Stock en local</a>
       <a href="{% url 'cuenta:datos' %}" {% if seccion == "datos" %}aria-current="page"{% endif %}>Mis datos</a>
     </nav>
 

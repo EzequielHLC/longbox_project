@@ -352,3 +352,24 @@ escribió antes y fallaba.
 
 **Qué habría que cambiar.**
 Nada en el documento. Es transversal: la suite completa se volvió a correr después del cambio.
+
+---
+
+### B-03-013 · La cotización se sincroniza en el Temporizador
+
+**Tipo:** Agregado · **Fecha:** 2026-10-19 · **Alcance:** `CO-155`, `CU-ALT-IMP`
+**Estado:** Abierta
+
+**Qué apareció.**
+`CO-155 sincronizarCotizaciones` existía como comando de consola y nada lo corría solo: la
+cotización sugerida en el alta de importados envejecía hasta que alguien lo ejecutaba.
+
+**Qué dice la especificación.**
+`CO-155` no tiene caso de uso ni DSS (`docs/DEUDA.md`, «Consistencia de la especificación»).
+
+**Qué se hizo** (plan 00, A2).
+El Temporizador la sincroniza en cada corrida, por la puerta única de integraciones. Si la API no
+responde, queda el respaldo anterior con su fecha.
+
+**Qué habría que cambiar.**
+Declarar `CO-155` como operación del Temporizador (P-05).

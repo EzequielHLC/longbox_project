@@ -21,6 +21,7 @@ from django.db.models import Count, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.almacen import servicios as almacen
 from apps.catalog.models import Producto, ProductoEditorial
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.pedidos import avisos
@@ -28,6 +29,7 @@ from apps.pedidos.models import AvisoDePreVenta, LineaPedido, Pedido
 from apps.pedidos.servicios import AUTOMATICOS, avisar_cambio_de_estado, registrar_transicion
 from apps.puntos import servicios as puntos
 from apps.puntos.models import LotePuntos
+from apps.restock import servicios as restock
 
 logger = logging.getLogger(__name__)
 
@@ -674,8 +676,11 @@ def _ingresar(pk, cantidad, actor, origen, resumen):
         if ubicar_pedido(pedido, actor, momento):
             resumen.pedidos.append(pedido.numero)
             transaction.on_commit(partial(avisar_cambio_de_estado, pedido))
-        elif linea.despacho_diferido:
-            transaction.on_commit(partial(_avisar_llegada_diferida, pedido, linea, origen))
+
+    # La opción 2: lo que llega queda guardado a nombre del Cliente (plan 18).
+    for linea in cubiertas:
+        if linea.despacho_diferido:
+            almacen.retener_linea(linea, actor, origen=origen)
 
     if sin_cubrir:
         resumen.parciales.append(p)
@@ -685,6 +690,8 @@ def _ingresar(pk, cantidad, actor, origen, resumen):
             resumen.clientes |= demora.clientes
     else:
         resumen.activados.append(p)
+        # B-05-001: las unidades que quedan a la venta avisan a los suscriptores.
+        restock.al_subir_stock(p, 0, disponibles, origen=origen)
 
 
 def _faltante(pk, actor, origen, resumen):
@@ -699,21 +706,6 @@ def _faltante(pk, actor, origen, resumen):
     demora = _aplicar_demora(p, actor, timezone.now(), origen=origen)
     resumen.demorados.append(p)
     resumen.clientes |= demora.clientes
-
-
-def _avisar_llegada_diferida(pedido, linea, origen):
-    avisos.avisar(
-        [pedido.correo_de_contacto],
-        asunto=f"Tu pedido {pedido.numero}: llegó el artículo demorado",
-        antetitulo=f"Pedido {pedido.numero}",
-        titulo="Llegó tu artículo",
-        parrafos=[
-            f"Llegó {nombre(linea.producto)}. Queda en el local a tu nombre para el despacho "
-            "diferido.",
-        ],
-        enlace=_enlace_al_pedido(origen, pedido),
-        texto_enlace="Ver mi pedido",
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -805,6 +797,8 @@ def cancelar_preventa(producto, actor):
                 origen=LotePuntos.REEMBOLSO,
                 motivo=f"Cancelación de {p} por la editorial",
             )
+            for linea in cliente.reservas:  # plan 00, C2
+                puntos.descontar_ganados(cliente.usuario, linea, linea.cantidad)
             transaction.on_commit(partial(_avisar_cancelacion, cliente, p))
 
         RegistroAuditoria.registrar(

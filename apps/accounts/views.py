@@ -160,7 +160,9 @@ def renovar_sesion(request):
     `SESSION_SAVE_EVERY_REQUEST = True` alcanza con que el request llegue
     autenticado para que Django reinicie el contador de inactividad.
     """
-    return JsonResponse({"segundos_restantes": settings.SESSION_COOKIE_AGE})
+    from apps.core.sesion import segundos_de_sesion
+
+    return JsonResponse({"segundos_restantes": segundos_de_sesion()})
 
 
 # ---------------------------------------------------------------------------

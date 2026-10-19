@@ -373,10 +373,25 @@ class FichaPublicaView(View):
                 "producto": producto,
                 "en_carrito": _en_carrito(request, producto),
                 "editorial": getattr(producto, "productoeditorial", None),
+                "aviso": _aviso(request, producto),
                 # Volver al catálogo con los filtros que traía (paso 7).
                 "volver": request.GET.get("volver", ""),
             },
         )
+
+
+def _aviso(request, producto):
+    """CU-RST-SUS paso 2: el botón, el estado del Cliente y cuántos esperan."""
+    if producto.estado_publico != "agotado":
+        return None
+    from apps.restock import servicios as restock
+
+    usuario = request.user
+    return {
+        "puede_pedir": not usuario.is_authenticated or usuario.rol == "cliente",
+        "suscripcion": restock.suscripcion_de(usuario, producto),
+        "en_espera": restock.en_espera(producto),
+    }
 
 
 TOMOS_DE_LA_SERIE = 30

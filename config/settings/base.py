@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     "apps.puntos",
     "apps.ventas",
     "apps.caja",
+    "apps.almacen",
+    "apps.restock",
+    "apps.devoluciones",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
@@ -63,6 +66,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.sesion.ExpiracionDeSesionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -157,6 +161,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Las fotos de los reclamos (plan 09): fuera de `media/`, que el servidor web
+# publica entero. Las sirve una vista que exige sesión del dueño o del
+# Administrador. Tampoco se versionan.
+EVIDENCIA_ROOT = BASE_DIR / "privado"
+
 
 # Autenticación y sesiones (Módulo 12 — CU-AUT-INI, CU-AUT-FIN, CU-AUT-REC)
 
@@ -199,6 +208,17 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 # Un servidor que no responde no puede colgar la pantalla que espera el envío.
 EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=15, cast=int)
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-responder@longbox.local")
+# La dirección pública de la tienda, para los enlaces de los correos que salen
+# sin una pantalla de por medio (los del Temporizador). Vacía: van sin enlace.
+URL_PUBLICA = config("URL_PUBLICA", default="").rstrip("/")
+
+# La casilla de novedades de los proveedores (CO-016; plan 00, A1). Vacía: el
+# Temporizador no la lee y los correos entran por `ingerir_correos`.
+CASILLA_HOST = config("CASILLA_HOST", default="")
+CASILLA_PUERTO = config("CASILLA_PUERTO", default=993, cast=int)
+CASILLA_USUARIO = config("CASILLA_USUARIO", default="")
+CASILLA_CLAVE = config("CASILLA_CLAVE", default="")
+CASILLA_CARPETA = config("CASILLA_CARPETA", default="INBOX")
 
 
 # Alta Editorial (Módulo 01 — CU-ALT-NAC, CU-ALT-IMP)

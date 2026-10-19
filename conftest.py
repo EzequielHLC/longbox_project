@@ -45,7 +45,16 @@ def sin_red(request):
     sin_conexion = integraciones.Respuesta(
         motivo=integraciones.SIN_CONEXION, detalle="Red cortada por la fixture de tests."
     )
-    with patch.object(integraciones, "pedir", return_value=sin_conexion):
+    # La casilla de novedades no es HTTP y tiene su propia puerta (plan 00, A1).
+    from apps.suppliers import casilla
+
+    def casilla_cortada():
+        raise ConnectionError("Casilla cortada por la fixture de tests.")
+
+    with (
+        patch.object(integraciones, "pedir", return_value=sin_conexion),
+        patch.object(casilla, "abrir", side_effect=casilla_cortada),
+    ):
         yield
     cache.clear()
 

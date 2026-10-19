@@ -1,0 +1,85 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-DEV-RES paso 5, opción A — CO-100 resolverCasoConCambio. Se busca el
+reemplazo y, elegido, se ven los dos precios: «igual o comparable» lo decide el
+Administrador (plan 09, ambigüedad 8). E1: sin stock no se puede elegir, y se
+puede ir al reembolso en puntos.
+{% endcomment %}
+
+{% block titulo %}Autorizar cambio · Caso {{ caso.numero }} · Longbox{% endblock %}
+{% block seccion %}Devoluciones{% endblock %}
+
+{% block contenido %}
+{% url 'devoluciones:detalle' caso.pk as volver %}
+{% url 'devoluciones:cambio' caso.pk as esta %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del caso" atras=1 %}</span>
+    <h1>Autorizar cambio</h1>
+    <p>{{ linea.producto.especifico }} · <span class="datos">{{ linea.precio_unitario|pesos }}</span></p>
+  </div>
+</header>
+
+{% if elegido %}
+  <div class="panel formulario--angosto pila-4">
+    <dl class="datos-de-ficha">
+      <dt>Reclamado</dt>
+      <dd>{{ linea.producto.especifico }} · <span class="datos">{{ linea.precio_unitario|pesos }}</span></dd>
+      <dt>Reemplazo</dt>
+      <dd>{{ elegido.especifico }} · <span class="datos">{{ elegido.precio|pesos }}</span><br><span class="texto-chico secundario">Stock: <span class="datos">{{ elegido.stock }}</span></span></dd>
+    </dl>
+    {% if elegido.con_stock %}
+      <p>Se descuenta una unidad del reemplazo, que queda a nombre del cliente en el stock en local con envío sin costo, y le avisamos. Confirmá sólo si ya recibiste la prueba de destrucción.</p>
+      <form method="post" class="fila-5">
+        {% csrf_token %}
+        <input type="hidden" name="producto" value="{{ elegido.pk }}">
+        <button type="submit" class="boton-primario">Confirmar el cambio</button>
+        {% include "_boton_texto.html" with url=esta texto="Elegir otro" %}
+      </form>
+    {% else %}
+      <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> Este producto no tiene stock disponible.</span></p>
+      <p class="fila-5">
+        {% include "_boton_texto.html" with url=esta texto="Elegir otro" %}
+        <a href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>
+      </p>
+    {% endif %}
+  </div>
+{% else %}
+  <section class="seccion">
+    <form method="get" data-sin-capa class="barra-de-herramientas">
+      <div class="campo campo--principal">
+        <label for="buscar" class="etiqueta">Producto de reemplazo · misma editorial y formato</label>
+        <input type="text" id="buscar" name="buscar" value="{{ buscar }}" placeholder="Título o código" autocomplete="off">
+      </div>
+      <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="buscar" %}<span>Buscar</span></button>
+    </form>
+
+    {% if resultados %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead><tr><th>Producto</th><th class="numero">Precio</th><th class="numero">Stock</th><th><span class="sr-only">Acción</span></th></tr></thead>
+          <tbody>
+            {% for producto in resultados %}
+              <tr>
+                <td class="celda-principal">{{ producto.especifico }}<br><span class="texto-chico secundario datos">{{ producto.codigo }}</span></td>
+                <td class="numero">{{ producto.precio|pesos }}</td>
+                <td class="numero">{{ producto.stock }}</td>
+                <td>
+                  {% if producto.con_stock %}
+                    <a href="{{ esta }}?producto={{ producto.pk }}" class="boton-texto">Elegir</a>
+                  {% else %}
+                    <span class="texto-chico secundario">Sin stock</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% elif buscar %}
+      <div class="vacio"><p>Ningún producto coincide con «{{ buscar }}».</p></div>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}

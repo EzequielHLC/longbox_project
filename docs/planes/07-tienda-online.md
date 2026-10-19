@@ -431,3 +431,100 @@ como agregado.
 | 4 | Accesibilidad | `role="progressbar"` con `aria-valuenow`, `aria-valuemin` y `aria-valuemax`, y el texto al lado: la barra no es la única forma de enterarse |
 | 5 | En vivo | En el carrito, la barra se recalcula con el resto cuando cambia una cantidad (B-07-028), porque viaja en el mismo parcial |
 | 6 | Estilo | Sólo tokens de la guía; sin animación fuera del catálogo de la guía |
+
+---
+
+# Plan — `07` Tienda Online · octava parte: retiro en el local
+
+**Estado del plan:** Aprobado el 2026-10-19, con las recomendaciones de la sección 3 · **Fecha:** 2026-10-19
+
+**Cambio de alcance pedido por el responsable** (2026-10-19): en la compra online, además del envío
+a domicilio, el Cliente puede elegir **retirar el pedido en el local**. El pedido para retirar se
+reutiliza sobre el stock en local (módulo 18), que hasta hoy sólo recibía el artículo de despacho
+diferido. Cuatro decisiones del responsable, tomadas antes del plan:
+
+| # | Decisión |
+| --- | --- |
+| D1 | Es un **flujo alternativo de `CU-TDA-CMP`**, y RF-25 se enmienda para que el stock en local tenga dos orígenes. Sin caso de uso ni contratos nuevos: se enmiendan los existentes |
+| D2 | El pedido queda listo para retirar **cuando el local lo arma**, no al aprobarse el pago |
+| D3 | Si no se retira dentro del plazo de retención, **vuelve al stock con reembolso en puntos** (RF-25 (4) cambia sólo para este origen) |
+| D4 | **Sólo con cuenta**: el invitado no tiene «Mi cuenta» donde ver lo guardado |
+
+---
+
+## 1. Qué cubre
+
+Ningún contrato nuevo. Se enmiendan los que el flujo atraviesa:
+
+| Contrato | Qué gana |
+| --- | --- |
+| `CO-180 iniciarCheckout`, `CO-087 declararDireccionDeEnvio` | La modalidad de entrega: envío a domicilio o retiro en el local. Con retiro no se pide dirección y el envío cuesta cero |
+| `CO-088 confirmarPedido`, `CO-089 registrarResultadoDePago` | El pedido nace con su modalidad. Con retiro, `costo de envío = 0` y sin dirección |
+| `CO-092 avanzarEstadoDePedido` | Un pedido para retirar pasa de Armado a **En el local**: cada unidad entra al stock en local del Cliente, y se le avisa que puede retirarlo |
+| `CO-154 ejecutarCicloDeVencimientoDeRetencion` | Un artículo de un pedido para retirar que vence vuelve al stock **con reembolso en puntos** (D3) |
+| `CO-215`, `CO-217`, `CO-218` | Muestran el origen nuevo: «Pedido para retirar» |
+| `CO-227 confirmarRetiroEnLocal` | Sin cambios de efecto; la ficha del pedido ofrece entregarlo entero (ambigüedad 5) |
+
+Los casos de uso que se mueven: `CU-TDA-CMP` (alternativo nuevo), `CU-PED-EST` (el estado nuevo),
+`CU-STK-*` (el origen nuevo) y `CU-STK-VEN` (el reembolso).
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Pedido` | Sí | Gana **modalidad de entrega** {Envío a domicilio, Retiro en el local} y el estado **En el local** (DME-07). Restricción en la base: un pedido para retirar es de una cuenta y no cobra envío |
+| `ArticuloRetenido` | Sí | Gana **origen** {Despacho diferido, Pedido para retirar}: el vencimiento decide por él (D3) |
+| `LineaPedido` | Sí | Ambigüedad 2 |
+| `LotePuntos`, `MovimientoPuntos` | Sí | El reembolso del vencimiento (D3) |
+| `CobroEnCurso` | Sí | Congela la modalidad junto con lo demás (B-07-034) |
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | **El estado del pedido después de armarlo.** DME-07 termina en Despachado | **(a)** Un estado terminal nuevo, **En el local**: el pedido se cierra ahí y el seguimiento sigue en el stock en local, artículo por artículo, como el despacho diferido (B-18-003). **(b)** Que el pedido espere a que se retiren todos sus artículos para cerrarse | **Recomiendo (a)**: un artículo puede retirarse, enviarse o vencer por separado, y el pedido no tiene por qué esperar al último |
+| 2 | **El estado de las líneas** al pasar a En el local | **(a)** Quedan como están, igual que en el despacho diferido (B-18-003). **(b)** Un estado nuevo de línea | **Recomiendo (a)** |
+| 3 | **Las pre-ventas en un pedido para retirar** | **(a)** Lo de hoy: el pedido espera en «Esperando stock de pre-venta» hasta que llega todo, y después se arma. Si una pre-venta se demora, las opciones de `CU-PED-OPC` siguen valiendo: la opción 2 pasa a decir «retirá ya lo disponible; lo demorado queda guardado cuando llegue», y entra por el camino que ya existe. **(b)** Otra regla para retiro | **Recomiendo (a)**, con los textos de las opciones adaptados a la modalidad |
+| 4 | **Las devoluciones de lo retirado.** `CU-DEV-SOL` exige un pedido Despachado y cuenta el plazo desde el despacho (B-09-002); un pedido para retirar nunca se despacha | **(a)** Una línea se puede reclamar desde que se retiró (o se despachó desde el stock en local) alguna de sus unidades, con el plazo contado desde ese momento. **(b)** Lo retirado no admite reclamo por el sistema: se revisa en el mostrador | **Recomiendo (a)**: el derecho del Cliente es el mismo, retire o reciba |
+| 5 | **Entregar el pedido entero en el mostrador.** `CO-227` entrega un artículo | **(a)** La ficha del pedido y la del stock en local ofrecen «Entregar todo», que aplica `CO-227` a cada artículo disponible, verificando al titular una sola vez, como el despacho de una solicitud entera (B-18-007). **(b)** De a uno | **Recomiendo (a)** |
+| 6 | **El valor del reembolso al vencer** (D3) | **(a)** La regla de los demás reembolsos (B-01-010, B-09-004): el valor de la unidad a puntos hacia arriba; lo pagado con puntos devuelve su parte. **(b)** Otra | **Recomiendo (a)** |
+| 7 | **El Cliente que cambia de idea** y quiere que se lo envíen | **(a)** Pide el envío desde «Stock en local» como cualquier artículo guardado (`CO-151`): gratis desde el monto mínimo o pago. **(b)** No se admite | **Recomiendo (a)**: no hay nada que construir |
+| 8 | **El checkout con retiro.** La barra del envío gratis (séptima parte) y la dirección | **(a)** Con retiro, la dirección no se pide ni se muestra, el envío dice «Retiro en el local · sin costo» y la barra no aparece. Se puede volver a envío a domicilio antes de confirmar | **Recomiendo (a)** |
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | La modalidad y el estado En el local en `Pedido`; el origen en `ArticuloRetenido`, con migración (lo existente es despacho diferido o envío a domicilio) | — | Todo lo demás los lee |
+| 2 | El checkout con la modalidad (`CO-180`, `CO-087`, `CO-088`) y el pedido que nace con ella (`CO-089`) | 1 | |
+| 3 | Armado → En el local, con el ingreso al stock en local y el aviso (`CO-092`) | 1 | |
+| 4 | Entregar todo en el mostrador (ambigüedad 5) y el origen en las consultas (`CO-215`, `CO-217`, `CO-218`) | 3 | |
+| 5 | El vencimiento con reembolso (`CO-154`, D3) | 3 | |
+| 6 | Las devoluciones de lo retirado (ambigüedad 4) | 4 | Toca el módulo 09 |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde | Cómo se cubre |
+| --- | --- | --- |
+| Romper la compra a domicilio, que está verificada | `CO-087` a `CO-089` | La modalidad por defecto es envío a domicilio; la suite de la compra corre sin cambios |
+| Un invitado elige retiro por la dirección del formulario | `CO-091` | Se rechaza en el servidor (D4), y la restricción de la base lo impide |
+| Armar dos veces un pedido para retirar duplica artículos | `CO-092` | El pedido se toma con bloqueo y se compara el estado visto, como hoy; prueba de doble envío |
+| El vencimiento reembolsa dos veces o reembolsa un despacho diferido | `CO-154` | Transacción por artículo con bloqueo; prueba de doble corrida y de los dos orígenes |
+| El reembolso del vencimiento se equivoca de valor | `CO-154` | Pruebas con una unidad pagada en dinero y otra con puntos |
+| Un pedido para retirar entra al flujo de despacho | `CO-092` | El siguiente estado depende de la modalidad; prueba de que nunca pasa a Empaquetado |
+
+---
+
+## 6. Fuera de alcance
+
+- **Pagar en el local**: el pago sigue siendo online, por la pasarela o con puntos.
+- El retiro para invitados (D4).
+- Elegir otra sucursal: el local es uno.

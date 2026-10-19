@@ -1,0 +1,26 @@
+{% extends "base_publico.html" %}
+{% comment %}
+El código de la solicitud de arrepentimiento (Res. 424/2020): en la pantalla y,
+en el mismo momento, por correo.
+{% endcomment %}
+
+{% block titulo %}Arrepentimiento registrado · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<div class="pila-5 formulario--angosto">
+  <div class="pila-2">
+    <p class="antetitulo">Botón de arrepentimiento</p>
+    <h1 class="titulo-1">Registramos tu arrepentimiento</h1>
+  </div>
+  <div class="panel pila-3">
+    <p>Tu código de solicitud:</p>
+    <ul class="lista-renglones">
+      {% for caso in casos %}
+        <li><strong class="datos">{{ caso.numero }}</strong> · {{ caso.unidades }} × {{ caso.linea.producto.especifico }}</li>
+      {% endfor %}
+    </ul>
+    <p class="texto-chico secundario">Te lo mandamos también a <span class="datos">{{ casos.0.correo }}</span>. Te vamos a escribir para coordinar la devolución; cuando recibamos los artículos, te reintegramos lo que pagaste por el mismo medio de pago.</p>
+  </div>
+  <p><a href="{% url 'core:tienda' %}" class="boton-texto">Volver a la tienda</a></p>
+</div>
+{% endblock %}

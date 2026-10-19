@@ -19,6 +19,7 @@ segundo cae en E3: reembolso, carrito intacto y aviso (B-07-035).
 import logging
 import secrets
 from dataclasses import dataclass, field
+from datetime import timedelta
 from decimal import Decimal
 from functools import cached_property
 
@@ -128,6 +129,8 @@ class Resumen:
     saldo: int = 0
     minimo_envio_gratuito: Decimal = Decimal("0")
     con_puntos: bool = True
+    # Plan 07, octava parte: sin dirección y sin costo de envío.
+    retiro: bool = False
 
     @property
     def subtotal_productos(self):
@@ -169,14 +172,14 @@ class Resumen:
 
     @property
     def direccion_completa(self):
-        return direccion_completa(self.envio)
+        return self.retiro or direccion_completa(self.envio)
 
     @property
     def tiene_pre_venta(self):
         return any(linea.consultada.pre_venta for linea in self.lineas)
 
 
-def resumen(carrito, *, usuario=None, envio=None):
+def resumen(carrito, *, usuario=None, envio=None, retiro=False):
     """Las líneas con su precio de hoy, el canje, el envío y el total.
 
     Un invitado no tiene puntos: sus líneas nunca están cubiertas, aunque una
@@ -197,14 +200,18 @@ def resumen(carrito, *, usuario=None, envio=None):
                 ),
             )
         )
+    retiro = bool(retiro and con_puntos)  # D4: sólo con cuenta
     hecho = Resumen(
         lineas=lineas,
-        envio=dict(envio or {}),
+        envio={} if retiro else dict(envio or {}),
         saldo=puntos.saldo(usuario) if con_puntos else 0,
         minimo_envio_gratuito=configuracion.monto_minimo_envio_gratuito,
         con_puntos=con_puntos,
+        retiro=retiro,
     )
-    hecho.costo_envio = costo_de_envio(hecho.subtotal_productos, configuracion)
+    hecho.costo_envio = (
+        Decimal("0") if retiro else costo_de_envio(hecho.subtotal_productos, configuracion)
+    )
     return hecho
 
 
@@ -226,7 +233,7 @@ def proceder_al_pago(carrito):
     return consultado
 
 
-def iniciar_checkout(carrito, usuario, envio):
+def iniciar_checkout(carrito, usuario, envio, *, retiro=False):
     """`CO-180`: el resumen, verificando en el momento que todo conserve stock (E1)."""
     consultado = servicio_carrito.consultar(carrito)
     afectadas = [
@@ -242,7 +249,7 @@ def iniciar_checkout(carrito, usuario, envio):
             + ", ".join(f"«{titulo}»" for titulo in afectadas)
             + ". Revisá el carrito antes de seguir."
         )
-    return resumen(carrito, usuario=usuario, envio=envio)
+    return resumen(carrito, usuario=usuario, envio=envio, retiro=retiro)
 
 
 def iniciar_compra_como_invitado(carrito):
@@ -279,8 +286,21 @@ def declarar_direccion_de_envio(sesion, direccion, subtotal_productos):
 
 
 CLAVE_ENVIO = "checkout_envio"
+CLAVE_RETIRO = "checkout_retiro"
 CLAVE_INVITADO = "checkout_invitado"
 CLAVE_COBROS = "checkout_cobros"
+
+
+def declarar_modalidad(sesion, retiro):
+    """`CO-087` (plan 07, octava parte): envío a domicilio o retiro en el local.
+
+    Como la dirección, vive en la sesión del checkout: no cambia el perfil.
+    """
+    sesion[CLAVE_RETIRO] = bool(retiro)
+
+
+def retiro_del_checkout(sesion):
+    return bool(sesion.get(CLAVE_RETIRO))
 
 
 def envio_del_checkout(sesion, usuario):
@@ -369,17 +389,18 @@ def _congelar(hecho, carrito, *, pasarela, request, usuario=None, correo_invitad
         costo_envio=hecho.costo_envio,
         monto=hecho.total,
         puntos_a_debitar=hecho.puntos_aplicados,
+        retiro=hecho.retiro,
     )
 
 
-def confirmar_pedido(carrito, usuario, envio, request, pasarela):
+def confirmar_pedido(carrito, usuario, envio, request, pasarela, *, retiro=False):
     """`CO-088`: congela el cobro y, según el total, va a la pasarela o confirma.
 
     Total mayor que cero: ninguna postcondición sobre el dominio, sólo la
     solicitud de cobro. Total cero (A2, sólo con envío gratuito): las
     postcondiciones de `CO-089` en el momento, sin `TransaccionPago`.
     """
-    hecho = iniciar_checkout(carrito, usuario, envio)
+    hecho = iniciar_checkout(carrito, usuario, envio, retiro=retiro)
     if not hecho.direccion_completa:
         raise BloqueoDeAvance("Completá la dirección de envío antes de confirmar.")
     verificar_canje(hecho)
@@ -455,6 +476,12 @@ def registrar_resultado(referencia, *, referencia_pago, monto, pasarela=None):
     El cobro se toma con bloqueo: dos avisos repetidos que llegan a la vez se
     ordenan, y el segundo encuentra el cobro ya procesado y no hace nada.
     """
+    tardio = _reembolso_tardio(referencia, referencia_pago, monto)
+    if tardio is not None:
+        if pasarela is not None:
+            pasarela.reembolsar(tardio, referencia_pago)
+        _avisar_fallo(tardio)
+        return tardio
     fallo = None
     with transaction.atomic():
         cobro = CobroEnCurso.objects.select_for_update().filter(referencia=referencia).first()
@@ -466,7 +493,13 @@ def registrar_resultado(referencia, *, referencia_pago, monto, pasarela=None):
                     f"La pasarela informó {monto} y el cobro era por {cobro.monto}."
                 )
             with transaction.atomic():
-                pedido = _materializar(cobro, referencia_pago)
+                if cobro.tipo == CobroEnCurso.DESPACHO:
+                    from apps.almacen.servicios import materializar_despacho
+
+                    materializar_despacho(cobro, referencia_pago)
+                    pedido = None
+                else:
+                    pedido = _materializar(cobro, referencia_pago)
         except Exception as error:  # noqa: BLE001 - E3: todo fallo técnico se reembolsa
             fallo = error
             logger.exception("No se pudo generar el pedido del cobro %s.", cobro.referencia)
@@ -486,12 +519,63 @@ def registrar_resultado(referencia, *, referencia_pago, monto, pasarela=None):
                 ),
             )
         else:
-            transaction.on_commit(lambda: _avisar_confirmacion(pedido, cobro.origen))
+            if pedido is not None:
+                transaction.on_commit(lambda: _avisar_confirmacion(pedido, cobro.origen))
 
     if fallo is not None and referencia_pago:
         if pasarela is not None:
             pasarela.reembolsar(cobro, referencia_pago)
         _avisar_fallo(cobro)
+    return cobro
+
+
+# ---------------------------------------------------------------------------
+# Los cobros abandonados (plan 00, C3)
+# ---------------------------------------------------------------------------
+
+ABANDONO = timedelta(hours=24)
+
+
+def descartar_abandonados(ahora=None):
+    """El Temporizador descarta los cobros pendientes de más de 24 horas.
+
+    Es el mismo plazo que deja de comprometer los puntos de un canje
+    (B-10-005). No toca stock ni puntos: un cobro pendiente todavía no
+    reservó nada.
+    """
+    ahora = ahora or timezone.now()
+    return CobroEnCurso.objects.filter(
+        estado=CobroEnCurso.PENDIENTE, creado_en__lt=ahora - ABANDONO
+    ).update(
+        estado=CobroEnCurso.DESCARTADO,
+        mensaje="Abandonado: la pasarela no avisó en 24 horas.",
+        resuelto_en=ahora,
+    )
+
+
+def _reembolso_tardio(referencia, referencia_pago, monto):
+    """Un pago que la pasarela aprueba después de descartado el cobro se reembolsa:
+    el carrito ya pudo cambiar (plan 00, ambigüedad 7). Idempotente."""
+    if not referencia_pago:
+        return None
+    with transaction.atomic():
+        cobro = CobroEnCurso.objects.select_for_update().filter(referencia=referencia).first()
+        if cobro is None or cobro.estado != CobroEnCurso.DESCARTADO:
+            return None
+        cobro.estado = CobroEnCurso.REEMBOLSADO
+        cobro.mensaje = "Pago aprobado después de descartado el cobro: se reembolsa."
+        cobro.resuelto_en = timezone.now()
+        cobro.save(update_fields=["estado", "mensaje", "resuelto_en"])
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.INCIDENTE_COMPRA,
+            actor=cobro.usuario,
+            actor_email=cobro.correo_de_contacto,
+            objetivo=cobro,
+            detalle=(
+                f"Cobro {cobro.referencia} aprobado por {monto} después de descartado por "
+                "abandono. Se inició el reembolso."
+            ),
+        )
     return cobro
 
 
@@ -517,9 +601,12 @@ def _materializar(cobro, referencia_pago):
         productos[linea["producto"]].estado == Producto.PRE_VENTA for linea in cobro.lineas
     )
     # (a)(b)(c) El pedido, con su estado inicial según RF-18 y la dirección copiada.
-    envio = cobro.envio or {}
+    if cobro.retiro and not cobro.usuario_id:
+        raise FalloDeMaterializacion("El retiro en el local requiere una cuenta.")  # D4
+    envio = {} if cobro.retiro else (cobro.envio or {})
     pedido = Pedido.objects.create(
         canal=Pedido.ONLINE,
+        modalidad=Pedido.RETIRO if cobro.retiro else Pedido.ENVIO,
         estado=Pedido.ESPERANDO_PRE_VENTA if con_pre_venta else Pedido.PENDIENTE_ARMADO,
         usuario=cobro.usuario,
         correo_invitado="" if cobro.usuario_id else cobro.correo_invitado,
@@ -601,7 +688,11 @@ def _materializar(cobro, referencia_pago):
         detalle=(
             f"Pedido {pedido.numero} ({pedido.get_estado_display()}): "
             f"{len(cobro.lineas)} línea(s), cobrado {cobro.monto}"
-            + (f", envío {cobro.costo_envio}" if cobro.costo_envio else ", envío gratis")
+            + (
+                ", retiro en el local"
+                if cobro.retiro
+                else (f", envío {cobro.costo_envio}" if cobro.costo_envio else ", envío gratis")
+            )
             + (f", canjeó {cobro.puntos_a_debitar} pts" if cobro.puntos_a_debitar else "")
             + (f", acreditó {acreditados} pts" if acreditados else "")
             + ("" if referencia_pago else ", sin pasarela (todo con puntos)")
@@ -638,6 +729,21 @@ def _avisar_confirmacion(pedido, origen=""):
 
 def _avisar_fallo(cobro):
     """E3: el cargo se revierte. Se avisa por correo además de la pantalla."""
+    if cobro.tipo == CobroEnCurso.DESPACHO:
+        from apps.pedidos import avisos
+
+        avisos.avisar(
+            [cobro.correo_de_contacto],
+            asunto="No pudimos generar tu envío: el cargo se revierte",
+            rotulo="Stock en local",
+            antetitulo="Envío de stock almacenado",
+            titulo="Envío no generado",
+            parrafos=[
+                "El pago se aprobó, pero uno de los artículos ya no estaba disponible. "
+                "El cargo se revierte en tu medio de pago.",
+            ],
+        )
+        return
     contexto = {"cobro": cobro}
     try:
         enviar_correo(

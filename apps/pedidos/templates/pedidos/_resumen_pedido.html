@@ -25,7 +25,9 @@ detalle del Administrador (CO-183) y el del Cliente (CO-193).
           </td>
           <td>
             <span class="texto-chico">{{ linea.get_estado_display }}</span>
-            {% if linea.decision_demora and linea.estado != "cancelado_reembolso" %}
+            {% if linea.despacho_diferido and linea.estado == "disponible" %}
+              <br><a class="texto-chico" href="{% url 'almacen:lista' %}?cliente={{ pedido.usuario.codigo_cliente }}">En stock almacenado</a>
+            {% elif linea.decision_demora and linea.estado != "cancelado_reembolso" %}
               <br><span class="texto-chico estado estado--atencion">{{ linea.get_decision_demora_display }}</span>
             {% elif linea.estado == "esperando_demorado" %}
               <br><span class="texto-chico secundario">{% if linea.ventana_cerrada %}Sin respuesta del cliente{% else %}Decide hasta {{ linea.decision_vence_en|date:"d/m H:i" }}{% endif %}</span>

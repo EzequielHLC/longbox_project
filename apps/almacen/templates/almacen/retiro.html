@@ -1,0 +1,34 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-STK-FIS A1 — CO-227. Antes de entregar, se verifica que quien retira es el
+titular. Volver no registra nada (A2).
+{% endcomment %}
+
+{% block titulo %}Entregar en el local · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+{% url 'almacen:ficha' articulo.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del artículo" atras=1 %}</span>
+    <h1>Entregar en el local</h1>
+    <p>{{ articulo.producto.especifico }}</p>
+  </div>
+</header>
+
+<div class="panel formulario--angosto pila-4">
+  <p>Verifique que quien retira es el titular.</p>
+  <dl class="datos-de-ficha">
+    <dt>Titular</dt>
+    <dd><strong>{{ articulo.usuario.get_full_name|default:articulo.usuario.email }}</strong></dd>
+    <dt>Código de cliente</dt>
+    <dd class="datos">{{ articulo.usuario.codigo_cliente }}</dd>
+  </dl>
+  <form method="post" class="fila-5">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario">Confirmar entrega</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

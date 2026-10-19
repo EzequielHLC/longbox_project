@@ -83,7 +83,7 @@ def test_el_menu_lateral_enlaza_las_secciones_disponibles(client_admin):
     assert reverse("accounts:cliente_lista") in contenido
     # Los módulos que todavía no existen se muestran, pero no enlazan.
     assert "Próximamente" in contenido
-    assert "Devoluciones" in contenido
+    assert "Reportes" in contenido
 
 
 def test_el_menu_marca_la_pantalla_en_la_que_se_esta(client_admin):

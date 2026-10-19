@@ -42,6 +42,8 @@ class LotePuntos(models.Model):
     caduca_el = models.DateField("fecha de caducidad")
     estado = models.CharField("estado", max_length=10, choices=ESTADO_CHOICES, default=ACTIVO)
     comprometido_en_canje = models.BooleanField("comprometido en canje", default=False)
+    # Plan 10, segunda parte: el aviso previo a la caducidad sale una sola vez.
+    aviso_caducidad = models.BooleanField("aviso previo enviado", default=False)
 
     class Meta:
         verbose_name = "lote de puntos"
@@ -93,6 +95,13 @@ class MovimientoPuntos(models.Model):
     )
     linea_pedido = models.ForeignKey(
         "pedidos.LineaPedido",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="movimientos_puntos",
+    )
+    caso_devolucion = models.ForeignKey(
+        "devoluciones.CasoDevolucion",
         on_delete=models.PROTECT,
         null=True,
         blank=True,

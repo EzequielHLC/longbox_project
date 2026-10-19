@@ -22,7 +22,7 @@ pedido que originó cada movimiento (B-10-001). A1: sin puntos, un mensaje.
                 <span class="datos">{{ lote.disponible }} de {{ lote.cantidad_acreditada }} pts</span>
                 <span class="texto-chico secundario">{{ lote.get_origen_display }} · {{ lote.acreditado_en|date:"d/m/Y" }}</span>
               </div>
-              <span class="texto-chico">Vencen el <span class="datos">{{ lote.caduca_el|date:"d/m/Y" }}</span></span>
+              <span class="texto-chico">Se pueden usar hasta el <span class="datos">{{ lote.hasta|date:"d/m/Y" }}</span></span>
               {% if lote.proximo_a_vencer %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
             </li>
           {% endfor %}

@@ -5,6 +5,7 @@ __pycache__/
 db.sqlite3
 staticfiles/
 media/
+privado/
 .vscode/settings.json
 htmlcov/
 .coverage

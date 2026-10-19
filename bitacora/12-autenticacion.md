@@ -221,3 +221,27 @@ que hoy se afirman por su efecto observable pasan a afirmarse literalmente y las
 el sufijo `_efecto_observable`.
 
 Queda registrado en la entrada `B-12-003`.
+
+---
+
+### B-12-004 · El bloqueo y la expiración de la sesión salen de Parámetros
+
+**Tipo:** Agregado · **Fecha:** 2026-10-19 · **Alcance:** `CO-114`, `CU-CFG-PAR` (Seguridad), B-12-001
+**Estado:** Abierta
+
+**Qué apareció.**
+B-12-001 había decidido que manda el contrato: los valores tenían que salir de
+`ConfiguracionSistema`. Faltaba construirlo.
+
+**Qué dice la especificación.**
+> «se bloquea el acceso por el período parametrizado»; «un token con expiración por inactividad
+> según `ConfiguracionSistema`» (`CO-114`)
+
+**Qué se hizo** (plan 00, A3).
+Parámetros gana la sección Seguridad: expiración de la sesión por inactividad (30 minutos) y
+bloqueo tras intentos fallidos (15 minutos). Cada pedido autenticado renueva la sesión por el
+tiempo configurado, y el aviso previo al vencimiento usa el mismo valor. El tope de 5 intentos
+queda fijo, como lo escribe el contrato. Los cambios se auditan como el resto de los parámetros.
+
+**Qué habría que cambiar.**
+`ConfiguracionSistema`: los dos atributos, que la ficha de `CU-CFG-PAR` ya nombra.

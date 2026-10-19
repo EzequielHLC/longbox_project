@@ -1,0 +1,49 @@
+{% extends "base_publico.html" %}
+{% load moneda %}
+{% comment %}
+CU-DEV-SOL, arrepentimiento (plan 00, C1) — CO-185 y CO-099. Los artículos que
+todavía admiten el arrepentimiento; cada uno se devuelve entero. No pide fotos.
+{% endcomment %}
+
+{% block titulo %}Arrepentimiento · Pedido {{ pedido.numero }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<div class="pila-5 formulario--angosto">
+  <div class="pila-2">
+    <p class="antetitulo">Botón de arrepentimiento</p>
+    <h1 class="titulo-1">Pedido <span class="datos">{{ pedido.numero }}</span></h1>
+    <p class="secundario">Podés arrepentirte hasta el <span class="datos">{{ solicitud.vence|date:"d/m/Y" }}</span>. Te escribimos para coordinar la devolución; cuando recibimos los artículos, te reintegramos lo que pagaste.</p>
+  </div>
+
+  {% if solicitud.existentes %}
+    <ul class="lista-renglones texto-chico">
+      {% for caso in solicitud.existentes %}
+        <li>Ya reclamaste {{ caso.linea.producto.especifico }}: <span class="datos">{{ caso.numero }}</span>, {{ caso.get_estado_display|lower }}.</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" novalidate class="pila-4">
+    {% csrf_token %}
+    {% if error %}<p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>{% endif %}
+    <fieldset class="pila-3">
+      <legend class="titulo-3">¿Qué devolvés?</legend>
+      {% for linea in solicitud.lineas %}
+        <label class="casilla casilla--opcion">
+          <input type="checkbox" name="linea" value="{{ linea.pk }}">
+          <span>{{ linea.cantidad }} × {{ linea.producto.especifico }} <span class="texto-chico secundario datos">{% if linea.cubierta_con_puntos %}{{ linea.puntos_canjeados }} pts{% else %}{{ linea.subtotal|pesos }}{% endif %}</span></span>
+        </label>
+      {% endfor %}
+    </fieldset>
+    <div class="campo">
+      <label for="descripcion" class="etiqueta">Algo que quieras contarnos</label>
+      <textarea id="descripcion" name="descripcion" rows="3" maxlength="2000"></textarea>
+      <div class="ayuda">Opcional. No hace falta explicar por qué.</div>
+    </div>
+    <div class="fila-5">
+      <button type="submit" class="boton-primario">Arrepentirme de la compra</button>
+      <a href="{% url 'devoluciones_tienda:inicio' %}" class="boton-texto">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

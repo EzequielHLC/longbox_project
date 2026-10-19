@@ -4,7 +4,8 @@
 CU-TDA-CMP — el checkout del Cliente (CO-180).
 
 Paso 2: las líneas con su precio de hoy y la dirección predeterminada, editable
-(CO-087, que no toca el perfil). Paso 3: el canje por línea entera (CO-103,
+(CO-087, que no toca el perfil), o el retiro en el local, sin dirección ni costo
+de envío (plan 07, octava parte). Paso 3: el canje por línea entera (CO-103,
 CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
 (CO-088). Nada de esto cambia el dominio hasta que la pasarela apruebe el pago.
 {% endcomment %}
@@ -23,8 +24,18 @@ CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
     <div class="carrito">
       <div class="pila-5">
         <section class="pila-3" aria-labelledby="titulo-envio">
-          <h2 id="titulo-envio" class="titulo-2">Envío</h2>
-          {% if editar_direccion %}
+          <h2 id="titulo-envio" class="titulo-2">Entrega</h2>
+          <form method="post" class="fila-2" aria-label="Cómo lo recibís">
+            {% csrf_token %}
+            <button type="submit" name="modalidad" value="envio" class="{% if resumen.retiro %}boton-texto{% else %}boton-seccion{% endif %}"{% if not resumen.retiro %} aria-pressed="true"{% endif %}>Envío a domicilio</button>
+            <button type="submit" name="modalidad" value="retiro" class="{% if resumen.retiro %}boton-seccion{% else %}boton-texto{% endif %}"{% if resumen.retiro %} aria-pressed="true"{% endif %}>Retiro en el local</button>
+          </form>
+          {% if resumen.retiro %}
+            <div class="pila-2">
+              <p><strong>Lo retirás en el local, sin costo de envío.</strong></p>
+              <p class="texto-chico secundario">Te avisamos cuando esté listo. Lo vas a ver en «Mi cuenta», en Stock en local, con la fecha hasta la que te lo guardamos.</p>
+            </div>
+          {% elif editar_direccion %}
             <form method="post" novalidate class="formulario">
               {% csrf_token %}
               {% if not resumen.direccion_completa and not form.is_bound %}

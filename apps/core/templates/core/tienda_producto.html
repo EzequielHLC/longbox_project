@@ -5,9 +5,9 @@ CU-TDA-CAT pasos 5 a 7 — la ficha pública de un producto (CO-177).
 
 La acción depende del estado: Disponible → «Agregar al carrito»; Agotado →
 «Avisarme cuando haya stock»; Pre-venta → «Reservar» con la fecha estimada.
-Agregar y reservar inician CU-TDA-CRA (CO-083). El aviso de stock inicia
-CU-RST-SUS, que no existe: sigue deshabilitado (B-07-002). El personal no
-tiene carrito (plan 07, segunda parte, ambigüedad 3).
+Agregar y reservar inician CU-TDA-CRA (CO-083). El aviso de stock es
+CU-RST-SUS (CO-075, CO-076), del Cliente; el invitado va al ingreso (B-05-002).
+El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
 {% endcomment %}
 
 {% block titulo %}{{ producto.titulo }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
@@ -55,10 +55,22 @@ tiene carrito (plan 07, segunda parte, ambigüedad 3).
         <p class="ficha-publica__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</p>
         {% if producto.oferta_aplicada %}<p class="texto-chico">{{ producto.oferta_aplicada.descripcion }} · hasta el <span class="datos">{{ producto.oferta_aplicada.fecha_vencimiento|date:"d/m/Y" }}</span></p>{% endif %}
 
+        {% include "_mensajes.html" %}
         <div class="pila-2">
           {% if producto.estado_publico == "agotado" %}
-            <button type="button" class="boton-seccion" disabled aria-describedby="accion-proximamente">Avisarme cuando haya stock</button>
-            <p id="accion-proximamente" class="texto-chico secundario">Disponible próximamente.</p>
+            {% if aviso.puede_pedir %}
+              <form method="post" action="{% url 'restock:aviso' producto.pk %}" class="fila-2">
+                {% csrf_token %}
+                {% if aviso.suscripcion %}
+                  <span class="marca-estado marca-estado--ok">Suscripto</span>
+                  <input type="hidden" name="accion" value="cancelar">
+                  <button type="submit" class="boton-texto">Cancelar aviso</button>
+                {% else %}
+                  <button type="submit" class="boton-seccion">Avisarme cuando haya stock</button>
+                {% endif %}
+              </form>
+            {% endif %}
+            {% if aviso.en_espera %}<p class="texto-chico secundario">{{ aviso.en_espera }} {% if aviso.en_espera == 1 %}persona espera{% else %}personas esperan{% endif %} este producto.</p>{% endif %}
           {% elif unidades_en_carrito is None %}
             <p class="texto-chico secundario">La compra es para cuentas de cliente.</p>
           {% else %}

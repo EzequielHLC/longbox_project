@@ -1,0 +1,37 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-STK-PLA — CO-153. La fecha vigente, el historial y la nueva fecha con su
+motivo. E1: la fecha tiene que ser posterior a hoy. E2: el motivo es
+obligatorio. Cancelar no registra nada (A1).
+{% endcomment %}
+
+{% block titulo %}Modificar el plazo · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+{% url 'almacen:ficha' articulo.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del artículo" atras=1 %}</span>
+    <h1>Modificar el plazo</h1>
+    <p>{{ articulo.producto.especifico }} · {{ articulo.usuario.get_full_name|default:articulo.usuario.email }} · vence el <span class="datos">{{ articulo.fecha_vencimiento|date:"d/m/Y" }}</span></p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}<p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>{% endfor %}
+    {% include "_campo.html" with campo=form.fecha %}
+    {% include "_campo.html" with campo=form.motivo %}
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Guardar el plazo</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </div>
+  </form>
+  <section class="seccion" aria-labelledby="titulo-historial">
+    <div class="seccion__titulo"><h2 id="titulo-historial">Historial de plazo</h2></div>
+    {% include "almacen/_historial_plazo.html" %}
+  </section>
+</div>
+{% endblock %}

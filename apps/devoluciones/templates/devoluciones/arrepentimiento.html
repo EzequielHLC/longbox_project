@@ -1,0 +1,47 @@
+{% extends "base_publico.html" %}
+{% comment %}
+El botón de arrepentimiento (plan 00, C1; Ley 24.240, art. 34; Res. 424/2020).
+Sin registración: con sesión, los pedidos del Cliente; sin sesión, el número de
+pedido y el correo de la compra. La respuesta es la misma si no coinciden.
+{% endcomment %}
+
+{% block titulo %}Botón de arrepentimiento · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
+
+{% block contenido %}
+<div class="pila-5 formulario--angosto">
+  <div class="pila-2">
+    <p class="antetitulo">Tienda · Ayuda</p>
+    <h1 class="titulo-1">Botón de arrepentimiento</h1>
+    <p class="secundario">Tenés {{ dias }} días corridos desde que recibiste tu compra online para arrepentirte, sin dar explicaciones. Coordinamos con vos la devolución y, cuando recibimos el artículo, te reintegramos lo que pagaste por el mismo medio de pago.</p>
+  </div>
+
+  {% include "_mensajes.html" %}
+
+  {% if pedidos %}
+    <section class="pila-3" aria-labelledby="titulo-mis-pedidos">
+      <h2 id="titulo-mis-pedidos" class="titulo-3">Tus compras dentro del plazo</h2>
+      <ul class="lista-renglones">
+        {% for pedido in pedidos %}
+          <li><a href="{% url 'devoluciones_tienda:pedido' pedido.numero %}">Pedido <span class="datos">{{ pedido.numero }}</span> · {{ pedido.fecha|date:"d/m/Y" }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <form method="post" novalidate class="formulario pila-4" aria-labelledby="titulo-buscar">
+    {% csrf_token %}
+    <h2 id="titulo-buscar" class="titulo-3">{% if pedidos %}Otra compra{% else %}Tu compra{% endif %}</h2>
+    {% if error %}<p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>{% endif %}
+    <div class="campo">
+      <label for="numero" class="etiqueta">Número de pedido<span class="obligatorio" aria-hidden="true"> *</span></label>
+      <input type="text" id="numero" name="numero" inputmode="numeric" autocomplete="off" value="{{ request.POST.numero }}">
+      <div class="ayuda">Está en el correo de confirmación de la compra.</div>
+    </div>
+    <div class="campo">
+      <label for="correo" class="etiqueta">Correo de la compra<span class="obligatorio" aria-hidden="true"> *</span></label>
+      <input type="email" id="correo" name="correo" autocomplete="email" value="{{ request.POST.correo }}">
+    </div>
+    <div class="acciones"><button type="submit" class="boton-primario">Continuar</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-12**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-19**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,50 +11,71 @@ enlazan a éste.
 
 ## Resumen
 
-Décima fotografía. **La pre-venta llega, se demora o se cancela** (plan 01, ciclo de la
-pre-venta, y plan 08, segunda parte). Antes, del 2026-10-10: el mostrador y la caja (planes 06 y
-14).
+Decimoquinta fotografía. **Revisión funcional y recorte para el cierre** (plan 00): se corrigió lo
+que hacía aguas, se completó lo que el alcance promete y se descartó el resto con su
+justificación (`docs/DEUDA.md`, «Recorte para el cierre»).
 
-- **«Pre-ventas por llegar»** (`CU-ALT-TRA`): las pre-ventas agrupadas por fecha de llegada y
-  editorial (B-01-006). El Administrador carga lo que llegó, revisa qué va a pasar (B-01-011) y
-  confirma. Lo recibido cubre primero las reservas, en orden de compra (B-01-007); lo que falta y ya
-  venció se demora (B-01-008). Una transacción por producto (E3).
-- **Demora** (`CU-ALT-DEM`) y **cancelación por la editorial** (`CU-ALT-CAN`) desde la ficha del
-  producto, cada una con su informe de impacto. La cancelación reembolsa en puntos a cada cliente,
-  todo o nada (B-01-010).
-- **El Cliente ante la demora** (`CU-PED-OPC`, `CU-PED-CAN`): desde el correo o el detalle del
-  pedido en «Mi cuenta» elige esperar, recibir lo disponible o cancelar con reembolso. Las opciones
-  dependen de cómo está el pedido (B-08-009) y la ventana de decisión dura 72 horas por defecto
-  (B-08-004). Un pedido que se queda sin artículos pasa a **Cancelado** y devuelve el envío en
-  puntos (B-08-008).
-- **Temporizador**: avisos de lo que llega y escalado de lo vencido (`CO-011`, `CO-012`), cierre de
-  ventanas vencidas (`CO-096`) y compensación del 5 % semanal hasta el 25 % (`CU-PED-CMP`, B-08-010).
-- Panel del Administrador con el bloque «Pre-ventas por llegar»; dos parámetros nuevos: aviso
-  previo de pre-venta y ventana de decisión.
+- **Devoluciones** según la ley y sin comprometer al negocio (B-09-008): arrepentimiento por un
+  botón público sin registración, con reembolso por el medio de pago al recibir el artículo;
+  garantía con su propio plazo y cambio por un tomo de la misma editorial y formato.
+- **Todo reembolso descuenta los puntos ganados** con la compra (B-10-012), y todo lo guardado en
+  el local vence con su valor en puntos (B-18-009).
+- **El Temporizador completa los procesos automáticos del alcance**: lee la casilla de novedades
+  (`CO-016`, B-01-012), sincroniza la cotización (`CO-155`, B-03-013) y descarta los cobros
+  abandonados (B-07-039).
+- **Parámetros completo**, con la sección Seguridad (B-12-004).
+- Se cierran los parciales que ya tenían el código: `CU-TDA-CAT` y grupos y etiquetas.
 
-**Por qué quedan `Parciales`.** `CU-ALT-TRA`: `CO-013` encadena el aviso a los suscriptores de
-reposición (`CO-077`, módulo 05). `CU-PED-OPC`: con la opción 2, el artículo que llega queda
-Disponible con la marca «Despacho diferido» y no pasa a `ArticuloRetenido` hasta el módulo 18
-(B-08-007). `CU-CLI-HIS`: la sección Stock en Local sigue oculta (B-11-003); el acceso a
-`CU-PED-OPC` ya existe.
+Del 2026-10-19, antes:
+
+- **Retiro en el local** (B-07-038): en el checkout, el Cliente con cuenta elige «Retiro en el
+  local», sin dirección ni costo de envío. El pedido se arma como cualquiera y pasa de Armado a
+  **En el local**: cada unidad entra a su stock en local y se le avisa que está listo. El mostrador
+  lo entrega entero verificando al titular una vez. Si no lo retira en el plazo, vuelve al stock
+  con su valor en puntos (B-18-008). Lo retirado admite reclamo, con el plazo desde el retiro.
+
+Del 2026-10-17:
+
+- **Caducidad** (`CU-PTS-CAD`): el Temporizador vence cada día los lotes cuya fecha llegó, deja un
+  débito «Caducidad» en el historial y le avisa al Cliente con un solo correo (B-10-006). Los
+  puntos de un canje con el pago pendiente no vencen (B-10-005). **A pedido del responsable**, un
+  aviso unos días antes («aviso previo a la caducidad», 3 por defecto, en Parámetros) anima a
+  usarlos. «Mis puntos» dice hasta qué día se pueden usar.
+- **Ajuste manual** (`CU-PTS-ADM`): desde la ficha del Cliente (B-10-011), el Administrador ve
+  sus puntos y lo comprometido en un canje, y acredita o debita con motivo; el débito informa el
+  máximo y nunca toca lo comprometido.
+
+Del 2026-10-16:
+
+- **Devoluciones** (`CU-DEV-*`): desde el detalle de un pedido despachado, dentro del plazo, el
+  Cliente elige el artículo, el motivo y adjunta de 1 a 5 fotos, que se guardan fuera de la carpeta
+  pública (B-09-006). Un caso por línea, en cualquier estado (I-19). El Administrador recibe el
+  aviso, revisa el caso con sus fotos y lo resuelve con un cambio (descuenta una unidad del
+  reemplazo y deja el artículo reclamado pendiente de retiro), con el reembolso en puntos de una
+  unidad (B-09-003, B-09-004) o lo rechaza con motivo. El Cliente sigue su reclamo al lado de la
+  línea, en «Mi cuenta».
+- **Parámetros** gana el plazo máximo de devolución (sección Comercial), con el piso legal de 10
+  días rechazado aparte de los demás campos (`CO-130` E1) y como restricción de la base.
+- Los diagramas de estados DME-12 y DME-16 están desactualizados: mandan la ficha y `CO-100`
+  (R-09-001).
+
+**Por qué no quedan parciales.** `CO-077` ya existe: `CO-013` avisa con lo que sobra al llegar una
+pre-venta. Las altas de lote (`CU-ALT-NAC`, `IMP`, `REV`) crean productos nuevos, que no pueden
+tener suscriptores (B-05-001): su parcialidad viene de otras operaciones.
 
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 61 |
-| Construidos, sin verificar | 9 |
-| Parciales | 17 |
+| Verificados | 87 |
+| Construidos, sin verificar | 10 |
+| Parciales | 4 |
 | En curso | 0 |
-| Pendientes | 16 |
+| Pendientes | 2 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **140**, de los cuales **130
-verificados** y **10 parciales**: `CO-114`, `CO-039`, `CO-041`, `CO-043`, `CO-045`, `CO-060` (sólo
-el doble envío), `CO-130` (sin el plazo de devolución ni la sección Seguridad), `CO-192` (sin la
-sección Stock en Local), `CO-013` (sin `CO-077`) y `CO-095` (sin `ArticuloRetenido`). Sin
-prueba: **79**. El detalle por
-contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy: 624 pruebas de
-contrato.
+Contratos de operación especificados: **219**. Con prueba: **175**, de los cuales **174
+verificados** y **1 parcial**: `CO-060` (sólo el doble envío). Sin prueba: **44**. El detalle por
+contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy.
 
 ### Cómo leer la columna «Contratos»
 
@@ -73,12 +94,12 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-ALT-NAC` | Parcial | 3 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Alta al vuelo de editorial, tipo y formato** desde la cabecera del lote (`CO-137`, `CO-141`, `CO-144` verificados por su caso de uso propio; B-17-009). `CO-077` no tiene código: depende de `SuscripcionReposicion`, módulo 05. Las operaciones propias del alta (`CO-001` a `CO-006`) no tienen prueba de contrato. |
+| `CU-ALT-NAC` | Parcial | 3 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Alta al vuelo de editorial, tipo y formato** desde la cabecera del lote (`CO-137`, `CO-141`, `CO-144` verificados por su caso de uso propio; B-17-009). `CO-077` no aplica: un producto nuevo no tiene suscriptores (B-05-001). Las operaciones propias del alta (`CO-001` a `CO-006`) no tienen prueba de contrato. |
 | `CU-ALT-IMP` | Parcial | 4 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`. `CO-031` existe y está verificado (`CU-CAT-EDI` A2). Las operaciones propias del alta no tienen prueba de contrato. |
-| `CU-ALT-NOV` | Parcial | 2 / 3 | **`CO-017` y `CO-019` verificados**: la aprobación y el reprocesamiento se disparan desde la ficha del correo (CU-PRV-COL). `CO-016`, el ciclo de monitoreo de la casilla, no existe y depende de P-05. |
-| `CU-ALT-REV` | Parcial | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. `CO-077` no tiene código. |
+| `CU-ALT-NOV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `CO-017` y `CO-019` desde la ficha del correo; **`CO-016`, el monitoreo de la casilla, en el Temporizador** por IMAP, con la frecuencia de Parámetros, E1, E3 sin conexión e idempotencia (B-01-012). Plan 00, A1. |
+| `CU-ALT-REV` | Parcial | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. `CO-077` no aplica a productos nuevos (B-05-001). |
 | `CU-ALT-DEM` | Verificado | 3 / 3 | `apps/pedidos/preventa.py`, `views_preventa.py`. **Todos sus contratos verificados**: informe de impacto (A3), E1 con lo ingresado conservado, la cascada a pedidos con la ventana de decisión (B-08-004) y el correo con acceso directo, E2 con un pedido que falla, y volver sin registrar (`CO-156`). Desde la ficha del producto. Plan 01. |
-| `CU-ALT-TRA` | Parcial | 5 / 5 | «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` con cobertura de reservas en orden (B-01-007), faltantes (A1, B-01-008), E3 por producto y dos administradores a la vez; `CO-011` y `CO-012` en el Temporizador, por correo y en el panel, sin repetir avisos (B-01-009). `CO-013` queda parcial: el aviso a suscriptores (`CO-077`) es del módulo 05. Plan 01. |
+| `CU-ALT-TRA` | Verificado | 5 / 5 | **Todos sus contratos verificados.** «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` cubre reservas en orden (B-01-007), demora los faltantes vencidos (B-01-008), avisa a los suscriptores con lo que sobra (B-05-001) y deja retenido lo de despacho diferido (B-18-002); `CO-011` y `CO-012` en el Temporizador (B-01-009). Plan 01. |
 | `CU-ALT-CAN` | Verificado | 3 / 3 | **Todos sus contratos verificados**: informe por cliente con los puntos (B-01-010), atomicidad total (E1), un lote por cliente, el envío de los pedidos que se quedan vacíos (B-08-008) y volver sin efecto (`CO-156`). Plan 01. |
 
 ### `02` Catálogo
@@ -92,12 +113,12 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-CAT-INV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** Exportación CSV del listado filtrado, sólo Administrador y auditada (`CO-037`); filtro por editorial y etiquetas inactivas marcadas (`CO-162`); ficha por rol que no dibuja lo que el Cajero no ve e indicadores «No disponible» (`CO-163`). |
 | `CU-CAT-GRC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `GrupoListaView`: activos y dados de baja, filtro por estado, cantidad de etiquetas. |
 | `CU-CAT-GRA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activo; la colisión enlaza el grupo existente con su estado. |
-| `CU-CAT-GRM` | Parcial | 2 / 2 | Contratos con prueba. Corrige y reactiva; no da de baja. La reactivación no alcanza a las etiquetas (`CO-039`). Queda `Parcial` por la postcondición sobre los filtros del catálogo público, que no existe hasta `CU-TDA-CAT` (B-02-004, C-13). |
-| `CU-CAT-GRB` | Parcial | 4 / 4 | Contratos con prueba. Par informe y confirmación; **la baja alcanza a cada etiqueta del grupo** (`CO-041`) y conserva las asignaciones. `Parcial` por los filtros públicos (B-02-004). |
+| `CU-CAT-GRM` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Corrige y reactiva; la reactivación no alcanza a las etiquetas. Los filtros del catálogo público dejan de ofrecer y vuelven a ofrecer lo que se da de baja o se reactiva (B-02-004; plan 00, A6). |
+| `CU-CAT-GRB` | Verificado | 4 / 4 | **Todos sus contratos verificados.** Par informe y confirmación; la baja alcanza a cada etiqueta del grupo. Los filtros del catálogo público dejan de ofrecer y vuelven a ofrecer lo que se da de baja o se reactiva (B-02-004; plan 00, A6). |
 | `CU-CAT-ETC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EtiquetasDeGrupoView`: las etiquetas de un grupo, de a 50 (B-02-003), con búsqueda y filtro por estado, y el estado del grupo. |
 | `CU-CAT-ETA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Unicidad dentro del grupo, colisión con enlace, sólo en grupos activos. |
-| `CU-CAT-ETM` | Parcial | 2 / 2 | Contratos con prueba. Corrige, mueve de grupo y reactiva; rechaza reactivar en un grupo dado de baja (E3). `Parcial` por los filtros públicos (B-02-004). |
-| `CU-CAT-ETB` | Parcial | 4 / 4 | Contratos con prueba. Par informe y confirmación; la edición del producto la sigue presentando marcada (`CO-045`). `Parcial` por los filtros públicos (B-02-004). |
+| `CU-CAT-ETM` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Corrige, mueve de grupo y reactiva; rechaza reactivar en un grupo dado de baja (E3). Los filtros del catálogo público dejan de ofrecer y vuelven a ofrecer lo que se da de baja o se reactiva (B-02-004; plan 00, A6). |
+| `CU-CAT-ETB` | Verificado | 4 / 4 | **Todos sus contratos verificados.** Par informe y confirmación; la edición del producto la sigue presentando marcada. Los filtros del catálogo público dejan de ofrecer y vuelven a ofrecer lo que se da de baja o se reactiva (B-02-004; plan 00, A6). |
 
 ### `03` Pricing
 
@@ -121,18 +142,18 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-PRV-EDI` | Construido, sin verificar | 0 / 3 | `ProveedorEdicionView`, con confirmación al cambiar el correo comercial. |
 | `CU-PRV-CON` | Construido, sin verificar | 0 / 2 | `ProveedorListaView` y `ProveedorDetalleView`. |
 | `CU-PRV-REA` | Construido, sin verificar | 1 / 3 | `ProveedorReactivarView`. `CO-156` verificado. Falta compararla contra `CO-065`/`CO-066`. |
-| `CU-PRV-BAJ` | Parcial | 1 / 3 | `ProveedorBajaView` con informe de impacto. `CO-156` verificado. La cifra de propuestas de restock queda «No disponible» porque el módulo 05 no existe (B-04-001). |
+| `CU-PRV-BAJ` | Construido, sin verificar | 1 / 3 | `ProveedorBajaView` con informe de impacto, que ya cuenta la propuesta de restock pendiente (B-04-007). `CO-156` verificado; falta la prueba de contrato de la baja. |
 | `CU-PRV-COL` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Aprobar (`AprobarCorreoView`) y reprocesar (`ReprocesarCorreoView`) desde la ficha, con la transición condicionada de E1 y la corrección de E4 a favor del contrato (B-04-004). |
 
 ### `05` Restock
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-RST-PED` | Parcial | 0 / 3 | `suppliers/pedidos.py`, con reintento hasta tres veces. Lo invoca el cierre de sesión de revisión (`CO-025`). `CO-072 despacharPedidoAProveedor` necesita `PropuestaRestock`. |
-| `CU-RST-PRO` | Pendiente | 0 / 2 | No existe `PropuestaRestock`. |
-| `CU-RST-APR` | Pendiente | 0 / 8 | Ídem. |
-| `CU-RST-SUS` | Pendiente | 0 / 2 | No existe `SuscripcionReposicion`. |
-| `CU-RST-NOT` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
+| `CU-RST-PED` | Verificado | 3 / 3 | `suppliers/pedidos.py`: tres intentos y su registro (`CO-074`), E2 sin correo. Lo invocan `CU-ALT-REV` y `CU-RST-APR`. Plan 05. |
+| `CU-RST-PRO` | Verificado | 2 / 2 | **Todos sus contratos verificados**: ciclo diario con la ventana de la semana (B-05-004), cantidad sugerida, grupos por proveedor (B-05-003), E1 a E4, disparo manual que omite el ciclo; I-21 en la base y la carrera entre el ciclo y el botón. Plan 05. |
+| `CU-RST-APR` | Verificado | 8 / 8 | **Todos sus contratos verificados**: propuesta por proveedor, ajustar, quitar, agregar al grupo correcto, despachar con correo (E2 vuelve a Pendiente), descartar con motivo y cierre automático; dos administradores a la vez. Plan 05. |
+| `CU-RST-SUS` | Verificado | 2 / 2 | `apps/restock`. **Todos sus contratos verificados**: aviso desde la ficha de un agotado (B-05-002), E1, E2, cancelar, sin auditoría; I-22 en la base y dos clics a la vez. Plan 05. |
+| `CU-RST-NOT` | Verificado | 1 / 1 | **Verificado**: FIFO con `min(N, M)` en cada suba de stock (B-05-001), tres intentos y turno conservado (B-05-005), E2 sin ceder el cupo. Plan 05. |
 
 ### `06` Ventas Presenciales
 
@@ -144,12 +165,12 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-TDA-CAT` | Parcial | 2 / 2 | Contratos con prueba (`CO-176`, `CO-177`). Catálogo público con panel de filtros de varios valores que se aplican mientras se cambian, y orden elegible (B-07-013), de a 24; ficha con galería, **precio tachado con la oferta vigente** y el filtro de precio sobre el precio que se cobra (B-03-011). «Agregar al carrito» y «Reservar» inician `CU-TDA-CRA` (R-07-001). `Parcial`: «Avisarme cuando haya stock» espera a `CU-RST-SUS`. Plan 07 |
+| `CU-TDA-CAT` | Verificado | 2 / 2 | **Todos sus contratos verificados** (`CO-176`, `CO-177`). Catálogo público con filtros de varios valores, orden elegible, ficha con galería, precio con oferta y «Avisarme cuando haya stock» (`CU-RST-SUS`). Plan 07; cerrado en el plan 00, A6. |
 | `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» lleva al checkout; al invitado le ofrece iniciar sesión o comprar como invitado (B-07-006 resuelta). |
 | `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta reserva sin tope (A1). El personal no tiene carrito (B-07-005). |
 | `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2), sin tope en Pre-venta. La línea de otro carrito responde 404. |
 | `CU-TDA-CRB` | Verificado | 1 / 1 | Sin confirmación. La línea de otro carrito responde 404. |
-| `CU-TDA-CMP` | Verificado | 6 / 6 | `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). |
+| `CU-TDA-CMP` | Verificado | 6 / 6 | **Con el retiro en el local** (plan 07, octava parte; B-07-038): la modalidad en el checkout, el cobro y el pedido que nacen con ella, D4 en el servidor y en la base. `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). |
 | `CU-TDA-INV` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Sin pre-ventas (precondición), sin puntos, pedido asociado al correo; la sugerencia de iniciar sesión aparece dos veces (B-07-036). Plan 07, sexta parte. |
 
 **Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera y cuarta parte;
@@ -173,7 +194,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | --- | --- | --- | --- |
 | `CU-PED-CON` | Verificado | 2 / 2 | `apps/pedidos/views.py`. **Todos sus contratos verificados.** Listado de a 50 con filtros (cliente por nombre o correo, B-08-003), total cobrado en la misma consulta, y detalle con medio de pago, puntos y línea de tiempo (B-08-001). Sólo el Administrador. Plan 08. |
 | `CU-PED-EST` | Verificado | 3 / 3 | `apps/pedidos/servicios.py`. **Todos sus contratos verificados**: un paso por vez con confirmación, E1, E2 con `CO-093`, líneas que avanzan salvo las demoradas, correo al cliente o al invitado (B-08-002), auditoría, y la carrera entre dos administradores. Plan 08. |
-| `CU-PED-OPC` | Parcial | 6 / 6 | `apps/pedidos/demora.py`, `cuenta:demora`. Opciones según el pedido (B-08-009), confirmación con la consecuencia, una sola decisión con dos pestañas a la vez, ventana vencida rechazada en el servidor y cerrada por el Temporizador (`CO-096`). `CO-095` queda parcial: el artículo diferido que llega no pasa a `ArticuloRetenido` hasta el módulo 18 (B-08-007). Plan 08, segunda parte. |
+| `CU-PED-OPC` | Verificado | 6 / 6 | **Todos sus contratos verificados.** Opciones según el pedido (B-08-009), confirmación con la consecuencia, una sola decisión con dos pestañas, ventana vencida rechazada y cerrada por el Temporizador (`CO-096`); la opción 2 termina en el stock almacenado (B-18-002, B-18-003). Planes 08 y 18. |
 | `CU-PED-CAN` | Verificado | 2 / 2 | **Todos sus contratos verificados**: reembolso en puntos (los mismos si se pagó con puntos), el stock no cambia (B-08-005), el pedido sin otros artículos se cancela con el envío (B-08-008), E1 todo o nada con aviso al Administrador, y la carrera contra la llegada del artículo. Plan 08, segunda parte. |
 | `CU-PED-CMP` | Verificado | 1 / 1 | **Verificado**: 5 % por semana cumplida contra lo acreditado, tope del 25 %, doble corrida sin exceso, E1, E2 y E3 (B-08-010). Corre hasta que el artículo llega (B-08-006). Plan 08, segunda parte. |
 
@@ -181,8 +202,8 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-DEV-SOL` | Pendiente | 0 / 2 | No existe `CasoDevolucion`. |
-| `CU-DEV-RES` | Pendiente | 0 / 5 | Ídem. |
+| `CU-DEV-SOL` | Verificado | 2 / 2 | **Reformulado en el plan 00, C1** (B-09-008): **arrepentimiento** por el botón público, sin registración (número de pedido y correo), línea entera y sin fotos; **garantía** desde «Mi cuenta» con fotos y su propio plazo. Un caso por línea (I-19), el código por correo al abrirlo. **Todos sus contratos verificados.** |
+| `CU-DEV-RES` | Verificado | 5 / 5 | **Reformulado en el plan 00, C1** (B-09-008): contacto a la vista para coordinar por fuera; arrepentimiento con **reembolso por el medio de pago registrado** (o en puntos si se pagó con puntos) y el artículo de vuelta al stock; garantía con cambio por la misma editorial y formato al stock en local sin costo de envío, puntos o medio de pago. Sin `DevolucionFisica`. Puntos ganados descontados (B-10-012). **Todos sus contratos verificados.** |
 
 ### `10` Puntos
 
@@ -190,8 +211,8 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | --- | --- | --- | --- |
 | `CU-PTS-CON` | Verificado | 2 / 2 | `apps/puntos/views.py`. **Todos sus contratos verificados.** Saldo con su equivalencia, lotes con «Próximo a vencer» (30 días), historial de a 50 con el pedido de cada movimiento (B-10-001) y filtros por tipo y fechas. El saldo, además, en el encabezado de la tienda (B-10-002). Plan 10. |
 | `CU-PTS-CJE` | Verificado | 3 / 3 | **Todos sus contratos verificados en los dos canales**: la tienda (plan 07) y el mostrador (plan 06), por línea entera, sin tocar ningún lote hasta confirmar. |
-| `CU-PTS-CAD` | Pendiente | 0 / 1 | Los lotes nacen con su fecha de caducidad; falta el ciclo, que depende de P-05. |
-| `CU-PTS-ADM` | Pendiente | 0 / 2 | Falta la pantalla del ajuste manual. |
+| `CU-PTS-CAD` | Verificado | 1 / 1 | `apps/puntos/caducidad.py`, en el Temporizador. **`CO-105` verificado**: lote a Vencido con disponible cero, el saldo, lo futuro intacto, E2 con un canje pendiente (y no con uno abandonado), la auditoría por lote, E1 con el incidente y el ciclo que sigue, A1 sin registro (B-10-007), doble corrida. Aviso previo a pedido del responsable (B-10-006). Plan 10, segunda parte. |
+| `CU-PTS-ADM` | Verificado | 2 / 2 | `apps/puntos/ajuste.py`, `AjustePuntosView`. **Todos sus contratos verificados**: el panel con lo comprometido (`CO-191`); la acreditación con la caducidad estándar, el débito por caducidad sin tocar lo comprometido, el movimiento, la auditoría con los dos saldos, el aviso, E1 con el máximo y E2 conservando lo ingresado (`CO-106`). Concurrencia: dos débitos, y un débito contra la caducidad. Plan 10, segunda parte. |
 
 ### `11` Cuenta de Cliente
 
@@ -200,14 +221,14 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | `CU-CLI-ALT` | Construido, sin verificar | 0 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. |
 | `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
 | `CU-CLI-DAT` | Verificado | 4 / 4 | `apps/accounts/views_cuenta.py`. **Todos sus contratos verificados.** Datos con las validaciones del registro; contraseña que cierra las otras sesiones; correo con `TokenCambioCorreo` de 24 h (B-11-002), confirmación por botón y aviso al correo anterior (B-11-005). Plan 11, segunda parte. |
-| `CU-CLI-HIS` | Parcial | 1 / 2 | «Mi cuenta»: pedidos activos, historial (despachados y cancelados, B-11-004, B-08-008) y detalle con su línea de tiempo, que se refresca cada 30 s. **`CO-193` verificado**: el detalle ofrece elegir qué hacer con un artículo demorado. `CO-192` sigue parcial: Stock en Local oculta (B-11-003). Plan 11, segunda parte. |
+| `CU-CLI-HIS` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Pedidos activos, historial (despachados y cancelados), detalle con su línea de tiempo y acceso a la decisión ante una demora, y la sección Stock en Local (B-11-003 resuelta). Planes 11 y 18. |
 | `CU-CLI-BAJ` | Pendiente | 0 / 3 | El informe de impacto necesita Stock Almacenado; pedidos y puntos ya existen. |
 
 ### `12` Autenticación
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-AUT-INI` | Parcial | 2 / 3 | `LoginUsuarioView`, bloqueo por intentos, redirección por rol y expiración con renovación. **`CO-115` y `CO-086` verificados**: el inicio de sesión fusiona el carrito de invitado (B-07-005). `CO-114` parcial (B-12-001). |
+| `CU-AUT-INI` | Verificado | 3 / 3 | `LoginUsuarioView`, bloqueo por intentos, redirección por rol y expiración con renovación. **Todos sus contratos verificados**: `CO-114` con el bloqueo y la expiración de la sesión parametrizados (B-12-004), `CO-115` y `CO-086` (fusión del carrito). Plan 00, A3. |
 | `CU-AUT-FIN` | Verificado | 1 / 1 | **Todos sus contratos verificados.** |
 | `CU-AUT-REC` | Verificado | 2 / 2 | **Todos sus contratos verificados.** |
 | `CU-AUT-ACT` | Verificado | 3 / 3 | **Todos sus contratos verificados.** |
@@ -235,7 +256,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CFG-PAR` | Parcial | 1 / 3 | `ParametrosView`: stock inicial por defecto, intervalo del carrusel (B-17-003), modelo de lenguaje y **«Compra online»**: Logística, Fidelización y pasarela (B-07-031, B-07-032). Una entrada de auditoría por parámetro modificado. El margen salió a `CU-PVP-MAR` (A1). Faltan el plazo de devolución, las secciones de los módulos no construidos y la de Seguridad (B-12-001). **`CO-130` con prueba, parcial** por esos campos; `CO-207` sin prueba. |
+| `CU-CFG-PAR` | Verificado | 3 / 3 | `ParametrosView`: **todas las secciones** — operación, Seguridad (B-12-004), Compra online (Logística, Comercial con los plazos de arrepentimiento y de garantía, Fidelización y pasarela), Proveedores (frecuencia de la casilla) y el modelo de lenguaje. **Todos sus contratos verificados**: `CO-130` con E1 y E2, `CO-207` y `CO-053` desde el enlace al margen (A1). Plan 00, A3. |
 | `CU-CFG-LLM` | Construido, sin verificar | 0 / 3 | `DiagnosticoLLMView` y `core/llm.py`. |
 | `CU-CFG-EDC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EditorialListaView`, pantalla propia: activas y dadas de baja, productos vinculados, filtro por estado. |
 | `CU-CFG-EDA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activa; la colisión enlaza la existente con su estado. Alta al vuelo con la misma auditoría. |
@@ -260,12 +281,12 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-STK-CON` | Pendiente | 0 / 1 | No existe `ArticuloRetenido`. |
-| `CU-STK-DES` | Pendiente | 0 / 5 | Ídem. |
-| `CU-STK-ADC` | Pendiente | 0 / 2 | Ídem. |
-| `CU-STK-FIS` | Pendiente | 0 / 3 | Ídem. |
-| `CU-STK-PLA` | Pendiente | 0 / 2 | Ídem. |
-| `CU-STK-VEN` | Pendiente | 0 / 1 | Ídem, y depende además de P-05. |
+| `CU-STK-CON` | Verificado | 1 / 1 | `apps/almacen`, «Mi cuenta» → Stock en local. Lo propio, con lo próximo a vencer destacado y lo pendiente en sólo lectura. Plan 18. |
+| `CU-STK-DES` | Verificado | 5 / 5 | **Todos sus contratos verificados**: resumen, dirección del envío sin tocar el perfil, gratis desde el mínimo (B-18-007) o pago por la pasarela con reembolso si el artículo cambió (E3), solicitud de despacho (B-18-004), volver sin registrar, dos pestañas a la vez. Plan 18. |
+| `CU-STK-ADC` | Verificado | 2 / 2 | **Todos sus contratos verificados**: listado con filtros por cliente, producto, estado y vencimiento; ficha con origen e historial de plazo. Administrador y Cajero. Plan 18. |
+| `CU-STK-FIS` | Verificado | 3 / 3 | **Todos sus contratos verificados**: despacho por solicitud (B-18-007), retiro con verificación del titular, E1, y la carrera entre despacho y retiro. Plan 18. |
+| `CU-STK-PLA` | Verificado | 2 / 2 | **Todos sus contratos verificados**: extender o acortar con motivo, E1, E2, aviso al Cliente. Sólo el Administrador. Plan 18. |
+| `CU-STK-VEN` | Verificado | 1 / 1 | **Verificado** en el Temporizador: aviso una vez por fecha (B-18-006), reintegro al stock sin reembolso, extensión de tres días cada vez que vence pendiente (B-18-005), doble corrida sin efecto. Plan 18. |
 
 ### Códigos retirados y a qué se repartieron
 
@@ -286,17 +307,62 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-12**, con PostgreSQL levantado, sobre el repositorio entero.
+Medición del **2026-10-19**, al cerrar el plan 00, con PostgreSQL levantado.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **2402 pasan**, 0 fallos, en paralelo y en orden aleatorio (2 min 51 s) |
-| **Contratos** | **130 de 219 verificados**, 10 parciales, 79 sin prueba. Detalle en [pruebas/COBERTURA.md](pruebas/COBERTURA.md) |
-| Cobertura sobre código de aplicación | **97 %** (9850 sentencias, 308 sin cubrir). Lo nuevo: `pedidos/preventa.py` 99 %, `pedidos/demora.py` 98 %, `pedidos/views_preventa.py` 92 %, `pedidos/forms.py` 100 % |
+| Suite de pruebas | **2696 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 33 s) |
+| **Contratos** | **174 de 219 verificados**, 1 parcial, 44 sin prueba |
+| Cobertura sobre código de aplicación | **97 %** (12150 sentencias, 423 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 292 archivos sin cambios |
+| Formato | `black --check .`: 339 archivos sin cambios |
 | Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
+
+**Plan 00, verificaciones a mano (2026-10-19).** `almacen.0004`, `core.0037` a `0039`,
+`devoluciones.0002` (con el correo de contacto de los casos existentes y la disconformidad pasada a
+arrepentimiento) y `tienda.0006` aplicaron sobre la base de desarrollo; `makemigrations --check` no
+detecta cambios. En `pg_constraint` están `caso_arrepentimiento_sin_cambio`,
+`caso_reembolso_medio_con_monto` y `caso_al_menos_una_unidad`; la tabla de `DevolucionFisica` ya no
+existe. El botón de arrepentimiento, su pedido, la confirmación con el código, la ficha del caso,
+el reembolso por el medio de pago y Parámetros se revisaron con capturas de Chrome sin interfaz. Las
+pruebas de concurrencia de pre-venta y devoluciones corrieron tres veces seguidas sin fallos.
+
+**Retiro en el local, verificaciones a mano (2026-10-19).** `pedidos.0006`, `almacen.0003` y
+`tienda.0005` aplicaron sobre la base de desarrollo: los 5 pedidos existentes quedaron como envío a
+domicilio; `makemigrations --check` no detecta cambios. `pedido_retiro_de_cuenta_sin_envio` está en
+`pg_constraint`. El checkout con retiro, el pedido en «Mi cuenta», el stock en local, la ficha del
+pedido en el panel, «Entregar todo» y la ficha del artículo se revisaron con capturas de Chrome sin
+interfaz. La prueba de concurrencia de la entrega corrió tres veces seguidas sin fallos.
+
+**Puntos, verificaciones a mano (2026-10-17).** `core.0036` y `puntos.0003` aplicaron sobre la
+base de desarrollo, con el aviso previo en 3 días y los lotes existentes sin avisar;
+`makemigrations --check` no detecta cambios. La segunda parte no agrega restricciones. La ficha
+del Cliente con el enlace, el panel de puntos, E1 con el máximo, el ajuste registrado y «Mis
+puntos» con «Se pueden usar hasta» se revisaron con capturas de Chrome sin interfaz. Las pruebas
+de concurrencia corrieron tres veces seguidas sin fallos.
+
+**Devoluciones, verificaciones a mano (2026-10-16).** `core.0035`, `devoluciones.0001` y
+`puntos.0002` aplicaron sobre la base de desarrollo, con el plazo de devolución en 10 días;
+`makemigrations --check` no detecta cambios. En `pg_constraint` están
+`plazo_devolucion_piso_legal`, `caso_estado_coherente_con_resolucion`,
+`caso_cambio_tiene_reemplazo`, `devolucion_fisica_retiro_con_fecha` y las unicidades
+`devoluciones_casodevolucion_linea_id_key` (I-19) y `devoluciones_devolucionfisica_caso_id_key`.
+El detalle del pedido con el botón y con el reclamo, el formulario (vacío y con E3), el panel, el
+detalle del caso, la búsqueda del reemplazo, la confirmación del cambio, el reembolso, el rechazo
+y Parámetros se revisaron con capturas de Chrome sin interfaz. Las pruebas de concurrencia
+corrieron tres veces seguidas sin fallos. Las fotos se guardan en `privado/`, que no se versiona.
+
+**Stock en local y restock, verificaciones a mano (2026-10-14).** `almacen.0001` y `0002` (sin
+artículos diferidos pendientes en la base), `restock.0001`, `core.0033` y `0034`, `pedidos.0005` y
+`tienda.0004` aplicaron sobre la base de desarrollo; `makemigrations --check` no detecta cambios.
+En `pg_constraint` están `articulo_valor_positivo`, `articulo_con_plazo_tiene_vencimiento`,
+`articulo_pendiente_tiene_solicitud`, `solicitud_costo_envio_no_negativo`,
+`transaccion_de_pedido_o_de_solicitud` y `linea_restock_producto_unico`; las únicas condicionales
+`suscripcion_en_espera_unica` (I-22) y `propuesta_pendiente_unica` (I-21) están en `pg_indexes`.
+Las pantallas de «Mi cuenta», el panel de stock en local, la ficha, la solicitud, el plazo, la
+propuesta de restock y la ficha pública con el aviso se revisaron con capturas de Chrome sin
+interfaz. Las pruebas de concurrencia corrieron tres veces seguidas sin fallos.
 
 **Pre-venta y demora, verificaciones a mano (2026-10-12).** `core.0032` y `pedidos.0004` aplicaron
 sobre la base de desarrollo, con los valores por defecto de los dos parámetros nuevos (2 días y 72

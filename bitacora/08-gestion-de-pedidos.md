@@ -165,7 +165,7 @@ RF-16 y `CU-PED-CMP` E1: «hasta que el artículo llega al local».
 ### B-08-007 · La opción 2 empaqueta el pedido y el artículo que llega espera el módulo 18
 
 **Tipo:** Desvío · **Fecha:** 2026-10-12 · **Alcance:** `CO-095` opción 2, `CU-PED-OPC` paso 6
-**Estado:** Abierta — consultado y aprobado por el responsable el 2026-10-12 (plan 08 segunda parte, amb. 3 y 5)
+**Estado:** Abierta — consultado y aprobado por el responsable el 2026-10-12 (plan 08 segunda parte, amb. 3 y 5). La espera del módulo 18 quedó resuelta el 2026-10-14: el artículo que llega pasa a `ArticuloRetenido` (B-18-002, B-18-003). Sigue abierto el paso del pedido a Empaquetado
 
 **Qué apareció.**
 `CO-095` mueve las líneas disponibles a Empaquetado pero no dice qué pasa con el pedido, y el

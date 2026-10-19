@@ -39,7 +39,7 @@ próximo cierre (B-14-001). E2: sin movimientos. A1: pendientes de verificación
     {% if resumen.pendientes %}
       <div class="panel panel--atencion pila-2" role="alert">
         <p><strong>{{ resumen.pendientes|length }} transacción(es) pendientes de verificación.</strong> Quedan fuera de este cierre y pasan al próximo.</p>
-        <ul>{% for t in resumen.pendientes %}<li>Pedido {{ t.pedido.numero }} · {{ t.get_medio_display }} · {{ t.monto|pesos }}</li>{% endfor %}</ul>
+        <ul>{% for t in resumen.pendientes %}<li>{{ t.concepto }} · {{ t.get_medio_display }} · {{ t.monto|pesos }}</li>{% endfor %}</ul>
       </div>
     {% endif %}
 

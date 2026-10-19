@@ -1,0 +1,37 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-DEV-RES paso 5, opción B — CO-101 resolverCasoConReembolsoEnPuntos. El 100 %
+del valor de una unidad, en puntos (plan 09, ambigüedades 4 y 5). Volver no
+registra nada.
+{% endcomment %}
+
+{% block titulo %}Reembolsar en puntos · Caso {{ caso.numero }} · Longbox{% endblock %}
+{% block seccion %}Devoluciones{% endblock %}
+
+{% block contenido %}
+{% url 'devoluciones:detalle' caso.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del caso" atras=1 %}</span>
+    <h1>Reembolsar en puntos</h1>
+    <p>{{ linea.producto.especifico }}</p>
+  </div>
+</header>
+
+<div class="panel formulario--angosto pila-4">
+  <dl class="datos-de-ficha">
+    <dt>Cliente</dt>
+    <dd>{{ caso.usuario.get_full_name|default:caso.usuario.email }}</dd>
+    <dt>Valor de la unidad</dt>
+    <dd>{% if linea.cubierta_con_puntos %}Pagada con puntos{% else %}<span class="datos">{{ linea.precio_unitario|pesos }}</span>{% endif %}</dd>
+    <dt>Se acreditan</dt>
+    <dd><strong class="datos">{{ puntos }} pts</strong></dd>
+  </dl>
+  <form method="post" class="fila-5">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario">Confirmar el reembolso</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

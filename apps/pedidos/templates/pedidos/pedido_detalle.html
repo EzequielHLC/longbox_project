@@ -48,8 +48,15 @@ por qué no se puede avanzar a mano (E1).
       </dd>
       <dt>Correo</dt>
       <dd class="datos">{{ pedido.correo_de_contacto }}</dd>
-      <dt>Dirección de envío</dt>
-      <dd>{{ pedido.direccion_de_envio|default:"—" }}</dd>
+      <dt>Entrega</dt>
+      <dd>
+        {% if pedido.retiro %}
+          Retiro en el local
+          {% if pedido.estado == "en_local" %}· <a href="{% url 'almacen:retiro_pedido' pedido.pk %}">Entregar en el mostrador</a>{% endif %}
+        {% else %}
+          {{ pedido.direccion_de_envio|default:"—" }}
+        {% endif %}
+      </dd>
       <dt>Medio de pago</dt>
       <dd>
         {% if transaccion %}

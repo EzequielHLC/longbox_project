@@ -28,6 +28,14 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
             <div class="linea-carrito__datos pila-2">
               <span class="linea-carrito__titulo">{{ linea.producto.titulo }}{% if linea.producto.productoeditorial.volumen %} #{{ linea.producto.productoeditorial.volumen }}{% endif %}</span>
               <p class="texto-chico secundario">{{ linea.get_estado_display }}{% if linea.decision_demora and linea.estado != "cancelado_reembolso" %} · {{ linea.get_decision_demora_display }}{% endif %}</p>
+              {% if linea.despacho_diferido and linea.estado == "disponible" %}
+                <p class="texto-chico"><a href="{% url 'cuenta:stock' %}">En el local a tu nombre</a></p>
+              {% endif %}
+              {% if linea.caso %}
+                <p class="texto-chico">Reclamo <span class="datos">{{ linea.caso.numero }}</span>: {{ linea.caso.get_estado_display|lower }}{% if linea.caso.resolucion %} · {{ linea.caso.get_resolucion_display|lower }}{% endif %}.</p>
+                {% if linea.caso.producto_reemplazo %}<p class="texto-chico secundario">Reemplazo: {{ linea.caso.producto_reemplazo.especifico }}.</p>{% endif %}
+                {% if linea.caso.motivo_rechazo %}<p class="texto-chico secundario">Motivo: {{ linea.caso.motivo_rechazo }}</p>{% endif %}
+              {% endif %}
               {% if linea.puede_decidir %}
                 <p class="texto-chico"><strong>Se demora.</strong> Elegí qué hacer antes del {{ linea.decision_vence_en|date:"d/m H:i" }}.</p>
                 <p><a href="{% url 'cuenta:demora' pedido.numero linea.pk %}" class="boton-seccion">Elegir qué hacer</a></p>
@@ -40,7 +48,11 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
           </li>
         {% endfor %}
       </ul>
-      <p class="secundario">Se envía a <span class="datos">{{ pedido.direccion_de_envio }}</span>.</p>
+      {% if pedido.retiro %}
+        <p class="secundario">Retiro en el local.{% if pedido.estado == "en_local" %} <a href="{% url 'cuenta:stock' %}">Está a tu nombre en Stock en local</a>.{% endif %}</p>
+      {% else %}
+        <p class="secundario">Se envía a <span class="datos">{{ pedido.direccion_de_envio }}</span>.</p>
+      {% endif %}
     </section>
   </div>
 
@@ -49,9 +61,21 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
     <p><span class="marca-estado marca-estado--atencion">{{ pedido.get_estado_display }}</span></p>
     {% include "_linea_de_tiempo.html" with transiciones=transiciones %}
     <dl class="resumen-compra">
-      <div><dt>Envío</dt><dd class="datos">{% if pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</dd></div>
+      <div><dt>Envío</dt><dd class="datos">{% if pedido.retiro %}Retiro en el local{% elif pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</dd></div>
     </dl>
     <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobrado|pesos }}</span></p>
+    {% if puede_arrepentirse %}
+      {# Plan 00, C1: el arrepentimiento (Ley 24.240, art. 34). #}
+      <p><a href="{% url 'devoluciones_tienda:pedido' pedido.numero %}" class="boton-seccion">Arrepentirme de la compra</a></p>
+      <p class="texto-chico secundario">Hasta el <span class="datos">{{ arrepentimiento_hasta|date:"d/m/Y" }}</span>.</p>
+    {% endif %}
+    {% if puede_reclamar %}
+      {# CU-DEV-SOL, garantía: dentro del plazo, con algún artículo sin reclamo. #}
+      <p><a href="{% url 'cuenta:devolucion' pedido.numero %}" class="boton-texto">Reclamar un defecto</a></p>
+      <p class="texto-chico secundario">Hasta el <span class="datos">{{ reclamo_hasta|date:"d/m/Y" }}</span>.</p>
+    {% elif reclamo_vencido %}
+      <p class="texto-chico secundario">El plazo para reclamar un defecto venció el <span class="datos">{{ reclamo_hasta|date:"d/m/Y" }}</span>.</p>
+    {% endif %}
   </aside>
 </div>
 {% endblock %}

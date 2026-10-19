@@ -37,20 +37,16 @@ y el borde fuerte del recuadro.
       <li><span>Se puede reactivar.</span></li>
     </ul>
 
-    {% comment %}
-    El mapeo de impacto del paso 2. La cifra de restock no se puede calcular
-    todavía y se dice explícitamente: afirmar «0 propuestas afectadas» sería
-    mentir sobre un dato que el propio CU considera parte de la decisión.
-    {% endcomment %}
+    {% comment %}El mapeo de impacto del paso 2 (B-04-001).{% endcomment %}
     <div class="cifras">
       <div class="cifra{% if impacto.hay_impacto %} cifra--atencion{% endif %}">
         {% if impacto.hay_impacto %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
         <span class="cifra__rotulo">{% include "_iconos.html" with icono="catalogo" %}Productos vinculados</span>
         <span class="cifra__valor">{{ impacto.productos_vinculados }}</span>
       </div>
-      <div class="cifra">
+      <div class="cifra{% if impacto.propuestas_de_restock %} cifra--atencion{% endif %}">
         <span class="cifra__rotulo">{% include "_iconos.html" with icono="lote" %}Propuestas de restock afectadas</span>
-        <span class="cifra__nota">No disponible todavía.</span>
+        <span class="cifra__valor">{{ impacto.propuestas_de_restock }}</span>
       </div>
     </div>
 

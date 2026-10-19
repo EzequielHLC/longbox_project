@@ -26,6 +26,10 @@ SIGUIENTE = {
     Pedido.ARMADO: Pedido.EMPAQUETADO,
     Pedido.EMPAQUETADO: Pedido.DESPACHADO,
 }
+SIGUIENTE_RETIRO = {
+    Pedido.PENDIENTE_ARMADO: Pedido.ARMADO,
+    Pedido.ARMADO: Pedido.EN_LOCAL,
+}
 AUTOMATICOS = (Pedido.ESPERANDO_PRE_VENTA, Pedido.ESPERANDO_DEMORADO)
 # Qué estado toma una línea Disponible cuando el pedido llega a cada destino
 # (plan 08, amb. 2). Armado no toca las líneas: DME-08 no tiene ese estado.
@@ -55,6 +59,9 @@ class DecisionPendiente(ValueError):
 
 
 def siguiente_estado(pedido):
+    """Un pedido para retirar pasa de Armado a En el local (plan 07, octava parte)."""
+    if pedido.retiro:
+        return SIGUIENTE_RETIRO.get(pedido.estado)
     return SIGUIENTE.get(pedido.estado)
 
 
@@ -96,15 +103,22 @@ def avanzar(pedido, actor, *, estado_visto, confirmado=False):
                 f"Un pedido en «{pedido.get_estado_display()}» avanza sólo cuando el sistema "
                 "lo resuelve: no se puede avanzar a mano."
             )
-        destino = SIGUIENTE.get(pedido.estado)
+        destino = siguiente_estado(pedido)
         if destino is None:
-            raise AvanceRechazado("El pedido ya está despachado: no tiene un estado siguiente.")
+            raise AvanceRechazado(
+                f"El pedido ya está en «{pedido.get_estado_display()}»: no tiene un estado "
+                "siguiente."
+            )
         if pedido.estado != estado_visto:
             raise AvanceRechazado(
                 "El pedido cambió mientras lo mirabas: ahora está en "
                 f"«{pedido.get_estado_display()}»."
             )
-        pendientes = pendientes_de_decision(pedido) if destino == Pedido.EMPAQUETADO else []
+        pendientes = (
+            pendientes_de_decision(pedido)
+            if destino in (Pedido.EMPAQUETADO, Pedido.EN_LOCAL)
+            else []
+        )
         if pendientes and not confirmado:
             raise DecisionPendiente(pendientes)
 
@@ -120,6 +134,11 @@ def avanzar(pedido, actor, *, estado_visto, confirmado=False):
             ).exclude(decision_demora=LineaPedido.DESPACHO_DIFERIDO).update(
                 estado=ESTADO_DE_LINEA[destino]
             )
+        if destino == Pedido.EN_LOCAL:
+            # Plan 07, octava parte: cada unidad entra al stock en local del Cliente.
+            from apps.almacen.servicios import guardar_pedido_para_retirar
+
+            guardar_pedido_para_retirar(pedido, actor)
         registrar_transicion(pedido, anterior, actor, momento)
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.AVANCE_ESTADO_PEDIDO,

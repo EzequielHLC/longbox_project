@@ -36,6 +36,9 @@ class Pedido(models.Model):
     ESPERANDO_DEMORADO = "esperando_demorado"
     EMPAQUETADO = "empaquetado"
     DESPACHADO = "despachado"
+    # Plan 07, octava parte: un pedido para retirar termina acá; sus artículos
+    # siguen en el stock en local (ambigüedad 1). Terminal.
+    EN_LOCAL = "en_local"
     # B-08-008: un pedido que se queda sin artículos. Terminal.
     CANCELADO = "cancelado"
     ESTADO_CHOICES = [  # noqa: RUF012
@@ -45,7 +48,16 @@ class Pedido(models.Model):
         (ESPERANDO_DEMORADO, "Esperando artículo demorado"),
         (EMPAQUETADO, "Empaquetado"),
         (DESPACHADO, "Despachado"),
+        (EN_LOCAL, "En el local"),
         (CANCELADO, "Cancelado"),
+    ]
+
+    # Plan 07, octava parte: retiro en el local, sólo con cuenta (D4).
+    ENVIO = "envio"
+    RETIRO = "retiro"
+    MODALIDAD_CHOICES = [  # noqa: RUF012
+        (ENVIO, "Envío a domicilio"),
+        (RETIRO, "Retiro en el local"),
     ]
 
     # Se asigna dentro de la misma transacción que crea el pedido, a partir de
@@ -53,6 +65,9 @@ class Pedido(models.Model):
     numero = models.CharField("número", max_length=20, unique=True, null=True, blank=True)
     canal = models.CharField("canal", max_length=12, choices=CANAL_CHOICES)
     estado = models.CharField("estado", max_length=25, choices=ESTADO_CHOICES)
+    modalidad = models.CharField(
+        "modalidad de entrega", max_length=10, choices=MODALIDAD_CHOICES, default=ENVIO
+    )
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -91,6 +106,13 @@ class Pedido(models.Model):
                 | (Q(usuario__isnull=True) & ~Q(correo_invitado="")),
                 name="pedido_online_de_cuenta_o_invitado",
             ),
+            # Un pedido para retirar es de una cuenta (D4), no cobra envío ni
+            # guarda una dirección.
+            models.CheckConstraint(
+                condition=~Q(modalidad="retiro")
+                | (Q(usuario__isnull=False) & Q(costo_envio=0) & Q(envio_direccion="")),
+                name="pedido_retiro_de_cuenta_sin_envio",
+            ),
         ]
 
     def __str__(self):
@@ -101,6 +123,10 @@ class Pedido(models.Model):
         partes = [self.envio_direccion, self.envio_depto, self.envio_localidad]
         provincia = " ".join(p for p in (self.envio_provincia, self.envio_codigo_postal) if p)
         return ", ".join(p for p in [*partes, provincia] if p)
+
+    @property
+    def retiro(self):
+        return self.modalidad == self.RETIRO
 
     @property
     def correo_de_contacto(self):
@@ -229,7 +255,18 @@ class TransaccionPago(models.Model):
         (PENDIENTE_VERIFICACION, "Pendiente de verificación"),
     ]
 
-    pedido = models.OneToOneField(Pedido, on_delete=models.PROTECT, related_name="transaccion")
+    # Una transacción cobra un pedido o el envío de una solicitud de despacho
+    # de stock almacenado (B-18-004), nunca los dos.
+    pedido = models.OneToOneField(
+        Pedido, on_delete=models.PROTECT, null=True, blank=True, related_name="transaccion"
+    )
+    solicitud = models.OneToOneField(
+        "almacen.SolicitudDespacho",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="transaccion",
+    )
     medio = models.CharField("medio de pago", max_length=15, choices=MEDIO_CHOICES)
     monto = models.DecimalField("monto", max_digits=12, decimal_places=2)
     estado = models.CharField("estado", max_length=25, choices=ESTADO_CHOICES)
@@ -254,10 +291,29 @@ class TransaccionPago(models.Model):
         verbose_name_plural = "transacciones de pago"
         constraints = [  # noqa: RUF012
             models.CheckConstraint(condition=Q(monto__gte=0), name="transaccion_monto_no_negativo"),
+            models.CheckConstraint(
+                condition=Q(pedido__isnull=False, solicitud__isnull=True)
+                | Q(pedido__isnull=True, solicitud__isnull=False),
+                name="transaccion_de_pedido_o_de_solicitud",
+            ),
         ]
 
     def __str__(self):
         return f"{self.get_medio_display()} {self.monto} ({self.get_estado_display()})"
+
+    @property
+    def canal(self):
+        """El envío de stock almacenado se cobra online (B-18-004)."""
+        return self.pedido.canal if self.pedido_id else Pedido.ONLINE
+
+    def get_canal_display(self):
+        return dict(Pedido.CANAL_CHOICES)[self.canal]
+
+    @property
+    def concepto(self):
+        if self.pedido_id:
+            return f"Pedido {self.pedido.numero}"
+        return f"Envío {self.solicitud.numero}"
 
 
 class TransicionDePedido(models.Model):

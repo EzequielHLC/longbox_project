@@ -52,6 +52,9 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
       {% include "_campo.html" with campo=form.stock_inicial_por_defecto %}
       {% include "_campo.html" with campo=form.intervalo_carrusel %}
       {% include "_campo.html" with campo=form.dias_aviso_preventa %}
+      {% include "_campo.html" with campo=form.cantidad_minima_restock %}
+      {% include "_campo.html" with campo=form.margen_stock_restock %}
+      {% include "_campo.html" with campo=form.frecuencia_casilla_horas %}
     </div>
 
     <div class="acciones">
@@ -60,6 +63,21 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
         Última modificación: <span class="datos">{{ configuracion.actualizado_en|date:"d/m/Y H:i" }}</span>
         {% if configuracion.actualizado_por %}· {{ configuracion.actualizado_por.get_full_name|default:configuracion.actualizado_por.email }}{% endif %}
       </p>
+    </div>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="titulo-seguridad">
+  <div class="seccion__titulo"><h2 id="titulo-seguridad">{% include "_iconos.html" with icono="cuentas" %}Seguridad</h2></div>
+  {% comment %}CU-CFG-PAR, sección Seguridad (CO-114; B-12-001). El tope de 5 intentos lo fija el contrato.{% endcomment %}
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form_seguridad.expiracion_sesion_minutos %}
+      {% include "_campo.html" with campo=form_seguridad.bloqueo_intentos_minutos %}
+    </div>
+    <div class="acciones">
+      <button type="submit" name="guardar_seguridad" value="1" class="boton-seccion">Guardar seguridad</button>
     </div>
   </form>
 </section>
@@ -75,6 +93,15 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
         {% include "_campo.html" with campo=form_compra.costo_envio %}
         {% include "_campo.html" with campo=form_compra.monto_minimo_envio_gratuito %}
         {% include "_campo.html" with campo=form_compra.ventana_decision_horas %}
+        {% include "_campo.html" with campo=form_compra.plazo_retencion_meses %}
+        {% include "_campo.html" with campo=form_compra.dias_aviso_retencion %}
+      </div>
+    </fieldset>
+    <fieldset class="divisor pila">
+      <legend class="titulo-3">Comercial</legend>
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=form_compra.plazo_devolucion_dias %}
+        {% include "_campo.html" with campo=form_compra.plazo_garantia_dias %}
       </div>
     </fieldset>
     <fieldset class="divisor pila">
@@ -101,6 +128,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
           </div>
         {% endwith %}
         {% include "_campo.html" with campo=form_compra.caducidad_puntos_meses %}
+        {% include "_campo.html" with campo=form_compra.dias_aviso_caducidad_puntos %}
       </div>
       <p class="texto-chico secundario">Hoy, una compra de {{ ejemplo_puntos.compra|pesos }} suma <span class="datos">{{ ejemplo_puntos.puntos }}</span> puntos, que valen {{ ejemplo_puntos.valen|pesos }}.</p>
     </fieldset>

@@ -1,0 +1,83 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-STK-DES — paso 3, el resumen (CO-216): artículos, valor, costo de envío y la
+dirección, editable (CO-087; E1 si falta). Paso 4 o A1: confirmar (CO-151),
+gratis o por la pasarela. Volver no registra nada (A2).
+{% endcomment %}
+
+{% block titulo_cuenta %}Pedir el envío{% endblock %}
+
+{% block cuenta %}
+<div class="carrito">
+  <div class="pila-5">
+    <section class="pila-3" aria-labelledby="titulo-envio">
+      <h2 id="titulo-envio" class="titulo-2">Envío</h2>
+      {% if editar_direccion %}
+        <form method="post" novalidate class="formulario">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="direccion">
+          {% if not resumen.direccion_completa and not form.is_bound %}
+            <p class="secundario">Ingresá la dirección de envío.</p>
+          {% endif %}
+          {% include "tienda/_direccion.html" %}
+          <div class="acciones fila-2">
+            <button type="submit" class="boton-seccion">Usar esta dirección</button>
+            {% if resumen.direccion_completa %}<a href="{% url 'cuenta:despacho' %}" class="boton-texto">Cancelar</a>{% endif %}
+          </div>
+        </form>
+      {% else %}
+        <div class="pila-2">
+          <p class="datos">{{ resumen.texto_direccion }}</p>
+          <details class="pila-3">
+            <summary class="boton-texto">Enviar a otra dirección</summary>
+            <form method="post" novalidate class="formulario">
+              {% csrf_token %}
+              <input type="hidden" name="accion" value="direccion">
+              {% include "tienda/_direccion.html" %}
+              <div class="acciones"><button type="submit" class="boton-seccion">Usar esta dirección</button></div>
+            </form>
+          </details>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="pila-3" aria-labelledby="titulo-articulos">
+      <h2 id="titulo-articulos" class="titulo-2">Artículos</h2>
+      <ul class="carrito__lineas" aria-label="Artículos a enviar">
+        {% for articulo in resumen.articulos %}
+          <li class="linea-carrito">
+            <span class="linea-carrito__portada" aria-hidden="true">
+              {% if articulo.producto.portada %}<img src="{{ articulo.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+            </span>
+            <div class="linea-carrito__datos pila-2">
+              <span class="linea-carrito__titulo">{{ articulo.producto.especifico }}</span>
+            </div>
+            <p class="linea-carrito__subtotal">{{ articulo.valor|pesos }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <aside class="resumen-carrito pila-3" aria-label="Resumen del envío">
+    <dl class="resumen-compra">
+      <div><dt>Valor de los artículos</dt><dd class="datos">{{ resumen.valor|pesos }}</dd></div>
+      <div><dt>Envío</dt><dd class="datos">{% if resumen.gratis %}Gratis{% else %}{{ resumen.costo_envio|pesos }}{% endif %}</dd></div>
+    </dl>
+    {% if not resumen.gratis %}
+      <p class="texto-chico secundario">Envío gratis desde {{ resumen.minimo|pesos }}.</p>
+    {% endif %}
+    <p class="resumen-carrito__total"><span class="etiqueta">A pagar</span> <span class="sin-envolver">{{ resumen.costo_envio|pesos }}</span></p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="confirmar">
+      <button type="submit" class="boton-primario"{% if not resumen.direccion_completa %} disabled aria-describedby="falta-direccion"{% endif %}>
+        {% if resumen.gratis %}Confirmar el envío{% else %}Pagar el envío{% endif %}
+      </button>
+    </form>
+    {% if not resumen.direccion_completa %}<p id="falta-direccion" class="texto-chico secundario">Falta la dirección de envío.</p>{% endif %}
+    <a href="{% url 'cuenta:stock' %}" class="boton-texto">Volver</a>
+  </aside>
+</div>
+{% endblock %}

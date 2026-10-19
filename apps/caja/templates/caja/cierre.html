@@ -26,13 +26,13 @@
   <div class="seccion__titulo"><h2 id="titulo-transacciones">Transacciones</h2></div>
   <div class="tabla-desplazable">
     <table class="tabla">
-      <thead><tr><th>Fecha</th><th>Pedido</th><th>Canal</th><th>Medio</th><th class="numero">Monto</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Concepto</th><th>Canal</th><th>Medio</th><th class="numero">Monto</th></tr></thead>
       <tbody>
         {% for t in transacciones %}
           <tr>
             <td class="datos sin-cortar">{{ t.registrada_en|date:"d/m/Y H:i" }}</td>
-            <td class="datos">{{ t.pedido.numero }}</td>
-            <td>{% if t.pedido.canal == "online" %}Online{% else %}Físico{% endif %}</td>
+            <td class="datos">{{ t.concepto }}</td>
+            <td>{% if t.canal == "online" %}Online{% else %}Físico{% endif %}</td>
             <td>{{ t.get_medio_display }}</td>
             <td class="numero">{{ t.monto|pesos }}</td>
           </tr>

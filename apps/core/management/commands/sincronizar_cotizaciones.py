@@ -1,6 +1,5 @@
 """Regenera el respaldo local de cotizaciones."""
 
-from django.core.cache import cache
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.core import cotizaciones
@@ -16,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opciones):
         self.stdout.write("Consultando las cotizaciones…")
-        catalogo = cotizaciones.descargar_cotizaciones()
+        catalogo = cotizaciones.sincronizar()
 
         if not catalogo:
             # Se corta sin tocar el archivo: un respaldo vacío dejaría el alta
@@ -25,9 +24,6 @@ class Command(BaseCommand):
             raise CommandError(
                 "La API no devolvió cotizaciones. El respaldo anterior queda intacto."
             )
-
-        cotizaciones.guardar_respaldo({"cotizaciones": catalogo})
-        cache.delete(cotizaciones.CLAVE_COTIZACIONES)
 
         detalle = ", ".join(
             f"{moneda} ${valor}" for moneda, valor in sorted(catalogo["valores"].items())

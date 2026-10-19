@@ -1,0 +1,13 @@
+{% comment %}Los cambios de plazo de un artículo retenido (CO-218), del registro de auditoría.{% endcomment %}
+{% if historial %}
+  <ul class="lista-renglones">
+    {% for registro in historial %}
+      <li class="pila-1">
+        <span class="texto-chico secundario"><span class="datos">{{ registro.ocurrido_en|date:"d/m/Y H:i" }}</span> · {{ registro.actor|default:"Sistema" }}</span>
+        <span>{{ registro.detalle }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="secundario">Sin cambios de plazo.</p>
+{% endif %}

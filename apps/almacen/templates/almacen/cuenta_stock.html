@@ -1,0 +1,54 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-STK-CON — CO-215. Lo guardado a nombre del Cliente, con lo próximo a vencer
+destacado (A2) y lo pendiente de despacho en sólo lectura (A3). Elegir lo
+disponible inicia CU-STK-DES.
+{% endcomment %}
+
+{% block titulo_cuenta %}Stock en local{% endblock %}
+
+{% block cuenta %}
+{% if articulos %}
+  <form method="post" action="{% url 'cuenta:despacho' %}" class="pila-4">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="seleccionar">
+    <ul class="carrito__lineas" aria-label="Artículos guardados a tu nombre">
+      {% for articulo in articulos %}
+        <li class="linea-carrito">
+          <span class="linea-carrito__portada" aria-hidden="true">
+            {% if articulo.producto.portada %}<img src="{{ articulo.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+          </span>
+          <div class="linea-carrito__datos pila-2">
+            {% if articulo.estado == "disponible" %}
+              <label class="casilla">
+                <input type="checkbox" name="articulo" value="{{ articulo.pk }}">
+                <span class="linea-carrito__titulo">{{ articulo.producto.especifico }}</span>
+              </label>
+            {% else %}
+              <span class="linea-carrito__titulo">{{ articulo.producto.especifico }}</span>
+            {% endif %}
+            <div class="fila-2">
+              <span class="marca-estado{% if articulo.estado == 'disponible' %} marca-estado--ok{% else %} marca-estado--dato{% endif %}">{{ articulo.get_estado_display }}</span>
+              {% if articulo.proximo %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
+            </div>
+            <p class="texto-chico secundario">
+              Ingresó el <span class="datos">{{ articulo.fecha_ingreso|date:"d/m/Y" }}</span>
+              {% if articulo.fecha_vencimiento %}· se guarda hasta el <span class="datos">{{ articulo.fecha_vencimiento|date:"d/m/Y" }}</span>{% endif %}
+            </p>
+          </div>
+          <p class="linea-carrito__subtotal">{{ articulo.valor|pesos }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if hay_disponibles %}
+      <div class="fila-5">
+        <button type="submit" class="boton-primario">Pedir el envío</button>
+        <span class="texto-chico secundario">También podés retirarlos en el local.</span>
+      </div>
+    {% endif %}
+  </form>
+{% else %}
+  <div class="vacio"><p>No tenés artículos guardados en el local.</p></div>
+{% endif %}
+{% endblock %}

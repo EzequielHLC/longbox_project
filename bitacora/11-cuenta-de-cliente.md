@@ -105,7 +105,7 @@ como `<<construido>>`, asociado a `Usuario`, con su vigencia de 24 horas.
 ### B-11-003 · El panel del Cliente no muestra la sección Stock en Local
 
 **Tipo:** Agregado · **Fecha:** 2026-10-09 · **Alcance:** `CU-CLI-HIS` paso 7, `CO-192`
-**Estado:** Abierta — hasta que exista el módulo 18 (plan 11, segunda parte, amb. 2)
+**Estado:** Resuelta — la sección se muestra desde el 2026-10-14, con el módulo 18 (plan 18)
 
 **Qué apareció.**
 El panel tiene cuatro secciones y una es el stock almacenado en el local, que no existe.

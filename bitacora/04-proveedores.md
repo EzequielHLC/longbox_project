@@ -235,3 +235,24 @@ que el otro envío acaba de crear— y lo devuelve con su aviso. Prueba:
 **Qué habría que cambiar.**
 Nada en el documento. Otras altas con datos únicos (productos por ISBN, código de barras o código
 interno; cuentas por correo) pueden tener la misma carrera y no se ensayaron: quedan en `DEUDA.md`.
+
+---
+
+### B-04-007 · El informe de la baja ya cuenta las propuestas de restock
+
+**Tipo:** Agregado · **Fecha:** 2026-10-14 · **Alcance:** `CU-PRV-BAJ` paso 2
+**Estado:** Abierta
+
+**Qué apareció.**
+Con el módulo 05 construido, la cifra que B-04-001 dejaba «No disponible» se puede calcular.
+
+**Qué dice la especificación.**
+> «propuestas de restock afectadas» (`CU-PRV-BAJ`, paso 2)
+
+**Qué se hizo.**
+Cuenta la propuesta pendiente si tiene un pedido sin despachar a este proveedor: 0 o 1, porque
+a lo sumo hay una pendiente (I-21). B-04-001 decidía mantener el valor sin calcular; ya no hace
+falta.
+
+**Qué habría que cambiar.**
+Nada.

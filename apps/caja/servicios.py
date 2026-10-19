@@ -32,7 +32,9 @@ class CierreRechazado(ValueError):
 
 
 def _sin_cierre():
-    return TransaccionPago.objects.filter(incluida_en_cierre=False).select_related("pedido")
+    return TransaccionPago.objects.filter(incluida_en_cierre=False).select_related(
+        "pedido", "solicitud"
+    )
 
 
 @dataclass
@@ -49,11 +51,11 @@ class Resumen:
 
     @property
     def total_presencial(self):
-        return self._suma(lambda t: t.pedido.canal == Pedido.PRESENCIAL)
+        return self._suma(lambda t: t.canal == Pedido.PRESENCIAL)
 
     @property
     def total_online(self):
-        return self._suma(lambda t: t.pedido.canal == Pedido.ONLINE)
+        return self._suma(lambda t: t.canal == Pedido.ONLINE)
 
     @property
     def por_canal(self):
@@ -112,7 +114,7 @@ def confirmar(actor):
             presencial = online = CERO
             for t in incluidas:
                 totales[MEDIO_A_CAMPO[t.medio]] += t.monto
-                if t.pedido.canal == Pedido.PRESENCIAL:
+                if t.canal == Pedido.PRESENCIAL:
                     presencial += t.monto
                 else:
                     online += t.monto
@@ -148,13 +150,15 @@ def confirmar(actor):
 def exportar(cierre, salida, actor):
     """`CO-127`: cada transacción del cierre y los totales, en CSV. Queda auditado."""
     escritor = csv.writer(salida)
-    escritor.writerow(["Fecha", "Pedido", "Canal", "Medio de pago", "Monto"])
-    for t in cierre.transacciones.select_related("pedido").order_by("registrada_en", "pk"):
+    escritor.writerow(["Fecha", "Concepto", "Canal", "Medio de pago", "Monto"])
+    for t in cierre.transacciones.select_related("pedido", "solicitud").order_by(
+        "registrada_en", "pk"
+    ):
         escritor.writerow(
             [
                 timezone.localtime(t.registrada_en).strftime("%d/%m/%Y %H:%M"),
-                t.pedido.numero,
-                t.pedido.get_canal_display(),
+                t.concepto,
+                t.get_canal_display(),
                 t.get_medio_display(),
                 t.monto,
             ]

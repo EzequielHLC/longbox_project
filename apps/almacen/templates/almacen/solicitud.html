@@ -1,0 +1,68 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-STK-FIS pasos 1 a 4 — la solicitud de despacho (B-18-004): titular,
+artículos, dirección y pago. Confirmar registra CO-152 sobre los artículos
+marcados (B-18-007). Volver no registra nada (A2).
+{% endcomment %}
+
+{% block titulo %}Envío {{ solicitud.numero }} · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+{% url 'almacen:lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Stock en local" atras=1 %}</span>
+    <h1>Envío <span class="datos">{{ solicitud.numero }}</span></h1>
+    <p>{{ solicitud.creada_en|date:"d/m/Y H:i" }}</p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-envio">
+    <div class="seccion__titulo"><h2 id="titulo-envio">Cliente y envío</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Cliente</dt>
+      <dd>{{ solicitud.usuario.get_full_name|default:solicitud.usuario.email }} · <span class="datos">{{ solicitud.usuario.codigo_cliente }}</span></dd>
+      <dt>Dirección</dt>
+      <dd>{{ solicitud.direccion_de_envio }}</dd>
+      <dt>Envío</dt>
+      <dd>
+        {% if transaccion %}
+          {{ transaccion.monto|pesos }} · {{ transaccion.get_medio_display }} · {{ transaccion.get_estado_display }}
+        {% else %}
+          Gratis
+        {% endif %}
+      </dd>
+    </dl>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-articulos">
+    <div class="seccion__titulo"><h2 id="titulo-articulos">Artículos</h2></div>
+    <form method="post" class="pila-4">
+      {% csrf_token %}
+      <ul class="lista-renglones">
+        {% for articulo in articulos %}
+          <li>
+            {% if articulo.estado == "pendiente_despacho" %}
+              <label class="casilla">
+                <input type="checkbox" name="articulo" value="{{ articulo.pk }}" checked>
+                <span>{{ articulo.producto.especifico }} · <span class="datos">{{ articulo.valor|pesos }}</span></span>
+              </label>
+            {% else %}
+              <span>{{ articulo.producto.especifico }} · <span class="secundario">{{ articulo.get_estado_display }}</span></span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% if pendientes %}
+        <div class="fila-5">
+          <button type="submit" class="boton-primario">Confirmar despacho</button>
+          {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+        </div>
+      {% endif %}
+    </form>
+  </section>
+</div>
+{% endblock %}

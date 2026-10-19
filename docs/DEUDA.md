@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-12**.
+> **Tipo: Fotografía.** Tomada el **2026-10-19**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -37,6 +37,7 @@ al plan o a la sección donde está desarrollada.
 | C-14 | Formato de la exportación de inventario | Recomendación del plan, sin objeción: CSV | — |
 | C-15 | Filtros por acción y por rol en el log | Recomendación del plan, sin objeción: acciones agrupadas y rol actual | B-16-001, B-16-002 |
 | C-16 | Markdown de la FAQ | Recomendación del plan, sin objeción: sin HTML crudo | — |
+| C-22 | El cambio de producto: `CO-100` y `DevolucionFisica` frente a DME-12 y DME-16 | Mandan la ficha, el contrato y el diagrama de clases; los DME están desactualizados (2026-10-16) | R-09-001 |
 | C-20 | ¿La portada de la tienda se ve sin iniciar sesión? | Sí, el 2026-10-05: la ve un invitado y cualquier rol, y la raíz del sitio lleva a ella | B-07-019 |
 
 ### Siguen abiertas
@@ -52,14 +53,38 @@ al plan o a la sección donde está desarrollada.
 
 | Ítem | Decisión pendiente | Qué bloquea | Desde |
 | --- | --- | --- | --- |
-| **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`, `CO-011`, `CO-012`, `CO-096` y `CO-097`. Falta sumar cada proceso cuando exista su caso de uso | `CO-016`, `CO-155`, `CU-RST-NOT`, `CU-PTS-CAD`, `CU-STK-VEN`, y la limpieza de carritos de invitado y de cobros en curso abandonados | — |
-| Parámetros de seguridad | Resuelto en B-12-001; falta construirlo | La sección Seguridad de `CU-CFG-PAR` y la mitad de `CO-114` | — |
+| **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`, `CO-011`, `CO-012`, `CO-096`, `CO-097`, `CO-154`, `CO-067`, `CO-105` con su aviso previo, `CO-016`, `CO-155` y el descarte de cobros abandonados. Falta sumar cada proceso cuando exista su caso de uso | Ninguno del alcance. La limpieza de carritos de invitado queda descartada (ver «Recorte para el cierre») | — |
+| ~~Parámetros de seguridad~~ | **Construido el 2026-10-19** (B-12-004) | — | — |
 | ~~Pedido como dependencia raíz~~ | **Resuelta el 2026-10-09**: la compra online crea `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` (plan 07, sexta parte). El orden propuesto para lo que sigue está al final de ese plan | — | — |
 | MercadoPago sin probar contra su API | El adaptador está construido y probado contra respuestas declaradas (B-07-031). Falta cargar `MERCADOPAGO_ACCESS_TOKEN` de una cuenta de prueba y recorrer un pago real con el aviso llegando por el túnel | Mostrar un pago real en la demostración | 2026-10-09 |
 | Costo de envío por operador logístico | Hoy es un importe fijo de Parámetros (B-07-032). Cotizar con Correo Argentino (API MiCorreo o tabla por zona) exige una cuenta comercial y **el peso de cada producto**, que el modelo no tiene | Un costo de envío según peso y destino | 2026-10-09 |
-| Cobros en curso abandonados | Un Cliente que va a la pasarela y no vuelve deja su `CobroEnCurso` en «Esperando el pago». No ocupa stock ni puntos, pero se acumula | Un proceso periódico de limpieza, como el de carritos (P-05) | 2026-10-09 |
+| ~~Cobros en curso abandonados~~ | **Resuelto el 2026-10-19**: el Temporizador los descarta y un pago tardío se reembolsa (B-07-039) | — | — |
 | Carreras de unicidad no ensayadas | El doble envío de un alta con datos únicos terminaba en 500 en catálogos y proveedores (B-17-016, B-04-006, corregidos). No se ensayaron el alta de productos (ISBN, código de barras, código interno), el registro de clientes (correo) ni el alta de personal | Que esas altas respondan con el aviso de duplicado y no con un 500 ante un doble clic | 2026-10-04 |
 | `04_RESUMEN.md` | `MODELO_DE_DOMINIO.md` lo cita y el archivo no está en el repositorio | Saber cuáles son las «cuatro operaciones con contrato pausado» | 2026-09-14 |
+
+---
+
+## Recorte para el cierre
+
+Decidido por el responsable el 2026-10-19 ([planes/00-revision-funcional.md](planes/00-revision-funcional.md)):
+el código se termina antes de noviembre, así que se corrige lo que hace aguas, se completa lo que
+el alcance promete y **se descarta lo demás como próxima implementación**, con su justificación. Su
+lugar en el documento es la tabla «Alcance construido y alcance especificado».
+
+| Se descarta | Justificación |
+| --- | --- |
+| Reclamo como ticket con conversación | No está en el alcance; Devoluciones es prioridad Media y de frecuencia baja. El correo o el teléfono cumplen la función |
+| Prueba de destrucción dentro del sistema | Se pide y se ve por el canal externo; el sistema registra la resolución |
+| Reembolso en pesos por la API de la pasarela | Exigiría transacciones negativas en la caja (I-09) y probar la API real. Se devuelve desde el panel de la pasarela y el sistema lo registra |
+| Anexar lo guardado en el local al próximo pedido | Comodidad; ya existen el envío pago, el gratis desde el mínimo y el retiro |
+| Vincular pedidos de invitado a una cuenta | El registro no verifica el correo. El botón de arrepentimiento por número de pedido y correo cubre lo que el invitado necesitaba |
+| Estado «Entregado» y plazo desde la recepción | Límite declarado: «No rastreará el paquete más allá del estado Despachado» |
+| Limpieza de carritos de invitado y aviso de carrito abandonado | Sin caso de uso; sólo un parámetro en el modelo |
+| Costo de envío por peso y destino | Requiere el peso de cada producto y una cuenta comercial con el operador |
+
+**Lo que el tutor tiene que confirmar**: los valores legales de los plazos (arrepentimiento, piso
+10 días; garantía, 90 por defecto) y si el envío se reintegra en un arrepentimiento parcial. Los
+dos son parámetros o una regla chica: cambiarlos no toca el diseño.
 
 ---
 
@@ -102,24 +127,23 @@ del documento.
 Fuente: `MODELO_DE_DOMINIO.md` contrastado contra las clases del código. Desde la fotografía
 anterior se construyeron `Oferta` (plan 03), `Carrito` y `LineaCarrito` (plan 07, segunda parte),
 y `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` (plan 07, sexta
-parte), y `CierreDeCaja` (plan 14). Quedan 6:
+parte), `CierreDeCaja` (plan 14), y `ArticuloRetenido`, `PropuestaRestock`,
+`LineaPropuestaRestock` y `SuscripcionReposicion` (planes 18 y 05), y `CasoDevolucion` y
+`DevolucionFisica` (plan 09). **No queda ninguno.** La evidencia del caso es una tabla propia
+(una o más fotos por caso), no un concepto nuevo: el modelo la declara como atributo.
 
-| Concepto | Área | Módulo que lo introduce | Conceptos que dependen de él |
-| --- | --- | --- | --- |
-| `CasoDevolucion` | A5 Comercio | 09 Devoluciones | `DevolucionFisica` |
-| `DevolucionFisica` | A5 Comercio | 09 Devoluciones | — |
-| `ArticuloRetenido` | A5 Comercio | 18 Stock Almacenado en Local | — |
-| `PropuestaRestock` | A4 Pipeline | 05 Restock | `LineaPropuestaRestock` |
-| `LineaPropuestaRestock` | A4 Pipeline | 05 Restock | — |
-| `SuscripcionReposicion` | A3 Producto | 05 Restock | — |
+**El estado «Reservado para cambio» de `ArticuloRetenido` queda sin uso**: venía de DME-12, que
+está desactualizado (R-09-001). La confirmación del retiro físico (`DevolucionFisica` → Retirado)
+no tiene caso de uso; el concepto guarda la fecha para cuando exista.
 
 **Un registro técnico fuera del modelo**: `CobroEnCurso`, lo que se cobra congelado entre la
 confirmación y el aviso de la pasarela (B-07-034). No es un concepto del dominio, como no lo es la
 sesión.
 
-**Dos conceptos construidos que el modelo todavía no declara**: `TransicionDePedido`, la línea de
-tiempo del pedido (B-08-001), y `TokenCambioCorreo`, que `CO-109` pide como concepto propio
-(B-11-002). Los dos esperan su enmienda.
+**Tres conceptos construidos que el modelo todavía no declara**: `TransicionDePedido`, la línea de
+tiempo del pedido (B-08-001), `TokenCambioCorreo`, que `CO-109` pide como concepto propio
+(B-11-002), y `SolicitudDespacho`, el envío de stock almacenado (B-18-004). Los tres esperan su
+enmienda.
 
 **RNF-05 está construido a medias.** `core/imagenes.py` convierte a WebP, acota el lado mayor y
 no conserva el original para los banners, el logo y el fondo de la tienda. **Las portadas de
@@ -133,12 +157,9 @@ archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y n
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 79 de 219.** 140 tienen al menos una prueba que lleva su código; de esos, diez no
-cierran del todo: `CO-013` (el aviso a suscriptores, `CO-077`, es del módulo 05), `CO-095` (el
-artículo diferido no pasa a `ArticuloRetenido` hasta el módulo 18, B-08-007), `CO-114` (B-12-001), `CO-060` (sólo el doble envío), `CO-130` (el plazo de
-devolución y la sección Seguridad no existen), `CO-192` (la sección Stock en Local está oculta,
-B-11-003), y `CO-039`, `CO-041`, `CO-043` y `CO-045` en
-su parte sobre los filtros del catálogo público (B-02-004).
+**Faltan 44 de 219.** 175 tienen al menos una prueba que lleva su código; de esos, sólo
+`CO-060` no cierra del todo (sólo el doble envío). `CO-114`, `CO-130` y los de grupos y etiquetas
+(`CO-039`, `CO-041`, `CO-043`, `CO-045`) se cerraron el 2026-10-19 (plan 00, A3 y A6).
 
 `CO-089 registrarResultadoDePago` y `CO-087 declararDireccionDeEnvio` están verificados en la
 compra online; los referencia también `CU-STK-DES`, que no existe.
@@ -156,7 +177,7 @@ booleano en `Formato`, un entero en `ConfiguracionSistema` y tres tablas nuevas 
 
 | Invariante | Dónde vive hoy | La respeta cualquier escritura |
 | --- | --- | --- |
-| I-01, I-03, I-04, I-07, I-08, I-10, I-15, I-16, I-17 (unicidades) | Restricciones en la base | Sí |
+| I-01, I-03, I-04, I-07, I-08, I-10, I-15, I-16, I-17, I-19 (unicidades) | Restricciones en la base (I-19 desde el plan 09: `devoluciones_casodevolucion_linea_id_key`) | Sí |
 | I-13 | Disparador de PostgreSQL, además de `save()` y `delete()` (B-16-004). `TRUNCATE` queda fuera | Sí, salvo `TRUNCATE` |
 | I-02, I-14, I-11 | `save()`, `delete()` o el backend de autenticación | Sí |
 | **I-05** tipo del mismo rubro que el producto | `clean()` | **No** |
@@ -171,6 +192,16 @@ mayor que cero, y montos, costos de envío y compensaciones no negativos, como `
 
 Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` y no figuran en
 `pg_constraint`. Buscarlas ahí da el falso negativo contra el que advierte `CLAUDE.md`.
+
+---
+
+## Una prueba frágil
+
+`apps/catalog/tests/test_pantalla_revision.py::test_solo_se_puede_seleccionar_lo_que_el_lote_va_a_confirmar`
+falló una vez en la corrida completa del 2026-10-17 y pasó en las cuatro siguientes. Busca el texto
+`value="<pk>"` en toda la página, y otro elemento puede llevar por casualidad el mismo número
+según el orden de las pruebas. No es un defecto del código: hay que acotar la búsqueda a las
+casillas de selección.
 
 ---
 
@@ -200,22 +231,24 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
-| `bitacora/01-alta-editorial.md` | 11 | 9 | 9 agregados, 1 corrección, 1 desvío |
+| `bitacora/01-alta-editorial.md` | 12 | 10 | 9 agregados, 1 corrección, 1 desvío |
 | `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
-| `bitacora/03-pricing.md` | 12 | 10 | 10 agregados, 2 correcciones |
-| `bitacora/04-proveedores.md` | 6 | 0 | 4 agregados, 1 corrección, 1 desvío |
+| `bitacora/03-pricing.md` | 13 | 11 | 10 agregados, 2 correcciones |
+| `bitacora/04-proveedores.md` | 7 | 1 | 5 agregados, 1 corrección, 1 desvío |
+| `bitacora/05-restock.md` | 6 | 6 | 5 agregados, 1 corrección |
 | `bitacora/06-ventas-presenciales.md` | 4 | 4 | 3 agregados, 1 corrección |
-| `bitacora/07-tienda-online.md` | 37 | 29 | 32 agregados, 4 correcciones, 1 desvío |
+| `bitacora/07-tienda-online.md` | 39 | 31 | 33 agregados, 4 correcciones, 1 desvío |
 | `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
-| `bitacora/10-puntos.md` | 4 | 3 | 3 agregados, 1 corrección |
-| `bitacora/11-cuenta-de-cliente.md` | 5 | 4 | 5 agregados |
-| `bitacora/12-autenticacion.md` | 3 | 0 | 1 agregado, 1 corrección, 1 desvío |
+| `bitacora/09-devoluciones.md` | 8 | 7 | 3 agregados, 4 correcciones |
+| `bitacora/10-puntos.md` | 12 | 11 | 7 agregados, 4 correcciones |
+| `bitacora/11-cuenta-de-cliente.md` | 5 | 3 | 5 agregados |
+| `bitacora/12-autenticacion.md` | 4 | 1 | 1 agregado, 1 corrección, 1 desvío |
 | `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
 | `bitacora/14-caja.md` | 2 | 2 | 1 agregado, 1 corrección |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/17-configuracion-del-sistema.md` | 17 | 11 | 12 agregados, 4 correcciones, 1 desvío |
-| `bitacora/18-stock-almacenado-en-local.md` | 1 | 0 | 1 corrección |
-| **Total** | **144** | **99** | |
+| `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 4 correcciones |
+| **Total** | **180** | **132** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es
@@ -240,6 +273,12 @@ código sin terminar.
 | `TOKENS_VISUALES.md`: el fondo de imagen de la tienda | B-00-006 |
 | `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` pasan a `<<construido>>`; `ConfiguracionSistema` gana el costo de envío y la pasarela | Plan 07, sexta parte; B-07-031, B-07-032 |
 | La compra: A2 sólo con envío gratis, redondeo de puntos, el carrito pierde sólo lo comprado, el stock perdido mientras se pagaba se reembolsa, la sugerencia al invitado | B-07-033 a B-07-036 |
+| DME-12 pierde «Reservado para cambio»; DME-16 se retira o se rehace sobre `DevolucionFisica`; el Área 5 pierde «sustituto en cambio» | R-09-001 |
+| `CasoDevolucion` y `DevolucionFisica` pasan a `<<construido>>`; `ConfiguracionSistema` gana el plazo de devolución como construido; `MovimientoPuntos` → `CasoDevolucion` construida | Plan 09 |
+| `ConfiguracionSistema` gana el aviso previo a la caducidad; `LotePuntos` gana la marca del aviso y pierde (o redefine) «comprometido en canje» | B-10-005, B-10-006 |
+| `CO-195` y `CU-CLI-CON` paso 6: la ficha del Cliente ofrece sus puntos | B-10-011 |
+| **Retiro en el local** (cambio de alcance del 2026-10-19): el alternativo de `CU-TDA-CMP`, la modalidad en `CO-180`, `CO-087`, `CO-088`, `CO-089`; En el local en DME-07 y `CO-092`; `Pedido` gana la modalidad | B-07-038 |
+| RF-25 con dos orígenes y el reembolso al vencer lo que era para retirar; `ArticuloRetenido` gana la procedencia; `CU-DEV-SOL` admite lo retirado | B-18-008 |
 | `TransicionDePedido` en el Área 5; correo en cada avance; filtro de cliente y total cobrado del listado | B-08-001 a B-08-003 |
 | `TokenCambioCorreo` en el Área 1; historial = despachados; aviso al correo anterior | B-11-002, B-11-004, B-11-005 |
 | El origen de cada movimiento de puntos y el saldo en el encabezado | B-10-001, B-10-002 |
@@ -259,6 +298,13 @@ código sin terminar.
 | DME-07: el estado Cancelado y el reembolso del envío | B-08-008 |
 | `CU-PED-OPC` paso 2: qué opciones se ofrecen | B-08-009 |
 | `CO-097`: cálculo por semanas cumplidas contra lo acreditado | B-08-010 |
+| Área 5: un `ArticuloRetenido` por unidad; `SolicitudDespacho`; la transacción de pedido o de solicitud | B-18-002, B-18-004 |
+| RF-25 (5): lo pendiente de despacho no vuelve solo al stock; `CU-STK-VEN`: aviso «N días o menos» | B-18-005, B-18-006 |
+| `CU-STK-DES`: envío gratis desde el mínimo; `CU-STK-FIS`: despacho de la solicitud entera | B-18-007 |
+| `CU-RST-NOT` y `CO-077`: el aviso sale con toda suba de stock; tres intentos seguidos | B-05-001, B-05-005 |
+| `CO-075`: el aviso se pide sobre un Agotado | B-05-002 |
+| `CU-RST-PRO`: proveedor de cada producto, ciclo diario con ventana semanal, valores por defecto | B-05-003, B-05-004 |
+| `CO-030`: reponer stock a mano vuelve el Agotado a Activo | B-05-006 |
 
 ---
 

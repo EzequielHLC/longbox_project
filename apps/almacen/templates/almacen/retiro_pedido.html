@@ -1,0 +1,41 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Plan 07, octava parte, ambigüedad 5 — «Entregar todo»: CO-227 sobre cada
+artículo disponible del pedido para retirar. Se verifica al titular una sola
+vez. Volver no registra nada.
+{% endcomment %}
+
+{% block titulo %}Entregar el pedido {{ pedido.numero }} · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+{% url 'almacen:lista' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Stock en local" atras=1 %}</span>
+    <h1>Entregar el pedido <span class="datos">{{ pedido.numero }}</span></h1>
+    <p>{{ articulos|length }} artículo(s) para retirar</p>
+  </div>
+</header>
+
+<div class="panel formulario--angosto pila-4">
+  <p>Verifique que quien retira es el titular.</p>
+  <dl class="datos-de-ficha">
+    <dt>Titular</dt>
+    <dd><strong>{{ titular.get_full_name|default:titular.email }}</strong></dd>
+    <dt>Código de cliente</dt>
+    <dd class="datos">{{ titular.codigo_cliente }}</dd>
+  </dl>
+  <ul class="lista-renglones">
+    {% for articulo in articulos %}
+      <li>{{ articulo.producto.especifico }}</li>
+    {% endfor %}
+  </ul>
+  <form method="post" class="fila-5">
+    {% csrf_token %}
+    {% for articulo in articulos %}<input type="hidden" name="articulo" value="{{ articulo.pk }}">{% endfor %}
+    <button type="submit" class="boton-primario">Confirmar la entrega</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

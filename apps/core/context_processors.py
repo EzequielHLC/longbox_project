@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
@@ -8,8 +7,10 @@ AVISO_PREVIO_SEGUNDOS = 5 * 60
 
 
 def sesion(request):
+    from apps.core.sesion import segundos_de_sesion
+
     return {
-        "sesion_duracion_segundos": settings.SESSION_COOKIE_AGE,
+        "sesion_duracion_segundos": SimpleLazyObject(segundos_de_sesion),
         "sesion_aviso_previo_segundos": AVISO_PREVIO_SEGUNDOS,
     }
 

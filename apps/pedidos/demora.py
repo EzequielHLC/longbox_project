@@ -61,6 +61,16 @@ DIFERIR = Opcion(
     "el 25 %.",
     "Despachamos lo disponible y este artículo queda a tu nombre en el local cuando llegue.",
 )
+# Plan 07, octava parte (ambigüedad 3): la misma opción en un pedido para retirar.
+DIFERIR_RETIRO = Opcion(
+    LineaPedido.DESPACHO_DIFERIDO,
+    "Retirar ahora lo disponible",
+    "Preparamos lo que ya está para que lo retires. El artículo demorado queda en el local a "
+    "tu nombre cuando llegue, y mientras tanto sumás el 5 % de su valor en puntos por semana de "
+    "espera, hasta el 25 %.",
+    "Preparamos lo disponible para que lo retires y este artículo queda a tu nombre en el "
+    "local cuando llegue.",
+)
 CANCELAR = Opcion(
     LineaPedido.CANCELAR,
     "Cancelar el artículo",
@@ -105,7 +115,7 @@ def opciones_de(linea):
         ofrecidas.append(PAUSAR)
     hay_para_despachar = bool(estados & {LineaPedido.DISPONIBLE, LineaPedido.EMPAQUETADO})
     if hay_para_despachar and LineaPedido.RESERVADO not in estados:
-        ofrecidas.append(DIFERIR)
+        ofrecidas.append(DIFERIR_RETIRO if pedido.retiro else DIFERIR)
     ofrecidas.append(CANCELAR)
     return ofrecidas
 
@@ -189,7 +199,14 @@ def confirmar_opcion(pedido, linea_pk, usuario, clave):
         momento = timezone.now()
         linea.decision_demora = opcion.clave
         linea.save(update_fields=["decision_demora"])
-        if opcion is DIFERIR and pedido.estado == Pedido.ESPERANDO_DEMORADO:
+        if opcion is DIFERIR_RETIRO and pedido.estado == Pedido.ESPERANDO_DEMORADO:
+            # Lo disponible se arma para retirar (D2): el pedido vuelve a la fila
+            # del armado, y la línea diferida entra al stock en local al llegar.
+            anterior = pedido.estado
+            pedido.estado = Pedido.PENDIENTE_ARMADO
+            pedido.save(update_fields=["estado"])
+            registrar_transicion(pedido, anterior, usuario, momento)
+        elif opcion is DIFERIR and pedido.estado == Pedido.ESPERANDO_DEMORADO:
             # B-08-007: lo disponible se empaqueta y el pedido pasa con ello.
             pedido.lineas.filter(estado=LineaPedido.DISPONIBLE).update(
                 estado=LineaPedido.EMPAQUETADO
@@ -230,13 +247,17 @@ def _cancelar(pedido, linea, usuario):
         linea=linea,
         motivo=f"Cancelación de {nombre(linea.producto)} demorado",
     )
+    descontados = puntos.descontar_ganados(usuario, linea, linea.cantidad)  # plan 00, C2
     RegistroAuditoria.registrar(
         accion=RegistroAuditoria.CANCELACION_ARTICULO_DEMORADO,
         actor=usuario,
         objetivo=pedido,
         detalle=(
             f"Pedido {pedido.numero}: canceló {nombre(linea.producto)}, reembolso de "
-            f"{reembolso} pts" + (f" y {envio} pts del envío" if envio else "") + "."
+            f"{reembolso} pts"
+            + (f" y {envio} pts del envío" if envio else "")
+            + (f"; se descontaron {descontados} pts ganados con la compra" if descontados else "")
+            + "."
         ),
     )
     confirmacion = Confirmacion(

@@ -1044,3 +1044,74 @@ mostraba el envío.
 
 **Qué habría que cambiar.**
 `CO-178`, salida: sumar el costo de envío y lo que falta para el envío gratis.
+
+---
+
+### B-07-038 · El pedido se puede retirar en el local
+
+**Tipo:** Agregado · **Fecha:** 2026-10-19 · **Alcance:** `CU-TDA-CMP`, `CO-180`, `CO-087`, `CO-088`, `CO-089`, `CO-092`, `Pedido`, DME-07
+**Estado:** Abierta
+
+**Qué apareció.**
+El responsable pidió (2026-10-19) que el Cliente pueda elegir, al pagar, retirar el pedido en el
+local en vez de recibirlo en su casa, reutilizando el stock en local. Decidió además: que es un
+flujo alternativo de la compra y no un caso de uso nuevo (D1), que queda listo cuando el local lo
+arma (D2), que si no se retira vuelve al stock con reembolso en puntos (D3) y que es sólo para
+compras con cuenta (D4). Plan 07, octava parte.
+
+**Qué dice la especificación.**
+> «dirección de envío predeterminada del perfil del Cliente (editable en este paso), costo de envío
+> calculado» (`CU-TDA-CMP`, paso 2)
+
+Nada sobre retirar en el local. DME-07 termina en Despachado.
+
+**Qué se hizo.**
+
+- En el checkout, «Entrega» ofrece «Envío a domicilio» o «Retiro en el local». Con retiro no se
+  pide dirección, el envío dice «Retiro en el local» sin costo y la barra del envío gratis no
+  aparece. Se puede volver a envío a domicilio antes de confirmar. La elección vive en la sesión,
+  como la dirección: el perfil no cambia.
+- El pedido nace con su **modalidad de entrega**. Uno para retirar es de una cuenta, no cobra
+  envío ni guarda dirección: lo impide la base, no sólo la pantalla. Los puntos se acreditan como
+  en cualquier compra.
+- El pedido se arma como cualquier otro y pasa de Armado a un estado terminal nuevo, **En el
+  local** (nunca a Empaquetado ni Despachado). Cada unidad entra al stock en local del Cliente y
+  el correo del cambio de estado le avisa que está listo para retirar. Las líneas no cambian de
+  estado.
+- La ficha del pedido y la del artículo ofrecen «Entregar todo»: el mostrador verifica al titular
+  una sola vez y registra el retiro de cada artículo disponible. Si alguno cambió mientras tanto,
+  no se registra ninguno.
+- Si una pre-venta del pedido se demora, la opción 2 dice «Retirar ahora lo disponible»: el pedido
+  vuelve a la fila del armado y el artículo demorado queda a nombre del Cliente cuando llega.
+
+**Qué habría que cambiar.**
+`CU-TDA-CMP`: un flujo alternativo «retiro en el local» en el paso 2, con sus efectos sobre los
+pasos 4 a 6. `CO-180`, `CO-087`, `CO-088` y `CO-089`: la modalidad. `CO-092` y `CU-PED-EST`: el
+paso de Armado a En el local con el ingreso al stock en local. DME-07: el estado En el local.
+`Pedido`: el atributo «modalidad de entrega». `CU-PED-OPC`: el texto de la opción 2 en un pedido
+para retirar.
+
+---
+
+### B-07-039 · Los cobros abandonados se descartan, y un pago tardío se reembolsa solo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-19 · **Alcance:** `CO-088`, `CO-089`, P-05
+**Estado:** Abierta
+
+**Qué apareció.**
+Un Cliente que iba a la pasarela y no volvía dejaba su cobro «Esperando el pago» para siempre
+(anotado en `docs/DEUDA.md` desde el 2026-10-09).
+
+**Qué dice la especificación.**
+`Nada`: ningún contrato declara qué pasa con un cobro que la pasarela nunca confirma.
+
+**Qué se hizo** (plan 00, C3).
+El Temporizador descarta los cobros pendientes de más de 24 horas (estado «Abandonado»), el mismo
+plazo después del cual dejan de comprometer los puntos de un canje (B-10-005). Si la pasarela
+aprueba un pago después de descartado, **se reembolsa automáticamente**, se avisa al Cliente y queda
+como incidente en la auditoría; no se genera el pedido, porque el carrito ya pudo cambiar. Es
+idempotente.
+
+**Qué habría que cambiar.**
+Una operación del Temporizador para el descarte (código a asignar), y en `CO-089` la excepción del
+pago tardío.

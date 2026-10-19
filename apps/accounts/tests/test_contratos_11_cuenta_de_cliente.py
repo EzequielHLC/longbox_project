@@ -114,7 +114,8 @@ def test_CO195_la_ficha_no_ofrece_ninguna_modificacion(client_admin, lucia):
 
     assert "<form" not in cuerpo
     destinos = re.findall(r'<a href="([^"]+)"', cuerpo)
-    assert destinos == [URL_PADRON], "El único enlace de la ficha es volver al padrón."
+    # B-10-011: además de volver, sólo sus puntos (CU-PTS-ADM), que no tocan datos personales.
+    assert destinos == [URL_PADRON, reverse("accounts:cliente_puntos", args=[lucia.pk])]
 
 
 def test_CO195_la_ficha_no_modifica_el_estado(client_admin, lucia):

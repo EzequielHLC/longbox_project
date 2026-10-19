@@ -1,0 +1,74 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-STK-ADC pasos 4 y 5 — CO-218. Titular, producto, origen, estado, fechas,
+valor e historial de plazo. Las acciones según el estado: retiro (CO-227) si
+está disponible, despacho (CO-152) desde su solicitud, y el plazo (CO-153)
+sólo para el Administrador.
+{% endcomment %}
+
+{% block titulo %}{{ articulo.producto.especifico }} · Stock en local · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'almacen:lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Stock en local" atras=1 %}</span>
+    <h1>{{ articulo.producto.especifico }}</h1>
+    <p>
+      <span class="marca-estado{% if articulo.estado == 'disponible' %} marca-estado--ok{% else %} marca-estado--dato{% endif %}">{{ articulo.get_estado_display }}</span>
+      {% if proximo %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
+    </p>
+  </div>
+  <div class="fila-2">
+    {% if articulo.estado == "disponible" %}
+      <a href="{% url 'almacen:retiro' articulo.pk %}" class="boton-primario">Entregar en el local</a>
+    {% elif articulo.estado == "pendiente_despacho" %}
+      <a href="{% url 'almacen:solicitud' articulo.solicitud.pk %}" class="boton-primario">Confirmar despacho</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Datos</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Cliente</dt>
+      <dd>
+        {% if es_administrador %}<a href="{% url 'accounts:cliente_ficha' articulo.usuario.pk %}">{{ articulo.usuario.get_full_name|default:articulo.usuario.email }}</a>{% else %}{{ articulo.usuario.get_full_name|default:articulo.usuario.email }}{% endif %}
+        <br><span class="texto-chico secundario">Código <span class="datos">{{ articulo.usuario.codigo_cliente }}</span> · {{ articulo.usuario.email }}</span>
+      </dd>
+      <dt>Producto</dt>
+      <dd><span class="datos">{{ articulo.producto.codigo }}</span></dd>
+      <dt>Origen</dt>
+      <dd>
+        {{ articulo.origen }}
+        {% if articulo.para_retirar and articulo.estado == "disponible" %}
+          · <a href="{% url 'almacen:retiro_pedido' articulo.linea_pedido.pedido_id %}">Entregar todo el pedido</a>
+        {% endif %}
+      </dd>
+      <dt>Valor</dt>
+      <dd class="datos">{{ articulo.valor|pesos }}</dd>
+      <dt>Ingreso</dt>
+      <dd class="datos">{{ articulo.fecha_ingreso|date:"d/m/Y" }}</dd>
+      <dt>Vence</dt>
+      <dd>
+        <span class="datos">{{ articulo.fecha_vencimiento|date:"d/m/Y"|default:"—" }}</span>
+        {% if es_administrador and articulo.corre_plazo %}
+          · <a href="{% url 'almacen:plazo' articulo.pk %}">Modificar el plazo</a>
+        {% endif %}
+      </dd>
+      {% if articulo.solicitud %}
+        <dt>Envío</dt>
+        <dd><a href="{% url 'almacen:solicitud' articulo.solicitud.pk %}">{{ articulo.solicitud.numero }}</a> · {{ articulo.solicitud.direccion_de_envio }}</dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-plazo">
+    <div class="seccion__titulo"><h2 id="titulo-plazo">Historial de plazo</h2></div>
+    {% include "almacen/_historial_plazo.html" %}
+  </section>
+</div>
+{% endblock %}

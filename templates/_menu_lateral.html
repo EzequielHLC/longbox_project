@@ -63,6 +63,21 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="caja" %}
         <span>Caja</span>
       </a>
+      <a href="{% url 'almacen:lista' %}"
+         class="menu-enlace {% if 'almacen:' in actual %}menu-enlace--actual{% endif %}" {% if 'almacen:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="lote" %}
+        <span>Stock en local</span>
+      </a>
+      <a href="{% url 'restock:propuesta' %}"
+         class="menu-enlace {% if 'restock:' in actual %}menu-enlace--actual{% endif %}" {% if 'restock:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="proveedores" %}
+        <span>Restock</span>
+      </a>
+      <a href="{% url 'devoluciones:lista' %}"
+         class="menu-enlace {% if 'devoluciones:' in actual %}menu-enlace--actual{% endif %}" {% if 'devoluciones:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="devoluciones" %}
+        <span>Devoluciones</span>
+      </a>
     {% elif user.rol == 'cajero' %}
       <a href="{% url 'core:mostrador' %}"
          class="menu-enlace {% if actual == 'core:mostrador' or 'ventas:' in actual %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' or 'ventas:' in actual %}aria-current="page"{% endif %}>
@@ -73,6 +88,11 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
          class="menu-enlace {% if 'caja:' in actual %}menu-enlace--actual{% endif %}" {% if 'caja:' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="caja" %}
         <span>Caja</span>
+      </a>
+      <a href="{% url 'almacen:lista' %}"
+         class="menu-enlace {% if 'almacen:' in actual %}menu-enlace--actual{% endif %}" {% if 'almacen:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="lote" %}
+        <span>Stock en local</span>
       </a>
       <a href="{% url 'catalog:producto_lista' %}"
          class="menu-enlace {% if 'catalog:producto' in actual %}menu-enlace--actual{% endif %}" {% if 'catalog:producto' in actual %}aria-current="page"{% endif %}>
@@ -271,12 +291,6 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     menú y la estructura de apps se lean igual. Son `<span>`, no `<a>`: no
     llevan a ninguna parte y no deben poder enfocarse con el tabulador.
     {% endcomment %}
-    <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="devoluciones" %}<span>Devoluciones</span>
-    </span>
-    <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="puntos" %}<span>Puntos</span>
-    </span>
     <span class="menu-enlace menu-enlace--inactivo">
       {% include "_iconos.html" with icono="reportes" %}<span>Reportes</span>
     </span>

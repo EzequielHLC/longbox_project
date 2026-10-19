@@ -1,0 +1,103 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-PTS-ADM paso 2 — CO-191 consultarPuntosDeCliente: saldo con su equivalencia,
+lotes activos con su caducidad, lo comprometido en un canje en curso (aparte,
+porque no se debita a mano) y los movimientos recientes. Pasos 3 a 7 — CO-106
+registrarAjusteManualDePuntos. E1: el máximo debitable. E2: el motivo vacío,
+conservando lo ingresado. Volver no registra nada (A1).
+{% endcomment %}
+
+{% block titulo %}Puntos de {{ cliente.get_full_name|default:cliente.email }} · Longbox{% endblock %}
+{% block seccion %}Clientes{% endblock %}
+
+{% block contenido %}
+{% url 'accounts:cliente_ficha' cliente.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del cliente" atras=1 %}</span>
+    <h1>Puntos de {{ cliente.get_full_name|default:cliente.email }}</h1>
+    <p>Saldo <strong class="datos">{{ panel.saldo }} pts</strong> · equivalen a <span class="datos">{{ panel.saldo_en_pesos|pesos }}</span></p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-ajuste">
+    <div class="seccion__titulo"><h2 id="titulo-ajuste">Ajustar puntos</h2></div>
+    <p class="texto-chico secundario">Sólo para casos de soporte. El cliente recibe un aviso con el ajuste y su saldo.</p>
+    {% if error %}
+      <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>
+    {% endif %}
+    <form method="post" novalidate class="formulario pila-4">
+      {% csrf_token %}
+      <fieldset class="pila-3">
+        <legend class="etiqueta">Tipo de ajuste</legend>
+        {% for valor, etiqueta in tipos %}
+          <label class="casilla casilla--opcion">
+            <input type="radio" name="tipo" value="{{ valor }}" {% if datos.tipo == valor %}checked{% endif %}>
+            <span>{{ etiqueta }}</span>
+          </label>
+        {% endfor %}
+      </fieldset>
+      <div class="campo">
+        <label for="cantidad" class="etiqueta">Cantidad de puntos<span class="obligatorio" aria-hidden="true"> *</span></label>
+        <input type="text" id="cantidad" name="cantidad" inputmode="numeric" value="{{ datos.cantidad }}">
+        <div class="ayuda">Se pueden debitar hasta <span class="datos">{{ panel.debitable }}</span> pts{% if panel.comprometido %}: {{ panel.comprometido }} están comprometidos en un canje{% endif %}.</div>
+      </div>
+      <div class="campo">
+        <label for="motivo" class="etiqueta">Motivo<span class="obligatorio" aria-hidden="true"> *</span></label>
+        <textarea id="motivo" name="motivo" rows="3" maxlength="300">{{ datos.motivo }}</textarea>
+      </div>
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Registrar el ajuste</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
+    </form>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-lotes">
+    <div class="seccion__titulo"><h2 id="titulo-lotes">Lotes activos</h2></div>
+    {% if panel.lotes %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead><tr><th>Origen</th><th class="numero">Disponible</th><th>Se pueden usar hasta</th><th class="numero">En un canje</th></tr></thead>
+          <tbody>
+            {% for lote in panel.lotes %}
+              <tr>
+                <td>{{ lote.get_origen_display }}</td>
+                <td class="numero">{{ lote.disponible }}</td>
+                <td class="datos sin-cortar">{{ lote.hasta|date:"d/m/Y" }}</td>
+                <td class="numero">{% if lote.comprometido %}{{ lote.comprometido }}{% else %}—{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="secundario">No tiene puntos disponibles.</p>
+    {% endif %}
+
+    <div class="seccion__titulo"><h2 id="titulo-movimientos">Movimientos recientes</h2></div>
+    {% if panel.movimientos %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th class="numero">Puntos</th><th class="numero">Saldo</th><th>Motivo</th></tr></thead>
+          <tbody>
+            {% for movimiento in panel.movimientos %}
+              <tr>
+                <td class="datos sin-cortar">{{ movimiento.ocurrido_en|date:"d/m/Y H:i" }}</td>
+                <td>{{ movimiento.get_tipo_display }}</td>
+                <td class="numero">{% if movimiento.tipo == "debito" %}−{% else %}+{% endif %}{{ movimiento.cantidad }}</td>
+                <td class="numero">{{ movimiento.saldo_resultante }}</td>
+                <td class="texto-chico">{{ movimiento.motivo|default:"—" }}{% if movimiento.pedido %} · pedido <span class="datos">{{ movimiento.pedido.numero }}</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="secundario">Todavía no tiene movimientos.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

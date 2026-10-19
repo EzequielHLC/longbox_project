@@ -163,3 +163,35 @@ def enviar_pedido(proveedor, lineas):
         return resultado
 
     return resultado
+
+
+def enviar_y_registrar(proveedor, lineas, actor=None):
+    """`CO-074` completo: el envío, su entrada en el log y E2.
+
+    Sin correo registrado no se intenta (E2). Lo invocan `CU-ALT-REV` al cerrar
+    la sesión y `CU-RST-APR` al despachar; cada uno decide cómo seguir.
+    """
+    from apps.core.models import RegistroAuditoria
+
+    if not proveedor.correo_comercial:
+        resultado = ResultadoDeEnvio(proveedor=proveedor, lineas=list(lineas))
+        resultado.error = "sin correo registrado"
+    else:
+        resultado = enviar_pedido(proveedor, lineas)
+    unidades = sum(linea.cantidad for linea in resultado.lineas)
+    RegistroAuditoria.registrar(
+        accion=RegistroAuditoria.PEDIDO_A_PROVEEDOR,
+        actor=actor,
+        objetivo=proveedor,
+        objetivo_email=proveedor.correo_comercial,
+        detalle=(
+            f"Pedido a {proveedor.razon_social}: {len(resultado.lineas)} título(s), "
+            f"{unidades} unidad(es). "
+            + (
+                "Enviado."
+                if resultado.enviado
+                else f"No se envió ({resultado.error}, {resultado.intentos} intento(s))."
+            )
+        ),
+    )
+    return resultado

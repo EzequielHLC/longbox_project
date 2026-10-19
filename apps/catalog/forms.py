@@ -1825,7 +1825,14 @@ class ConfiguracionForm(forms.ModelForm):
 
     class Meta:
         model = ConfiguracionSistema
-        fields = ["stock_inicial_por_defecto", "intervalo_carrusel", "dias_aviso_preventa"]
+        fields = [
+            "stock_inicial_por_defecto",
+            "intervalo_carrusel",
+            "dias_aviso_preventa",
+            "cantidad_minima_restock",
+            "margen_stock_restock",
+            "frecuencia_casilla_horas",
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1834,6 +1841,15 @@ class ConfiguracionForm(forms.ModelForm):
         )
         self.fields["intervalo_carrusel"].widget.attrs.update({"inputmode": "numeric", "min": "1"})
         self.fields["dias_aviso_preventa"].widget.attrs.update({"inputmode": "numeric", "min": "0"})
+        self.fields["cantidad_minima_restock"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "1"}
+        )
+        self.fields["margen_stock_restock"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "0"}
+        )
+        self.fields["frecuencia_casilla_horas"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "1"}
+        )
 
     def clean_stock_inicial_por_defecto(self):
         stock = self.cleaned_data["stock_inicial_por_defecto"]
@@ -1842,10 +1858,23 @@ class ConfiguracionForm(forms.ModelForm):
         return stock
 
 
+class SeguridadForm(forms.ModelForm):
+    """La sección Seguridad de `CU-CFG-PAR` (B-12-001, plan 00, A3)."""
+
+    class Meta:
+        model = ConfiguracionSistema
+        fields = ["expiracion_sesion_minutos", "bloqueo_intentos_minutos"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for campo in self.Meta.fields:
+            self.fields[campo].widget.attrs.update({"inputmode": "numeric", "min": "1"})
+
+
 class CompraOnlineForm(forms.ModelForm):
     """Lo que usa la compra online (plan 07, sexta parte), en su propio formulario.
 
-    Las secciones Logística y Fidelización de `CU-CFG-PAR`, más el costo de envío
+    Las secciones Logística, Comercial y Fidelización de `CU-CFG-PAR`, más el costo de envío
     (B-07-032) y la pasarela de pago (B-07-031). Van aparte de los valores
     operativos por la misma razón que el modelo de lenguaje: se tocan por otro
     motivo, y un error en uno no tiene por qué borrar lo escrito en el otro.
@@ -1857,11 +1886,18 @@ class CompraOnlineForm(forms.ModelForm):
             "costo_envio",
             "monto_minimo_envio_gratuito",
             "ventana_decision_horas",
+            "plazo_retencion_meses",
+            "dias_aviso_retencion",
+            "plazo_devolucion_dias",
+            "plazo_garantia_dias",
             "equivalencia_puntos",
             "porcentaje_puntos",
             "caducidad_puntos_meses",
+            "dias_aviso_caducidad_puntos",
             "pasarela",
         ]
+
+    PISO_LEGAL = "El plazo mínimo legal de devolución es 10 días corridos (Ley 24.240, Art. 34)."
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1872,8 +1908,28 @@ class CompraOnlineForm(forms.ModelForm):
             "porcentaje_puntos",
         ):
             self.fields[campo].widget.attrs.update({"inputmode": "decimal"})
-        for campo in ("caducidad_puntos_meses", "ventana_decision_horas"):
+        for campo in (
+            "caducidad_puntos_meses",
+            "dias_aviso_caducidad_puntos",
+            "ventana_decision_horas",
+            "plazo_retencion_meses",
+            "dias_aviso_retencion",
+        ):
             self.fields[campo].widget.attrs.update({"inputmode": "numeric", "min": "1"})
+        for campo in ("plazo_devolucion_dias", "plazo_garantia_dias"):
+            self.fields[campo].widget.attrs.update(
+                {"inputmode": "numeric", "min": str(ConfiguracionSistema.PISO_LEGAL_DEVOLUCION)}
+            )
+
+    def clean_plazo_devolucion_dias(self):
+        plazo = self.cleaned_data["plazo_devolucion_dias"]
+        if plazo < ConfiguracionSistema.PISO_LEGAL_DEVOLUCION:
+            raise forms.ValidationError(self.PISO_LEGAL)
+        return plazo
+
+    def solo_falla_el_plazo_de_devolucion(self):
+        """`CO-130` E1: el piso legal se rechaza aparte, sin frenar a los demás."""
+        return set(self.errors) == {"plazo_devolucion_dias"}
 
 
 class BorradorForm(forms.ModelForm):

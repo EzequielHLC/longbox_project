@@ -1,0 +1,80 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-STK-ADC — CO-217. Los artículos de todos los clientes, en todos sus estados,
+con filtros por cliente, producto, estado y vencimiento. «Próximo a vencer» es
+un destacado, no un estado. A1: sin resultados, la vista vacía.
+{% endcomment %}
+
+{% block titulo %}Stock en local · Longbox{% endblock %}
+{% block seccion %}Stock en local{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Stock en local</h1>
+  </div>
+</header>
+
+<section class="seccion">
+  <form method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="cliente" class="etiqueta">Cliente</label>
+      <input type="text" id="cliente" name="cliente" value="{{ filtros.cliente }}" placeholder="Nombre, correo o código" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="producto" class="etiqueta">Producto</label>
+      <input type="text" id="producto" name="producto" value="{{ filtros.producto }}" placeholder="Título o código" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label for="estado" class="etiqueta">Estado</label>
+      <select id="estado" name="estado">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in estados %}
+          <option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="desde" class="etiqueta">Vence desde</label>
+      <input type="date" id="desde" name="desde" value="{{ filtros.desde|date:'Y-m-d' }}">
+    </div>
+    <div class="campo">
+      <label for="hasta" class="etiqueta">Vence hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ filtros.hasta|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+    {% if filtros.activos %}<a href="{% url 'almacen:lista' %}" class="boton-texto">Limpiar</a>{% endif %}
+  </form>
+
+  {% if articulos %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Producto</th><th>Cliente</th><th>Estado</th><th>Ingreso</th><th>Vence</th><th class="numero">Valor</th></tr>
+        </thead>
+        <tbody>
+          {% for articulo in articulos %}
+            <tr>
+              <td class="celda-principal"><a href="{% url 'almacen:ficha' articulo.pk %}">{{ articulo.producto.especifico }}</a></td>
+              <td>{{ articulo.usuario.get_full_name|default:articulo.usuario.email }}<br><span class="texto-chico secundario datos">{{ articulo.usuario.codigo_cliente }}</span></td>
+              <td>
+                <span class="texto-chico">{{ articulo.get_estado_display }}</span>
+                {% if articulo.proximo %}<br><span class="texto-chico estado estado--atencion">Próximo a vencer</span>{% endif %}
+              </td>
+              <td class="datos sin-cortar">{{ articulo.fecha_ingreso|date:"d/m/Y" }}</td>
+              <td class="datos sin-cortar">{{ articulo.fecha_vencimiento|date:"d/m/Y"|default:"—" }}</td>
+              <td class="numero">{{ articulo.valor|pesos }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      {% include "_iconos.html" with icono="lote" %}
+      <p>{% if filtros.activos %}Ningún artículo coincide con los filtros.{% else %}El local no guarda artículos de clientes.{% endif %}</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-DEV-RES pasos 1 y 2 — CO-186 consultarCasosDeDevolucion. Los casos
+Pendientes, los más antiguos primero, con cliente, pedido, ítem, motivo y
+apertura. E2: sin pendientes, el panel vacío y el historial a un filtro.
+{% endcomment %}
+
+{% block titulo %}Devoluciones · Longbox{% endblock %}
+{% block seccion %}Devoluciones{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Devoluciones</h1>
+  </div>
+</header>
+
+<section class="seccion">
+  <form method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo">
+      <label for="filtro" class="etiqueta">Casos</label>
+      <select id="filtro" name="filtro">
+        {% for valor, etiqueta in filtros %}
+          <option value="{{ valor }}" {% if filtro == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="filtro" %}<span>Filtrar</span></button>
+  </form>
+
+  {% if casos %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Caso</th><th>Cliente</th><th>Pedido</th><th>Artículo</th><th>Motivo</th><th>Estado</th><th>Abierto</th></tr>
+        </thead>
+        <tbody>
+          {% for caso in casos %}
+            <tr>
+              <td class="celda-principal"><a href="{% url 'devoluciones:detalle' caso.pk %}" class="datos">{{ caso.numero }}</a></td>
+              <td>{% if caso.usuario %}{{ caso.usuario.get_full_name|default:caso.usuario.email }}<br><span class="texto-chico secundario datos">{{ caso.usuario.codigo_cliente }}</span>{% else %}Invitado<br><span class="texto-chico secundario datos">{{ caso.correo }}</span>{% endif %}</td>
+              <td class="datos">{{ caso.linea.pedido.numero }}</td>
+              <td>{{ caso.linea.producto.especifico }}</td>
+              <td class="texto-chico">{{ caso.get_motivo_display }}</td>
+              <td class="texto-chico">{{ caso.get_estado_display }}{% if caso.resolucion %} · {{ caso.get_resolucion_display }}{% endif %}</td>
+              <td class="datos sin-cortar">{{ caso.abierto_en|date:"d/m/Y H:i" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="vacio">
+      {% include "_iconos.html" with icono="devoluciones" %}
+      {% if filtro == "pendientes" %}
+        <p>No hay casos pendientes.</p>
+        <p><a href="{% url 'devoluciones:lista' %}?filtro=historial">Ver los resueltos y rechazados</a></p>
+      {% else %}
+        <p>No hay casos con ese filtro.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -20,9 +20,14 @@ VALIDOS = {
     "costo_envio": "2500",
     "monto_minimo_envio_gratuito": "75000",
     "ventana_decision_horas": "72",
+    "plazo_retencion_meses": "3",
+    "dias_aviso_retencion": "7",
+    "plazo_devolucion_dias": "10",
+    "plazo_garantia_dias": "90",
     "equivalencia_puntos": "20",
     "porcentaje_puntos": "3",
     "caducidad_puntos_meses": "6",
+    "dias_aviso_caducidad_puntos": "3",
     "pasarela": ConfiguracionSistema.PASARELA_MERCADOPAGO,
 }
 
@@ -76,9 +81,12 @@ def test_CO130_guardar_sin_cambios_no_deja_entradas(client_admin):
             "costo_envio": "8000",
             "monto_minimo_envio_gratuito": "100000",
             "ventana_decision_horas": "72",
+            "plazo_retencion_meses": "3",
+            "dias_aviso_retencion": "7",
             "equivalencia_puntos": "10",
             "porcentaje_puntos": "5",
             "caducidad_puntos_meses": "12",
+            "dias_aviso_caducidad_puntos": "3",
             "pasarela": ConfiguracionSistema.PASARELA_PRUEBA,
         },
     )

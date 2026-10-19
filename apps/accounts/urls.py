@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.accounts import views
+from apps.puntos.views import AjustePuntosView
 
 app_name = "accounts"
 
@@ -35,6 +36,8 @@ urlpatterns = [
     # Consulta de cuentas de Cliente: solo lectura (ver `ClienteListaView`).
     path("clientes/", views.ClienteListaView.as_view(), name="cliente_lista"),
     path("clientes/<int:pk>/", views.ClienteFichaView.as_view(), name="cliente_ficha"),
+    # CU-PTS-ADM: los puntos del Cliente y su ajuste manual (plan 10, segunda parte).
+    path("clientes/<int:pk>/puntos/", AjustePuntosView.as_view(), name="cliente_puntos"),
     path("usuarios/nuevo/", views.UsuarioAltaView.as_view(), name="usuario_alta"),
     path("usuarios/<int:pk>/", views.UsuarioFichaView.as_view(), name="usuario_ficha"),
     path("usuarios/<int:pk>/editar/", views.UsuarioEdicionView.as_view(), name="usuario_edicion"),

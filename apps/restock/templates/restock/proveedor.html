@@ -1,0 +1,54 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-RST-APR pasos 2 y 3 — CO-175: los productos de un proveedor. Despachar es
+CO-072 (con el correo de CO-074); descartar, CO-073 con su motivo (A1).
+Volver no registra nada.
+{% endcomment %}
+
+{% block titulo %}{{ grupo.nombre }} · Restock · Longbox{% endblock %}
+{% block seccion %}Restock{% endblock %}
+
+{% block contenido %}
+{% url 'restock:propuesta' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Restock" atras=1 %}</span>
+    <h1>{{ grupo.nombre }}</h1>
+    {% if grupo.proveedor %}<p class="datos">{{ grupo.proveedor.correo_comercial|default:"Sin correo registrado" }}</p>{% endif %}
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-pedido">
+    <div class="seccion__titulo"><h2 id="titulo-pedido">Pedido</h2></div>
+    <ul class="lista-renglones">
+      {% for linea in grupo.lineas %}
+        <li><span>{{ linea.producto }}</span> <span class="datos">× {{ linea.cantidad_sugerida }}</span></li>
+      {% endfor %}
+    </ul>
+    {% if grupo.despachable %}
+      <form method="post" class="fila-5">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="despachar">
+        <button type="submit" class="boton-primario">Enviar el pedido</button>
+        {% include "_boton_texto.html" with url=volver texto="Volver" %}
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-descartar">
+    <div class="seccion__titulo"><h2 id="titulo-descartar">Descartar</h2></div>
+    <form method="post" class="formulario pila-3">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="descartar">
+      <div class="campo">
+        <label for="motivo" class="etiqueta">Motivo<span class="obligatorio" aria-hidden="true"> *</span></label>
+        <textarea id="motivo" name="motivo" rows="3" maxlength="500" required></textarea>
+      </div>
+      <div class="acciones">
+        <button type="submit" class="boton-seccion boton-seccion--critico">Descartar el pedido</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

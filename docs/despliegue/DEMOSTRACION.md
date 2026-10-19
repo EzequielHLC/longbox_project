@@ -60,6 +60,10 @@ EMAIL_USE_TLS=True
 EMAIL_HOST_USER=la.cuenta@gmail.com
 EMAIL_HOST_PASSWORD=la-contraseña-de-aplicación
 DEFAULT_FROM_EMAIL=Longbox <la.cuenta@gmail.com>
+
+# Ruta NoIP: los enlaces de los correos del Temporizador. Con el túnel la
+# dirección cambia en cada arranque y conviene dejarla vacía.
+# URL_PUBLICA=https://longbox.ddns.net
 ```
 
 - `ALLOWED_HOSTS` lo lee sólo la configuración de producción; desarrollo sigue igual.
@@ -68,8 +72,11 @@ DEFAULT_FROM_EMAIL=Longbox <la.cuenta@gmail.com>
 - Cada correo sale por SMTP y además queda copiado en la ventana de `servir`, con el enlace de
   activación o de recuperación a la vista. Sin `EMAIL_HOST`, el correo queda sólo en esa ventana
   y una línea lo avisa. Un servidor que rechaza el envío también queda anotado ahí.
-- **Los pedidos a proveedores salen de verdad** al `correo_comercial` de cada ficha. Antes de
-  cerrar una sesión de revisión en la demostración, conviene que esos correos sean propios.
+- **Los pedidos a proveedores salen de verdad** al `correo_comercial` de cada ficha, al cerrar una
+  sesión de revisión y al despachar una propuesta de restock. En la demostración conviene que esos
+  correos sean propios.
+- Sin `URL_PUBLICA`, los correos que manda el Temporizador salen sin enlace; los que salen de una
+  pantalla lo llevan igual.
 - `SECRET_KEY` tiene que ser propia de esta instalación (ver `.env.example`).
 
 ### C. Preparar

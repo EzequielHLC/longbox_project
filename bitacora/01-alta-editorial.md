@@ -378,3 +378,32 @@ El ciclo de la pre-venta está completo: avisos y escalado, confirmación del in
 cancelación por la editorial. Queda en el módulo: las pruebas de contrato de las altas de lote
 (`CO-001` a `CO-010`), el monitoreo automático de la casilla (`CO-016`) y el aviso a suscriptores
 de reposición (`CO-077`, módulo 05).
+
+---
+
+### B-01-012 · El Temporizador lee la casilla de novedades
+
+**Tipo:** Agregado · **Fecha:** 2026-10-19 · **Alcance:** `CU-ALT-NOV`, `CO-016`, `CU-CFG-PAR` (Proveedores)
+**Estado:** Abierta
+
+**Qué apareció.**
+`CO-016` faltaba (B-01-002): el alcance promete la extracción asistida de novedades y los correos
+sólo entraban a mano.
+
+**Qué dice la especificación.**
+> `CO-016 ejecutarCicloMonitoreoCasilla` — operación disparada por el Temporizador del Sistema.
+
+Nada sobre cómo se conecta a la casilla ni con qué credenciales.
+
+**Qué se hizo** (plan 00, A1).
+El Temporizador lee la casilla por IMAP con SSL, con las credenciales del entorno del servidor (no
+de la base). Toma los mensajes sin leer, los ingiere con el mismo servicio de la carga manual
+(idempotente por identificador, I-16), los marca leídos y avisa al Administrador de lo que entró a
+la cola. Respeta «frecuencia de monitoreo de la casilla (horas)», parámetro nuevo de la sección
+Proveedores (24 por defecto). Sin conexión (E3), avisa y se reintenta en el próximo ciclo. La
+conexión tiene una puerta propia que las pruebas cortan, como la red. La carga manual de `.eml`
+sigue disponible.
+
+**Qué habría que cambiar.**
+`CO-016`: dónde se configuran las credenciales. `CU-CFG-PAR` y `ConfiguracionSistema`: la
+frecuencia, que la ficha ya nombra.

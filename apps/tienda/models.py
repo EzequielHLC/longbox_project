@@ -114,14 +114,26 @@ class CobroEnCurso(models.Model):
     PROCESADO = "procesado"
     RECHAZADO = "rechazado"
     REEMBOLSADO = "reembolsado"
+    # Plan 00, C3: sin aviso de la pasarela en 24 horas, el cobro se descarta.
+    DESCARTADO = "descartado"
     ESTADO_CHOICES = [  # noqa: RUF012
         (PENDIENTE, "Esperando el pago"),
         (PROCESADO, "Pedido generado"),
         (RECHAZADO, "Pago rechazado"),
         (REEMBOLSADO, "Pago reembolsado"),
+        (DESCARTADO, "Abandonado"),
+    ]
+
+    # Una compra (CO-088) o el envío de stock almacenado (CO-151, A1).
+    COMPRA = "compra"
+    DESPACHO = "despacho"
+    TIPO_CHOICES = [  # noqa: RUF012
+        (COMPRA, "Compra"),
+        (DESPACHO, "Envío de stock almacenado"),
     ]
 
     referencia = models.CharField("referencia", max_length=64, unique=True)
+    tipo = models.CharField("tipo", max_length=10, choices=TIPO_CHOICES, default=COMPRA)
     pasarela = models.CharField("pasarela", max_length=15)
     estado = models.CharField("estado", max_length=12, choices=ESTADO_CHOICES, default=PENDIENTE)
     usuario = models.ForeignKey(
@@ -141,6 +153,8 @@ class CobroEnCurso(models.Model):
     costo_envio = models.DecimalField("costo de envío", max_digits=12, decimal_places=2)
     monto = models.DecimalField("monto a cobrar", max_digits=12, decimal_places=2)
     puntos_a_debitar = models.PositiveIntegerField("puntos a debitar", default=0)
+    # Plan 07, octava parte: se retira en el local. Congelado como lo demás (B-07-034).
+    retiro = models.BooleanField("retiro en el local", default=False)
     # Lo que la pasarela devuelve al iniciar el cobro (en MercadoPago, la preferencia).
     id_externo = models.CharField("identificador en la pasarela", max_length=100, blank=True)
     mensaje = models.CharField("mensaje de la pasarela", max_length=300, blank=True)
@@ -149,6 +163,13 @@ class CobroEnCurso(models.Model):
     origen = models.CharField("dirección de la tienda", max_length=200, blank=True)
     pedido = models.OneToOneField(
         "pedidos.Pedido", on_delete=models.PROTECT, null=True, blank=True, related_name="cobro"
+    )
+    solicitud = models.OneToOneField(
+        "almacen.SolicitudDespacho",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cobro",
     )
     creado_en = models.DateTimeField("creado en", auto_now_add=True)
     resuelto_en = models.DateTimeField("resuelto en", null=True, blank=True)

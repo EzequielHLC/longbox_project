@@ -39,8 +39,15 @@ Usuario = get_user_model()
 # ---------------------------------------------------------------------------
 
 
+def minutos_de_bloqueo():
+    """El período parametrizado (`CO-114` E1; B-12-001, plan 00, A3)."""
+    from apps.core.models import ConfiguracionSistema
+
+    return ConfiguracionSistema.obtener().bloqueo_intentos_minutos
+
+
 def _inicio_de_ventana():
-    return timezone.now() - timedelta(minutes=settings.LOGIN_BLOQUEO_MINUTOS)
+    return timezone.now() - timedelta(minutes=minutos_de_bloqueo())
 
 
 def intentos_recientes(email, ip):
@@ -91,7 +98,7 @@ def _notificar_bloqueo(email, ip):
             f"Estimado/a {usuario.get_full_name() or usuario.email}:\n\n"
             "Se han detectado varios intentos fallidos de inicio de sesión en su cuenta, "
             "por lo que el acceso quedó bloqueado durante "
-            f"{settings.LOGIN_BLOQUEO_MINUTOS} minutos.\n\n"
+            f"{minutos_de_bloqueo()} minutos.\n\n"
             "Si los intentos fueron suyos, aguarde ese lapso y vuelva a ingresar. En caso "
             "de no reconocer esta actividad, se recomienda cambiar la contraseña apenas "
             "recupere el acceso.\n\n"
@@ -100,7 +107,7 @@ def _notificar_bloqueo(email, ip):
         destinatarios=[usuario.email],
         html=cuerpo_html(
             "correo/bloqueo.html",
-            {"usuario": usuario, "minutos": settings.LOGIN_BLOQUEO_MINUTOS},
+            {"usuario": usuario, "minutos": minutos_de_bloqueo()},
         ),
     )
 

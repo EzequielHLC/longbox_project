@@ -54,6 +54,8 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
       {% block navegacion_publica %}
         <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
         <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
+        {# Plan 00, C1: visible en la primera pantalla y sin registración (Res. 424/2020). #}
+        <a href="{% url 'devoluciones_tienda:inicio' %}" {% if 'devoluciones_tienda:' in actual %}aria-current="page"{% endif %}>Botón de arrepentimiento</a>
         {% with unidades=unidades_en_carrito %}
           {% if unidades is not None %}
             <a href="{% url 'tienda:carrito' %}" class="encabezado-publico__carrito" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>
@@ -151,6 +153,7 @@ propia página de preguntas ni si no hay nada publicado.
       <p class="antetitulo">Ayuda</p>
       <ul>
         {% if hay_faq %}<li><a href="{% url 'core:faq' %}">Preguntas frecuentes</a></li>{% endif %}
+        <li><a href="{% url 'devoluciones_tienda:inicio' %}">Botón de arrepentimiento</a></li>
         {% if unidades_en_carrito is not None %}<li><a href="{% url 'tienda:carrito' %}">Mi carrito</a></li>{% endif %}
         {% if not user.is_authenticated %}
           <li><a href="{% url 'accounts:login' %}">Ingresar</a></li>

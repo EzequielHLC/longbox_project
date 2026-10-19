@@ -134,6 +134,52 @@ class ConfiguracionSistema(models.Model):
     )
 
     # ------------------------------------------------------------------
+    # Inventario y restock (CU-CFG-PAR; B-05-004)
+    # ------------------------------------------------------------------
+
+    cantidad_minima_restock = models.PositiveIntegerField(
+        "cantidad mínima de pedido de restock",
+        default=3,
+        validators=[MinValueValidator(1)],
+        help_text="Lo menos que se sugiere pedir de un producto.",
+    )
+    margen_stock_restock = models.PositiveIntegerField(
+        "margen de stock mínimo",
+        default=2,
+        help_text="Entra en la propuesta todo producto con menos unidades que este margen.",
+    )
+
+    # ------------------------------------------------------------------
+    # Seguridad (CU-CFG-PAR; CO-114; B-12-001, plan 00, A3)
+    # ------------------------------------------------------------------
+
+    expiracion_sesion_minutos = models.PositiveIntegerField(
+        "expiración de la sesión por inactividad (minutos)",
+        default=30,
+        validators=[MinValueValidator(1)],
+        help_text="Sin actividad durante este tiempo, la sesión se cierra.",
+    )
+    bloqueo_intentos_minutos = models.PositiveIntegerField(
+        "bloqueo tras intentos fallidos (minutos)",
+        default=15,
+        validators=[MinValueValidator(1)],
+        help_text="Cuánto dura el bloqueo después de 5 intentos fallidos seguidos.",
+    )
+
+    # ------------------------------------------------------------------
+    # Proveedores (CU-CFG-PAR; CO-016, plan 00, A1)
+    # ------------------------------------------------------------------
+
+    frecuencia_casilla_horas = models.PositiveIntegerField(
+        "frecuencia de monitoreo de la casilla (horas)",
+        default=24,
+        validators=[MinValueValidator(1)],
+        help_text="Cada cuántas horas el Temporizador lee la casilla de novedades.",
+    )
+    # Cuándo la leyó por última vez: el Temporizador corre más seguido que eso.
+    casilla_revisada_en = models.DateTimeField("casilla revisada el", null=True, blank=True)
+
+    # ------------------------------------------------------------------
     # Tienda (CU-CFG-PAR, sección Tienda; B-17-003)
     # ------------------------------------------------------------------
 
@@ -171,6 +217,41 @@ class ConfiguracionSistema(models.Model):
         validators=[MinValueValidator(1)],
         help_text="Cuánto tiene el Cliente para elegir qué hacer con un artículo demorado.",
     )
+    # Stock almacenado en local (RF-25, BR-09).
+    plazo_retencion_meses = models.PositiveIntegerField(
+        "plazo de retención en local (meses)",
+        default=3,
+        validators=[MinValueValidator(1)],
+        help_text="Cuánto guarda el local un artículo a nombre del Cliente.",
+    )
+    dias_aviso_retencion = models.PositiveIntegerField(
+        "aviso previo al vencimiento (días)",
+        default=7,
+        validators=[MinValueValidator(1)],
+        help_text="Con cuántos días de anticipación se avisa al Cliente.",
+    )
+
+    # ------------------------------------------------------------------
+    # Comercial (CU-CFG-PAR; CO-099)
+    # ------------------------------------------------------------------
+
+    # El piso es la ley (BR-14; Ley 24.240 art. 34), no una preferencia: vive
+    # también como restricción de la base, para cualquier camino de escritura.
+    PISO_LEGAL_DEVOLUCION = 10
+    # Plan 00, C1: es el plazo del arrepentimiento (revocación de la venta a
+    # distancia). La garantía por defectos tiene el suyo, más largo.
+    plazo_devolucion_dias = models.PositiveIntegerField(
+        "plazo de arrepentimiento (días)",
+        default=PISO_LEGAL_DEVOLUCION,
+        validators=[MinValueValidator(PISO_LEGAL_DEVOLUCION)],
+        help_text="Desde el despacho o el retiro. El mínimo legal es de 10 días corridos.",
+    )
+    plazo_garantia_dias = models.PositiveIntegerField(
+        "plazo de garantía (días)",
+        default=90,
+        validators=[MinValueValidator(PISO_LEGAL_DEVOLUCION)],
+        help_text="Para reclamar un defecto de fabricación o un error de imprenta.",
+    )
 
     # ------------------------------------------------------------------
     # Fidelización (CU-CFG-PAR; RF-19)
@@ -200,6 +281,14 @@ class ConfiguracionSistema(models.Model):
         default=12,
         validators=[MinValueValidator(1)],
         help_text="Cuánto dura un lote de puntos desde que se acredita.",
+    )
+    # Plan 10, segunda parte: a pedido del responsable, un aviso antes de que
+    # venzan, «animando a la compra». La caducidad misma sigue avisándose.
+    dias_aviso_caducidad_puntos = models.PositiveIntegerField(
+        "aviso previo a la caducidad (días)",
+        default=3,
+        validators=[MinValueValidator(1)],
+        help_text="Con cuántos días de anticipación se avisa que unos puntos están por vencer.",
     )
 
     # ------------------------------------------------------------------
@@ -232,6 +321,12 @@ class ConfiguracionSistema(models.Model):
     class Meta:
         verbose_name = "configuración del sistema"
         verbose_name_plural = "configuración del sistema"
+        constraints = [  # noqa: RUF012
+            models.CheckConstraint(
+                condition=models.Q(plazo_devolucion_dias__gte=10),
+                name="plazo_devolucion_piso_legal",
+            ),
+        ]
 
     def __str__(self):
         return "Parámetros globales del sistema"
@@ -377,6 +472,31 @@ class RegistroAuditoria(models.Model):
     VENCIMIENTO_VENTANA = "vencimiento_ventana"
     COMPENSACION_RETRASO = "compensacion_retraso"
     CANCELACION_ARTICULO_DEMORADO = "cancelacion_articulo_demorado"
+    # Plan 18: el stock almacenado en local.
+    INGRESO_STOCK_ALMACENADO = "ingreso_stock_almacenado"
+    SOLICITUD_DESPACHO = "solicitud_despacho"
+    DESPACHO_STOCK_ALMACENADO = "despacho_stock_almacenado"
+    RETIRO_EN_LOCAL = "retiro_en_local"
+    PLAZO_RETENCION = "plazo_retencion"
+    VENCIMIENTO_RETENCION = "vencimiento_retencion"
+    # Plan 05: restock.
+    PROPUESTA_RESTOCK = "propuesta_restock"
+    DESPACHO_RESTOCK = "despacho_restock"
+    DESCARTE_RESTOCK = "descarte_restock"
+    CIERRE_PROPUESTA_RESTOCK = "cierre_propuesta_restock"
+    PEDIDO_A_PROVEEDOR = "pedido_a_proveedor"
+    NOTIFICACION_REPOSICION = "notificacion_reposicion"
+    NOTIFICACION_FALLIDA = "notificacion_fallida"
+    # Plan 09: devoluciones.
+    APERTURA_DEVOLUCION = "apertura_devolucion"
+    DEVOLUCION_CON_CAMBIO = "devolucion_con_cambio"
+    DEVOLUCION_CON_REEMBOLSO = "devolucion_con_reembolso"
+    RECHAZO_DEVOLUCION = "rechazo_devolucion"
+    DEVOLUCION_REEMBOLSO_MEDIO = "devolucion_reembolso_medio"
+    # Plan 10, segunda parte: caducidad y ajuste manual.
+    CADUCIDAD_PUNTOS = "caducidad_puntos"
+    INCIDENTE_CADUCIDAD = "incidente_caducidad"
+    AJUSTE_PUNTOS = "ajuste_puntos"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -444,6 +564,27 @@ class RegistroAuditoria(models.Model):
         (VENCIMIENTO_VENTANA, "Vencimiento de la ventana de decisión"),
         (COMPENSACION_RETRASO, "Compensación por retraso"),
         (CANCELACION_ARTICULO_DEMORADO, "Cancelación de artículo demorado"),
+        (INGRESO_STOCK_ALMACENADO, "Ingreso a stock almacenado"),
+        (SOLICITUD_DESPACHO, "Solicitud de despacho de stock almacenado"),
+        (DESPACHO_STOCK_ALMACENADO, "Despacho de stock almacenado"),
+        (RETIRO_EN_LOCAL, "Retiro en local de stock almacenado"),
+        (PLAZO_RETENCION, "Modificación de plazo de retención"),
+        (VENCIMIENTO_RETENCION, "Vencimiento de retención"),
+        (PROPUESTA_RESTOCK, "Generación de propuesta de restock"),
+        (DESPACHO_RESTOCK, "Despacho de restock a proveedor"),
+        (DESCARTE_RESTOCK, "Descarte de proveedor en propuesta de restock"),
+        (CIERRE_PROPUESTA_RESTOCK, "Cierre de propuesta de restock"),
+        (PEDIDO_A_PROVEEDOR, "Correo de pedido a proveedor"),
+        (NOTIFICACION_REPOSICION, "Notificación de reposición"),
+        (NOTIFICACION_FALLIDA, "Notificación fallida"),
+        (APERTURA_DEVOLUCION, "Apertura de caso de devolución"),
+        (DEVOLUCION_CON_CAMBIO, "Resolución de devolución con cambio"),
+        (DEVOLUCION_CON_REEMBOLSO, "Resolución de devolución con reembolso en puntos"),
+        (RECHAZO_DEVOLUCION, "Rechazo de caso de devolución"),
+        (DEVOLUCION_REEMBOLSO_MEDIO, "Resolución de devolución con reembolso por el medio de pago"),
+        (CADUCIDAD_PUNTOS, "Caducidad de lote de puntos"),
+        (INCIDENTE_CADUCIDAD, "Fallo en la caducidad de un lote de puntos"),
+        (AJUSTE_PUNTOS, "Ajuste manual de puntos"),
     ]
 
     actor = models.ForeignKey(

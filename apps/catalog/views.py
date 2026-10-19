@@ -33,6 +33,7 @@ from apps.catalog.forms import (
     ProductoEditorialForm,
     ProductoNoEditorialForm,
     RechazoDeBorradorForm,
+    SeguridadForm,
     TipoForm,
     formatos_para,
     formset_de_items,
@@ -58,6 +59,7 @@ from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import celda_csv, obtener_ip
 from apps.pedidos import preventa
 from apps.puntos.servicios import puntos_por_monto
+from apps.restock import servicios as restock
 from apps.suppliers.models import Proveedor
 
 MENSAJE_BORRADOR_YA_RESUELTO = "Este borrador ya fue confirmado o rechazado."
@@ -434,10 +436,13 @@ class ParametrosView(CatalogoAdminMixin, View):
 
     template_name = "catalog/parametros.html"
 
-    def get(self, request, formulario=None, form_modelo=None, form_compra=None):
+    def get(
+        self, request, formulario=None, form_modelo=None, form_compra=None, form_seguridad=None
+    ):
         contexto = self._contexto(request, formulario, form_modelo)
         configuracion = ConfiguracionSistema.obtener()
         contexto["form_compra"] = form_compra or CompraOnlineForm(instance=configuracion)
+        contexto["form_seguridad"] = form_seguridad or SeguridadForm(instance=configuracion)
         # Para que el Administrador vea qué significan los dos números juntos.
         ejemplo = Decimal("10000")
         puntos_del_ejemplo = puntos_por_monto(ejemplo)
@@ -458,6 +463,8 @@ class ParametrosView(CatalogoAdminMixin, View):
             return self._guardar_modelo(request)
         if "guardar_compra" in request.POST:
             return self._guardar_parametros(request, CompraOnlineForm)
+        if "guardar_seguridad" in request.POST:
+            return self._guardar_parametros(request, SeguridadForm)
         return self._guardar_parametros(request, ConfiguracionForm)
 
     # Cómo se nombra cada parámetro en el detalle de la auditoría; los demás,
@@ -469,6 +476,10 @@ class ParametrosView(CatalogoAdminMixin, View):
         "ventana_decision_horas": "ventana de decisión (h)",
         "equivalencia_puntos": "valor del punto ($)",
         "porcentaje_puntos": "reintegro en puntos (%)",
+        "plazo_devolucion_dias": "plazo de arrepentimiento (días)",
+        "plazo_garantia_dias": "plazo de garantía (días)",
+        "expiracion_sesion_minutos": "expiración de la sesión (min)",
+        "bloqueo_intentos_minutos": "bloqueo tras intentos fallidos (min)",
     }
 
     def _guardar_parametros(self, request, formulario_de):
@@ -477,10 +488,22 @@ class ParametrosView(CatalogoAdminMixin, View):
         anterior = {campo: self._legible(configuracion, campo) for campo in campos}
         formulario = formulario_de(request.POST, instance=configuracion)
 
+        rechazado = None
         if not formulario.is_valid():
-            if formulario_de is CompraOnlineForm:
+            if formulario_de is SeguridadForm:
+                return self.get(request, form_seguridad=formulario)
+            if formulario_de is not CompraOnlineForm:
+                return self.get(request, formulario=formulario)
+            if not formulario.solo_falla_el_plazo_de_devolucion():
                 return self.get(request, form_compra=formulario)
-            return self.get(request, formulario=formulario)
+            # CO-130 E1: el plazo por debajo del piso legal se rechaza solo; los
+            # demás valores válidos se guardan, y el plazo conserva el vigente.
+            rechazado = formulario
+            datos = request.POST.copy()
+            datos["plazo_devolucion_dias"] = configuracion.plazo_devolucion_dias
+            formulario = formulario_de(datos, instance=ConfiguracionSistema.obtener())
+            if not formulario.is_valid():
+                return self.get(request, form_compra=rechazado)
 
         with transaction.atomic():
             configuracion = formulario.save(commit=False)
@@ -500,6 +523,13 @@ class ParametrosView(CatalogoAdminMixin, View):
                     detalle=f"{self._nombre(campo)}: {anterior[campo]} → {nuevo}",
                 )
 
+        if rechazado is not None:
+            messages.warning(
+                request,
+                "Se guardaron los demás parámetros. El plazo de arrepentimiento no cambió: "
+                + CompraOnlineForm.PISO_LEGAL,
+            )
+            return self.get(request, form_compra=rechazado)
         messages.success(request, "Se actualizaron los parámetros.")
         return redirect("catalog:parametros")
 
@@ -510,7 +540,11 @@ class ParametrosView(CatalogoAdminMixin, View):
     def _legible(configuracion, campo):
         if campo == "pasarela":
             return configuracion.get_pasarela_display()
-        return getattr(configuracion, campo)
+        valor = getattr(configuracion, campo)
+        if isinstance(valor, Decimal):
+            # «8000.00» de la base y «8000» del formulario son el mismo importe.
+            return format(valor.normalize(), "f")
+        return valor
 
     def _guardar_modelo(self, request):
         """A qué modelo de lenguaje le habla el sistema.
@@ -1255,6 +1289,12 @@ class CerrarSesionRevisionView(CatalogoAdminMixin, View):
 # ---------------------------------------------------------------------------
 
 
+def _estado_por_stock(producto):
+    if producto.estado == Producto.AGOTADO and producto.stock > 0:
+        return Producto.ACTIVO
+    return producto.estado
+
+
 class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
     """CU-CAT-EDI — Editar Producto, de los dos rubros.
 
@@ -1321,6 +1361,19 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                 if antes[etiqueta] != leer(producto)
             }
             partes = [cambios.describir(lo_que_cambio)] if lo_que_cambio else []
+            # B-05-006: el stock decide si está Agotado. Reponer lo vuelve a la venta.
+            estado = _estado_por_stock(producto)
+            if estado != producto.estado:
+                nuevo = dict(Producto.ESTADO_CHOICES)[estado]
+                partes.append(f"estado: «{producto.get_estado_display()}» → «{nuevo}»")
+                Producto.objects.filter(pk=producto.pk).update(estado=estado)
+                producto.estado = estado
+            restock.al_subir_stock(
+                producto,
+                anterior.stock,
+                producto.stock,
+                origen=self.request.build_absolute_uri("/").rstrip("/"),
+            )
             if agregadas or quitadas:
                 partes.append(galeria.describir(agregadas, quitadas))
             if partes:

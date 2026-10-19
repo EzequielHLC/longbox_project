@@ -52,16 +52,24 @@ def test_sin_impacto_el_informe_lo_dice_explicitamente(client_admin):
     assert "No hay productos del catálogo vinculados" in respuesta.content.decode()
 
 
-def test_el_informe_no_afirma_que_no_hay_propuestas_de_restock(client_admin):
-    """El módulo de Restock no existe todavía. Decir "0 propuestas afectadas"
-    sería mentir sobre un dato que el propio CU considera parte de la decisión;
-    la pantalla dice que no se puede determinar."""
+def test_el_informe_cuenta_la_propuesta_de_restock_pendiente(client_admin):
+    """B-04-001: la propuesta pendiente con un pedido sin despachar a este proveedor."""
+    from apps.catalog.models import Producto
+    from apps.catalog.tests.factories import ProductoFactory
+    from apps.restock.models import LineaPropuestaRestock, PropuestaRestock
+
     proveedor = ProveedorFactory()
+    sin_propuesta = client_admin.get(url_baja(proveedor))
+    producto = ProductoFactory(proveedor=proveedor, stock=0, estado=Producto.AGOTADO)
+    propuesta = PropuestaRestock.objects.create(tipo_disparo=PropuestaRestock.MANUAL)
+    LineaPropuestaRestock.objects.create(
+        propuesta=propuesta, producto=producto, cantidad_sugerida=3
+    )
 
-    respuesta = client_admin.get(url_baja(proveedor))
+    con_propuesta = client_admin.get(url_baja(proveedor))
 
-    assert respuesta.context["impacto"].propuestas_de_restock is None
-    assert "No disponible todavía" in respuesta.content.decode()
+    assert sin_propuesta.context["impacto"].propuestas_de_restock == 0
+    assert con_propuesta.context["impacto"].propuestas_de_restock == 1
 
 
 def test_mirar_el_informe_no_da_de_baja_nada(client_admin):

@@ -107,7 +107,12 @@ class CheckoutView(ClienteMixin, View):
 
     def _contexto(self, request, formulario=None):
         envio = compra.envio_del_checkout(request.session, request.user)
-        hecho = compra.iniciar_checkout(servicio_carrito.carrito_de(request), request.user, envio)
+        hecho = compra.iniciar_checkout(
+            servicio_carrito.carrito_de(request),
+            request.user,
+            envio,
+            retiro=compra.retiro_del_checkout(request.session),
+        )
         return {
             "resumen": hecho,
             "form": formulario or DireccionDeEnvioForm(initial=envio),
@@ -122,7 +127,19 @@ class CheckoutView(ClienteMixin, View):
             return _al_carrito(request, bloqueo)
 
     def post(self, request):
-        """`CO-087`: la dirección de este checkout. El perfil no cambia."""
+        """`CO-087`: la dirección de este checkout, o la modalidad. El perfil no cambia."""
+        if "modalidad" in request.POST:
+            retiro = request.POST["modalidad"] == "retiro"
+            compra.declarar_modalidad(request.session, retiro)
+            messages.success(
+                request,
+                (
+                    "Lo retirás en el local, sin costo de envío."
+                    if retiro
+                    else "Te lo enviamos a domicilio."
+                ),
+            )
+            return redirect("compra:checkout")
         formulario = DireccionDeEnvioForm(request.POST)
         try:
             if not formulario.is_valid():
@@ -133,6 +150,7 @@ class CheckoutView(ClienteMixin, View):
         costo = compra.declarar_direccion_de_envio(
             request.session, formulario.cleaned_data, hecho.subtotal_productos
         )
+        compra.declarar_modalidad(request.session, False)
         envio = "gratis" if costo == 0 else pesos(costo)
         messages.success(request, f"Se enviará a la dirección declarada. Envío: {envio}.")
         return redirect("compra:checkout")
@@ -168,7 +186,10 @@ class ConfirmarCanjeView(ClienteMixin, View):
         envio = compra.envio_del_checkout(request.session, request.user)
         try:
             hecho = compra.iniciar_checkout(
-                servicio_carrito.carrito_de(request), request.user, envio
+                servicio_carrito.carrito_de(request),
+                request.user,
+                envio,
+                retiro=compra.retiro_del_checkout(request.session),
             )
         except compra.BloqueoDeAvance as bloqueo:
             return _al_carrito(request, bloqueo)
@@ -186,7 +207,12 @@ class ConfirmarView(ClienteMixin, View):
         envio = compra.envio_del_checkout(request.session, request.user)
         try:
             confirmacion = compra.confirmar_pedido(
-                servicio_carrito.carrito_de(request), request.user, envio, request, pasarela()
+                servicio_carrito.carrito_de(request),
+                request.user,
+                envio,
+                request,
+                pasarela(),
+                retiro=compra.retiro_del_checkout(request.session),
             )
         except compra.BloqueoDeAvance as bloqueo:
             return _al_carrito(request, bloqueo)
@@ -305,9 +331,14 @@ class ResultadoView(View):
         )
         if not propio:
             raise Http404("No hay un pago con esa referencia.")
+        if cobro.tipo == CobroEnCurso.DESPACHO and cobro.estado != CobroEnCurso.PENDIENTE:
+            from apps.almacen.views_cuenta import resultado_de_pago
+
+            return resultado_de_pago(request, cobro)
         if cobro.estado == CobroEnCurso.PROCESADO:
             # El checkout terminó: la próxima compra arranca de cero.
             request.session.pop(compra.CLAVE_ENVIO, None)
+            request.session.pop(compra.CLAVE_RETIRO, None)
             request.session.pop(compra.CLAVE_INVITADO, None)
         volver = "compra:checkout" if cobro.usuario_id else "compra:invitado_resumen"
         return render(
