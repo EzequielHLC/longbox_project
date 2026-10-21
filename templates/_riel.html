@@ -1,0 +1,28 @@
+{% comment %}
+El riel de estados de un pedido (plan 00 de interfaz, 4.2). Recibe `riel`
+(`apps/pedidos/riel.py`).
+
+    {% include "_riel.html" with riel=riel animado=1 %}
+    {% include "_riel.html" with riel=pedido.riel reducido=1 %}
+
+`animado` lo deja listo para que el guion lo anime la primera vez que se ve el
+estado (sólo en el público). `reducido` es la versión de las listas: sólo las
+marcas, sin fechas; el nombre del paso actual queda para el lector de pantalla.
+{% endcomment %}
+<div class="riel{% if reducido %} riel--reducido{% endif %}{% if riel.interrupcion %} riel--interrumpido{% endif %}"{% if animado and not riel.interrupcion %} data-riel="{{ riel.clave }}" data-riel-estado="{{ riel.estado }}"{% endif %}>
+  {% if riel.interrupcion %}<p class="riel__interrupcion"><span>{{ riel.interrupcion }}</span></p>{% endif %}
+  <ol class="riel__pasos" aria-label="Recorrido del pedido">
+    {% for paso in riel.pasos %}
+      <li class="riel__paso{% if paso.hecho %} riel__paso--hecho{% endif %}{% if paso.actual %} riel__paso--actual{% endif %}"{% if paso.actual %} aria-current="step"{% endif %}>
+        {% if paso.actual and not forloop.first and not reducido and not riel.interrupcion %}
+          <span class="riel__vehiculo" aria-hidden="true"><span>{% include "_iconos.html" with icono="camion" %}</span></span>
+        {% endif %}
+        <span class="riel__marca">{% include "_iconos.html" with icono=paso.icono %}</span>
+        <span class="riel__nombre{% if reducido %} sr-only{% endif %}">{{ paso.nombre }}{% if paso.actual %}<span class="sr-only"> (actual)</span>{% elif not paso.hecho %}<span class="sr-only"> (pendiente)</span>{% endif %}</span>
+        {% if not reducido %}
+          <span class="riel__fecha">{% if paso.fecha and paso.hecho %}<span class="datos">{{ paso.fecha|date:"d/m H:i" }}</span>{% elif not paso.hecho %}Pendiente{% endif %}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</div>

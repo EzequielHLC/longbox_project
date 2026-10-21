@@ -133,6 +133,36 @@ sin relleno, esquinas vivas y la misma familia geométrica del resto del sistema
   {% elif icono == "bolsa" %}
     {# Bolsa de compras: el carrito de la tienda. #}
     <path d="M5 8h14l-1 13H6zM9 8V4h6v4"/>
+  {% elif icono == "camion" %}
+    {# Camión de reparto, el mismo de Proveedores: el envío a domicilio. #}
+    <path d="M2 6h11v10H2zM13 9h4l4 3v4h-8M6 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+  {% elif icono == "local" %}
+    {# La vidriera de la Tienda: retirar en el local. #}
+    <path d="M3 8l1.5-4h15L21 8M3 8h18v13H3zM3 8a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0M9 21v-6h6v6"/>
+  {% elif icono == "caja-abierta" %}
+    {# Caja con las tapas abiertas: el pedido que se está por armar. #}
+    <path d="M3 9h18v12H3zM3 9l3-5h12l3 5M8 4l4 5 4-5"/>
+  {% elif icono == "caja-cinta" %}
+    {# Caja cerrada con una cinta cruzada: armado y cerrado. #}
+    <path d="M3 7h18v14H3zM3 7l2-4h14l2 4M10 7v5l2-1 2 1V7"/>
+  {% elif icono == "paquete" %}
+    {# Caja con su precinto y la etiqueta: empaquetado para salir. #}
+    <path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10M15 15h3"/>
+  {% elif icono == "reloj" %}
+    {# Reloj: algo que espera. #}
+    <path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 3"/>
+  {% elif icono == "efectivo" %}
+    {# Billete con su círculo: pago en efectivo. #}
+    <path d="M2 6h20v12H2zM12 15a3 3 0 100-6 3 3 0 000 6zM5 9v6M19 9v6"/>
+  {% elif icono == "transferencia" %}
+    {# Dos flechas que se cruzan: dinero que va de una cuenta a otra. #}
+    <path d="M4 8h14l-4-4M20 16H6l4 4"/>
+  {% elif icono == "tarjeta" %}
+    {# Tarjeta con su banda: débito o crédito. #}
+    <path d="M2 5h20v14H2zM2 10h20M6 15h4"/>
+  {% elif icono == "pasarela" %}
+    {# Pantalla con un candado: el pago online. #}
+    <path d="M3 4h18v12H3zM8 20h8M12 16v4M10 10V8a2 2 0 014 0v2M9 10h6v4H9z"/>
   {% elif icono == "red-instagram" %}
     <path d="M3 3h18v18H3zM12 16a4 4 0 100-8 4 4 0 000 8zM17 6.5v.01"/>
   {% elif icono == "red-facebook" %}

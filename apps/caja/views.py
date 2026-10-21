@@ -10,6 +10,7 @@ from apps.accounts.models import Usuario
 from apps.caja import servicios
 from apps.caja.models import CierreDeCaja
 from apps.core.mixins import RolRequeridoMixin
+from apps.pedidos.models import TransaccionPago
 
 
 class CajaMixin(RolRequeridoMixin):
@@ -20,11 +21,23 @@ class CajaView(CajaMixin, View):
     """`CO-203`: el resumen previo, o el cierre de hoy (E1), o sin movimientos (E2)."""
 
     def get(self, request):
+        resumen = servicios.resumen_previo()
+        medio = request.GET.get("medio", "")
+        # Plan 00 de interfaz, segunda parte, 12: las ventas de la jornada, la más
+        # reciente primero, con el filtro por medio. Sólo lee.
+        ventas = sorted(
+            resumen.incluidas + resumen.pendientes, key=lambda t: t.registrada_en, reverse=True
+        )
+        if medio in dict(TransaccionPago.MEDIO_CHOICES):
+            ventas = [t for t in ventas if t.medio == medio]
         return render(
             request,
             "caja/caja.html",
             {
-                "resumen": servicios.resumen_previo(),
+                "resumen": resumen,
+                "ventas": ventas,
+                "medio": medio,
+                "medios": TransaccionPago.MEDIO_CHOICES,
                 "ultimos": CierreDeCaja.objects.select_related("realizado_por")[:10],
             },
         )
@@ -53,9 +66,9 @@ class CierreView(CajaMixin, View):
             "caja/cierre.html",
             {
                 "cierre": cierre,
-                "transacciones": cierre.transacciones.select_related("pedido").order_by(
-                    "registrada_en", "pk"
-                ),
+                "transacciones": cierre.transacciones.select_related(
+                    "pedido", "pedido__usuario", "solicitud", "solicitud__usuario"
+                ).order_by("-registrada_en", "-pk"),
             },
         )
 

@@ -41,7 +41,7 @@ puede ir al reembolso en puntos.
       <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> Este producto no tiene stock disponible.</span></p>
       <p class="fila-5">
         {% include "_boton_texto.html" with url=esta texto="Elegir otro" %}
-        <a href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>
+        <a data-dialogo href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>
       </p>
     {% endif %}
   </div>

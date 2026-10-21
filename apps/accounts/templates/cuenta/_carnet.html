@@ -1,0 +1,42 @@
+{% comment %}
+El carnet de cliente y la navegación de «Mi cuenta» (plan 00 de interfaz, 4.3).
+Lo dibuja `{% carnet %}` (`apps/accounts/templatetags/cuenta.py`).
+{% endcomment %}
+<div class="carnet">
+  <p class="carnet__rotulo">Carnet de cliente</p>
+  <p class="carnet__nombre">{{ user.get_full_name|default:user.email }}</p>
+  <p class="carnet__codigo"><span class="etiqueta">Código de cliente</span> <span class="datos">{{ user.codigo_cliente }}</span></p>
+  <dl class="carnet__datos">
+    <div>
+      <dt>Puntos</dt>
+      <dd>
+        <a href="{% url 'cuenta:puntos' %}"><span class="datos">{{ saldo }}</span> pts</a>
+        {% if proximo_lote %}
+          {# Plan 00 de interfaz, P4: qué parte del saldo vence primero. #}
+          <progress class="barra-proporcion" value="{{ proximo_lote.disponible }}" max="{{ saldo }}">{{ proximo_lote.disponible }} de {{ saldo }}</progress>
+          <span class="texto-chico secundario">{{ proximo_lote.disponible }} se pueden usar hasta el <span class="datos">{{ proximo_hasta|date:"d/m/Y" }}</span></span>
+        {% endif %}
+      </dd>
+    </div>
+    <div>
+      <dt>En el local</dt>
+      <dd>
+        {% if guardados %}
+          <a href="{% url 'cuenta:stock' %}"><span class="datos">{{ guardados }}</span> artículo{{ guardados|pluralize }}</a>
+          {% if guardados_hasta %}<span class="texto-chico secundario">El primero, hasta el <span class="datos">{{ guardados_hasta|date:"d/m/Y" }}</span></span>{% endif %}
+        {% else %}
+          <span class="secundario">Nada guardado</span>
+        {% endif %}
+      </dd>
+    </div>
+  </dl>
+</div>
+
+<nav class="secciones-cuenta" aria-label="Secciones de mi cuenta">
+  <a href="{% url 'cuenta:panel' %}"{% if seccion == "resumen" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="panel" %}<span>Resumen</span></a>
+  <a href="{% url 'cuenta:pedidos' %}"{% if seccion == "pedidos" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="bolsa" %}<span>Pedidos</span></a>
+  <a href="{% url 'cuenta:puntos' %}"{% if seccion == "puntos" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="puntos" %}<span>Puntos</span></a>
+  <a href="{% url 'cuenta:avisos' %}"{% if seccion == "avisos" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="reloj" %}<span>Avisos de stock</span></a>
+  <a href="{% url 'cuenta:stock' %}"{% if seccion == "stock" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="local" %}<span>Stock en local</span></a>
+  <a href="{% url 'cuenta:datos' %}"{% if seccion == "datos" %} aria-current="page"{% endif %}>{% include "_iconos.html" with icono="usuario" %}<span>Mis datos</span></a>
+</nav>

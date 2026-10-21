@@ -29,7 +29,12 @@ invitado o cliente, nunca el personal. Sin stock, no hay botón.
       {% if producto.portada %}
         <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy" data-portada="{{ producto.pk }}">
       {% else %}
-        <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+        {# Plan 00 de interfaz, P2: sin imagen, una tapa dibujada con el título, no un hueco. #}
+        <div class="portada-vacia portada-vacia--tapa" aria-hidden="true">
+          <span class="portada-vacia__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
+          <span class="portada-vacia__titulo">{{ producto.titulo }}</span>
+          {% if volumen or volumen == 0 %}<span class="portada-vacia__numero">#{{ volumen }}</span>{% endif %}
+        </div>
       {% endif %}
     </div>
     <div class="tarjeta-producto__cuerpo">

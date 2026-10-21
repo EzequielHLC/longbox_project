@@ -1,4 +1,4 @@
-{% load moneda %}
+{% load moneda riel %}
 {% comment %}
 Fragmento de la tabla de pedidos (CO-182). Se dibuja dentro de la pantalla y
 también solo, cuando el buscador lo pide con `?parcial=1`.
@@ -18,6 +18,7 @@ también solo, cuando el buscador lo pide con `?parcial=1`.
             <th>Fecha</th>
             <th>Canal</th>
             <th>Estado</th>
+            <th>Seguimiento</th>
             <th class="numero">Total</th>
           </tr>
         </thead>
@@ -35,9 +36,11 @@ también solo, cuando el buscador lo pide con `?parcial=1`.
               <td class="datos sin-cortar secundario">{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
               <td>{% if pedido.canal == "online" %}Online{% else %}Físico{% endif %}</td>
               <td>
-                <span class="marca-estado{% if pedido.estado == 'despachado' %} marca-estado--apagado{% elif pedido.estado == 'esperando_pre_venta' or pedido.estado == 'esperando_demorado' %} marca-estado--dato{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
+                <span class="marca-estado{% if pedido.estado == 'despachado' or pedido.estado == 'vendido_en_local' %} marca-estado--apagado{% elif pedido.estado == 'esperando_pre_venta' or pedido.estado == 'esperando_demorado' %} marca-estado--dato{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
                 {% if pedido.tiene_demorados %}<span class="marca-estado marca-estado--error">Demorado</span>{% endif %}
               </td>
+              {# P7, en su propia columna: el estado se lee y el recorrido se ve, sin encimarse. #}
+              <td>{% with riel=pedido|riel %}{% if riel %}<div class="riel-de-fila">{% include "_riel.html" with riel=riel reducido=1 %}</div>{% else %}<span class="secundario">—</span>{% endif %}{% endwith %}</td>
               <td class="numero">{{ pedido.cobrado|pesos }}</td>
             </tr>
           {% endfor %}

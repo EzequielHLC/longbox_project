@@ -68,12 +68,20 @@ class PropuestaView(RestockMixin, View):
 
     def get(self, request):
         propuesta = servicios.pendiente()
+        grupos = servicios.agrupar(propuesta) if propuesta else []
         return render(
             request,
             "restock/propuesta.html",
             {
                 "propuesta": propuesta,
-                "grupos": servicios.agrupar(propuesta) if propuesta else [],
+                "grupos": grupos,
+                # Plan 00 de interfaz, segunda parte, 14.1.
+                "resumen": {
+                    "productos": sum(len(g.lineas) for g in grupos),
+                    "unidades": sum(g.unidades for g in grupos),
+                    "pendientes": sum(1 for g in grupos if g.pendiente),
+                    "suscriptores": sum(g.suscriptores for g in grupos),
+                },
                 "ultima": PropuestaRestock.objects.filter(estado=PropuestaRestock.CERRADA).first(),
             },
         )
@@ -119,6 +127,30 @@ class LineaView(RestockMixin, View):
         except servicios.OperacionRechazada as rechazo:
             messages.error(request, str(rechazo))
         return redirect("restock:propuesta")
+
+
+class CantidadesView(RestockMixin, View):
+    """`CO-069` de todas las líneas de un proveedor con un solo «Guardar» (14.3)."""
+
+    def post(self, request, clave):
+        propuesta = _pendiente_o_volver(request)
+        if propuesta is None:
+            return redirect("restock:propuesta")
+        cantidades = {
+            int(nombre.removeprefix("cantidad-")): _entero(valor)
+            for nombre, valor in request.POST.items()
+            if nombre.startswith("cantidad-") and nombre.removeprefix("cantidad-").isdigit()
+        }
+        try:
+            cambiadas = servicios.ajustar_cantidades(propuesta, clave, cantidades)
+        except servicios.OperacionRechazada as rechazo:
+            messages.error(request, str(rechazo))
+        else:
+            if cambiadas:
+                messages.success(request, f"Se guardaron {cambiadas} cantidad(es).")
+            else:
+                messages.info(request, "No cambió ninguna cantidad.")
+        return redirect(reverse("restock:propuesta") + f"#grupo-{clave}")
 
 
 class AgregarView(RestockMixin, View):

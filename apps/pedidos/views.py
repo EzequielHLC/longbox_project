@@ -27,6 +27,7 @@ from apps.accounts.models import Usuario
 from apps.core.mixins import RolRequeridoMixin
 from apps.pedidos import servicios
 from apps.pedidos.models import LineaPedido, Pedido
+from apps.pedidos.riel import riel_de
 
 CERO = Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
 
@@ -97,7 +98,8 @@ class PedidoListaView(PedidosMixin, ListView):
 
     def get_queryset(self):
         filtros = self.filtros()
-        pedidos = Pedido.objects.select_related("usuario")
+        # P7: el riel reducido de cada fila sale de sus transiciones, precargadas.
+        pedidos = Pedido.objects.select_related("usuario").prefetch_related("transiciones")
         if filtros["q"]:
             q = filtros["q"]
             pedidos = pedidos.filter(
@@ -135,10 +137,13 @@ class PedidoListaView(PedidosMixin, ListView):
 
 def _detalle(pedido):
     lineas = list(pedido.lineas.select_related("producto"))
+    transiciones = list(pedido.transiciones.select_related("actor"))
     return {
         "pedido": pedido,
         "lineas": lineas,
-        "transiciones": list(pedido.transiciones.select_related("actor")),
+        "transiciones": transiciones,
+        # Plan 00 de interfaz, 4.2: el mismo riel del Cliente, sin animación.
+        "riel": riel_de(pedido, transiciones) if pedido.canal == Pedido.ONLINE else None,
         "transaccion": getattr(pedido, "transaccion", None),
         "puntos_canjeados": sum(linea.puntos_canjeados for linea in lineas),
         "cobrado": sum((linea.subtotal for linea in lineas), pedido.costo_envio),

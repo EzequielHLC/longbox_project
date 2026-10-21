@@ -40,6 +40,10 @@ ANIMACIONES = {
     "latido",
     "barras-carga",
     "cinta-corre",
+    # Plan 00 de interfaz, ambigüedad 3: el riel de estados del pedido.
+    "riel-llena",
+    "camion-avanza",
+    "sello",
 }
 
 # Las del modo público pueden leer las variables de la tienda; las del
@@ -60,7 +64,6 @@ PROHIBIDO_EN_COMPONENTES = [
         re.compile(r"border(?:-[\w-]+)?-radius\s*:(?!\s*(?:0\s*[;}]|var\(--radio\)))"),
         "border-radius ≠ 0",
     ),
-    (re.compile(r"backdrop-filter\s*:"), "backdrop-filter"),
     (re.compile(r"@import|fonts\.googleapis|fonts\.gstatic"), "fuente externa"),
     # `filter` sólo para la sombra dura del corte (patrón 1 de la identidad).
     (re.compile(r"(?<![\w-])filter\s*:(?!\s*(?:none|drop-shadow\(\d+px \d+px 0 ))"), "filtro"),
@@ -117,6 +120,15 @@ def test_la_hoja_de_componentes_no_usa_nada_de_lo_prohibido():
     css = _sin_comentarios(HOJA.read_text(encoding="utf-8"))
     hallazgos = [nombre for patron, nombre in PROHIBIDO_EN_COMPONENTES if patron.search(css)]
     assert not hallazgos, hallazgos
+
+
+def test_el_desenfoque_solo_va_en_el_telon_del_dialogo():
+    """Plan 00 de interfaz, ambigüedad 2: `backdrop-filter` sólo en el `::backdrop`
+    de un `<dialog>`, a 4px. En cualquier otro lado sigue prohibido."""
+    css = _sin_comentarios(HOJA.read_text(encoding="utf-8"))
+    for selector, cuerpo in re.findall(r"([^{}]+)\{([^{}]*backdrop-filter[^{}]*)\}", css):
+        assert selector.strip().endswith("::backdrop"), selector.strip()
+        assert re.findall(r"backdrop-filter\s*:\s*([^;]+);", cuerpo) == ["blur(4px)"], cuerpo
 
 
 def test_las_sombras_son_duras():

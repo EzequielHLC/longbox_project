@@ -29,7 +29,7 @@ error en el margen borrara lo que se estaba escribiendo en la tabla de precios.
     </li>
     <li>
       <a href="{% url 'catalog:precio_lista' %}" class="fila-2">{% include "_iconos.html" with icono="precios" %}<span>Tabla de precios de referencia</span></a>
-      <span class="datos secundario">{{ cantidad_de_precios }} combinacion{{ cantidad_de_precios|pluralize:"es" }}</span>
+      <span class="datos secundario">{{ cantidad_de_precios }} {% if cantidad_de_precios == 1 %}combinación{% else %}combinaciones{% endif %}</span>
     </li>
   </ul>
 

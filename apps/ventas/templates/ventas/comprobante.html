@@ -11,11 +11,29 @@
     <h1>Venta <span class="datos">{{ pedido.numero }}</span></h1>
     <p>{{ pedido.fecha|date:"d/m/Y H:i" }} · {{ transaccion.get_medio_display }}{% if pedido.usuario %} · {{ pedido.usuario.get_full_name|default:pedido.usuario.email }} ({{ pedido.usuario.codigo_cliente }}){% endif %}</p>
   </div>
-  <div class="fila-2">
-    <a href="{% url 'core:mostrador' %}" class="boton-primario">Nueva venta</a>
-    <button type="button" class="boton-seccion" onclick="window.print()">Imprimir</button>
-  </div>
+  {% if not recien_registrada %}
+    <div class="fila-2">
+      <a href="{% url 'core:mostrador' %}" class="boton-primario">Nueva venta</a>
+      <button type="button" class="boton-seccion" onclick="window.print()">Imprimir</button>
+    </div>
+  {% endif %}
 </header>
+
+{% if recien_registrada %}
+  {# Plan 00 de interfaz, segunda parte, 13.6: terminó, y la siguiente está a un Enter. #}
+  <section class="panel venta-registrada pila-4" aria-labelledby="titulo-registrada">
+    <p class="venta-registrada__sello" id="titulo-registrada">{% include "_iconos.html" with icono="listo" %}<span>Venta registrada</span></p>
+    <div class="cifras">
+      <div class="cifra"><span class="cifra__rotulo">Cobrado</span><span class="cifra__valor">{% if transaccion %}{{ transaccion.monto|pesos }}{% else %}{{ 0|pesos }}{% endif %}</span></div>
+      {% if recibido %}<div class="cifra"><span class="cifra__rotulo">Recibido</span><span class="cifra__valor">{{ recibido|pesos }}</span></div>{% endif %}
+      {% if vuelto is not None %}<div class="cifra cifra--total"><span class="cifra__rotulo">Vuelto</span><span class="cifra__valor">{{ vuelto|pesos }}</span></div>{% endif %}
+    </div>
+    <div class="fila-2">
+      <a href="{% url 'core:mostrador' %}" class="boton-primario" autofocus>Nueva venta</a>
+      <button type="button" class="boton-seccion" onclick="window.print()">Imprimir comprobante</button>
+    </div>
+  </section>
+{% endif %}
 
 <section class="seccion">
   <div class="tabla-desplazable">

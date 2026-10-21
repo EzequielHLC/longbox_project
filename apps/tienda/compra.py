@@ -32,6 +32,7 @@ from apps.accounts.models import Usuario
 from apps.catalog.models import Producto
 from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos.models import LineaPedido, Pedido, TransaccionPago
 from apps.pedidos.servicios import registrar_transicion
 from apps.puntos import servicios as puntos
@@ -520,7 +521,7 @@ def registrar_resultado(referencia, *, referencia_pago, monto, pasarela=None):
             )
         else:
             if pedido is not None:
-                transaction.on_commit(lambda: _avisar_confirmacion(pedido, cobro.origen))
+                despues_del_commit(_avisar_confirmacion, pedido, cobro.origen)
 
     if fallo is not None and referencia_pago:
         if pasarela is not None:

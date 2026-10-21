@@ -23,7 +23,7 @@ sólo para el Administrador.
   </div>
   <div class="fila-2">
     {% if articulo.estado == "disponible" %}
-      <a href="{% url 'almacen:retiro' articulo.pk %}" class="boton-primario">Entregar en el local</a>
+      <a data-dialogo href="{% url 'almacen:retiro' articulo.pk %}" class="boton-primario">Entregar en el local</a>
     {% elif articulo.estado == "pendiente_despacho" %}
       <a href="{% url 'almacen:solicitud' articulo.solicitud.pk %}" class="boton-primario">Confirmar despacho</a>
     {% endif %}
@@ -45,7 +45,7 @@ sólo para el Administrador.
       <dd>
         {{ articulo.origen }}
         {% if articulo.para_retirar and articulo.estado == "disponible" %}
-          · <a href="{% url 'almacen:retiro_pedido' articulo.linea_pedido.pedido_id %}">Entregar todo el pedido</a>
+          · <a data-dialogo href="{% url 'almacen:retiro_pedido' articulo.linea_pedido.pedido_id %}">Entregar todo el pedido</a>
         {% endif %}
       </dd>
       <dt>Valor</dt>

@@ -9,7 +9,6 @@ una compra que el Cliente está pagando.
 """
 
 from dataclasses import dataclass
-from functools import partial
 
 from django.conf import settings
 from django.db import transaction
@@ -17,6 +16,7 @@ from django.urls import reverse
 
 from apps.accounts.models import Usuario
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.puntos import servicios
 from apps.puntos.caducidad import usable_hasta
@@ -140,7 +140,7 @@ def ajustar(cliente, actor, tipo, cantidad, motivo):
                 f"Motivo: {motivo}"
             ),
         )
-        transaction.on_commit(partial(_avisar, cliente, hecho, etiqueta))
+        despues_del_commit(_avisar, cliente, hecho, etiqueta)
     return hecho
 
 

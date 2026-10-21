@@ -24,7 +24,7 @@ propia queda «tapado»: se cobra con la individual (ambigüedad 3).
   {% if editable %}
     <div class="fila-2">
       <a href="{% url 'catalog:oferta_editar' oferta.pk %}" class="boton-primario">{% include "_iconos.html" with icono="editar" %}<span>Editar</span></a>
-      <a href="{% url 'catalog:oferta_baja' oferta.pk %}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a>
+      <a data-dialogo href="{% url 'catalog:oferta_baja' oferta.pk %}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a>
     </div>
   {% endif %}
 </header>

@@ -63,7 +63,7 @@ total salen siempre del servidor.
             {% endif %}
             <form method="post" action="{% url 'tienda:quitar' item.linea.pk %}" data-quitar-linea>
               {% csrf_token %}
-              <button type="submit" class="boton-texto boton-texto--critico">Quitar</button>
+              <button type="submit" class="boton-icono boton-icono--critico" aria-label="Quitar {{ item.producto.titulo }}" title="Quitar">{% include "_iconos.html" with icono="baja" %}</button>
             </form>
           </div>
 
@@ -72,7 +72,7 @@ total salen siempre del servidor.
       {% endfor %}
     </ul>
 
-    <aside class="resumen-carrito pila-3" aria-label="Resumen">
+    <aside class="resumen-carrito resumen-carrito--acciones pila-3" aria-label="Resumen">
       <p class="antetitulo">{{ carrito.unidades }} unidad(es)</p>
       <dl class="resumen-compra">
         <div><dt>Productos</dt><dd class="datos">{{ carrito.total|pesos }}</dd></div>

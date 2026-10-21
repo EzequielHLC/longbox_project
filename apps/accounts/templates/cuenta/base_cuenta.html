@@ -1,8 +1,10 @@
 {% extends "base_publico.html" %}
+{% load cuenta %}
 {% comment %}
-«Mi cuenta» (CU-CLI-HIS, CO-192). Las secciones del panel: pedidos activos,
-historial, puntos (CU-PTS-CON), stock en el local (CU-STK-CON) y mis datos
-(CU-CLI-DAT).
+«Mi cuenta» (CU-CLI-HIS, CO-192). A la izquierda el carnet de cliente y las
+secciones del panel: resumen, pedidos, puntos (CU-PTS-CON), stock en el local
+(CU-STK-CON) y mis datos (CU-CLI-DAT); a la derecha, la sección (plan 00 de
+interfaz, 4.3).
 
 Cada pantalla del panel extiende ésta, fija `seccion` y llena `cuenta`.
 {% endcomment %}
@@ -11,22 +13,18 @@ Cada pantalla del panel extiende ésta, fija `seccion` y llena `cuenta`.
 
 {% block secciones %}
 <section class="seccion-publica superficie-noche" aria-labelledby="titulo-cuenta">
-  <div class="columna-publica pila-5">
-    <div class="pila-2">
-      <p class="antetitulo">Mi cuenta · {{ user.get_full_name|default:user.email }} · Código de cliente <span class="datos">{{ user.codigo_cliente }}</span></p>
-      <h1 id="titulo-cuenta" class="titulo-1">{% block titulo_cuenta %}Mi cuenta{% endblock %}</h1>
+  <div class="columna-publica cuenta">
+    <aside class="cuenta__lado" aria-label="Tu cuenta">
+      {% carnet %}
+    </aside>
+    <div class="cuenta__principal pila-5">
+      <div class="pila-2">
+        <p class="antetitulo">Mi cuenta</p>
+        <h1 id="titulo-cuenta" class="titulo-1">{% block titulo_cuenta %}Resumen{% endblock %}</h1>
+      </div>
+      {% include "_mensajes.html" %}
+      {% block cuenta %}{% endblock %}
     </div>
-
-    <nav class="pestanas-cuenta" aria-label="Secciones de mi cuenta">
-      <a href="{% url 'cuenta:panel' %}" {% if seccion == "activos" %}aria-current="page"{% endif %}>Pedidos activos</a>
-      <a href="{% url 'cuenta:historial' %}" {% if seccion == "historial" %}aria-current="page"{% endif %}>Historial</a>
-      <a href="{% url 'cuenta:puntos' %}" {% if seccion == "puntos" %}aria-current="page"{% endif %}>Puntos</a>
-      <a href="{% url 'cuenta:stock' %}" {% if seccion == "stock" %}aria-current="page"{% endif %}>Stock en local</a>
-      <a href="{% url 'cuenta:datos' %}" {% if seccion == "datos" %}aria-current="page"{% endif %}>Mis datos</a>
-    </nav>
-
-    {% include "_mensajes.html" %}
-    {% block cuenta %}{% endblock %}
   </div>
 </section>
 {% endblock %}

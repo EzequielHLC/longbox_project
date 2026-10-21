@@ -16,6 +16,7 @@ CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
 <section class="seccion-publica superficie-noche" aria-labelledby="titulo-checkout">
   <div class="columna-publica pila-5">
     <div class="pila-2">
+      {% include "tienda/_pasos_compra.html" with paso=2 %}
       <p class="antetitulo">Tienda · Compra</p>
       <h1 id="titulo-checkout" class="titulo-1">Finalizar compra</h1>
     </div>
@@ -25,10 +26,25 @@ CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
       <div class="pila-5">
         <section class="pila-3" aria-labelledby="titulo-envio">
           <h2 id="titulo-envio" class="titulo-2">Entrega</h2>
-          <form method="post" class="fila-2" aria-label="Cómo lo recibís">
+          {# Plan 00 de interfaz, 4.1: tarjetas de opción. Con guion se envía al elegir. #}
+          <form method="post" data-enviar-al-elegir>
             {% csrf_token %}
-            <button type="submit" name="modalidad" value="envio" class="{% if resumen.retiro %}boton-texto{% else %}boton-seccion{% endif %}"{% if not resumen.retiro %} aria-pressed="true"{% endif %}>Envío a domicilio</button>
-            <button type="submit" name="modalidad" value="retiro" class="{% if resumen.retiro %}boton-seccion{% else %}boton-texto{% endif %}"{% if resumen.retiro %} aria-pressed="true"{% endif %}>Retiro en el local</button>
+            <fieldset class="opciones-tarjeta">
+              <legend class="sr-only">Cómo lo recibís</legend>
+              <label class="opcion-tarjeta">
+                <input type="radio" name="modalidad" value="envio"{% if not resumen.retiro %} checked{% endif %}>
+                <span class="opcion-tarjeta__icono">{% include "_iconos.html" with icono="camion" %}</span>
+                <span class="opcion-tarjeta__titulo">Envío a domicilio</span>
+                <span class="opcion-tarjeta__detalle">{% if costo_a_domicilio %}<span class="datos">{{ costo_a_domicilio|pesos }}</span> · gratis desde <span class="datos">{{ resumen.minimo_envio_gratuito|pesos }}</span>{% else %}Gratis con esta compra{% endif %}</span>
+              </label>
+              <label class="opcion-tarjeta">
+                <input type="radio" name="modalidad" value="retiro"{% if resumen.retiro %} checked{% endif %}>
+                <span class="opcion-tarjeta__icono">{% include "_iconos.html" with icono="local" %}</span>
+                <span class="opcion-tarjeta__titulo">Retiro en el local</span>
+                <span class="opcion-tarjeta__detalle">Sin costo · te avisamos cuando esté listo</span>
+              </label>
+            </fieldset>
+            <button type="submit" class="boton-seccion boton-seccion--tenue" data-sin-guion>Usar esta entrega</button>
           </form>
           {% if resumen.retiro %}
             <div class="pila-2">
@@ -91,12 +107,12 @@ CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
                     <form method="post" action="{% url 'compra:canje' item.linea.pk %}">
                       {% csrf_token %}
                       <input type="hidden" name="accion" value="revertir">
-                      <button type="submit" class="boton-texto">Pagar en dinero</button>
+                      <button type="submit" class="boton-menor">Pagar en dinero</button>
                     </form>
                   {% elif resumen.saldo > 0 %}
                     <form method="post" action="{% url 'compra:canje' item.linea.pk %}">
                       {% csrf_token %}
-                      <button type="submit" class="boton-menor"{% if item.puntos_necesarios > resumen.saldo_restante %} aria-describedby="sin-saldo-{{ item.linea.pk }}"{% endif %}>Cubrir con {{ item.puntos_necesarios }} pts</button>
+                      <button type="submit" class="boton-menor"{% if item.puntos_necesarios > resumen.saldo_restante %} disabled aria-describedby="sin-saldo-{{ item.linea.pk }}"{% endif %}>Cubrir con {{ item.puntos_necesarios }} pts</button>
                     </form>
                     {% if item.puntos_necesarios > resumen.saldo_restante %}<span id="sin-saldo-{{ item.linea.pk }}" class="texto-chico secundario">No alcanza el saldo</span>{% endif %}
                   {% endif %}
@@ -110,7 +126,7 @@ CO-104, CO-190), sólo si hay saldo. Paso 4: el total y «Confirmar y pagar»
           {% if resumen.puntos_aplicados %}
             <form method="post" action="{% url 'compra:canje_listo' %}">
               {% csrf_token %}
-              <button type="submit" class="boton-texto">Listo con los puntos</button>
+              <button type="submit" class="boton-seccion boton-seccion--tenue">Listo con los puntos</button>
             </form>
           {% endif %}
         </section>

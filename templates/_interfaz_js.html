@@ -1,0 +1,152 @@
+{% comment %}
+Comportamientos del plan 00 de interfaz. Los tres son mejora progresiva: sin
+guion, cada pantalla sigue funcionando como antes.
+
+1. `data-enviar-al-elegir`: el formulario se envía al elegir una opción, y su
+   botón «Usar esta…» (`data-sin-guion`) se esconde (4.1).
+2. `a[data-dialogo]`: la pantalla de confirmación se abre en un `<dialog>`
+   sobre la actual (4.4). El guion pide la misma dirección y toma el bloque
+   `[data-dialogo-contenido]`; si no lo encuentra, o el pedido falla, navega.
+   El formulario sigue enviándose a la dirección de la confirmación, así que el
+   servidor recibe exactamente lo mismo que sin diálogo.
+3. `[data-riel]`: el riel del pedido se anima sólo la primera vez que se ve un
+   estado. La pantalla se vuelve a pedir sola cada 30 segundos (RF-18) y el
+   camión no tiene que repetir el viaje en cada vuelta (4.2).
+{% endcomment %}
+<script>
+  (function () {
+    // 1. Enviar al elegir.
+    document.addEventListener("DOMContentLoaded", function () {
+      for (const formulario of document.querySelectorAll("[data-enviar-al-elegir]")) {
+        for (const boton of formulario.querySelectorAll("[data-sin-guion]")) boton.hidden = true;
+      }
+    });
+    document.addEventListener("change", function (evento) {
+      const formulario = evento.target.closest("[data-enviar-al-elegir]");
+      if (formulario && evento.target.matches("input[type=radio]")) formulario.requestSubmit();
+    });
+
+    // 2. Confirmaciones en diálogo.
+    function navegar(url) { window.location.assign(url); }
+
+    function armarDialogo(documento, url, disparador) {
+      const bloque = documento.querySelector("[data-dialogo-contenido]");
+      if (!bloque || !bloque.querySelector("form")) return null;
+
+      const dialogo = document.createElement("dialog");
+      dialogo.className = "dialogo dialogo--confirmacion";
+      if (bloque.dataset.dialogoContenido === "critico") dialogo.classList.add("dialogo--critico");
+      dialogo.setAttribute("aria-labelledby", "dialogo-titulo");
+
+      const cabeza = document.createElement("div");
+      cabeza.className = "dialogo__cabeza";
+      const titulo = document.createElement("h2");
+      titulo.id = "dialogo-titulo";
+      const h1 = documento.querySelector("h1");
+      titulo.textContent = h1 ? h1.textContent.trim() : "";
+      cabeza.append(titulo);
+      const bajada = documento.querySelector(".encabezado-de-pantalla__textos > p");
+      if (bajada) {
+        const p = document.createElement("p");
+        p.className = "secundario";
+        p.textContent = bajada.textContent.trim();
+        cabeza.append(p);
+      }
+      const cerrar = document.createElement("button");
+      cerrar.type = "button";
+      cerrar.className = "dialogo__cerrar";
+      cerrar.setAttribute("aria-label", "Cerrar");
+      cerrar.textContent = "×";
+      cerrar.addEventListener("click", function () { dialogo.close(); });
+      cabeza.append(cerrar);
+
+      const cuerpo = document.importNode(bloque, true);
+      cuerpo.removeAttribute("data-dialogo-contenido");
+      cuerpo.classList.remove("panel", "formulario--angosto");
+      cuerpo.classList.add("dialogo__cuerpo");
+
+      // Sin `action`, el formulario se enviaría a la pantalla de abajo.
+      for (const formulario of cuerpo.querySelectorAll("form")) {
+        if (!formulario.getAttribute("action")) formulario.setAttribute("action", url);
+      }
+      // Dentro del formulario, un enlace es «Cancelar» o «Volver»: cierra.
+      const cancelar = cuerpo.querySelector("form a");
+      for (const enlace of cuerpo.querySelectorAll("form a")) {
+        enlace.addEventListener("click", function (evento) {
+          evento.preventDefault();
+          dialogo.close();
+        });
+      }
+
+      dialogo.append(cabeza, cuerpo);
+      dialogo.addEventListener("close", function () {
+        dialogo.remove();
+        if (disparador && disparador.isConnected) disparador.focus();
+      });
+      document.body.append(dialogo);
+      dialogo.showModal();
+      (cancelar || cerrar).focus();
+      return dialogo;
+    }
+
+    document.addEventListener("click", function (evento) {
+      const enlace = evento.target.closest("a[data-dialogo]");
+      if (!enlace || evento.defaultPrevented || evento.button !== 0) return;
+      if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+      if (typeof HTMLDialogElement !== "function") return;
+      evento.preventDefault();
+      const url = enlace.href;
+      fetch(url, { credentials: "same-origin" })
+        .then(function (respuesta) {
+          if (!respuesta.ok || respuesta.redirected) throw new Error("sin diálogo");
+          return respuesta.text();
+        })
+        .then(function (html) {
+          const documento = new DOMParser().parseFromString(html, "text/html");
+          if (!armarDialogo(documento, url, enlace)) navegar(url);
+        })
+        .catch(function () { navegar(url); });
+    });
+
+    // 4. Plan 00 de interfaz, P3 y U3: el botón que envía dice «Procesando…» y el
+    // formulario no se manda dos veces (el doble clic en «Confirmar y pagar»). Los
+    // formularios que maneja su propio guion ya cancelaron el envío y no se tocan.
+    // En `window`: corre después de los oyentes de `document`, y ve si cancelaron.
+    window.addEventListener("submit", function (evento) {
+      const formulario = evento.target;
+      if (evento.defaultPrevented || formulario.method !== "post" || "sinCarga" in formulario.dataset) return;
+      if (formulario.dataset.enviando) {
+        evento.preventDefault();
+        return;
+      }
+      formulario.dataset.enviando = "1";
+      const boton = evento.submitter;
+      if (boton && boton.matches(".boton-primario, .boton-seccion")) {
+        boton.dataset.textoOriginal = boton.innerHTML;
+        boton.setAttribute("aria-busy", "true");
+        boton.textContent = boton.dataset.cargando || "Procesando…";
+      }
+    });
+    // Al volver con «Atrás», la página puede salir del caché tal como quedó.
+    window.addEventListener("pageshow", function () {
+      for (const formulario of document.querySelectorAll("form[data-enviando]")) {
+        delete formulario.dataset.enviando;
+      }
+      for (const boton of document.querySelectorAll("[aria-busy='true'][data-texto-original]")) {
+        boton.innerHTML = boton.dataset.textoOriginal;
+        boton.removeAttribute("aria-busy");
+      }
+    });
+
+    // 3. El riel se anima una vez por estado.
+    document.addEventListener("DOMContentLoaded", function () {
+      for (const riel of document.querySelectorAll("[data-riel]")) {
+        const clave = "riel:" + riel.dataset.riel;
+        let visto = null;
+        try { visto = sessionStorage.getItem(clave); } catch (error) { visto = null; }
+        if (visto !== riel.dataset.rielEstado) riel.classList.add("riel--animar");
+        try { sessionStorage.setItem(clave, riel.dataset.rielEstado); } catch (error) { /* sin almacenamiento: anima siempre */ }
+      }
+    });
+  })();
+</script>

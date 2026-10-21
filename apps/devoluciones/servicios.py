@@ -26,7 +26,6 @@ import logging
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
-from functools import partial
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -37,6 +36,7 @@ from django.utils import timezone
 from apps.catalog.models import Producto
 from apps.core import imagenes
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.devoluciones.models import CasoDevolucion, EvidenciaDevolucion
 from apps.pedidos import avisos
 from apps.pedidos.models import LineaPedido, Pedido, TransaccionPago
@@ -114,9 +114,10 @@ def plazo_dias(tipo=ARREPENTIMIENTO):
 
 
 def despachado_en(pedido):
-    """El momento en que el pedido pasó a Despachado (B-09-002)."""
+    """El momento en que el pedido pasó a Despachado (B-09-002), o en que se vendió
+    en el mostrador (B-06-005)."""
     transicion = (
-        pedido.transiciones.filter(estado_nuevo=Pedido.DESPACHADO)
+        pedido.transiciones.filter(estado_nuevo__in=(Pedido.DESPACHADO, Pedido.VENDIDO_EN_LOCAL))
         .order_by("-ocurrida_en", "-pk")
         .first()
     )
@@ -145,7 +146,7 @@ def vence_linea(linea, tipo=ARREPENTIMIENTO):
 
 
 def _en_condiciones(pedido):
-    return pedido.estado == Pedido.DESPACHADO or (
+    return pedido.estado in (Pedido.DESPACHADO, Pedido.VENDIDO_EN_LOCAL) or (
         pedido.retiro and pedido.estado == Pedido.EN_LOCAL
     )
 
@@ -163,7 +164,7 @@ def lineas_reclamables(pedido):
     if pedido.retiro:
         lineas = lineas.filter(articulos_retenidos__estado__in=ENTREGADOS).distinct()
     else:
-        lineas = lineas.filter(estado=LineaPedido.DESPACHADO)
+        lineas = lineas.filter(estado__in=LineaPedido.ENTREGADAS)
     return lineas.select_related(
         "pedido", "producto", "producto__productoeditorial", "caso_devolucion"
     ).order_by("pk")
@@ -383,7 +384,7 @@ def registrar_caso(pedido, linea_pk, usuario, motivo, descripcion, archivos, *, 
             descripcion=descripcion,
             fotos=fotos,
         )
-        transaction.on_commit(partial(_avisar_apertura, [caso], origen))
+        despues_del_commit(_avisar_apertura, [caso], origen)
         return [caso]
 
     return Apertura(casos=_con_unicidad([linea], crear), vence=vence)
@@ -419,7 +420,7 @@ def registrar_arrepentimiento(pedido, lineas_pks, *, usuario=None, descripcion="
             )
             for linea, _ in elegidas
         ]
-        transaction.on_commit(partial(_avisar_apertura, casos, origen))
+        despues_del_commit(_avisar_apertura, casos, origen)
         return casos
 
     casos = _con_unicidad([linea for linea, _ in elegidas], crear)
@@ -620,7 +621,7 @@ def _volver_al_stock(caso, ahora):
     )
     from apps.restock import servicios as restock
 
-    transaction.on_commit(partial(restock.reposicion, producto, caso.unidades))
+    despues_del_commit(restock.reposicion, producto, caso.unidades)
 
 
 # ---------------------------------------------------------------------------
@@ -682,7 +683,7 @@ def resolver_con_cambio(caso_pk, producto_pk, actor, *, origen=""):
                 f"{antes} → {queda}."
             ),
         )
-        transaction.on_commit(partial(_avisar_cambio, caso, producto, origen))
+        despues_del_commit(_avisar_cambio, caso, producto, origen)
     return caso
 
 
@@ -773,7 +774,7 @@ def resolver_con_reembolso(caso_pk, actor, *, origen=""):
             ),
         )
         hecho = Reembolso(caso=caso, puntos=cantidad + envio, saldo=puntos.saldo(caso.usuario))
-        transaction.on_commit(partial(_avisar_reembolso, hecho, origen))
+        despues_del_commit(_avisar_reembolso, hecho, origen)
     return hecho
 
 
@@ -821,7 +822,7 @@ def resolver_con_reembolso_por_el_medio(caso_pk, actor, *, origen=""):
             ),
         )
         hecho = Reembolso(caso=caso, monto=monto)
-        transaction.on_commit(partial(_avisar_reembolso, hecho, origen))
+        despues_del_commit(_avisar_reembolso, hecho, origen)
     return hecho
 
 
@@ -872,7 +873,7 @@ def rechazar(caso_pk, actor, motivo, *, origen=""):
             objetivo_email=caso.correo,
             detalle=f"Caso {caso.numero}: rechazado. Motivo: {motivo}",
         )
-        transaction.on_commit(partial(_avisar_rechazo, caso, origen))
+        despues_del_commit(_avisar_rechazo, caso, origen)
     return caso
 
 

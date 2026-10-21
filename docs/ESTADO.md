@@ -307,17 +307,24 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-19**, al cerrar el plan 00, con PostgreSQL levantado.
+Medición del **2026-10-21**, al cerrar el plan 00 de interfaz, con PostgreSQL levantado.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **2696 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 33 s) |
+| Suite de pruebas | **2773 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 26 s) |
 | **Contratos** | **174 de 219 verificados**, 1 parcial, 44 sin prueba |
-| Cobertura sobre código de aplicación | **97 %** (12150 sentencias, 423 sin cubrir) |
+| Cobertura sobre código de aplicación | **97 %** (12371 sentencias, 425 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 339 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas |
+| Formato | `black --check .`: 352 archivos sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `pillow` a 13.0.0 y `virtualenv` a 21.14.7 |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
+
+**Plan 00 de interfaz, verificaciones a mano (2026-10-21).** `pedidos.0007` aplicó sobre la base
+de desarrollo y pasó las 2 ventas presenciales existentes a «Vendido en el local · Mostrador»
+(B-06-005); `pedido_mostrador_solo_presencial` está en `pg_constraint`, y `makemigrations --check`
+no detecta cambios. El mostrador, la venta registrada, la caja, Restock, la lista de pedidos, «Mi
+cuenta», los avisos de stock, el carrito lateral y las sugerencias se revisaron con capturas de
+Chrome sin interfaz, en escritorio y en 390px.
 
 **Plan 00, verificaciones a mano (2026-10-19).** `almacen.0004`, `core.0037` a `0039`,
 `devoluciones.0002` (con el correo de contacto de los casos existentes y la disconformidad pasada a

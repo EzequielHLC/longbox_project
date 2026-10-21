@@ -29,6 +29,7 @@ from apps.core.models import ConfiguracionSistema
 from apps.core.templatetags.moneda import pesos
 from apps.tienda import carrito as servicio_carrito
 from apps.tienda import compra
+from apps.tienda.envio import costo_de_envio
 from apps.tienda.forms import DatosDeInvitadoForm, DireccionDeEnvioForm
 from apps.tienda.mercadopago import AvisoSinResultado, SinCredencial
 from apps.tienda.models import CobroEnCurso, LineaCarrito
@@ -118,6 +119,8 @@ class CheckoutView(ClienteMixin, View):
             "form": formulario or DireccionDeEnvioForm(initial=envio),
             "editar_direccion": formulario is not None or not hecho.direccion_completa,
             "texto_direccion": compra.texto_de_direccion(envio),
+            # Lo que costaría el envío, para la tarjeta de opción aunque hoy se retire.
+            "costo_a_domicilio": costo_de_envio(hecho.subtotal_productos),
         }
 
     def get(self, request):

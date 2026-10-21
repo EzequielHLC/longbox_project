@@ -109,3 +109,56 @@ envase.
 
 **Qué habría que cambiar.**
 `CU-VTA-REG`, actores: quitar la corrección de transacciones o asignarle un caso de uso.
+
+---
+
+### B-06-005 · La venta de mostrador tiene estado, modalidad y estado de ítem propios
+
+**Tipo:** Corrección · **Fecha:** 2026-10-21 · **Alcance:** `CU-VTA-REG`, `CO-082`, DME-07, DME-08
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, segunda parte, 11)
+
+**Qué apareció.**
+La venta de mostrador nacía con el estado de un envío ya despachado y, desde el retiro en el local,
+con la modalidad «Envío a domicilio». En «Mi cuenta» se mostraba como un envío con su recorrido, y
+cualquier conteo por estado la mezclaba con lo que salió por correo: la auditoría y la estadística
+no podían separarlas sin mirar el canal.
+
+**Qué dice la especificación.**
+> «pe.canal quedó en Presencial; pe.estado en Despachado (…) estado del ítem en Despachado»
+> (`CO-082`, postcondición c)
+
+**Qué se hizo.**
+El pedido presencial nace **«Vendido en el local»**, con modalidad **«Mostrador»**, y sus ítems
+**«Entregado en el local»**. Una restricción en la base ata los tres al canal presencial: ni una
+venta de mostrador puede quedar «Despachada» ni un pedido online puede ser de mostrador. Las ventas
+ya registradas se pasaron a los valores nuevos. La garantía la admite como un pedido entregado; el
+arrepentimiento sigue siendo sólo para compras online. En «Mi cuenta» va al historial, sin
+recorrido.
+
+**Qué habría que cambiar.**
+`CO-082`, postcondición (c): «pe.estado en Vendido en el local; pe.modalidad en Mostrador; estado
+del ítem en Entregado en el local». DME-07 suma el estado terminal «Vendido en el local», alcanzable
+sólo desde la creación por el canal presencial; DME-08 suma «Entregado en el local».
+
+---
+
+### B-06-006 · El mostrador calcula el vuelto y avisa que la venta terminó
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-VTA-REG`, `CO-082`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, segunda parte, 13)
+
+**Qué apareció.**
+Con efectivo, el vuelto lo calculaba el cajero a mano, y al confirmar la venta se pasaba al
+comprobante sin un cierre claro.
+
+**Qué dice la especificación.**
+`Nada` sobre el vuelto. `CU-VTA-REG` paso 8: el comprobante.
+
+**Qué se hizo.**
+Con efectivo, un campo opcional «Recibido» muestra el vuelto mientras se escribe, y el comprobante
+recién confirmado abre con «Venta registrada», lo cobrado, lo recibido y el vuelto, y «Nueva venta»
+con el foco. El vuelto es una cuenta para mostrar: no se guarda ni cambia la venta. La fila que se
+acaba de agregar al ticket destella. Los atajos de teclado se descartaron.
+
+**Qué habría que cambiar.**
+`CU-VTA-REG` paso 6: «con efectivo, el sistema muestra el vuelto sobre lo recibido».

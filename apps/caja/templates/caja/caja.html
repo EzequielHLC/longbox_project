@@ -30,23 +30,56 @@ próximo cierre (B-14-001). E2: sin movimientos. A1: pendientes de verificación
 {% endif %}
 
 {% if resumen.incluidas and not resumen.cierre_de_hoy %}
-  <section class="seccion" aria-labelledby="titulo-resumen">
-    <div class="seccion__titulo"><h2 id="titulo-resumen">Resumen previo al cierre</h2></div>
-    {% include "caja/_totales.html" with fuente=resumen %}
-    <p class="resumen-carrito__total"><span class="etiqueta">Total</span> <span class="sin-envolver">{{ resumen.total_global|pesos }}</span></p>
-    <p class="secundario">{{ resumen.incluidas|length }} transacción(es){% if resumen.de_dias_anteriores %} · {{ resumen.de_dias_anteriores }} de días anteriores sin cerrar{% endif %}{% if resumen.solo_puntos %} · {{ resumen.solo_puntos }} compra(s) pagadas sólo con puntos, sin dinero{% endif %}.</p>
+  {# Plan 00 de interfaz, segunda parte, 13.5: lo que importa arriba y en grande. #}
+  <section class="pila-5" aria-labelledby="titulo-resumen">
+    <h2 id="titulo-resumen" class="sr-only">Resumen previo al cierre</h2>
+    <div class="cifras">
+      <div class="cifra cifra--total">
+        <span class="cifra__rotulo">{% include "_iconos.html" with icono="caja" %}Total a cerrar</span>
+        <span class="cifra__valor">{{ resumen.total_global|pesos }}</span>
+        <span class="cifra__nota">{{ resumen.incluidas|length }} {% if resumen.incluidas|length == 1 %}transacción{% else %}transacciones{% endif %}{% if resumen.de_dias_anteriores %} · {{ resumen.de_dias_anteriores }} de días anteriores{% endif %}</span>
+      </div>
+      {% for etiqueta, total in resumen.por_canal %}
+        <div class="cifra">
+          <span class="cifra__rotulo">{% if etiqueta == "Online" %}{% include "_iconos.html" with icono="tienda" %}{% else %}{% include "_iconos.html" with icono="local" %}{% endif %}{{ etiqueta }}</span>
+          <span class="cifra__valor">{{ total|pesos }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <section class="pila-3" aria-labelledby="titulo-medios">
+      <h2 id="titulo-medios" class="titulo-2">Por medio de pago</h2>
+      {% include "caja/_por_medio.html" with fuente=resumen %}
+    </section>
+
+    {% if resumen.solo_puntos %}<p class="secundario">{{ resumen.solo_puntos }} compra(s) pagadas sólo con puntos, sin dinero.</p>{% endif %}
 
     {% if resumen.pendientes %}
       <div class="panel panel--atencion pila-2" role="alert">
         <p><strong>{{ resumen.pendientes|length }} transacción(es) pendientes de verificación.</strong> Quedan fuera de este cierre y pasan al próximo.</p>
-        <ul>{% for t in resumen.pendientes %}<li>{{ t.concepto }} · {{ t.get_medio_display }} · {{ t.monto|pesos }}</li>{% endfor %}</ul>
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'caja:cerrar' %}">
-      {% csrf_token %}
-      <button type="submit" class="boton-primario">Confirmar cierre de caja</button>
-    </form>
+    <div class="panel pila-3">
+      <p>Al cerrar, estas transacciones quedan consolidadas. Lo que se cobre después va al próximo cierre.</p>
+      <form method="post" action="{% url 'caja:cerrar' %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-primario">Confirmar cierre de caja</button>
+      </form>
+    </div>
+  </section>
+{% endif %}
+
+{% if ventas or medio %}
+  <section class="pila-3" aria-labelledby="titulo-ventas">
+    <h2 id="titulo-ventas" class="titulo-2">Ventas de la jornada</h2>
+    <nav class="filtro-de-chips" aria-label="Filtrar por medio de pago">
+      <a href="{% url 'caja:caja' %}"{% if not medio %} aria-current="true"{% endif %}>Todas</a>
+      {% for valor, etiqueta in medios %}
+        <a href="?medio={{ valor }}"{% if medio == valor %} aria-current="true"{% endif %}>{% include "_iconos.html" with icono=valor %}{{ etiqueta }}</a>
+      {% endfor %}
+    </nav>
+    {% include "caja/_ventas.html" with transacciones=ventas %}
   </section>
 {% endif %}
 {% endblock %}

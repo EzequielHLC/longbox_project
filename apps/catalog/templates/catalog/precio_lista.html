@@ -85,7 +85,7 @@ a cómo llega una lista de precios, que es por editorial.
             <td class="datos sin-cortar secundario">{{ precio.actualizado_en|date:"d/m/Y H:i" }}</td>
             <td class="acciones-de-fila">
               <a href="{% url 'catalog:precio_editar' precio.pk %}" class="boton-menor">Modificar precio</a>
-              <a href="{% url 'catalog:precio_eliminar' precio.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+              <a data-dialogo href="{% url 'catalog:precio_eliminar' precio.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
             </td>
           </tr>
         {% endfor %}

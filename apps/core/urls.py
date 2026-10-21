@@ -20,6 +20,7 @@ urlpatterns = [
     path("tienda/", views.TiendaView.as_view(), name="tienda"),
     # CU-TDA-CAT — catálogo público y ficha, sin sesión (CO-176, CO-177).
     path("tienda/catalogo/", tienda.CatalogoPublicoView.as_view(), name="tienda_catalogo"),
+    path("tienda/sugerencias/", tienda.SugerenciasView.as_view(), name="tienda_sugerencias"),
     path("tienda/producto/<int:pk>/", tienda.FichaPublicaView.as_view(), name="tienda_producto"),
     path("tienda/preguntas-frecuentes/", contenido.FaqPublicaView.as_view(), name="faq"),
     path("tienda/identidad.css", contenido.TiendaCssView.as_view(), name="tienda_css"),

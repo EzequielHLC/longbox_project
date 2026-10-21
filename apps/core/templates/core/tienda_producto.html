@@ -25,7 +25,13 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
           {% if producto.portada %}
             <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}">
           {% else %}
-            <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
+            {# Plan 00 de interfaz, P2: sin imagen, una tapa dibujada con el título. #}
+            <div class="portada-vacia portada-vacia--tapa" aria-hidden="true">
+              <span class="portada-vacia__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
+              <span class="portada-vacia__titulo">{{ producto.titulo }}</span>
+              {% if producto.productoeditorial.volumen %}<span class="portada-vacia__numero">#{{ producto.productoeditorial.volumen }}</span>{% endif %}
+              <span class="portada-vacia__nota">Imagen pendiente</span>
+            </div>
           {% endif %}
         </div>
         {% if producto.imagenes.all %}
@@ -64,7 +70,7 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
                 {% if aviso.suscripcion %}
                   <span class="marca-estado marca-estado--ok">Suscripto</span>
                   <input type="hidden" name="accion" value="cancelar">
-                  <button type="submit" class="boton-texto">Cancelar aviso</button>
+                  <button type="submit" class="boton-seccion boton-seccion--tenue">Cancelar aviso</button>
                 {% else %}
                   <button type="submit" class="boton-seccion">Avisarme cuando haya stock</button>
                 {% endif %}

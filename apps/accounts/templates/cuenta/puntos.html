@@ -17,7 +17,7 @@ pedido que originó cada movimiento (B-10-001). A1: sin puntos, un mensaje.
       {% if lotes %}
         <ul class="carrito__lineas" aria-label="Lotes de puntos">
           {% for lote in lotes %}
-            <li class="tarjeta pedido-de-cuenta">
+            <li class="tarjeta fila-de-cuenta">
               <div class="pila-2">
                 <span class="datos">{{ lote.disponible }} de {{ lote.cantidad_acreditada }} pts</span>
                 <span class="texto-chico secundario">{{ lote.get_origen_display }} · {{ lote.acreditado_en|date:"d/m/Y" }}</span>
@@ -100,6 +100,11 @@ pedido que originó cada movimiento (B-10-001). A1: sin puntos, un mensaje.
     <p class="antetitulo">Saldo disponible</p>
     <p class="resumen-carrito__total"><span class="sin-envolver">{{ saldo }} pts</span></p>
     <p class="secundario">Equivalen a <span class="datos">{{ saldo_en_pesos|pesos }}</span>.</p>
+    {% with primero=lotes.0 %}{% if primero and saldo %}
+      {# Plan 00 de interfaz, P4: lo que vence primero, sobre el saldo. #}
+      <progress class="barra-proporcion" value="{{ primero.disponible }}" max="{{ saldo }}">{{ primero.disponible }} de {{ saldo }}</progress>
+      <p class="texto-chico secundario"><span class="datos">{{ primero.disponible }}</span> pts vencen primero.</p>
+    {% endif %}{% endwith %}
     <p class="texto-chico secundario">1 punto = {{ equivalencia|pesos }}. Cada compra te devuelve el {{ porcentaje|floatformat:'-2' }} % en puntos. Se canjean por productos enteros al pagar.</p>
   </aside>
 </div>

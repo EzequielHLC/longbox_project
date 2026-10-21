@@ -1,0 +1,29 @@
+{% load moneda %}
+{% comment %}
+Las ventas de una jornada o de un cierre (plan 00 de interfaz, segunda parte, 12;
+CU-CAJ-CIE A2: «el detalle de cada transacción»). Una venta de mostrador lleva a
+su comprobante. Recibe `transacciones`.
+{% endcomment %}
+{% now "Ymd" as hoy %}
+<div class="tabla-desplazable">
+  <table class="tabla">
+    <thead><tr><th>Hora</th><th>Concepto</th><th>Cliente</th><th>Canal</th><th>Medio</th><th class="numero">Monto</th></tr></thead>
+    <tbody>
+      {% for t in transacciones %}
+        <tr>
+          <td class="datos sin-cortar">{% if t.registrada_en|date:"Ymd" == hoy %}{{ t.registrada_en|date:"H:i" }}{% else %}{{ t.registrada_en|date:"d/m H:i" }}{% endif %}</td>
+          <td class="datos">
+            {% if t.pedido and t.pedido.canal == "presencial" %}<a href="{% url 'ventas:comprobante' t.pedido.numero %}">{{ t.concepto }}</a>{% else %}{{ t.concepto }}{% endif %}
+            {% if t.estado == "pendiente_verificacion" %}<span class="marca-estado marca-estado--atencion">Por verificar</span>{% endif %}
+          </td>
+          <td>{% firstof t.pedido.usuario.get_full_name t.pedido.usuario.email t.solicitud.usuario.get_full_name t.pedido.correo_invitado "—" %}</td>
+          <td>{% if t.canal == "online" %}Online{% else %}Físico{% endif %}</td>
+          <td><span class="fila-2">{% with icono=t.medio %}{% include "_iconos.html" with icono=icono %}{% endwith %}{{ t.get_medio_display }}</span></td>
+          <td class="numero">{{ t.monto|pesos }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="secundario">No hay ventas con ese medio.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

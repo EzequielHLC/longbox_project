@@ -609,3 +609,26 @@ def test_concurrencia_dos_mostradores_que_entregan_el_mismo_pedido_registran_una
 
     assert errores_internos(respuestas) == []
     assert RegistroAuditoria.objects.filter(accion=RegistroAuditoria.RETIRO_EN_LOCAL).count() == 2
+
+
+# ---------------------------------------------------------------------------
+# CO-192: el pedido «En el local» en «Mi cuenta» (B-11-006)
+# ---------------------------------------------------------------------------
+
+
+def test_CO192_el_pedido_en_el_local_sigue_en_curso_hasta_que_se_retira(titular, navegador, panel):
+    pedido = _armar(panel, _comprar_para_retirar(navegador, (producto(), 1)))
+    assert pedido.estado == Pedido.EN_LOCAL
+
+    activos = navegador.get(reverse("cuenta:panel")).context["pedidos"]
+    historial = navegador.get(reverse("cuenta:pedidos")).context["historial"]
+    assert [p.pk for p in activos] == [pedido.pk]
+    assert pedido.pk not in [p.pk for p in historial]
+
+    ids = [a.pk for a in almacen.disponibles_del_pedido(pedido.pk)]
+    almacen.retirar_pedido(pedido.pk, UsuarioFactory(rol="cajero"), ids)
+
+    activos = navegador.get(reverse("cuenta:panel")).context["pedidos"]
+    historial = navegador.get(reverse("cuenta:pedidos")).context["historial"]
+    assert pedido.pk not in [p.pk for p in activos]
+    assert [p.pk for p in historial] == [pedido.pk]

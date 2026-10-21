@@ -13,38 +13,44 @@ disponible inicia CU-STK-DES.
   <form method="post" action="{% url 'cuenta:despacho' %}" class="pila-4">
     {% csrf_token %}
     <input type="hidden" name="accion" value="seleccionar">
-    <ul class="carrito__lineas" aria-label="Artículos guardados a tu nombre">
+    {# Plan 00 de interfaz: el formato de la lista de pedidos; la tarjeta entera elige el artículo. #}
+    <ul class="pedidos-de-cuenta" aria-label="Artículos guardados a tu nombre">
       {% for articulo in articulos %}
-        <li class="linea-carrito">
-          <span class="linea-carrito__portada" aria-hidden="true">
-            {% if articulo.producto.portada %}<img src="{{ articulo.producto.portada.url }}" alt="">{% else %}<span class="portada-vacia">{% include "_iconos.html" with icono="imagen" %}</span>{% endif %}
+        <li class="pedido-de-cuenta{% if articulo.estado == 'disponible' %} pedido-de-cuenta--elegible{% endif %}">
+          <span class="pedido-de-cuenta__portadas" aria-hidden="true">
+            <span class="portada-mini">{% if articulo.producto.portada %}<img src="{{ articulo.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
           </span>
-          <div class="linea-carrito__datos pila-2">
+          <div class="pedido-de-cuenta__datos pila-2">
             {% if articulo.estado == "disponible" %}
               <label class="casilla">
                 <input type="checkbox" name="articulo" value="{{ articulo.pk }}">
-                <span class="linea-carrito__titulo">{{ articulo.producto.especifico }}</span>
+                <span class="pedido-de-cuenta__numero">{{ articulo.producto.especifico }}</span>
               </label>
             {% else %}
-              <span class="linea-carrito__titulo">{{ articulo.producto.especifico }}</span>
+              <span class="pedido-de-cuenta__numero">{{ articulo.producto.especifico }}</span>
             {% endif %}
-            <div class="fila-2">
-              <span class="marca-estado{% if articulo.estado == 'disponible' %} marca-estado--ok{% else %} marca-estado--dato{% endif %}">{{ articulo.get_estado_display }}</span>
-              {% if articulo.proximo %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
-            </div>
+            <p class="texto-chico secundario">
+              {{ articulo.get_procedencia_display }}{% if articulo.linea_pedido %} · pedido <span class="datos">{{ articulo.linea_pedido.pedido.numero }}</span>{% endif %}
+            </p>
             <p class="texto-chico secundario">
               Ingresó el <span class="datos">{{ articulo.fecha_ingreso|date:"d/m/Y" }}</span>
               {% if articulo.fecha_vencimiento %}· se guarda hasta el <span class="datos">{{ articulo.fecha_vencimiento|date:"d/m/Y" }}</span>{% endif %}
             </p>
           </div>
-          <p class="linea-carrito__subtotal">{{ articulo.valor|pesos }}</p>
+          <div class="pedido-de-cuenta__cierre">
+            <span class="fila-2">
+              <span class="marca-estado{% if articulo.estado == 'disponible' %} marca-estado--ok{% else %} marca-estado--dato{% endif %}">{{ articulo.get_estado_display }}</span>
+              {% if articulo.proximo %}<span class="marca-estado marca-estado--atencion">Próximo a vencer</span>{% endif %}
+            </span>
+            <span class="datos pedido-de-cuenta__total">{{ articulo.valor|pesos }}</span>
+          </div>
         </li>
       {% endfor %}
     </ul>
     {% if hay_disponibles %}
-      <div class="fila-5">
+      <div class="acciones fila-5">
         <button type="submit" class="boton-primario">Pedir el envío</button>
-        <span class="texto-chico secundario">También podés retirarlos en el local.</span>
+        <span class="texto-chico secundario">Elegí los artículos que querés recibir. También podés retirarlos en el local.</span>
       </div>
     {% endif %}
   </form>

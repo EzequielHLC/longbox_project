@@ -19,7 +19,7 @@ from apps.devoluciones import servicios
 from apps.devoluciones.models import CasoDevolucion
 from apps.devoluciones.tests.util import caso_de, pedido_despachado
 from apps.pedidos.models import Pedido
-from apps.pedidos.tests.util import crear_pedido
+from apps.pedidos.tests.util import como_venta_de_mostrador, crear_pedido
 from apps.puntos import servicios as puntos
 from apps.puntos.models import LotePuntos, MovimientoPuntos
 from apps.tienda.tests.compra_util import cliente_con_direccion, fijar_parametros
@@ -58,11 +58,15 @@ def _pedido_de_invitado(*, hace_dias=1, lineas=(("10000", 1),)):
 
 
 @pytest.mark.django_db
-def test_el_boton_esta_en_la_cabecera_de_la_tienda(client):
-    contenido = client.get(reverse("core:tienda")).content.decode()
+def test_el_boton_esta_destacado_en_el_pie_de_toda_la_tienda(client):
+    """Res. 424/2020: visible y de fácil acceso. Va en el pie, que está en todas
+    las páginas, como un botón propio y no como un enlace más (B-09-009)."""
+    for url in (reverse("core:tienda"), reverse("core:tienda_catalogo")):
+        contenido = client.get(url).content.decode()
+        pie = contenido[contenido.index("<footer") :]
 
-    assert f'href="{URL_BOTON}"' in contenido
-    assert "Botón de arrepentimiento" in contenido
+        assert f'href="{URL_BOTON}" class="boton-seccion boton-arrepentimiento"' in pie
+        assert "Botón de arrepentimiento" in pie
 
 
 @pytest.mark.django_db
@@ -127,8 +131,7 @@ def test_CO099_arrepentirse_abre_un_caso_por_linea_con_la_linea_entera_y_sin_fot
 @pytest.mark.django_db
 def test_CO099_el_arrepentimiento_es_solo_para_compras_online(titular):
     pedido = pedido_despachado(titular)
-    Pedido.objects.filter(pk=pedido.pk).update(canal=Pedido.PRESENCIAL)
-    pedido.refresh_from_db()
+    como_venta_de_mostrador(pedido)
 
     with pytest.raises(servicios.OperacionRechazada, match="compras online"):
         servicios.iniciar_solicitud(pedido, servicios.ARREPENTIMIENTO)
@@ -223,8 +226,7 @@ def test_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio(titular, 
 @pytest.mark.django_db
 def test_CO101_en_el_mostrador_no_hay_reembolso_por_el_medio(titular, administrador):
     pedido = pedido_despachado(titular)
-    Pedido.objects.filter(pk=pedido.pk).update(canal=Pedido.PRESENCIAL)
-    pedido.refresh_from_db()
+    como_venta_de_mostrador(pedido)
     caso = caso_de(titular, pedido=pedido)
 
     assert servicios.opciones(caso).medio is False

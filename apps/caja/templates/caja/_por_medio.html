@@ -1,0 +1,17 @@
+{% load moneda %}
+{% comment %}
+Lo recaudado por medio de pago (CU-CAJ-CIE paso 3 b), en recuadros de cifra con
+la proporción de cada medio sobre el total. Recibe `fuente`: un resumen o un
+cierre. La barra es un `<progress>`: dice lo mismo que la cifra, en forma.
+{% endcomment %}
+<div class="cifras">
+  {% for etiqueta, total in fuente.por_medio %}
+    {% with icono=etiqueta|lower %}
+      <div class="cifra{% if not total %} cifra--vacia{% endif %}">
+        <span class="cifra__rotulo">{% include "_iconos.html" with icono=icono %}{{ etiqueta }}</span>
+        <span class="cifra__valor">{{ total|pesos }}</span>
+        <progress class="barra-proporcion" value="{{ total|stringformat:'f' }}" max="{% if fuente.total_global %}{{ fuente.total_global|stringformat:'f' }}{% else %}1{% endif %}">{{ total|pesos }}</progress>
+      </div>
+    {% endwith %}
+  {% endfor %}
+</div>

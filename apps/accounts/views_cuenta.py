@@ -16,6 +16,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError, transaction
+from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -27,6 +28,7 @@ from django.views import View
 from apps.accounts.forms import CambioDeCorreoForm, DatosPersonalesForm
 from apps.accounts.models import TokenCambioCorreo, Usuario
 from apps.accounts.tokens import token_de_cambio_de_correo
+from apps.almacen.models import ArticuloRetenido
 from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import RegistroAuditoria
@@ -34,6 +36,7 @@ from apps.core.utils import obtener_ip
 from apps.devoluciones import servicios as devoluciones
 from apps.pedidos import demora
 from apps.pedidos.models import LineaPedido, Pedido
+from apps.pedidos.riel import riel_de
 from apps.pedidos.servicios import ACTIVOS
 from apps.pedidos.views import con_totales
 
@@ -48,39 +51,91 @@ def _pedidos_de(usuario):
     return con_totales(Pedido.objects.filter(usuario=usuario)).order_by("-fecha", "-pk")
 
 
+def _por_retirar():
+    """Si el pedido para retirar tiene algo esperando en el mostrador."""
+    return Exists(
+        ArticuloRetenido.objects.filter(
+            linea_pedido__pedido=OuterRef("pk"),
+            procedencia=ArticuloRetenido.PARA_RETIRAR,
+            estado__in=ArticuloRetenido.CON_PLAZO,
+        )
+    )
+
+
+# Plan 00 de interfaz, ambigüedad 1: un pedido «En el local» sigue en curso
+# mientras quede algo por retirar; después pasa al historial (B-11-006).
+EN_CURSO = Q(estado__in=ACTIVOS) | Q(estado=Pedido.EN_LOCAL, por_retirar=True)
+TERMINADOS = Q(estado__in=(Pedido.DESPACHADO, Pedido.CANCELADO, Pedido.VENDIDO_EN_LOCAL)) | Q(
+    estado=Pedido.EN_LOCAL, por_retirar=False
+)
+
+
+def en_curso(usuario):
+    return _pedidos_de(usuario).annotate(por_retirar=_por_retirar()).filter(EN_CURSO)
+
+
+def terminados(usuario):
+    return _pedidos_de(usuario).annotate(por_retirar=_por_retirar()).filter(TERMINADOS)
+
+
 # ---------------------------------------------------------------------------
 # CU-CLI-HIS — CO-192 consultarPanelDeCuenta · CO-193 consultarDetalleDePedidoPropio
 # ---------------------------------------------------------------------------
 
 
+def _con_riel(pedidos):
+    """Cada pedido con su riel reducido y hasta tres portadas (plan 00 de interfaz, 4.3)."""
+    pedidos = list(pedidos.prefetch_related("transiciones", "lineas__producto"))
+    for pedido in pedidos:
+        # Una compra en el mostrador no recorre nada (B-06-005).
+        pedido.riel = (
+            None
+            if pedido.canal == Pedido.PRESENCIAL
+            else riel_de(pedido, list(pedido.transiciones.all()))
+        )
+        lineas = list(pedido.lineas.all())
+        pedido.portadas = [linea.producto for linea in lineas[:3]]
+        pedido.mas_productos = max(len(lineas) - 3, 0)
+    return pedidos
+
+
 class PanelView(ClienteMixin, View):
-    """`CO-192`: la puerta del panel, con los pedidos activos (E1: sin pedidos, un mensaje)."""
+    """`CO-192`: la puerta del panel, el resumen de la cuenta con los pedidos en
+    curso (E1: sin pedidos, un mensaje)."""
 
     def get(self, request):
         return render(
             request,
             "cuenta/panel.html",
             {
-                "seccion": "activos",
-                "pedidos": _pedidos_de(request.user).filter(estado__in=ACTIVOS),
+                "seccion": "resumen",
+                "pedidos": _con_riel(en_curso(request.user)),
+            },
+        )
+
+
+class PedidosView(ClienteMixin, View):
+    """Los pedidos en curso y, debajo, el historial: los despachados (B-11-004),
+    los cancelados (B-08-008) y los retirados del local (B-11-006)."""
+
+    def get(self, request):
+        return render(
+            request,
+            "cuenta/pedidos.html",
+            {
+                "seccion": "pedidos",
+                "en_curso": _con_riel(en_curso(request.user)),
+                "historial": _con_riel(terminados(request.user)),
             },
         )
 
 
 class HistorialView(ClienteMixin, View):
-    """Los pedidos despachados (B-11-004) y los cancelados (B-08-008)."""
+    """La dirección del historial anterior al plan 00 de interfaz: la usan los
+    enlaces ya enviados por correo. Lleva al grupo del historial."""
 
     def get(self, request):
-        return render(
-            request,
-            "cuenta/historial.html",
-            {
-                "seccion": "historial",
-                "pedidos": _pedidos_de(request.user).filter(
-                    estado__in=(Pedido.DESPACHADO, Pedido.CANCELADO)
-                ),
-            },
-        )
+        return redirect(reverse("cuenta:pedidos") + "#historial")
 
 
 class PedidoPropioView(ClienteMixin, View):
@@ -102,16 +157,20 @@ class PedidoPropioView(ClienteMixin, View):
             # Plan 09, ambigüedad 11: el reclamo se sigue al lado de su línea.
             linea.caso = getattr(linea, "caso_devolucion", None)
         # Plan 00, C1: la garantía desde acá; el arrepentimiento, por su botón.
+        transiciones = list(pedido.transiciones.all())
         reclamo = devoluciones.estado_de_reclamo(pedido, devoluciones.GARANTIA)
         arrepentimiento = devoluciones.estado_de_reclamo(pedido, devoluciones.ARREPENTIMIENTO)
         return render(
             request,
             "cuenta/pedido.html",
             {
-                "seccion": "activos" if pedido.estado in ACTIVOS else "historial",
+                "seccion": "pedidos",
                 "pedido": pedido,
                 "lineas": lineas,
-                "transiciones": list(pedido.transiciones.all()),
+                "transiciones": transiciones,
+                "riel": (
+                    None if pedido.canal == Pedido.PRESENCIAL else riel_de(pedido, transiciones)
+                ),
                 "cobrado": sum((linea.subtotal for linea in lineas), pedido.costo_envio),
                 "activo": pedido.estado in ACTIVOS,
                 "puede_reclamar": bool(reclamo and reclamo.puede),
@@ -159,7 +218,7 @@ class DemoraView(ClienteMixin, View):
         return render(
             request,
             self.template_name,
-            {"seccion": "activos", "pedido": pedido, "situacion": situacion},
+            {"seccion": "pedidos", "pedido": pedido, "situacion": situacion},
         )
 
     def post(self, request, numero, linea):
@@ -178,7 +237,7 @@ class DemoraView(ClienteMixin, View):
                 request,
                 self.template_name,
                 {
-                    "seccion": "activos",
+                    "seccion": "pedidos",
                     "pedido": pedido,
                     "situacion": situacion,
                     "elegida": elegida,

@@ -1,0 +1,28 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}
+CU-CLI-HIS pasos 3 y 5 — los pedidos en curso y, debajo, el historial: los
+despachados (B-11-004), los cancelados (B-08-008) y los retirados del local
+(B-11-006). `cuenta:historial` lleva al grupo `#historial`.
+{% endcomment %}
+
+{% block titulo_cuenta %}Pedidos{% endblock %}
+
+{% block cuenta %}
+<section class="pila-3" aria-labelledby="titulo-en-curso">
+  <h2 id="titulo-en-curso" class="titulo-2">En curso</h2>
+  {% if en_curso %}
+    {% include "cuenta/_lista_pedidos.html" with pedidos=en_curso etiqueta="Pedidos en curso" %}
+  {% else %}
+    <div class="vacio"><p>No tenés pedidos en curso.</p></div>
+  {% endif %}
+</section>
+
+<section id="historial" class="pila-3" aria-labelledby="titulo-historial">
+  <h2 id="titulo-historial" class="titulo-2">Historial</h2>
+  {% if historial %}
+    {% include "cuenta/_lista_pedidos.html" with pedidos=historial etiqueta="Historial de pedidos" %}
+  {% else %}
+    <div class="vacio"><p>Todavía no tenés pedidos terminados.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -31,6 +31,7 @@ from apps.almacen.models import (
 )
 from apps.catalog.models import Producto
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.pedidos.models import TransaccionPago
 
@@ -103,7 +104,7 @@ def retener_linea(linea, actor, *, origen=""):
             f"de {pedido.correo_de_contacto}, vence el {fecha(vence)}."
         ),
     )
-    transaction.on_commit(partial(_avisar_ingreso, pedido, linea, vence, origen))
+    despues_del_commit(_avisar_ingreso, pedido, linea, vence, origen)
     return articulos
 
 
@@ -397,7 +398,7 @@ def _generar_solicitud(usuario, ids, envio, costo, origen):
             + "."
         ),
     )
-    transaction.on_commit(partial(_avisar_solicitud, solicitud, articulos, origen))
+    despues_del_commit(_avisar_solicitud, solicitud, articulos, origen)
     return solicitud
 
 
@@ -456,7 +457,7 @@ def despachar(ids, actor, *, origen=""):
                     f"(solicitud {articulo.solicitud.numero})."
                 ),
             )
-        transaction.on_commit(partial(_avisar_despacho, articulos, origen))
+        despues_del_commit(_avisar_despacho, articulos, origen)
     return articulos
 
 
@@ -569,7 +570,7 @@ def modificar_plazo(articulo_pk, actor, nueva_fecha, motivo, *, origen=""):
                 f"Motivo: {motivo}"
             ),
         )
-        transaction.on_commit(partial(_avisar_plazo, articulo, anterior, origen))
+        despues_del_commit(_avisar_plazo, articulo, anterior, origen)
     return articulo
 
 
@@ -628,7 +629,7 @@ def ciclo_de_vencimiento(hoy=None):
             articulo.aviso_para = articulo.fecha_vencimiento
             articulo.save(update_fields=["aviso_para"])
             resumen.avisados.append(articulo)
-            transaction.on_commit(partial(_avisar_proximo, articulo))
+            despues_del_commit(_avisar_proximo, articulo)
 
     # Paso 4 y A1: lo vencido.
     vencidos = ArticuloRetenido.objects.filter(
@@ -701,7 +702,7 @@ def _reintegrar(articulo, producto):
             + "."
         ),
     )
-    transaction.on_commit(partial(_avisar_reintegro, articulo, reembolso))
+    despues_del_commit(_avisar_reintegro, articulo, reembolso)
     transaction.on_commit(partial(_reponer, producto, 1))
 
 

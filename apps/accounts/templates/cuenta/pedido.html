@@ -15,6 +15,12 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
 {% block titulo_cuenta %}Pedido <span class="datos">{{ pedido.numero }}</span>{% endblock %}
 
 {% block cuenta %}
+{# Plan 00 de interfaz, 4.2: el recorrido arriba; los estados con su fecha siguen en el costado. #}
+<section class="pila-3" aria-label="Estado del pedido">
+  <p><span class="marca-estado{% if pedido.estado == 'despachado' or pedido.estado == 'en_local' or pedido.estado == 'vendido_en_local' %} marca-estado--ok{% elif pedido.estado == 'cancelado' %} marca-estado--apagado{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span></p>
+  {% if riel %}{% include "_riel.html" with riel=riel animado=1 %}{% else %}<p class="secundario">Compra en el local, el <span class="datos">{{ pedido.fecha|date:"d/m/Y H:i" }}</span>.</p>{% endif %}
+</section>
+
 <div class="carrito">
   <div class="pila-5">
     <section class="pila-3" aria-labelledby="titulo-productos">
@@ -48,7 +54,9 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
           </li>
         {% endfor %}
       </ul>
-      {% if pedido.retiro %}
+      {% if pedido.modalidad == "mostrador" %}
+        <p class="secundario">Te lo llevaste en el mostrador.</p>
+      {% elif pedido.retiro %}
         <p class="secundario">Retiro en el local.{% if pedido.estado == "en_local" %} <a href="{% url 'cuenta:stock' %}">Está a tu nombre en Stock en local</a>.{% endif %}</p>
       {% else %}
         <p class="secundario">Se envía a <span class="datos">{{ pedido.direccion_de_envio }}</span>.</p>
@@ -56,12 +64,11 @@ vuelve a pedir cada 30 segundos (RF-18; B-08-002).
     </section>
   </div>
 
-  <aside class="resumen-carrito pila-3" aria-label="Estado del pedido">
-    <p class="antetitulo">Estado</p>
-    <p><span class="marca-estado marca-estado--atencion">{{ pedido.get_estado_display }}</span></p>
+  <aside class="resumen-carrito pila-3" aria-label="Resumen del pedido">
+    <p class="antetitulo">Movimientos</p>
     {% include "_linea_de_tiempo.html" with transiciones=transiciones %}
     <dl class="resumen-compra">
-      <div><dt>Envío</dt><dd class="datos">{% if pedido.retiro %}Retiro en el local{% elif pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</dd></div>
+      <div><dt>Envío</dt><dd class="datos">{% if pedido.modalidad == "mostrador" %}Mostrador{% elif pedido.retiro %}Retiro en el local{% elif pedido.costo_envio %}{{ pedido.costo_envio|pesos }}{% else %}Gratis{% endif %}</dd></div>
     </dl>
     <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobrado|pesos }}</span></p>
     {% if puede_arrepentirse %}

@@ -208,6 +208,9 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 # Un servidor que no responde no puede colgar la pantalla que espera el envío.
 EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=15, cast=int)
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-responder@longbox.local")
+# Los avisos salen en un hilo propio después de confirmar la transacción: la
+# pantalla no espera al servidor de correo (`apps/core/segundo_plano.py`).
+AVISOS_EN_SEGUNDO_PLANO = config("AVISOS_EN_SEGUNDO_PLANO", default=True, cast=bool)
 # La dirección pública de la tienda, para los enlaces de los correos que salen
 # sin una pantalla de por medio (los del Temporizador). Vacía: van sin enlace.
 URL_PUBLICA = config("URL_PUBLICA", default="").rstrip("/")

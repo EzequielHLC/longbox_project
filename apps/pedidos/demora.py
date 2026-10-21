@@ -9,12 +9,12 @@ Lo que los contratos no dicen está en B-08-004 a B-08-010.
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
-from functools import partial
 
 from django.db import transaction
 from django.utils import timezone
 
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.pedidos.models import LineaPedido, Pedido
 from apps.pedidos.preventa import (
@@ -221,7 +221,7 @@ def confirmar_opcion(pedido, linea_pk, usuario, clave):
             objetivo=pedido,
             detalle=f"Pedido {pedido.numero}, {nombre(linea.producto)}: {opcion.titulo.lower()}.",
         )
-        transaction.on_commit(partial(_avisar_decision, pedido, linea, opcion))
+        despues_del_commit(_avisar_decision, pedido, linea, opcion)
     return Confirmacion(pedido=pedido, linea=linea, opcion=opcion)
 
 
@@ -267,7 +267,7 @@ def _cancelar(pedido, linea, usuario):
         puntos=reembolso + envio,
         saldo=puntos.saldo(usuario),
     )
-    transaction.on_commit(partial(_avisar_cancelacion, confirmacion))
+    despues_del_commit(_avisar_cancelacion, confirmacion)
     return confirmacion
 
 
@@ -407,7 +407,7 @@ def ciclo_de_compensacion(hoy=None):
             resultado = _compensar(linea, hoy)
             if resultado is not None:
                 acreditadas.append(resultado)
-                transaction.on_commit(partial(_avisar_compensacion, resultado))
+                despues_del_commit(_avisar_compensacion, resultado)
     return acreditadas
 
 

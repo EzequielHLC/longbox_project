@@ -1,0 +1,64 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% comment %}
+CU-RST-SUS A1 desde «Mi cuenta» (plan 00 de interfaz, segunda parte, 15): los
+avisos que esperan, con su lugar en la fila, y los ya avisados de los últimos
+90 días. Cancelar es CO-076, el mismo de la ficha.
+{% endcomment %}
+
+{% block titulo_cuenta %}Avisos de stock{% endblock %}
+
+{% block cuenta %}
+<section class="pila-3" aria-labelledby="titulo-esperando">
+  <h2 id="titulo-esperando" class="titulo-2">Esperando</h2>
+  {% if esperando %}
+    <ul class="pedidos-de-cuenta" aria-label="Avisos que esperan">
+      {% for aviso in esperando %}
+        <li class="pedido-de-cuenta">
+          <span class="pedido-de-cuenta__portadas" aria-hidden="true">
+            <span class="portada-mini">{% if aviso.producto.portada %}<img src="{{ aviso.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+          </span>
+          <div class="pedido-de-cuenta__datos pila-2">
+            <a href="{% url 'core:tienda_producto' aviso.producto.pk %}" class="pedido-de-cuenta__numero">{{ aviso.producto.especifico }}</a>
+            <p class="texto-chico secundario">Lo pediste el <span class="datos">{{ aviso.creada_en|date:"d/m/Y" }}</span>{% if aviso.turno %} · sos el <span class="datos">{{ aviso.turno }}</span>.º en la lista{% endif %}</p>
+          </div>
+          <div class="pedido-de-cuenta__cierre">
+            <span class="marca-estado marca-estado--atencion">{% if aviso.estado == "fallida" %}Reintentando{% else %}Esperando{% endif %}</span>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="producto" value="{{ aviso.producto.pk }}">
+              <button type="submit" class="boton-seccion boton-seccion--tenue">Cancelar aviso</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="vacio pila-3">
+      <p>No tenés avisos esperando. En la ficha de un producto sin stock, «Avisarme cuando haya stock» te anota en la lista.</p>
+      <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-seccion">Ver el catálogo</a></p>
+    </div>
+  {% endif %}
+</section>
+
+{% if avisados %}
+  <section class="pila-3" aria-labelledby="titulo-avisados">
+    <h2 id="titulo-avisados" class="titulo-2">Ya te avisamos</h2>
+    <ul class="pedidos-de-cuenta" aria-label="Avisos enviados">
+      {% for aviso in avisados %}
+        <li class="pedido-de-cuenta">
+          <span class="pedido-de-cuenta__portadas" aria-hidden="true">
+            <span class="portada-mini">{% if aviso.producto.portada %}<img src="{{ aviso.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+          </span>
+          <div class="pedido-de-cuenta__datos pila-2">
+            <a href="{% url 'core:tienda_producto' aviso.producto.pk %}" class="pedido-de-cuenta__numero">{{ aviso.producto.especifico }}</a>
+            <p class="texto-chico secundario">Te avisamos el <span class="datos">{{ aviso.notificada_en|date:"d/m/Y" }}</span></p>
+          </div>
+          <div class="pedido-de-cuenta__cierre">
+            <span class="marca-estado marca-estado--ok">Avisado</span>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+{% endblock %}

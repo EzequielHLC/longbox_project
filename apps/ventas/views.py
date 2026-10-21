@@ -1,5 +1,7 @@
 """El mostrador (`CU-VTA-REG`). Cajero y Administrador; el Cliente recibe 403."""
 
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -23,6 +25,19 @@ def _al_mostrador(request, error=None, busqueda=""):
     return redirect(f"{url}?q={busqueda}" if busqueda else url)
 
 
+ULTIMO_AGREGADO = "mostrador_ultimo_agregado"
+VENTA_REGISTRADA = "mostrador_venta_registrada"
+
+
+def _importe(texto):
+    """Lo recibido en efectivo, escrito por el cajero; vacío o ilegible, nada."""
+    try:
+        valor = Decimal(str(texto).replace(".", "").replace(",", ".").strip())
+    except (InvalidOperation, ValueError):
+        return None
+    return valor if valor > 0 else None
+
+
 class MostradorView(MostradorMixin, View):
     """El ticket en curso y la búsqueda de productos."""
 
@@ -33,6 +48,8 @@ class MostradorView(MostradorMixin, View):
             "ventas/mostrador.html",
             {
                 "ticket": servicio.consultar(request.session),
+                # Plan 00 de interfaz, segunda parte, 13.3: la fila recién agregada destella.
+                "ultimo_agregado": request.session.pop(ULTIMO_AGREGADO, None),
                 "busqueda": busqueda,
                 "resultados": servicio.buscar(busqueda) if busqueda else [],
                 "medios": [
@@ -75,6 +92,7 @@ class AgregarView(MostradorMixin, View):
             servicio.agregar(request.session, producto, cantidad)
         except servicio.VentaRechazada as error:
             return _al_mostrador(request, error)
+        request.session[ULTIMO_AGREGADO] = producto.pk
         return _al_mostrador(request)
 
 
@@ -125,6 +143,23 @@ class ConfirmarView(MostradorMixin, View):
             )
         except servicio.VentaRechazada as error:
             return _al_mostrador(request, error)
+        # 13.1 y 13.6: el vuelto se calcula para mostrarlo; no se guarda en ningún lado.
+        recibido = _importe(request.POST.get("recibido", ""))
+        # Una venta pagada sólo con puntos no tiene transacción de dinero.
+        transaccion = TransaccionPago.objects.filter(pedido=pedido).first()
+        vuelto = None
+        if (
+            transaccion
+            and transaccion.medio == TransaccionPago.EFECTIVO
+            and recibido
+            and recibido >= transaccion.monto
+        ):
+            vuelto = str(recibido - transaccion.monto)
+        request.session[VENTA_REGISTRADA] = {
+            "numero": pedido.numero,
+            "recibido": str(recibido) if vuelto is not None else None,
+            "vuelto": vuelto,
+        }
         return redirect("ventas:comprobante", numero=pedido.numero)
 
 
@@ -139,14 +174,23 @@ class ComprobanteView(MostradorMixin, View):
         )
         lineas = list(pedido.lineas.select_related("producto"))
         acreditacion = pedido.movimientos_puntos.filter(tipo="acreditacion").first()
+        registrada = request.session.get(VENTA_REGISTRADA) or {}
+        if registrada.get("numero") == pedido.numero:
+            request.session.pop(VENTA_REGISTRADA)
+        else:
+            registrada = {}
         return render(
             request,
             "ventas/comprobante.html",
             {
                 "pedido": pedido,
                 "lineas": lineas,
-                "transaccion": pedido.transaccion,
+                "transaccion": getattr(pedido, "transaccion", None),
                 "puntos_acreditados": acreditacion.cantidad if acreditacion else 0,
                 "puntos_canjeados": sum(linea.puntos_canjeados for linea in lineas),
+                # 13.6: recién confirmada, la pantalla lo dice y ofrece la siguiente.
+                "recien_registrada": bool(registrada),
+                "recibido": Decimal(registrada["recibido"]) if registrada.get("recibido") else None,
+                "vuelto": Decimal(registrada["vuelto"]) if registrada.get("vuelto") else None,
             },
         )

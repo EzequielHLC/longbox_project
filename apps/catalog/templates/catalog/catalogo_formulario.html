@@ -92,7 +92,7 @@ con su estado: si está dado de baja, desde ahí se lo reactiva.
   <section class="seccion">
     <div class="seccion__titulo"><h2>Dar de baja</h2></div>
     <p class="seccion__bajada">Deja de ofrecerse en los formularios.</p>
-    <a href="{{ catalogo|url_baja:object }}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Ir a la baja</span></a>
+    <a data-dialogo href="{{ catalogo|url_baja:object }}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Ir a la baja</span></a>
   </section>
 {% endif %}
 {% endblock %}

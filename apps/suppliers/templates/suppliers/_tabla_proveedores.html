@@ -61,9 +61,9 @@ estado y cantidad de productos vinculados.
                 {% endcomment %}
                 <a href="{% url 'suppliers:proveedor_detalle' proveedor.pk %}" class="boton-menor">Ver ficha</a>
                 {% if proveedor.esta_activo %}
-                  <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+                  <a data-dialogo href="{% url 'suppliers:proveedor_baja' proveedor.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
                 {% else %}
-                  <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-menor">Reactivar</a>
+                  <a data-dialogo href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-menor">Reactivar</a>
                 {% endif %}
               </td>
             </tr>

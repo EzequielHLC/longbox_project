@@ -26,6 +26,7 @@ from apps.pedidos.tests.util import crear_pedido
 pytestmark = pytest.mark.django_db
 
 URL_PANEL = reverse("cuenta:panel")
+URL_PEDIDOS = reverse("cuenta:pedidos")
 URL_HISTORIAL = reverse("cuenta:historial")
 URL_DATOS = reverse("cuenta:datos")
 URL_CORREO = reverse("cuenta:correo")
@@ -84,16 +85,20 @@ def test_CO192_el_historial_muestra_los_despachados(navegador, titular):
     crear_pedido(titular)
     despachado = crear_pedido(titular, estado=Pedido.DESPACHADO)
 
-    respuesta = navegador.get(URL_HISTORIAL)
+    respuesta = navegador.get(URL_PEDIDOS)
 
-    assert [p.pk for p in respuesta.context["pedidos"]] == [despachado.pk]
+    assert [p.pk for p in respuesta.context["historial"]] == [despachado.pk]
+
+
+def test_CO192_la_direccion_del_historial_lleva_a_su_grupo(navegador):
+    assert navegador.get(URL_HISTORIAL).url == URL_PEDIDOS + "#historial"
 
 
 def test_CO192_E1_sin_pedidos_activos_informa_y_las_demas_secciones_siguen(navegador):
     contenido = navegador.get(URL_PANEL).content.decode()
 
     assert "No tenés pedidos en curso." in contenido
-    for url in (URL_HISTORIAL, reverse("cuenta:puntos"), URL_DATOS):
+    for url in (URL_PEDIDOS, reverse("cuenta:puntos"), URL_DATOS):
         assert url in contenido
 
 
@@ -417,7 +422,15 @@ def test_CO111_con_la_contrasena_actual_equivocada_no_cambia_nada(navegador, tit
 @pytest.mark.parametrize("rol", ["cajero", "administrador"])
 @pytest.mark.parametrize(
     "url",
-    [URL_PANEL, URL_HISTORIAL, URL_DATOS, URL_CORREO, URL_CONTRASENA, reverse("cuenta:puntos")],
+    [
+        URL_PANEL,
+        URL_PEDIDOS,
+        URL_HISTORIAL,
+        URL_DATOS,
+        URL_CORREO,
+        URL_CONTRASENA,
+        reverse("cuenta:puntos"),
+    ],
 )
 def test_acceso_el_personal_recibe_403_en_mi_cuenta(client, request, rol, url):
     client.force_login(request.getfixturevalue(rol))

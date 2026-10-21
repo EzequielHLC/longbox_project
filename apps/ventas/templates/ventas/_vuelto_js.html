@@ -1,0 +1,22 @@
+{% comment %}
+El vuelto en el acto (plan 00 de interfaz, segunda parte, 13.1): lo recibido
+menos el total, mientras el cajero escribe. Es una cuenta para mostrar; el
+servidor la vuelve a hacer al confirmar y no la guarda.
+{% endcomment %}
+<script>
+  (function () {
+    const campo = document.querySelector("[data-recibido]");
+    const salida = document.querySelector("[data-vuelto]");
+    const total = document.querySelector("[data-total]");
+    if (!campo || !salida || !total) return;
+    const formato = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+    campo.addEventListener("input", function () {
+      const recibido = Number(campo.value.replace(/\./g, "").replace(",", "."));
+      const vuelto = recibido - Number(total.dataset.total);
+      salida.hidden = !(recibido > 0);
+      salida.classList.toggle("cobro__vuelto--falta", vuelto < 0);
+      salida.querySelector("[data-vuelto-rotulo]").textContent = vuelto < 0 ? "Faltan" : "Vuelto";
+      salida.querySelector("[data-vuelto-cifra]").textContent = "$ " + formato.format(Math.abs(vuelto));
+    });
+  })();
+</script>

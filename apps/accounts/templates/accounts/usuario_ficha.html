@@ -30,7 +30,7 @@ que el estado de la cuenta admite; las decide la vista, no la plantilla.
         <li><a href="{% url 'accounts:usuario_edicion' usuario_objetivo.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Modificar</span></a></li>
       {% endif %}
       {% if puede_dar_de_baja %}
-        <li><a href="{% url 'accounts:usuario_baja' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
+        <li><a data-dialogo href="{% url 'accounts:usuario_baja' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
       {% endif %}
       {% if puede_reenviar %}
         <li>
@@ -41,7 +41,7 @@ que el estado de la cuenta admite; las decide la vista, no la plantilla.
         </li>
       {% endif %}
       {% if puede_eliminar %}
-        <li><a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Eliminar cuenta</span></a></li>
+        <li><a data-dialogo href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Eliminar cuenta</span></a></li>
       {% endif %}
       {% if puede_reactivar %}
         <li><a href="{% url 'accounts:usuario_reactivar' usuario_objetivo.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>

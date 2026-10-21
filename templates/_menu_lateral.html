@@ -1,3 +1,4 @@
+{% load menu %}
 {% comment %}
 Menú lateral del backoffice (modo operativo).
 
@@ -38,6 +39,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     entrada que termina en 403 es invitar a un camino que no existe.
     {% endcomment %}
     {% if user.rol == 'administrador' %}
+      {% pendientes_del_menu as pendientes %}
       <a href="{% url 'core:panel' %}"
          class="menu-enlace {% if actual == 'core:panel' %}menu-enlace--actual{% endif %}" {% if actual == 'core:panel' %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="panel" %}
@@ -47,6 +49,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
          class="menu-enlace {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="bolsa" %}
         <span>Pedidos</span>
+        {% if pendientes.pedidos %}<span class="contador-menu" title="Por armar"><span class="sr-only">, </span>{{ pendientes.pedidos }}<span class="sr-only"> por armar</span></span>{% endif %}
       </a>
       <a href="{% url 'pedidos:preventas' %}"
          class="menu-enlace {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}aria-current="page"{% endif %}>
@@ -72,11 +75,13 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
          class="menu-enlace {% if 'restock:' in actual %}menu-enlace--actual{% endif %}" {% if 'restock:' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="proveedores" %}
         <span>Restock</span>
+        {% if pendientes.restock %}<span class="contador-menu" title="Productos por pedir"><span class="sr-only">, </span>{{ pendientes.restock }}<span class="sr-only"> productos por pedir</span></span>{% endif %}
       </a>
       <a href="{% url 'devoluciones:lista' %}"
          class="menu-enlace {% if 'devoluciones:' in actual %}menu-enlace--actual{% endif %}" {% if 'devoluciones:' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="devoluciones" %}
         <span>Devoluciones</span>
+        {% if pendientes.devoluciones %}<span class="contador-menu" title="Sin resolver"><span class="sr-only">, </span>{{ pendientes.devoluciones }}<span class="sr-only"> sin resolver</span></span>{% endif %}
       </a>
     {% elif user.rol == 'cajero' %}
       <a href="{% url 'core:mostrador' %}"

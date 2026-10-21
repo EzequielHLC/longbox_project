@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.models import RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos.models import LineaPedido, Pedido, TransicionDePedido
 
 logger = logging.getLogger(__name__)
@@ -156,7 +157,7 @@ def avanzar(pedido, actor, *, estado_visto, confirmado=False):
                 + "."
             ),
         )
-        transaction.on_commit(lambda: avisar_cambio_de_estado(pedido))
+        despues_del_commit(avisar_cambio_de_estado, pedido)
     return Avance(pedido=pedido, anterior=anterior)
 
 

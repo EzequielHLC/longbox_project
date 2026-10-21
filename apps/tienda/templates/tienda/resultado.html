@@ -19,6 +19,7 @@ el aviso, y la pantalla se vuelve a pedir sola.
 <div class="pila-5">
   {% if cobro.estado == "procesado" %}
     <div class="pila-2">
+      {% include "tienda/_pasos_compra.html" with paso=4 %}
       <p class="antetitulo">Tienda · Compra confirmada</p>
       <h1 class="titulo-1">¡Gracias por tu compra!</h1>
     </div>
@@ -31,7 +32,14 @@ el aviso, y la pantalla se vuelve a pedir sola.
       <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobro.monto|pesos }}</span></p>
       {% if cobro.puntos_a_debitar %}<p class="texto-chico secundario">Usaste {{ cobro.puntos_a_debitar }} puntos.</p>{% endif %}
     </div>
-    <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Seguir comprando</a></p>
+    {% if pedido.usuario_id %}
+      <div class="fila-5">
+        <a href="{% url 'cuenta:pedido' pedido.numero %}" class="boton-primario">Ver mi pedido</a>
+        <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Seguir comprando</a>
+      </div>
+    {% else %}
+      <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Seguir comprando</a></p>
+    {% endif %}
   {% elif cobro.estado == "rechazado" %}
     <div class="pila-2">
       <p class="antetitulo">Tienda · Pago rechazado</p>

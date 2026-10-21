@@ -227,6 +227,8 @@ CON_FILAS = {
     "checkout.html",
     # El mostrador: agregar cada coincidencia y canjear cada ítem del ticket (CU-VTA-REG).
     "mostrador.html",
+    # Cada ítem de la propuesta de restock se guarda o se quita (plan 00 de interfaz).
+    "propuesta.html",
 }
 
 
@@ -254,6 +256,28 @@ def test_el_nivel_3_vive_solo_donde_hay_filas():
     ]
 
     assert fuera_de_lugar == []
+
+
+# Plan 00 de interfaz, apartado 3: enviar es una acción. Salir de la sesión es
+# navegación aunque viaje por POST, y la lista de acciones de la ficha de usuario
+# dibuja todas sus acciones con el mismo nivel, enlaces y envíos.
+ENVIO_COMO_NAVEGACION = {"usuario_ficha.html"}
+
+
+def test_un_envio_no_se_dibuja_como_navegacion():
+    hallazgos = []
+    publico = Path(settings.BASE_DIR) / "templates" / "base_publico.html"
+    for ruta in [*plantillas_operativas(), publico]:
+        if ruta.name in ENVIO_COMO_NAVEGACION:
+            continue
+        for form in re.findall(r"<form\b.*?</form>", ruta.read_text(encoding="utf-8"), flags=re.S):
+            # Salir de la sesión, y el «Cancelar» que cierra un `<dialog>`.
+            if "accounts:logout" in form or 'method="dialog"' in form:
+                continue
+            for boton in re.findall(r"<button\b[^>]*>", form):
+                if 'type="button"' not in boton and re.search(r'class="[^"]*boton-texto', boton):
+                    hallazgos.append(f"{ruta.name}: {boton}")
+    assert hallazgos == []
 
 
 def test_ninguna_pantalla_repite_el_boton_principal():
@@ -285,3 +309,44 @@ def test_el_boton_de_texto_no_lleva_copia_y_antepone_la_flecha_al_volver():
 
     assert "data-texto=" not in parcial
     assert '{% if atras %}<span aria-hidden="true">←</span>' in parcial
+
+
+# Clases que no llevan estilo propio: ganchos de los guiones o de las pruebas.
+GANCHOS_SIN_ESTILO = {
+    "barra-envio",  # el guion del carrito la reemplaza al cambiar la cantidad
+    "cifra-derivada",  # el guion del alta de lotes escribe ahí el valor calculado
+    "linea-carrito__datos",  # columna de la línea: la reparte la grilla del padre
+    "cuenta__principal",  # columna de «Mi cuenta»: la reparte la grilla del padre
+}
+
+
+def test_ninguna_plantilla_usa_una_clase_que_la_hoja_no_define():
+    """`pila-4` se usó en 17 plantillas sin existir, y esas pantallas quedaron con
+    los elementos pegados (plan 00 de interfaz). Una clase sin definir no falla:
+    simplemente no dibuja nada."""
+    raiz = Path(settings.BASE_DIR)
+    hojas = [raiz / "static/css/longbox.css", raiz / "static/css/tokens.css"]
+    hojas.append(raiz / "apps/core/templates/core/tienda.css")
+    definidas = set(
+        re.findall(r"\.([a-zA-Z][\w-]*)", "".join(h.read_text(encoding="utf-8") for h in hojas))
+    )
+    faltan = {}
+    plantillas = [*raiz.glob("templates/**/*.html"), *raiz.glob("apps/*/templates/**/*.html")]
+    for ruta in plantillas:
+        if "correo" in ruta.parts:
+            continue
+        texto = re.sub(
+            r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}",
+            "",
+            ruta.read_text(encoding="utf-8"),
+            flags=re.S,
+        )
+        texto = re.sub(r"\{%.*?%\}|\{\{.*?\}\}", " ", texto)
+        for valor in re.findall(r'class="([^"]*)"', texto):
+            for clase in valor.split():
+                if (
+                    re.fullmatch(r"[a-z][\w-]*", clase)
+                    and clase not in definidas | GANCHOS_SIN_ESTILO
+                ):
+                    faltan.setdefault(clase, ruta.name)
+    assert faltan == {}

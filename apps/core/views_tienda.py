@@ -501,3 +501,22 @@ def lo_que_se_viene(cantidad=PRODUCTOS_POR_FILA):
         productos=_marcar(productos),
         ver_todo=f"{reverse('core:tienda_catalogo')}?estado=pre_venta&orden={LLEGADA}",
     )
+
+
+SUGERENCIAS = 5
+
+
+class SugerenciasView(View):
+    """Plan 00 de interfaz, U1: las primeras coincidencias mientras se escribe en el
+    buscador del encabezado. La misma búsqueda del catálogo (`CO-176`), en todos
+    los estados visibles; con menos de dos letras, nada. Sólo lee."""
+
+    def get(self, request):
+        texto = request.GET.get("q", "").strip()
+        productos = []
+        if len(texto) >= 2:
+            filtros = FiltrosDelCatalogo({"q": texto, "estado": TODOS})
+            productos = _marcar(list(filtros.ordenar(filtros.aplicar(visibles()))[:SUGERENCIAS]))
+        return render(
+            request, "core/_sugerencias.html", {"productos": productos, "busqueda": texto}
+        )

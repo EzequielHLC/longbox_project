@@ -223,11 +223,15 @@ def test_CO083_agregar_desde_la_tarjeta_responde_json_con_las_unidades(client, c
 
     datos = json.loads(respuesta.content)
     assert respuesta.status_code == 200
+    carrito = datos.pop("carrito")
     assert datos == {
         "nivel": "exito",
         "mensaje": "Se agregó «Berserk» en el carrito.",
         "unidades": 2,
     }
+    # Plan 00 de interfaz, U2: lo que muestra el carrito lateral.
+    assert carrito["titulo"] == "Berserk"
+    assert carrito["total"] and carrito["precio"]
     assert LineaCarrito.objects.get(producto=producto).cantidad == 2
 
 

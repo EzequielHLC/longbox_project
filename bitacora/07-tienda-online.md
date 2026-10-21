@@ -1115,3 +1115,28 @@ idempotente.
 **Qué habría que cambiar.**
 Una operación del Temporizador para el descarte (código a asignar), y en `CO-089` la excepción del
 pago tardío.
+
+---
+
+### B-07-040 · Sugerencias en el buscador y carrito lateral
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-TDA-CAT`, `CO-176`, `CO-083`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, U1 y U2)
+
+**Qué apareció.**
+Buscar obligaba a ir al catálogo para ver si había algo, y agregar desde una tarjeta sólo dejaba un
+aviso que desaparecía.
+
+**Qué dice la especificación.**
+`Nada` sobre sugerencias ni sobre lo que se ve al agregar.
+
+**Qué se hizo.**
+Al escribir en el buscador del encabezado aparecen las cinco primeras coincidencias, con portada y
+precio, y un enlace a todos los resultados: es la misma búsqueda del catálogo. Al agregar desde
+una tarjeta se abre un panel lateral con lo agregado, el total, lo que falta para el envío gratis e
+«Ir al carrito». Sin guion, todo funciona como antes. La compra muestra sus pasos: carrito, entrega,
+pago y listo.
+
+**Qué habría que cambiar.**
+`CU-TDA-CAT` paso 2: «al escribir, el sistema sugiere coincidencias». Paso 6: «el sistema muestra lo
+agregado y el total del carrito».

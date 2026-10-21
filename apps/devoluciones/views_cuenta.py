@@ -56,7 +56,7 @@ class SolicitudView(ClienteMixin, View):
             request,
             self.template_name,
             {
-                "seccion": "historial",
+                "seccion": "pedidos",
                 "pedido": pedido,
                 "solicitud": solicitud,
                 "datos": datos or {},

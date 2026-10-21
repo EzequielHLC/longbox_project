@@ -318,3 +318,24 @@ Retirado). El modelo de dominio, área 5: quitar la asociación `Producto 0..1 �
 devolución (sigue parcial por la sección Seguridad). Las siete puertas pasan. Quedan abiertas las
 enmiendas de B-09-002 a B-09-007 y las de R-09-001 sobre DME-12 y DME-16. Lo que el módulo no
 hace: confirmar el retiro físico del artículo cambiado, que ningún caso de uso especifica.
+
+---
+
+### B-09-009 · El botón de arrepentimiento pasa al pie, destacado
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-DEV-SOL` (arrepentimiento)
+**Estado:** Abierta — pedido por el responsable el 2026-10-21
+
+**Qué apareció.**
+El responsable pidió sacar el botón de arrepentimiento de la barra de navegación de la tienda.
+
+**Qué dice la especificación.**
+`Nada` sobre dónde va. La Res. 424/2020 pide un acceso visible, destacado y de fácil acceso, sin
+registración.
+
+**Qué se hizo.**
+El enlace sale de la barra de arriba y queda en el pie, que está en todas las páginas, como un
+botón propio con el borde del acento, no como un enlace más de la lista.
+
+**Qué habría que cambiar.**
+`CU-DEV-SOL`, arrepentimiento: «el acceso al botón está en el pie de todas las páginas de la tienda».

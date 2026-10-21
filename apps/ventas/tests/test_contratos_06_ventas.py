@@ -360,13 +360,16 @@ def test_CO082_b_el_pedido_queda_asociado_al_cliente(venta, lector):
     assert Pedido.objects.get().usuario == lector
 
 
-def test_CO082_c_canal_presencial_y_nace_despachado(venta):
+def test_CO082_c_canal_presencial_y_nace_vendido_en_el_local(venta):
+    """B-06-005: la postcondición decía «Despachado»; la venta de mostrador tiene
+    estado, modalidad y estado de ítem propios."""
     pedido = Pedido.objects.get()
 
     assert pedido.canal == Pedido.PRESENCIAL
-    assert pedido.estado == Pedido.DESPACHADO
-    assert set(pedido.lineas.values_list("estado", flat=True)) == {LineaPedido.DESPACHADO}
-    assert pedido.transiciones.get().estado_nuevo == Pedido.DESPACHADO
+    assert pedido.estado == Pedido.VENDIDO_EN_LOCAL
+    assert pedido.modalidad == Pedido.MOSTRADOR
+    assert set(pedido.lineas.values_list("estado", flat=True)) == {LineaPedido.ENTREGADO_EN_LOCAL}
+    assert pedido.transiciones.get().estado_nuevo == Pedido.VENDIDO_EN_LOCAL
 
 
 def test_CO082_c_precio_congelado_y_canje_registrado(venta):
@@ -526,3 +529,39 @@ def test_acceso_el_administrador_tambien_vende(client_admin):
 
 def test_acceso_sin_sesion_va_al_ingreso():
     assert Client().get(URL).url.startswith(reverse("accounts:login"))
+
+
+# ---------------------------------------------------------------------------
+# B-06-005: la venta de mostrador no se mezcla con los envíos
+# ---------------------------------------------------------------------------
+
+
+def test_B06005_la_base_no_admite_un_presencial_despachado_ni_un_online_de_mostrador():
+    from django.db import IntegrityError, transaction
+
+    from apps.pedidos.tests.util import crear_pedido
+
+    pedido = crear_pedido(correo_invitado="x@correo.test")
+    for cambios in (
+        {"canal": Pedido.PRESENCIAL},
+        {"modalidad": Pedido.MOSTRADOR},
+        {"estado": Pedido.VENDIDO_EN_LOCAL},
+    ):
+        with pytest.raises(IntegrityError), transaction.atomic():
+            Pedido.objects.filter(pk=pedido.pk).update(**cambios)
+
+
+def test_B06005_la_compra_en_el_local_va_al_historial_de_la_cuenta_sin_riel(client):
+    from apps.pedidos.tests.util import como_venta_de_mostrador, crear_pedido
+
+    lector = UsuarioFactory(rol="cliente")
+    pedido = como_venta_de_mostrador(crear_pedido(lector, estado=Pedido.DESPACHADO))
+    client.force_login(lector)
+
+    pedidos = client.get(reverse("cuenta:pedidos"))
+    propio = client.get(reverse("cuenta:pedido", args=[pedido.numero])).content.decode()
+
+    assert [p.pk for p in pedidos.context["historial"]] == [pedido.pk]
+    assert pedidos.context["historial"][0].riel is None
+    assert "Compra en el local" in propio
+    assert "data-riel=" not in propio

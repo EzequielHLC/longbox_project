@@ -231,24 +231,25 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
+| `bitacora/00-pulido-de-interfaz.md` | 7 | 2 | 4 agregados, 3 correcciones |
 | `bitacora/01-alta-editorial.md` | 12 | 10 | 9 agregados, 1 corrección, 1 desvío |
 | `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
 | `bitacora/03-pricing.md` | 13 | 11 | 10 agregados, 2 correcciones |
 | `bitacora/04-proveedores.md` | 7 | 1 | 5 agregados, 1 corrección, 1 desvío |
-| `bitacora/05-restock.md` | 6 | 6 | 5 agregados, 1 corrección |
-| `bitacora/06-ventas-presenciales.md` | 4 | 4 | 3 agregados, 1 corrección |
-| `bitacora/07-tienda-online.md` | 39 | 31 | 33 agregados, 4 correcciones, 1 desvío |
+| `bitacora/05-restock.md` | 8 | 8 | 7 agregados, 1 corrección |
+| `bitacora/06-ventas-presenciales.md` | 6 | 6 | 4 agregados, 2 correcciones |
+| `bitacora/07-tienda-online.md` | 40 | 32 | 34 agregados, 4 correcciones, 1 desvío |
 | `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
-| `bitacora/09-devoluciones.md` | 8 | 7 | 3 agregados, 4 correcciones |
+| `bitacora/09-devoluciones.md` | 9 | 8 | 4 agregados, 4 correcciones |
 | `bitacora/10-puntos.md` | 12 | 11 | 7 agregados, 4 correcciones |
-| `bitacora/11-cuenta-de-cliente.md` | 5 | 3 | 5 agregados |
+| `bitacora/11-cuenta-de-cliente.md` | 6 | 4 | 6 agregados |
 | `bitacora/12-autenticacion.md` | 4 | 1 | 1 agregado, 1 corrección, 1 desvío |
 | `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
-| `bitacora/14-caja.md` | 2 | 2 | 1 agregado, 1 corrección |
+| `bitacora/14-caja.md` | 3 | 3 | 2 agregados, 1 corrección |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/17-configuracion-del-sistema.md` | 17 | 11 | 12 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 4 correcciones |
-| **Total** | **180** | **132** | |
+| **Total** | **195** | **142** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es

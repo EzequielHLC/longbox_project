@@ -14,6 +14,13 @@ from apps.accounts.tests.factories import UsuarioFactory
 
 
 @pytest.fixture(autouse=True)
+def avisos_en_el_acto(settings):
+    """Los avisos corren en el acto: el buzón de prueba se lee apenas vuelve la
+    operación, sin esperar a un hilo (`apps/core/segundo_plano.py`)."""
+    settings.AVISOS_EN_SEGUNDO_PLANO = False
+
+
+@pytest.fixture(autouse=True)
 def sin_red(request):
     """Ningún test sale a internet, ni siquiera sin querer.
 

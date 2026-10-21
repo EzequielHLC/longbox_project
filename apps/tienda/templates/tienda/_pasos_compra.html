@@ -1,0 +1,22 @@
+{% comment %}
+Dónde está el Cliente en la compra (plan 00 de interfaz, P1). Recibe `paso`:
+1 carrito, 2 entrega, 3 pago, 4 listo. Lo hecho lleva «✓»; el actual, la señal.
+{% endcomment %}
+<ol class="pasos-compra" aria-label="Pasos de la compra">
+  <li class="pasos-compra__paso{% if paso > 1 %} pasos-compra__paso--hecho{% elif paso == 1 %} pasos-compra__paso--actual{% endif %}"{% if paso == 1 %} aria-current="step"{% endif %}>
+    <span class="pasos-compra__numero">{% if paso > 1 %}✓{% else %}01{% endif %}</span>
+    <span class="pasos-compra__nombre">Carrito</span>
+  </li>
+  <li class="pasos-compra__paso{% if paso > 2 %} pasos-compra__paso--hecho{% elif paso == 2 %} pasos-compra__paso--actual{% endif %}"{% if paso == 2 %} aria-current="step"{% endif %}>
+    <span class="pasos-compra__numero">{% if paso > 2 %}✓{% else %}02{% endif %}</span>
+    <span class="pasos-compra__nombre">Entrega</span>
+  </li>
+  <li class="pasos-compra__paso{% if paso > 3 %} pasos-compra__paso--hecho{% elif paso == 3 %} pasos-compra__paso--actual{% endif %}"{% if paso == 3 %} aria-current="step"{% endif %}>
+    <span class="pasos-compra__numero">{% if paso > 3 %}✓{% else %}03{% endif %}</span>
+    <span class="pasos-compra__nombre">Pago</span>
+  </li>
+  <li class="pasos-compra__paso{% if paso > 4 %} pasos-compra__paso--hecho{% elif paso == 4 %} pasos-compra__paso--actual{% endif %}"{% if paso == 4 %} aria-current="step"{% endif %}>
+    <span class="pasos-compra__numero">{% if paso > 4 %}✓{% else %}04{% endif %}</span>
+    <span class="pasos-compra__nombre">Listo</span>
+  </li>
+</ol>

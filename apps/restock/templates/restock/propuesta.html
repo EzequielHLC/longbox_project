@@ -24,61 +24,86 @@ CU-RST-PRO A1: generarla a mano (CO-068).
 </header>
 
 {% if propuesta %}
+  {# Plan 00 de interfaz, segunda parte, 14: el tamaño de la propuesta antes de recorrerla. #}
+  <div class="cifras">
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}Productos</span><span class="cifra__valor">{{ resumen.productos }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Unidades a pedir</span><span class="cifra__valor">{{ resumen.unidades }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="proveedores" %}Proveedores pendientes</span><span class="cifra__valor">{{ resumen.pendientes }}</span></div>
+    <div class="cifra{% if resumen.suscriptores %} cifra--atencion{% endif %}">{% if resumen.suscriptores %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="reloj" %}Clientes esperando</span><span class="cifra__valor">{{ resumen.suscriptores }}</span></div>
+  </div>
+
+  <div class="barra-de-herramientas">
+    <div class="campo campo--principal">
+      <label for="filtro-restock" class="etiqueta">Filtrar productos de la propuesta</label>
+      <input type="search" id="filtro-restock" autocomplete="off" placeholder="Título o número" data-filtro-restock>
+    </div>
+  </div>
+
   {% for grupo in grupos %}
-    <section class="seccion{% if not grupo.proveedor or grupo.sin_contacto %} panel--atencion{% endif %}" aria-labelledby="grupo-{{ grupo.clave }}">
-      <div class="seccion__titulo">
-        <h2 id="grupo-{{ grupo.clave }}">{{ grupo.nombre }}</h2>
+    <details class="grupo-restock{% if not grupo.proveedor or grupo.sin_contacto %} grupo-restock--atencion{% endif %}" id="grupo-{{ grupo.clave }}"{% if grupo.pendiente and forloop.first or grupos|length == 1 %} open{% endif %}>
+      <summary class="grupo-restock__cabeza">
+        <span class="grupo-restock__nombre">{{ grupo.nombre }}</span>
+        <span class="grupo-restock__cuenta">{{ grupo.lineas|length }} producto{{ grupo.lineas|length|pluralize }} · {{ grupo.unidades }} unidad{{ grupo.unidades|pluralize:"es" }}{% if grupo.suscriptores %} · {{ grupo.suscriptores }} esperando{% endif %}</span>
         <span class="marca-estado{% if grupo.estado == 'despachado' %} marca-estado--ok{% elif grupo.estado == 'descartado' %} marca-estado--apagado{% else %} marca-estado--dato{% endif %}">{% if grupo.estado == "despachado" %}Despachado{% elif grupo.estado == "descartado" %}Descartado{% else %}Pendiente{% endif %}</span>
-      </div>
-      {% if not grupo.proveedor %}
-        <p class="texto-chico">Estos productos no tienen proveedor. Asigne su editorial a un proveedor para poder pedirlos, o descarte el grupo.</p>
-      {% elif grupo.sin_contacto %}
-        <p class="texto-chico">Proveedor sin contacto registrado.</p>
-      {% endif %}
-      <div class="tabla-desplazable">
-        <table class="tabla">
-          <thead>
-            <tr><th>Producto</th><th class="numero">Stock</th><th class="numero">Suscriptores</th><th class="numero">Cantidad</th><th></th></tr>
-          </thead>
-          <tbody>
-            {% for linea in grupo.lineas %}
-              <tr>
-                <td class="celda-principal">
-                  {{ linea.producto }}
-                  {% if linea.anadida_a_mano %}<br><span class="texto-chico secundario">Añadido manualmente</span>{% endif %}
-                </td>
-                <td class="numero">{{ linea.producto.stock }}</td>
-                <td class="numero">{{ linea.suscriptores_activos }}</td>
-                <td class="numero">
-                  {% if grupo.pendiente %}
-                    <form method="post" action="{% url 'restock:linea' linea.pk %}" class="fila-2">
-                      {% csrf_token %}
+      </summary>
+      <div class="grupo-restock__cuerpo pila-4">
+        {% if not grupo.proveedor %}
+          <p class="texto-chico">Estos productos no tienen proveedor. Asigne su editorial a un proveedor para poder pedirlos, o descarte el grupo.</p>
+        {% elif grupo.sin_contacto %}
+          <p class="texto-chico">Proveedor sin contacto registrado.</p>
+        {% endif %}
+        {% if grupo.pendiente %}
+          <form id="cantidades-{{ grupo.clave }}" method="post" action="{% url 'restock:cantidades' grupo.clave %}">{% csrf_token %}</form>
+        {% endif %}
+        <div class="tabla-desplazable">
+          <table class="tabla tabla--centrada">
+            <thead>
+              <tr><th>Producto</th><th>Stock</th><th class="numero">Esperando</th><th class="numero">Cantidad</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for linea in grupo.lineas %}
+                <tr data-fila-restock="{{ linea.producto|lower }}">
+                  <td class="celda-principal">
+                    <span class="fila-2">
+                      <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if linea.producto.portada %}<img src="{{ linea.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                      <span>
+                        {{ linea.producto }}
+                        {% if linea.anadida_a_mano %}<br><span class="texto-chico secundario">Añadido manualmente</span>{% endif %}
+                      </span>
+                    </span>
+                  </td>
+                  <td>{% if linea.producto.stock %}<span class="marca-estado marca-estado--atencion">Stock bajo · {{ linea.producto.stock }}</span>{% else %}<span class="marca-estado marca-estado--error">Sin stock</span>{% endif %}</td>
+                  <td class="numero">{{ linea.suscriptores_activos }}</td>
+                  <td class="numero">
+                    {% if grupo.pendiente %}
                       <label class="sr-only" for="cantidad-{{ linea.pk }}">Cantidad de {{ linea.producto }}</label>
-                      <input type="number" id="cantidad-{{ linea.pk }}" name="cantidad" value="{{ linea.cantidad_sugerida }}" min="1" max="9999" step="1" inputmode="numeric" class="entrada-cifra">
-                      <button type="submit" class="boton-texto">Guardar</button>
-                    </form>
-                  {% else %}
-                    {{ linea.cantidad_sugerida }}
-                  {% endif %}
-                </td>
-                <td>
-                  {% if grupo.pendiente %}
-                    <form method="post" action="{% url 'restock:linea' linea.pk %}">
-                      {% csrf_token %}
-                      <input type="hidden" name="accion" value="quitar">
-                      <button type="submit" class="boton-texto boton-texto--critico">Quitar</button>
-                    </form>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                      <input type="number" id="cantidad-{{ linea.pk }}" name="cantidad-{{ linea.pk }}" form="cantidades-{{ grupo.clave }}" value="{{ linea.cantidad_sugerida }}" min="1" max="9999" step="1" inputmode="numeric" class="entrada-cifra">
+                    {% else %}
+                      {{ linea.cantidad_sugerida }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if grupo.pendiente %}
+                      <form method="post" action="{% url 'restock:linea' linea.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="quitar">
+                        <button type="submit" class="boton-icono boton-icono--critico" aria-label="Quitar {{ linea.producto }}" title="Quitar">{% include "_iconos.html" with icono="baja" %}</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if grupo.pendiente %}
+          <div class="acciones fila-5">
+            <button type="submit" form="cantidades-{{ grupo.clave }}" class="boton-seccion">Guardar cantidades</button>
+            <a href="{% url 'restock:proveedor' grupo.clave %}" class="boton-seccion boton-seccion--tenue">{% if grupo.despachable %}Despachar o descartar{% else %}Descartar{% endif %}</a>
+          </div>
+        {% endif %}
       </div>
-      {% if grupo.pendiente %}
-        <p><a href="{% url 'restock:proveedor' grupo.clave %}" class="boton-seccion">{% if grupo.despachable %}Despachar o descartar{% else %}Descartar{% endif %}</a></p>
-      {% endif %}
-    </section>
+    </details>
   {% endfor %}
 
   <section class="seccion" aria-labelledby="titulo-agregar">
@@ -104,4 +129,5 @@ CU-RST-PRO A1: generarla a mano (CO-068).
     {% if ultima %}<p class="texto-chico secundario">La última: {{ ultima }}, cerrada.</p>{% endif %}
   </div>
 {% endif %}
+{% include "restock/_filtro_js.html" %}
 {% endblock %}

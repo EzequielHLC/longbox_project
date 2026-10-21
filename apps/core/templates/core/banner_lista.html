@@ -33,7 +33,7 @@ las mismas imágenes ya procesadas.
               <td class="datos secundario">{{ banner.creado_en|date:"d/m/Y H:i" }}</td>
               <td class="acciones-de-fila">
                 <a href="{% url 'core:banner_editar' banner.pk %}" class="boton-menor">Modificar</a>
-                <a href="{% url 'core:banner_baja' banner.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+                <a data-dialogo href="{% url 'core:banner_baja' banner.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
               </td>
             </tr>
           {% endfor %}

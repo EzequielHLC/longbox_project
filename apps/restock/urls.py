@@ -10,6 +10,11 @@ urlpatterns = [
     path("", views.PropuestaView.as_view(), name="propuesta"),
     path("generar/", views.GenerarView.as_view(), name="generar"),
     path("agregar/", views.AgregarView.as_view(), name="agregar"),
+    path(
+        "proveedores/<int:clave>/cantidades/",
+        views.CantidadesView.as_view(),
+        name="cantidades",
+    ),
     path("lineas/<int:pk>/", views.LineaView.as_view(), name="linea"),
     path("proveedores/<int:clave>/", views.ProveedorView.as_view(), name="proveedor"),
     # El aviso de reposición del Cliente, desde la ficha pública (CU-RST-SUS).

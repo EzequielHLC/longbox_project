@@ -82,10 +82,23 @@ class AgregarView(CarritoMixin, View):
                 accion = "reservó" if resultado.linea.producto.estado == "pre_venta" else "agregó"
                 nivel, mensaje = "exito", f"Se {accion} «{producto.titulo}» en el carrito."
         if request.headers.get("X-Requested-With") == "fetch":
-            return JsonResponse(
-                {"nivel": nivel, "mensaje": mensaje, "unidades": servicio.unidades_en(carrito)},
-                status=400 if nivel == "error" else 200,
-            )
+            datos = {"nivel": nivel, "mensaje": mensaje, "unidades": servicio.unidades_en(carrito)}
+            if nivel != "error":
+                # Plan 00 de interfaz, U2: lo que muestra el carrito lateral.
+                consultado = servicio.consultar(carrito)
+                linea = next(
+                    (item for item in consultado.lineas if item.producto.pk == producto.pk), None
+                )
+                datos["carrito"] = {
+                    "titulo": producto.titulo,
+                    "precio": pesos(linea.precio) if linea else "",
+                    "portada": producto.portada.url if producto.portada else "",
+                    "total": pesos(consultado.total),
+                    "falta_envio_gratis": (
+                        pesos(consultado.envio.falta) if consultado.envio.falta else ""
+                    ),
+                }
+            return JsonResponse(datos, status=400 if nivel == "error" else 200)
         {"error": messages.error, "atencion": messages.warning, "exito": messages.success}[nivel](
             request, mensaje
         )

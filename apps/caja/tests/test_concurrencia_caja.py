@@ -13,8 +13,8 @@ from apps.accounts.models import Usuario
 from apps.accounts.tests.factories import UsuarioFactory
 from apps.caja.models import CierreDeCaja
 from apps.core.tests.concurrencia import a_la_vez, errores_internos, sesion_de
-from apps.pedidos.models import Pedido, TransaccionPago
-from apps.pedidos.tests.util import crear_pedido
+from apps.pedidos.models import TransaccionPago
+from apps.pedidos.tests.util import como_venta_de_mostrador, crear_pedido
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 def test_CO126_dos_cierres_a_la_vez_dejan_uno_solo_con_cada_transaccion_una_vez():
     for _ in range(4):
         pedido = crear_pedido(correo_invitado="x@correo.test", con_pago=False)
-        Pedido.objects.filter(pk=pedido.pk).update(canal=Pedido.PRESENCIAL)
+        como_venta_de_mostrador(pedido)
         TransaccionPago.objects.create(
             pedido=pedido,
             medio=TransaccionPago.EFECTIVO,

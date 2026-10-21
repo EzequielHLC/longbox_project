@@ -42,15 +42,13 @@ flujo y se enlazan desde acá.
     <div class="acciones"><button type="submit" class="boton-primario">Guardar mis datos</button></div>
   </form>
 
-  <aside class="resumen-carrito pila-3" aria-label="Acceso a la cuenta">
-    <p class="antetitulo">Código de cliente</p>
-    <p class="resumen-carrito__total"><span class="sin-envolver">{{ user.codigo_cliente }}</span></p>
-    <p class="texto-chico secundario">Decilo en el local para sumar y canjear puntos.</p>
+  {# El código de cliente está en el carnet, a la izquierda (plan 00 de interfaz, 4.3). #}
+  <aside class="resumen-carrito resumen-carrito--acciones pila-3" aria-label="Acceso a la cuenta">
     <p class="antetitulo">Correo</p>
     <p class="datos cortar-palabras">{{ user.email }}</p>
-    <a href="{% url 'cuenta:correo' %}" class="boton-texto">Cambiar el correo</a>
+    <p><a href="{% url 'cuenta:correo' %}" class="boton-seccion boton-seccion--tenue">Cambiar el correo</a></p>
     <p class="antetitulo">Contraseña</p>
-    <a href="{% url 'cuenta:contrasena' %}" class="boton-texto">Cambiar la contraseña</a>
+    <p><a href="{% url 'cuenta:contrasena' %}" class="boton-seccion boton-seccion--tenue">Cambiar la contraseña</a></p>
   </aside>
 </div>
 {% endblock %}

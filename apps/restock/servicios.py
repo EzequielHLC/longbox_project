@@ -21,6 +21,7 @@ from django.utils import timezone
 from apps.catalog.models import Producto, ProductoEditorial
 from apps.core.mail import cuerpo_html, enviar_correo
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.restock.models import LineaPropuestaRestock, PropuestaRestock, SuscripcionReposicion
 from apps.suppliers import pedidos as pedidos_a_proveedor
@@ -201,7 +202,7 @@ def _avisar_reposicion(suscripcion, enlace):
 def al_subir_stock(producto, antes, despues, *, origen=""):
     """El enganche de las subas de stock (B-05-001): se avisa después del commit."""
     if despues > antes:
-        transaction.on_commit(lambda: reposicion(producto, despues - antes, origen=origen))
+        despues_del_commit(reposicion, producto, despues - antes, origen=origen)
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +337,7 @@ def _generar(disparo, actor, ahora):
         # I-21: el ciclo y el botón generaron a la vez; quedó la otra.
         return ResultadoDeCiclo(motivo="pendiente")
     if productos:
-        transaction.on_commit(lambda: _avisar_propuesta(propuesta))
+        despues_del_commit(_avisar_propuesta, propuesta)
     return ResultadoDeCiclo(propuesta=propuesta)
 
 
@@ -419,6 +420,14 @@ class Grupo:
         return self.proveedor is not None and not self.proveedor.correo_comercial
 
     @property
+    def unidades(self):
+        return sum(linea.cantidad_sugerida for linea in self.lineas)
+
+    @property
+    def suscriptores(self):
+        return sum(linea.suscriptores_activos for linea in self.lineas)
+
+    @property
     def despachable(self):
         return self.pendiente and self.proveedor is not None and not self.sin_contacto
 
@@ -472,6 +481,27 @@ def ajustar_cantidad(linea_pk, cantidad):
         linea.cantidad_sugerida = cantidad
         linea.save(update_fields=["cantidad_sugerida"])
     return linea
+
+
+def ajustar_cantidades(propuesta, clave, cantidades):
+    """`CO-069` sobre varias líneas de un mismo proveedor, todo o nada (plan 00 de
+    interfaz, segunda parte, 14.3). `cantidades` va de la línea a su cantidad nueva;
+    las que no cambian no se tocan. Devuelve cuántas cambiaron."""
+    grupo = grupo_de(propuesta, clave)
+    actuales = {linea.pk: linea for linea in grupo.lineas}
+    cambiadas = 0
+    with transaction.atomic():
+        for pk, cantidad in cantidades.items():
+            linea = actuales.get(pk)
+            if linea is None or cantidad == linea.cantidad_sugerida:
+                continue
+            if cantidad is None or cantidad <= 0:
+                raise OperacionRechazada(
+                    f"«{linea.producto}»: la cantidad tiene que ser mayor que cero."
+                )
+            ajustar_cantidad(pk, cantidad)
+            cambiadas += 1
+    return cambiadas
 
 
 def eliminar_linea(linea_pk):
@@ -546,7 +576,7 @@ def despachar(propuesta, clave, actor):
             )
         envio = enviar_pedido_consolidado(grupo.proveedor, lineas, actor)
         if not envio.enviado:
-            transaction.on_commit(lambda: _avisar_fallo_de_pedido(grupo.proveedor, envio.error))
+            despues_del_commit(_avisar_fallo_de_pedido, grupo.proveedor, envio.error)
             return envio
         LineaPropuestaRestock.objects.filter(pk__in=[linea.pk for linea in lineas]).update(
             estado_despacho=LineaPropuestaRestock.DESPACHADO

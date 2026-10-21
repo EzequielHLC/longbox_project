@@ -380,10 +380,10 @@ def test_CO098_cancelado_el_articulo_sale_del_historial_activo(client, cliente):
     client.force_login(cliente)
 
     activos = client.get(reverse("cuenta:panel"))
-    historial = client.get(reverse("cuenta:historial"))
+    historial = client.get(reverse("cuenta:pedidos"))
 
     assert pedido not in activos.context["pedidos"]
-    assert pedido in historial.context["pedidos"]
+    assert pedido in historial.context["historial"]
 
 
 # ---------------------------------------------------------------------------

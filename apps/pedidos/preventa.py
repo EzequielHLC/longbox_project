@@ -14,7 +14,6 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
-from functools import partial
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
@@ -24,6 +23,7 @@ from django.utils import timezone
 from apps.almacen import servicios as almacen
 from apps.catalog.models import Producto, ProductoEditorial
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
+from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.pedidos.models import AvisoDePreVenta, LineaPedido, Pedido
 from apps.pedidos.servicios import AUTOMATICOS, avisar_cambio_de_estado, registrar_transicion
@@ -423,7 +423,7 @@ def _aplicar_demora(p, actor, momento, *, fecha_estimada=None, nota="", origen="
             continue
         resumen.pedidos.append(pedido)
         resumen.clientes.add(pedido.correo_de_contacto)
-        transaction.on_commit(partial(_avisar_demora, pedido, suyas, p, origen))
+        despues_del_commit(_avisar_demora, pedido, suyas, p, origen)
 
     RegistroAuditoria.registrar(
         accion=RegistroAuditoria.REGISTRO_DEMORA,
@@ -439,18 +439,16 @@ def _aplicar_demora(p, actor, momento, *, fecha_estimada=None, nota="", origen="
         ),
     )
     if resumen.errores:
-        transaction.on_commit(
-            partial(
-                avisos.avisar_administradores,
-                asunto=f"Demora de {p}: pedidos sin actualizar",
-                antetitulo="Demora",
-                titulo="Pedidos sin actualizar",
-                parrafos=[
-                    f"La demora de {p} quedó registrada, pero estos pedidos no se pudieron "
-                    "actualizar.",
-                ],
-                filas=[("Pedido", numero) for numero in resumen.errores],
-            )
+        despues_del_commit(
+            avisos.avisar_administradores,
+            asunto=f"Demora de {p}: pedidos sin actualizar",
+            antetitulo="Demora",
+            titulo="Pedidos sin actualizar",
+            parrafos=[
+                f"La demora de {p} quedó registrada, pero estos pedidos no se pudieron "
+                "actualizar.",
+            ],
+            filas=[("Pedido", numero) for numero in resumen.errores],
         )
     return resumen
 
@@ -603,18 +601,16 @@ def confirmar_ingreso(unidades, actor, *, origen=""):
         resumen.sumar(parcial)
 
     if resumen.errores:
-        transaction.on_commit(
-            partial(
-                avisos.avisar_administradores,
-                asunto="Ingreso de pre-ventas con errores",
-                antetitulo="Ingreso",
-                titulo="Productos sin confirmar",
-                parrafos=[
-                    "Estos productos no se pudieron confirmar y siguen en pre-venta. "
-                    "Vuelva a intentarlo desde «Pre-ventas por llegar».",
-                ],
-                filas=[("Producto", titulo) for titulo in resumen.errores],
-            )
+        despues_del_commit(
+            avisos.avisar_administradores,
+            asunto="Ingreso de pre-ventas con errores",
+            antetitulo="Ingreso",
+            titulo="Productos sin confirmar",
+            parrafos=[
+                "Estos productos no se pudieron confirmar y siguen en pre-venta. "
+                "Vuelva a intentarlo desde «Pre-ventas por llegar».",
+            ],
+            filas=[("Producto", titulo) for titulo in resumen.errores],
         )
     return resumen
 
@@ -675,7 +671,7 @@ def _ingresar(pk, cantidad, actor, origen, resumen):
         resumen.clientes.add(pedido.correo_de_contacto)
         if ubicar_pedido(pedido, actor, momento):
             resumen.pedidos.append(pedido.numero)
-            transaction.on_commit(partial(avisar_cambio_de_estado, pedido))
+            despues_del_commit(avisar_cambio_de_estado, pedido)
 
     # La opción 2: lo que llega queda guardado a nombre del Cliente (plan 18).
     for linea in cubiertas:
@@ -799,7 +795,7 @@ def cancelar_preventa(producto, actor):
             )
             for linea in cliente.reservas:  # plan 00, C2
                 puntos.descontar_ganados(cliente.usuario, linea, linea.cantidad)
-            transaction.on_commit(partial(_avisar_cancelacion, cliente, p))
+            despues_del_commit(_avisar_cancelacion, cliente, p)
 
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.CANCELACION_PREVENTA_LOTE,

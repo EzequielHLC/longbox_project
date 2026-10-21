@@ -57,9 +57,9 @@ Por eso no puede depender de nada que esté fuera de él.
                 {% else %}
                   <a href="{% url 'accounts:usuario_edicion' usuario.pk %}" class="boton-menor">Editar</a>
                   {% if usuario.estado == 'activo' %}
-                    <a href="{% url 'accounts:usuario_baja' usuario.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
+                    <a data-dialogo href="{% url 'accounts:usuario_baja' usuario.pk %}" class="boton-menor boton-menor--critico">Dar de baja</a>
                   {% elif usuario.se_puede_eliminar %}
-                    <a href="{% url 'accounts:usuario_eliminar' usuario.pk %}" class="boton-menor boton-menor--critico">Eliminar</a>
+                    <a data-dialogo href="{% url 'accounts:usuario_eliminar' usuario.pk %}" class="boton-menor boton-menor--critico">Eliminar</a>
                   {% endif %}
                 {% endif %}
               </td>

@@ -25,8 +25,8 @@ con el Cliente (prueba de destrucción, devolución) va por correo o teléfono.
   {% if caso.abierto %}
     <div class="fila-2">
       {% if opciones.cambio %}<a href="{% url 'devoluciones:cambio' caso.pk %}" class="boton-primario">Autorizar cambio</a>{% endif %}
-      {% if opciones.medio %}<a href="{% url 'devoluciones:reembolso_medio' caso.pk %}" class="{% if opciones.cambio %}boton-seccion{% else %}boton-primario{% endif %}">Reembolsar por el medio de pago</a>{% endif %}
-      {% if opciones.puntos %}<a href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>{% endif %}
+      {% if opciones.medio %}<a data-dialogo href="{% url 'devoluciones:reembolso_medio' caso.pk %}" class="{% if opciones.cambio %}boton-seccion{% else %}boton-primario{% endif %}">Reembolsar por el medio de pago</a>{% endif %}
+      {% if opciones.puntos %}<a data-dialogo href="{% url 'devoluciones:reembolso' caso.pk %}" class="boton-seccion">Reembolsar en puntos</a>{% endif %}
       <a href="{% url 'devoluciones:rechazo' caso.pk %}" class="boton-texto">Rechazar</a>
     </div>
   {% endif %}

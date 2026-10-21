@@ -24,7 +24,7 @@ y el borde fuerte del recuadro.
 {% if not proveedor.esta_activo %}
   <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está dado de baja.</span></p>
 {% else %}
-  <div class="panel panel--atencion formulario--angosto">
+  <div data-dialogo-contenido="critico" class="panel panel--atencion formulario--angosto">
     <div class="seccion__titulo"><h2>Qué implica la baja</h2></div>
     <ul class="lista-renglones">
       <li>

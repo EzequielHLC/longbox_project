@@ -129,7 +129,9 @@ def test_CO182_hace_las_mismas_consultas_con_pocos_o_muchos_pedidos(
     for _ in range(20):
         crear_pedido(cliente, lineas=(("1000", 1), ("2000", 2)))
 
-    with django_assert_max_num_queries(12):
+    # 12 de la lista, más 4 fijas del plan 00 de interfaz: los contadores del menú
+    # (U5) y las transiciones del riel de cada fila, precargadas en una (P7).
+    with django_assert_max_num_queries(16):
         client_admin.get(URL_LISTA)
 
 

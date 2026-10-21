@@ -68,19 +68,19 @@ esconderse con CSS.
         <li><a href="{% url 'catalog:producto_editar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="editar" %}<span>Editar producto</span></a></li>
         {% if restauracion.aplica %}
           {# CO-031: sólo cuando hay un precio calculado al cual volver. #}
-          <li><a href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado ({{ restauracion.precio_recalculado|pesos }})</span></a></li>
+          <li><a data-dialogo href="{% url 'catalog:producto_restaurar_precio' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Restaurar precio calculado ({{ restauracion.precio_recalculado|pesos }})</span></a></li>
         {% endif %}
         {% if puede_demorar %}
           <li><a href="{% url 'pedidos:demora' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="atencion" %}<span>Registrar demora</span></a></li>
         {% endif %}
         {% if producto.esta_en_pre_venta %}
           <li><a href="{% url 'pedidos:preventas' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Confirmar ingreso</span></a></li>
-          <li><a href="{% url 'pedidos:cancelar_preventa' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Cancelar pre-venta</span></a></li>
+          <li><a data-dialogo href="{% url 'pedidos:cancelar_preventa' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Cancelar pre-venta</span></a></li>
         {% endif %}
         {% if producto.estado == "descatalogado" %}
-          <li><a href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
+          <li><a data-dialogo href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
         {% elif producto.estado != "cancelado_editorial" %}
-          <li><a href="{% url 'catalog:producto_baja' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
+          <li><a data-dialogo href="{% url 'catalog:producto_baja' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a></li>
         {% endif %}
       </ul>
     {% endif %}

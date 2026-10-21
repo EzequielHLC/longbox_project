@@ -33,7 +33,7 @@ class CierreRechazado(ValueError):
 
 def _sin_cierre():
     return TransaccionPago.objects.filter(incluida_en_cierre=False).select_related(
-        "pedido", "solicitud"
+        "pedido", "pedido__usuario", "solicitud", "solicitud__usuario"
     )
 
 

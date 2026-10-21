@@ -119,6 +119,7 @@ em, i { font-style: normal; }
 .pila-1 { display: flex; flex-direction: column; gap: var(--esp-1); }
 .pila-2 { display: flex; flex-direction: column; gap: var(--esp-2); }
 .pila-3 { display: flex; flex-direction: column; gap: var(--esp-3); }
+.pila-4 { display: flex; flex-direction: column; gap: var(--esp-4); }
 .pila-5 { display: flex; flex-direction: column; gap: var(--esp-5); }
 .pila-6 { display: flex; flex-direction: column; gap: var(--esp-6); }
 
@@ -1050,7 +1051,7 @@ em, i { font-style: normal; }
   animation: cinta-corre 600ms linear infinite;
 }
 
-:is(.pila, .pila-1, .pila-2, .pila-3, .pila-5, .pila-6, .campo, .contenido-publico)
+:is(.pila, .pila-1, .pila-2, .pila-3, .pila-4, .pila-5, .pila-6, .campo, .contenido-publico)
   > :is(.boton-primario, .boton-seccion, .boton-menor, .boton-texto) { align-self: flex-start; }
 
 .acciones {
@@ -1872,7 +1873,13 @@ a.cifra:hover .cifra__rotulo { color: var(--texto); }
   box-shadow: var(--sombra-golpe-2);
   animation: dialogo-entra var(--dur-2) var(--curva-golpe) both;
 }
-.dialogo::backdrop { background: var(--trama-rayas), color-mix(in srgb, var(--noche) 80%, transparent); }
+/* El telón: noche al 70 % con la trama y un desenfoque de 4px (plan 00 de
+   interfaz, ambigüedad 2). Es el único `backdrop-filter` del sistema; donde el
+   navegador no lo soporta, queda el telón sin desenfoque. */
+.dialogo::backdrop {
+  background: var(--trama-rayas), color-mix(in srgb, var(--noche) 70%, transparent);
+  backdrop-filter: blur(4px);
+}
 
 /* ---------------------------------------------------------------------
    Tablas y listas
@@ -1896,7 +1903,8 @@ table { border-collapse: collapse; width: 100%; }
 .tabla td {
   padding: var(--esp-2) var(--esp-3);
   border-bottom: var(--trazo) var(--linea);
-  vertical-align: top;
+  /* Al medio: un campo o un botón en la fila queda a la altura del texto. */
+  vertical-align: middle;
 }
 /* Un número que se carga dentro de una fila (unidades recibidas, plan 01). */
 .tabla .entrada-cifra { width: 7rem; text-align: right; }
@@ -2674,25 +2682,8 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .barra-envio__pista--completa::-webkit-progress-value { background: var(--ok); }
 .barra-envio__pista--completa::-moz-progress-bar { background: var(--ok); }
 
-/* «Mi cuenta» (CU-CLI-HIS): las secciones del panel, como el menú de la tienda. */
-.pestanas-cuenta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2) var(--esp-5);
-  border-bottom: var(--trazo) var(--linea);
-}
-.pestanas-cuenta a {
-  padding-block: var(--esp-2);
-  border-bottom: var(--trazo-grueso) transparent;
-  margin-bottom: -1px;
-  color: var(--texto-2);
-  font-weight: 700;
-  text-decoration: none;
-}
-.pestanas-cuenta a:hover { color: var(--texto-fuerte); }
-.pestanas-cuenta a[aria-current="page"] { color: var(--texto-fuerte); border-bottom-color: var(--acento); }
-/* Una fila de la cuenta: un pedido o un lote, con su estado y su cifra a la derecha. */
-.pedido-de-cuenta { flex-wrap: wrap; align-items: center; justify-content: space-between; }
+/* Una fila de la cuenta: un lote de puntos, con su estado y su cifra a la derecha. */
+.fila-de-cuenta { flex-wrap: wrap; align-items: center; justify-content: space-between; }
 
 /* Resumen de la compra (CU-TDA-CMP, CU-TDA-INV): concepto a la izquierda, importe a la derecha. */
 .resumen-compra { display: grid; gap: var(--esp-2); margin: 0; }
@@ -2919,6 +2910,721 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .carrusel__indicadores > span[aria-current="true"] { background: var(--acento); border-color: var(--acento); }
 
 /* ---------------------------------------------------------------------
+   Plan 00 de interfaz
+   --------------------------------------------------------------------- */
+
+/* Tarjeta de opción (4.1): para elegir entre pocas opciones con consecuencias
+   distintas. El botón de opción es el nativo; la tarjeta es su <label>.
+   Patrón tomado de las «radio cards» brutalistas de Uiverse.io (MIT), pasado por
+   la regla de adaptación de RECURSOS_VISUALES.md: sin radios ni sombras difusas. */
+.opciones-tarjeta {
+  display: grid;
+  gap: var(--esp-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+@media (min-width: 640px) {
+  .opciones-tarjeta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.opcion-tarjeta {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "opcion icono titulo"
+    "opcion icono detalle";
+  align-items: center;
+  gap: var(--esp-1) var(--esp-3);
+  padding: var(--esp-4);
+  border: var(--trazo-fuerte) var(--borde-control);
+  background: var(--fondo-2);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--curva-golpe), background-color var(--dur-1) var(--curva-golpe),
+    transform var(--dur-2) var(--curva-golpe);
+}
+.opcion-tarjeta:hover { border-color: var(--texto); }
+.opcion-tarjeta:active { transform: translate(1px, 1px); }
+.opcion-tarjeta > input { grid-area: opcion; }
+.opcion-tarjeta__icono { grid-area: icono; display: inline-grid; color: var(--texto-2); }
+.opcion-tarjeta__icono .icono { width: 28px; height: 28px; }
+.opcion-tarjeta__titulo {
+  grid-area: titulo;
+  font: 700 var(--pub-titulo-3) / 1.15 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  color: var(--texto-fuerte);
+}
+.opcion-tarjeta__detalle { grid-area: detalle; font-size: var(--pub-chico); color: var(--texto-2); }
+.opcion-tarjeta:has(input:focus-visible) { outline: 2px solid var(--foco); outline-offset: 2px; }
+.opcion-tarjeta:has(input:checked) { border-color: var(--acento); background: var(--acento-suave); }
+.opcion-tarjeta:has(input:checked) .opcion-tarjeta__icono { color: var(--acento-texto); }
+/* La esquina sesgada con la marca: elegida no depende sólo del color. */
+.opcion-tarjeta:has(input:checked)::after {
+  content: "✓ Elegida";
+  position: absolute;
+  top: calc(-1 * var(--esp-3));
+  right: var(--esp-3);
+  padding: 0 var(--esp-2);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: 700 var(--pub-rotulo) / 1.6 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  transform: skewX(var(--sesgo));
+}
+
+/* Las acciones de un resumen lateral van a lo ancho: dos botones de igual peso
+   tienen el mismo tamaño aunque su texto no lo tenga. */
+.resumen-carrito--acciones :is(.boton-primario, .boton-seccion) { align-self: stretch; width: 100%; }
+.resumen-carrito--acciones .boton-seccion { padding-inline: var(--esp-3); }
+.resumen-carrito--acciones form { display: flex; flex-direction: column; gap: var(--esp-2); }
+
+/* Botón de ícono: una acción de fila que se reconoce por su ícono (quitar del
+   carrito). Lleva su nombre en `aria-label` y `title`; nunca va solo en una
+   acción que no sea evidente. Mide lo mismo que el control de cantidad. */
+.boton-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: var(--trazo-fuerte) var(--borde-control);
+  background: transparent;
+  color: var(--texto-2);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--curva-golpe), border-color var(--dur-1) var(--curva-golpe),
+    transform var(--dur-2) var(--curva-golpe);
+}
+.boton-icono .icono { width: 22px; height: 22px; }
+.boton-icono:hover { color: var(--texto-fuerte); border-color: var(--texto); }
+.boton-icono:active { transform: translate(1px, 1px); }
+.boton-icono--critico:hover { color: var(--error); border-color: var(--error); }
+.modo-operativo .boton-icono { width: 40px; height: 40px; }
+/* Una tabla con un campo y su botón en la misma celda: los dos a la misma altura. */
+.tabla--centrada td .fila-2 { align-items: center; flex-wrap: nowrap; }
+
+/* El código del caso, grande para copiarlo o dictarlo; lo devuelto, al lado. */
+.codigos-de-solicitud { display: grid; gap: var(--esp-3); margin: 0; padding: 0; list-style: none; }
+.codigos-de-solicitud li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--esp-1) var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  border: var(--trazo) dashed var(--borde-control);
+}
+.codigos-de-solicitud__codigo { font-size: var(--op-cifra); font-weight: 700; line-height: 1; color: var(--texto-fuerte); }
+/* El botón de arrepentimiento en el pie: destacado, con el borde del acento. */
+.pie-publico .boton-arrepentimiento { border-color: var(--acento); }
+
+/* Caja (segunda parte, 13.5): el total destacado, los medios con su proporción. */
+.cifra--total { outline: var(--trazo-fuerte) var(--acento); outline-offset: -2px; }
+.cifra--total { grid-column: span 2; }
+.cifra--total .cifra__valor { font-size: calc(var(--op-cifra) * 1.3); white-space: nowrap; }
+@media (max-width: 639px) { .cifra--total { grid-column: auto; } }
+.cifra--vacia .cifra__valor { color: var(--texto-2); }
+.barra-proporcion {
+  display: block;
+  width: 100%;
+  height: var(--esp-2);
+  appearance: none;
+  border: var(--trazo) var(--linea);
+  background: var(--fondo);
+  color: var(--acento);
+}
+.barra-proporcion::-webkit-progress-bar { background: var(--fondo); }
+.barra-proporcion::-webkit-progress-value { background: var(--acento); }
+.barra-proporcion::-moz-progress-bar { background: var(--acento); }
+/* Filtro de una lista en fichas: la elegida, con el fondo de lo elegido y su peso. */
+.filtro-de-chips { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.filtro-de-chips a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-1) var(--esp-3);
+  border: var(--trazo) var(--borde-control);
+  color: var(--texto-2);
+  font-weight: 700;
+  font-size: var(--op-chico);
+  text-decoration: none;
+  transition: border-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.filtro-de-chips a .icono { width: 16px; height: 16px; }
+.filtro-de-chips a:hover { border-color: var(--texto); color: var(--texto-fuerte); }
+.filtro-de-chips a[aria-current="true"] { border-color: var(--acento); background: var(--acento-suave); color: var(--texto-fuerte); }
+
+/* Mostrador (segunda parte, 13): el total grande, los medios como tarjetas, el
+   vuelto sólo con efectivo. */
+.cobro__total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: var(--esp-3) var(--esp-4);
+  border: var(--trazo-fuerte) var(--acento);
+  font: 800 var(--op-cifra) / 1 var(--fuente-datos);
+  white-space: nowrap;
+  color: var(--texto-fuerte);
+  font-variant-numeric: tabular-nums;
+}
+.cobro__total .etiqueta { font-family: var(--fuente-display); }
+.opciones-tarjeta.opciones-tarjeta--medios { grid-template-columns: minmax(0, 1fr); gap: var(--esp-2); }
+.opciones-tarjeta--medios > legend { margin-bottom: var(--esp-2); }
+.opcion-tarjeta--compacta {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-areas: "opcion icono titulo";
+  padding: var(--esp-2) var(--esp-3);
+}
+.opcion-tarjeta--compacta .opcion-tarjeta__titulo { font-size: var(--op-base); }
+.opcion-tarjeta--compacta .opcion-tarjeta__icono .icono { width: 20px; height: 20px; }
+.opcion-tarjeta--compacta:has(input:checked)::after { content: "✓"; top: calc(-1 * var(--esp-2)); right: var(--esp-2); }
+.cobro__recibido { display: none; }
+.cobro:has(input[name="medio"][value="efectivo"]:checked) .cobro__recibido { display: flex; }
+.cobro__vuelto { margin: 0; font: 800 var(--op-titulo-1) / 1.1 var(--fuente-display); color: var(--ok); }
+.cobro__vuelto--falta { color: var(--error); }
+.portada-mini--chica { width: 1.75rem; border-width: 1px; }
+/* «Venta registrada»: el sello de lo que terminó, girado como sobre el papel. */
+.venta-registrada { border: var(--trazo-fuerte) var(--ok); }
+.venta-registrada__sello {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  align-self: flex-start;
+  margin: 0;
+  padding: var(--esp-1) var(--esp-3);
+  border: var(--trazo-fuerte) var(--ok);
+  color: var(--ok);
+  font: 800 var(--op-titulo-2) / 1.2 var(--fuente-display);
+  text-transform: uppercase;
+  transform: rotate(var(--giro-sticker));
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+}
+
+/* Restock (segunda parte, 14): cada proveedor en un bloque que se pliega. */
+.grupo-restock { border: var(--trazo) var(--linea); background: var(--fondo-2); }
+.grupo-restock + .grupo-restock { margin-top: var(--esp-3); }
+.grupo-restock--atencion { border-color: var(--acento); }
+.grupo-restock__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  cursor: pointer;
+  list-style: none;
+}
+.grupo-restock__cabeza::-webkit-details-marker { display: none; }
+.grupo-restock__cabeza::before {
+  content: "›";
+  color: var(--texto-2);
+  transition: transform var(--dur-2) var(--curva-golpe);
+}
+.grupo-restock[open] > .grupo-restock__cabeza::before { transform: rotate(90deg); }
+.grupo-restock__cabeza:hover { background: var(--fondo-3); }
+.grupo-restock__nombre {
+  font: 700 var(--op-titulo-2) / 1.2 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+}
+.grupo-restock__cuenta { flex: 1; font-size: var(--op-chico); color: var(--texto-2); }
+.grupo-restock__cuerpo { padding: 0 var(--esp-4) var(--esp-4); }
+
+/* P2: la tapa dibujada de un producto sin imagen. Trama de imprenta, la editorial
+   arriba, el título grande y el número en un rombo de señal. */
+.portada-vacia--tapa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--esp-1);
+  padding: var(--esp-3);
+  border-style: solid;
+  border-color: var(--texto-2);
+  background: var(--trama-puntos-grande), var(--fondo-3);
+  text-align: left;
+  overflow: hidden;
+}
+.portada-vacia__editorial {
+  font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--acento-texto);
+}
+.portada-vacia__titulo {
+  font: 800 var(--pub-titulo-3) / 0.95 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+  overflow-wrap: anywhere;
+}
+.portada-vacia__numero {
+  padding: 0 var(--esp-2);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: 800 var(--op-titulo-2) / 1.3 var(--fuente-display);
+  transform: skewX(var(--sesgo));
+}
+.portada-vacia__nota { font-size: var(--pub-chico); color: var(--texto-2); }
+/* P6: al hacer clic, la tarjeta se hunde en el papel, como el botón primario. */
+.tarjeta-producto:active { transform: none; box-shadow: none; }
+/* P5: el estado vacío del escaparate lleva un sticker; el texto sigue sobrio. */
+.modo-publico .vacio::before {
+  content: "¡NADA POR ACÁ!";
+  align-self: center;
+  padding: var(--esp-1) var(--esp-3);
+  border: var(--trazo-fuerte) var(--noche);
+  background: var(--acento);
+  color: var(--noche);
+  font: 400 var(--pub-grito) / 1 var(--fuente-grito);
+  transform: rotate(var(--giro-sticker));
+  animation: sticker-pega var(--dur-3) var(--curva-resorte) both;
+}
+
+/* U2: el carrito lateral, pegado al borde derecho y a todo el alto. */
+.cajon-carrito {
+  width: min(24rem, 100vw);
+  height: 100vh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border-width: 0 0 0 var(--esp-1);
+  border-color: var(--acento);
+  overflow: auto;
+}
+.cajon-carrito > .pila-4 { padding: 0 var(--esp-5) var(--esp-5); }
+.cajon-carrito .dialogo__cabeza { padding-inline: 0; }
+.cajon-carrito .dialogo__cabeza h2 { display: inline-flex; align-items: center; gap: var(--esp-2); }
+.cajon-carrito .dialogo__cabeza h2 .icono { color: var(--ok); }
+.cajon-carrito__producto { display: flex; align-items: center; gap: var(--esp-4); }
+.cajon-carrito__producto .portada-mini { width: 4rem; }
+.cajon-carrito__titulo {
+  font: 700 var(--pub-titulo-3) / 1.15 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  color: var(--texto-fuerte);
+}
+
+/* U5: lo que espera en cada sección del menú, en un rótulo chico a la derecha. */
+.contador-menu {
+  margin-left: auto;
+  min-width: 1.5rem;
+  padding: 0 var(--esp-1);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: 700 var(--op-rotulo) / 1.6 var(--fuente-datos);
+  text-align: center;
+  clip-path: var(--forma-corte-chico);
+}
+
+/* P7: el riel reducido debajo del estado, en la fila de la lista de pedidos. */
+.riel-de-fila { min-width: 9rem; max-width: 14rem; }
+
+/* P1: los pasos de la compra, numerados como los de una historieta por entregas. */
+.pasos-compra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pasos-compra__paso { display: inline-flex; align-items: baseline; gap: var(--esp-2); color: var(--texto-2); }
+.pasos-compra__numero {
+  font: 800 var(--pub-titulo-3) / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  color: transparent;
+  -webkit-text-stroke: 1px var(--texto-2);
+}
+.pasos-compra__nombre {
+  font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+}
+.pasos-compra__paso--hecho .pasos-compra__numero { color: var(--texto); -webkit-text-stroke: 0; }
+.pasos-compra__paso--actual { color: var(--texto-fuerte); }
+.pasos-compra__paso--actual .pasos-compra__numero { color: var(--acento); -webkit-text-stroke: 0; }
+
+/* U1: las sugerencias del buscador, en una hoja que cae debajo del campo. */
+.sugerencias-capa {
+  position: absolute;
+  top: calc(100% + var(--esp-1));
+  left: 0;
+  right: 0;
+  z-index: 30;
+  border: var(--trazo-fuerte) var(--texto);
+  background: var(--fondo-2);
+  box-shadow: var(--sombra-golpe-2) var(--golpe);
+}
+.sugerencias { margin: 0; padding: var(--esp-1) 0; list-style: none; }
+.sugerencias__producto,
+.sugerencias__todos {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  color: var(--texto);
+  text-decoration: none;
+}
+.sugerencias__producto:hover,
+.sugerencias__producto:focus-visible,
+.sugerencias__todos:hover,
+.sugerencias__todos:focus-visible { background: var(--fondo-3); outline: none; box-shadow: inset 3px 0 0 var(--acento); }
+.sugerencias__producto .portada-mini { width: 2rem; border-width: 1px; }
+.sugerencias__datos { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.sugerencias__titulo { font-weight: 700; color: var(--texto-fuerte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sugerencias__precio { font-weight: 700; color: var(--texto-fuerte); }
+.sugerencias__todos { justify-content: center; border-top: var(--trazo) var(--linea); font-weight: 700; color: var(--acento-texto); }
+.sugerencias__vacio { padding: var(--esp-3); color: var(--texto-2); }
+
+/* Riel de estados del pedido (4.2). Cada paso es una columna; el tramo que llega
+   a un paso es su `::before`, del centro del anterior al centro de éste. */
+.riel { display: grid; gap: var(--esp-3); }
+.riel__pasos {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.riel__paso {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--esp-1);
+  text-align: center;
+}
+.riel__paso:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 19px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--linea);
+  transform-origin: left center;
+}
+.riel__paso--hecho:not(:first-child)::before { background: var(--acento); }
+.riel__marca {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: var(--trazo-fuerte) dashed var(--borde-control);
+  background: var(--fondo);
+  color: var(--texto-2);
+}
+.riel__paso--hecho .riel__marca { border-style: solid; border-color: var(--texto); color: var(--texto); }
+/* El paso actual: relleno de señal, girado como un sello sobre el papel. */
+.riel__paso--actual .riel__marca {
+  border-color: var(--acento);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  transform: rotate(var(--giro-sticker));
+}
+.riel__nombre {
+  font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.riel__paso--hecho .riel__nombre { color: var(--texto); }
+.riel__paso--actual .riel__nombre { color: var(--texto-fuerte); }
+.riel__fecha { font-size: var(--pub-chico); color: var(--texto-2); }
+/* El camión ocupa el tramo que llega al paso actual y lo recorre una vez. */
+.riel__vehiculo {
+  position: absolute;
+  top: -4px;
+  right: calc(50% + 24px);
+  width: calc(100% - 48px);
+  display: flex;
+  justify-content: flex-end;
+  color: var(--acento-texto);
+  pointer-events: none;
+}
+.riel__vehiculo .icono { width: 24px; height: 24px; }
+.riel--animar .riel__paso--actual:not(:first-child)::before {
+  animation: riel-llena var(--dur-5) var(--curva-golpe) both;
+}
+.riel--animar .riel__vehiculo { animation: camion-avanza var(--dur-5) var(--curva-golpe) both; }
+.riel--animar .riel__paso--actual .riel__marca {
+  animation: sello var(--dur-2) var(--curva-resorte) var(--dur-5) both;
+}
+/* Una interrupción se dice con su palabra, sobre una franja de cinta. */
+.riel__interrupcion {
+  justify-self: start;
+  margin: 0;
+  padding: 3px;
+  background: var(--cinta);
+  transform: skewX(var(--sesgo));
+}
+.riel__interrupcion span {
+  display: inline-block;
+  padding: 0 var(--esp-2);
+  background: var(--noche);
+  color: var(--senal);
+  font: 700 var(--pub-rotulo) / 1.6 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+}
+.riel--interrumpido .riel__paso--actual .riel__marca {
+  border-color: var(--texto);
+  background: var(--fondo-3);
+  color: var(--texto);
+  transform: none;
+}
+/* Reducido: las marcas y los tramos, para las listas. */
+.riel--reducido .riel__marca { width: 24px; height: 24px; border-width: 2px; }
+.riel--reducido .riel__marca .icono { width: 14px; height: 14px; }
+.riel--reducido .riel__paso:not(:first-child)::before { top: 11px; height: 2px; }
+.riel--reducido .riel__interrupcion { display: none; }
+/* En el operativo, el riel habla en voz baja: la escala fija del mostrador. */
+.modo-operativo .riel__nombre { font-size: var(--op-rotulo); }
+.modo-operativo .riel__fecha { font-size: var(--op-chico); }
+
+/* «Mi cuenta» (4.3): el carnet y la navegación a la izquierda, la sección a la derecha. */
+/* Como el catálogo, cambia la columna apilada de las secciones por una grilla. */
+.seccion-publica > .columna-publica.cuenta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--esp-6);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .seccion-publica > .columna-publica.cuenta { grid-template-columns: 18rem minmax(0, 1fr); }
+  .cuenta__lado { position: sticky; top: calc(64px + var(--esp-4)); }
+}
+.cuenta__lado { display: grid; gap: var(--esp-4); }
+.carnet {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: var(--esp-2);
+  padding: var(--esp-5) var(--esp-5) var(--esp-4);
+  border-top: var(--esp-3) solid transparent;
+}
+.carnet::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--esp-3)) 0 0;
+  z-index: -1;
+  background: var(--fondo-2);
+  clip-path: var(--forma-corte);
+}
+/* La franja de pantalla vieja arriba del carnet. */
+.carnet::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--esp-3)) 0 auto;
+  height: var(--esp-3);
+  background: var(--trama-rayas), var(--acento);
+  clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% 100%, 0 100%);
+}
+.carnet__rotulo {
+  margin: 0;
+  font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--acento-texto);
+}
+.carnet__nombre {
+  margin: 0;
+  font: 800 var(--pub-titulo-3) / 1.1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+  overflow-wrap: anywhere;
+}
+.carnet__codigo {
+  display: grid;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--trazo) dashed var(--borde-control);
+}
+.carnet__codigo .datos { font-size: var(--op-cifra); font-weight: 700; line-height: 1; color: var(--texto-fuerte); letter-spacing: 0.08em; }
+.carnet__datos { display: grid; gap: var(--esp-3); margin: 0; }
+.carnet__datos > div { display: grid; gap: var(--esp-1); }
+.carnet__datos dt {
+  font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.carnet__datos dd { display: grid; gap: var(--esp-1); margin: 0; }
+.carnet__datos a { font-weight: 700; color: var(--texto-fuerte); }
+.secciones-cuenta { display: grid; gap: var(--esp-1); }
+.secciones-cuenta a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  color: var(--texto-2);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--dur-1) var(--curva-golpe), background-color var(--dur-1) var(--curva-golpe);
+}
+.secciones-cuenta a:hover { background: var(--fondo-3); color: var(--texto-fuerte); }
+.secciones-cuenta a[aria-current="page"] { color: var(--texto-fuerte); background: var(--fondo-2); }
+.secciones-cuenta a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--esp-1);
+  bottom: var(--esp-1);
+  width: 4px;
+  background: var(--acento);
+  transform: skewY(var(--sesgo));
+  animation: marcador-entra var(--dur-2) var(--curva-golpe) both;
+}
+/* En el celular: el carnet en una franja y las secciones como pestañas. */
+@media (max-width: 899px) {
+  .carnet { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .carnet__rotulo, .carnet__datos { grid-column: 1 / -1; }
+  .carnet__datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .secciones-cuenta {
+    display: flex;
+    overflow-x: auto;
+    border-bottom: var(--trazo) var(--linea);
+    scrollbar-width: thin;
+  }
+  .secciones-cuenta a { flex-shrink: 0; }
+  .secciones-cuenta a[aria-current="page"]::before {
+    top: auto;
+    bottom: 0;
+    left: var(--esp-3);
+    right: var(--esp-3);
+    width: auto;
+    height: 3px;
+    transform: skewX(var(--sesgo));
+    animation: none;
+  }
+}
+
+/* Un pedido en la lista: portadas, número con el riel reducido, y a la derecha
+   el estado y lo cobrado. */
+.pedidos-de-cuenta { display: grid; gap: var(--esp-4); margin: 0; padding: 0; list-style: none; }
+.pedido-de-cuenta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--esp-3) var(--esp-4);
+  align-items: center;
+  padding: var(--esp-4);
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-2);
+  transition: transform var(--dur-2) var(--curva-golpe), box-shadow var(--dur-2) var(--curva-golpe);
+}
+.pedido-de-cuenta:hover { transform: translate(-2px, -2px); box-shadow: var(--sombra-golpe-1) var(--golpe); }
+.pedido-de-cuenta__cierre {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--esp-3);
+}
+@media (min-width: 640px) {
+  .pedido-de-cuenta { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .pedido-de-cuenta__cierre { grid-column: auto; flex-direction: column; align-items: flex-end; }
+}
+.pedido-de-cuenta__numero {
+  font: 700 var(--pub-titulo-3) / 1.15 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  color: var(--texto-fuerte);
+  text-decoration: none;
+}
+.pedido-de-cuenta__numero::after { content: ""; position: absolute; inset: 0; }
+/* Lo que se puede tocar dentro de la tarjeta queda por encima del enlace que la cubre:
+   sin esto, «Cancelar aviso» abría la ficha del producto en vez de enviar. */
+.pedido-de-cuenta__cierre :is(a, button, form, label, input) { position: relative; z-index: 1; }
+/* Un artículo que se puede elegir: elegido, con el fondo y el borde de lo elegido. */
+.pedido-de-cuenta--elegible { cursor: pointer; }
+.pedido-de-cuenta--elegible:has(input:checked) { border-color: var(--acento); background: var(--acento-suave); }
+.pedido-de-cuenta { position: relative; }
+.pedido-de-cuenta__numero:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.pedido-de-cuenta__total { font-weight: 700; font-size: var(--op-titulo-2); color: var(--texto-fuerte); }
+.pedido-de-cuenta__datos .riel { max-width: 22rem; }
+.pedido-de-cuenta__portadas { display: flex; }
+.portada-mini {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  aspect-ratio: 2 / 3;
+  border: var(--trazo-fuerte) var(--texto-fuerte);
+  background: var(--fondo-3);
+  overflow: hidden;
+}
+.portada-mini + .portada-mini { margin-left: calc(-1 * var(--esp-4)); }
+.portada-mini:nth-child(2) { transform: rotate(4deg); }
+.portada-mini:nth-child(3) { transform: rotate(var(--giro-sticker)); }
+.portada-mini img { width: 100%; height: 100%; object-fit: cover; }
+.portada-mini__vacia { color: var(--texto-2); }
+.portada-mini__vacia .icono { width: 16px; height: 16px; }
+.portada-mini--mas {
+  font: 700 var(--op-chico) / 1 var(--fuente-datos);
+  color: var(--texto-fuerte);
+}
+
+/* Diálogo de confirmación (4.4): cabeza con el título y la cruz; el cuerpo es el
+   bloque de la pantalla de confirmación. Los destructivos llevan la cinta. */
+.dialogo--confirmacion {
+  width: min(40rem, calc(100vw - 2 * var(--esp-4)));
+  max-height: calc(100vh - 2 * var(--esp-6));
+  padding: 0;
+  overflow: auto;
+}
+.dialogo__cabeza {
+  position: relative;
+  display: grid;
+  gap: var(--esp-1);
+  padding: var(--esp-5) calc(var(--esp-5) + 40px) var(--esp-3) var(--esp-5);
+  border-bottom: var(--trazo) var(--linea);
+}
+.dialogo__cabeza h2 {
+  margin: 0;
+  font: 800 var(--op-titulo-1) / 1.1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+}
+.dialogo__cabeza p { margin: 0; }
+.dialogo__cerrar {
+  position: absolute;
+  top: var(--esp-4);
+  right: var(--esp-4);
+  width: 32px;
+  height: 32px;
+  border: var(--trazo) var(--borde-control);
+  background: transparent;
+  color: var(--texto);
+  font: 700 var(--op-titulo-2) / 1 var(--fuente-interfaz);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.dialogo__cerrar:hover { border-color: var(--texto); color: var(--texto-fuerte); }
+.dialogo__cuerpo { display: flex; flex-direction: column; gap: var(--esp-4); padding: var(--esp-5); }
+/* La cinta de la pantalla queda en la cabeza del diálogo, no en el cuerpo. */
+.dialogo__cuerpo.panel--atencion { padding-top: var(--esp-5); }
+.dialogo__cuerpo.panel--atencion::after,
+.dialogo__cuerpo::before { content: none; }
+.dialogo--critico { border-color: var(--error); box-shadow: var(--sombra-golpe-2) var(--error); }
+.dialogo--critico .dialogo__cabeza { padding-top: calc(var(--esp-5) + 8px); }
+.dialogo--critico .dialogo__cabeza::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 8px;
+  background: var(--cinta);
+}
+.dialogo--critico .boton-primario::before { background: var(--error); }
+.dialogo--critico .boton-primario { color: var(--sobre-error); }
+
+/* ---------------------------------------------------------------------
    Catálogo de animaciones (identidad_visual.md). No se crean otras.
    --------------------------------------------------------------------- */
 @keyframes titulo-glitch {
@@ -2991,6 +3697,19 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   from { background-position: 0 100%; }
   to   { background-position: 40px 100%; }
 }
+/* Plan 00 de interfaz, ambigüedad 3: el riel de estados del pedido. */
+@keyframes riel-llena {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes camion-avanza {
+  from { transform: translateX(-100%); }
+  to   { transform: none; }
+}
+@keyframes sello {
+  from { opacity: 0; transform: scale(1.3) rotate(0deg); }
+  to   { opacity: 1; transform: rotate(var(--giro-sticker)); }
+}
 
 /* Con movimiento reducido, además de las duraciones de tokens.css: nada de
    glitch, ticker, grano animado ni transiciones de vista. */
@@ -2999,6 +3718,8 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   .ticker__pista { animation: none; }
   .barras-carga > span { animation: none; transform: none; }
   .punto-en-linea { animation: none; }
+  .riel--animar * { animation: none; }
+  .riel--animar .riel__paso::before { animation: none; }
 }
 
 /* Un ícono que cambia con el estado del botón (Pausar / Reanudar). */

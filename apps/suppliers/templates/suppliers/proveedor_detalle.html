@@ -30,11 +30,11 @@ acciones viven en esta pantalla y no repartidas por el listado.
       {% include "_iconos.html" with icono="editar" %}<span>Editar</span>
     </a>
     {% if proveedor.esta_activo %}
-      <a href="{% url 'suppliers:proveedor_baja' proveedor.pk %}" class="boton-seccion boton-seccion--critico">
+      <a data-dialogo href="{% url 'suppliers:proveedor_baja' proveedor.pk %}" class="boton-seccion boton-seccion--critico">
         {% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span>
       </a>
     {% else %}
-      <a href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-seccion">
+      <a data-dialogo href="{% url 'suppliers:proveedor_reactivar' proveedor.pk %}" class="boton-seccion">
         {% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span>
       </a>
     {% endif %}

@@ -440,6 +440,49 @@ def test_CO069_ajustar_la_cantidad_conserva_los_suscriptores(client_admin, propu
 
 
 @pytest.mark.django_db
+def test_CO069_guardar_cantidades_cambia_las_del_proveedor_de_una_vez(client_admin, propuesta):
+    """Plan 00 de interfaz, segunda parte, 14.3: un solo «Guardar» por proveedor."""
+    uno, otro = propuesta.lineas.order_by("pk")
+    clave = propuesta.proveedor_de_prueba.pk
+
+    client_admin.post(
+        reverse("restock:cantidades", args=[clave]),
+        {f"cantidad-{uno.pk}": "7", f"cantidad-{otro.pk}": str(otro.cantidad_sugerida)},
+    )
+
+    uno.refresh_from_db()
+    assert uno.cantidad_sugerida == 7
+
+
+@pytest.mark.django_db
+def test_CO069_guardar_cantidades_es_todo_o_nada(client_admin, propuesta):
+    uno, otro = propuesta.lineas.order_by("pk")
+    antes = (uno.cantidad_sugerida, otro.cantidad_sugerida)
+
+    respuesta = client_admin.post(
+        reverse("restock:cantidades", args=[propuesta.proveedor_de_prueba.pk]),
+        {f"cantidad-{uno.pk}": "9", f"cantidad-{otro.pk}": "0"},
+        follow=True,
+    )
+
+    uno.refresh_from_db()
+    otro.refresh_from_db()
+    assert (uno.cantidad_sugerida, otro.cantidad_sugerida) == antes
+    assert "tiene que ser mayor que cero" in respuesta.content.decode()
+
+
+@pytest.mark.django_db
+def test_CO069_guardar_cantidades_ignora_lineas_de_otro_proveedor(client_admin, propuesta):
+    ajena = propuesta.lineas.first()
+    antes = ajena.cantidad_sugerida
+
+    client_admin.post(reverse("restock:cantidades", args=[0]), {f"cantidad-{ajena.pk}": "50"})
+
+    ajena.refresh_from_db()
+    assert ajena.cantidad_sugerida == antes
+
+
+@pytest.mark.django_db
 def test_CO070_quitar_elimina_la_linea(client_admin, propuesta):
     linea = propuesta.lineas.first()
 

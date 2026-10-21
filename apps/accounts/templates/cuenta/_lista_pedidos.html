@@ -1,14 +1,26 @@
 {% load moneda %}
-{% comment %}Los pedidos del Cliente, cada uno con su estado y lo cobrado. Lo usan el panel y el historial.{% endcomment %}
-<ul class="carrito__lineas" aria-label="{{ etiqueta }}">
+{% comment %}
+Los pedidos del Cliente: portadas, riel reducido, estado y lo cobrado (plan 00
+de interfaz, 4.3). Lo usan el resumen y la pantalla de pedidos.
+{% endcomment %}
+<ul class="pedidos-de-cuenta" aria-label="{{ etiqueta }}">
   {% for pedido in pedidos %}
-    <li class="tarjeta pedido-de-cuenta">
-      <div class="pila-2">
-        <a href="{% url 'cuenta:pedido' pedido.numero %}" class="linea-carrito__titulo">Pedido <span class="datos">{{ pedido.numero }}</span></a>
-        <p class="texto-chico secundario">{{ pedido.fecha|date:"d/m/Y" }}</p>
+    <li class="pedido-de-cuenta">
+      <span class="pedido-de-cuenta__portadas" aria-hidden="true">
+        {% for producto in pedido.portadas %}
+          <span class="portada-mini">{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+        {% endfor %}
+        {% if pedido.mas_productos %}<span class="portada-mini portada-mini--mas">+{{ pedido.mas_productos }}</span>{% endif %}
+      </span>
+      <div class="pedido-de-cuenta__datos pila-2">
+        <a href="{% url 'cuenta:pedido' pedido.numero %}" class="pedido-de-cuenta__numero">Pedido <span class="datos">{{ pedido.numero }}</span></a>
+        <p class="texto-chico secundario">{{ pedido.fecha|date:"d/m/Y" }} · {{ pedido.get_modalidad_display }}</p>
+        {% if pedido.riel %}{% include "_riel.html" with riel=pedido.riel reducido=1 %}{% endif %}
       </div>
-      <span class="marca-estado{% if pedido.estado == 'despachado' %} marca-estado--ok{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
-      <span class="datos">{{ pedido.cobrado|pesos }}</span>
+      <div class="pedido-de-cuenta__cierre">
+        <span class="marca-estado{% if pedido.estado == 'despachado' or pedido.estado == 'en_local' or pedido.estado == 'vendido_en_local' %} marca-estado--ok{% elif pedido.estado == 'cancelado' %} marca-estado--apagado{% else %} marca-estado--atencion{% endif %}">{{ pedido.get_estado_display }}</span>
+        <span class="datos pedido-de-cuenta__total">{{ pedido.cobrado|pesos }}</span>
+      </div>
     </li>
   {% endfor %}
 </ul>

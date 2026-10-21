@@ -47,6 +47,8 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
       <input id="busqueda-encabezado" type="search" name="q" value="{% if actual == 'core:tienda_catalogo' %}{{ request.GET.q }}{% endif %}" placeholder="Título, autor o editorial" autocomplete="off" aria-keyshortcuts="/" title="Atajo: /">
       <input type="hidden" name="estado" value="todos">
       <button type="submit" class="buscador-publico__ir">Buscar</button>
+      {# Plan 00 de interfaz, U1: las sugerencias mientras se escribe. #}
+      <div class="sugerencias-capa" data-sugerencias data-url="{% url 'core:tienda_sugerencias' %}" hidden></div>
     </form>
     {% endblock %}
 
@@ -55,7 +57,6 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
         <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
         <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
         {# Plan 00, C1: visible en la primera pantalla y sin registración (Res. 424/2020). #}
-        <a href="{% url 'devoluciones_tienda:inicio' %}" {% if 'devoluciones_tienda:' in actual %}aria-current="page"{% endif %}>Botón de arrepentimiento</a>
         {% with unidades=unidades_en_carrito %}
           {% if unidades is not None %}
             <a href="{% url 'tienda:carrito' %}" class="encabezado-publico__carrito" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>
@@ -131,12 +132,43 @@ propia página de preguntas ni si no hay nada publicado.
 {# Los avisos de lo que se hace sin cambiar de pantalla (agregar al carrito). #}
 <div class="avisos-flotantes" aria-live="polite" data-avisos-flotantes></div>
 
+{# Plan 00 de interfaz, U2: el carrito lateral. Lo llena el guion al agregar desde una tarjeta. #}
+{% if unidades_en_carrito is not None %}
+  <dialog class="dialogo cajon-carrito" aria-labelledby="cajon-titulo" data-cajon-carrito>
+    <div class="pila-4">
+      <div class="dialogo__cabeza">
+        <h2 id="cajon-titulo">{% include "_iconos.html" with icono="listo" %} En tu carrito</h2>
+        <p class="secundario" data-cajon-mensaje></p>
+        <button type="button" class="dialogo__cerrar" aria-label="Cerrar" data-cajon-cerrar>×</button>
+      </div>
+      <div class="cajon-carrito__producto">
+        <span class="portada-mini" data-cajon-portada aria-hidden="true"></span>
+        <div class="pila-1">
+          <span class="cajon-carrito__titulo" data-cajon-titulo></span>
+          <span class="datos" data-cajon-precio></span>
+        </div>
+      </div>
+      <dl class="resumen-compra">
+        <div><dt>Unidades</dt><dd class="datos" data-cajon-unidades></dd></div>
+        <div><dt>Total</dt><dd class="datos" data-cajon-total></dd></div>
+      </dl>
+      <p class="texto-chico secundario" data-cajon-falta hidden>Te faltan <span class="datos"></span> para el envío gratis.</p>
+      <div class="pila-2 resumen-carrito--acciones">
+        <a href="{% url 'tienda:carrito' %}" class="boton-primario" data-cajon-ir>Ir al carrito</a>
+        <button type="button" class="boton-texto" data-cajon-cerrar>Seguir comprando</button>
+      </div>
+    </div>
+  </dialog>
+{% endif %}
+
 <footer class="pie-publico superficie-noche">
   <div class="pie-publico__cinta" aria-hidden="true"></div>
   <div class="columna-publica pie-publico__contenido">
     <div class="pie-publico__marca">
       <span class="marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
       <p>{{ textos_tienda.descripcion_tienda }}</p>
+      {# Res. 424/2020: visible y de fácil acceso desde todas las páginas, sin registrarse. #}
+      <p><a href="{% url 'devoluciones_tienda:inicio' %}" class="boton-seccion boton-arrepentimiento">{% include "_iconos.html" with icono="volver" %}<span>Botón de arrepentimiento</span></a></p>
     </div>
 
     <nav class="pie-publico__columna" aria-label="Tienda">
@@ -153,7 +185,6 @@ propia página de preguntas ni si no hay nada publicado.
       <p class="antetitulo">Ayuda</p>
       <ul>
         {% if hay_faq %}<li><a href="{% url 'core:faq' %}">Preguntas frecuentes</a></li>{% endif %}
-        <li><a href="{% url 'devoluciones_tienda:inicio' %}">Botón de arrepentimiento</a></li>
         {% if unidades_en_carrito is not None %}<li><a href="{% url 'tienda:carrito' %}">Mi carrito</a></li>{% endif %}
         {% if not user.is_authenticated %}
           <li><a href="{% url 'accounts:login' %}">Ingresar</a></li>
@@ -238,6 +269,81 @@ propia página de preguntas ni si no hay nada publicado.
       void contador.offsetWidth;
       contador.classList.add("rebota");
     };
+    // U1: sugerencias del buscador. Espera a que se deje de escribir, descarta
+    // respuestas viejas y se maneja con las flechas, Enter y Escape.
+    (function () {
+      const capa = document.querySelector("[data-sugerencias]");
+      const campo = document.getElementById("busqueda-encabezado");
+      if (!capa || !campo) return;
+      campo.setAttribute("aria-autocomplete", "list");
+      let espera = null;
+      let ultima = 0;
+      const cerrar = function () { capa.hidden = true; capa.replaceChildren(); };
+      const enlaces = function () { return Array.from(capa.querySelectorAll("a")); };
+      campo.addEventListener("input", function () {
+        clearTimeout(espera);
+        const texto = campo.value.trim();
+        if (texto.length < 2) { cerrar(); return; }
+        espera = setTimeout(async function () {
+          const turno = ++ultima;
+          try {
+            const respuesta = await fetch(capa.dataset.url + "?q=" + encodeURIComponent(texto));
+            const html = await respuesta.text();
+            if (turno !== ultima) return;
+            capa.innerHTML = html;
+            capa.hidden = !html.trim();
+          } catch (error) { cerrar(); }
+        }, 180);
+      });
+      campo.addEventListener("keydown", function (evento) {
+        if (evento.key === "Escape") { cerrar(); return; }
+        if (evento.key === "ArrowDown" && !capa.hidden) {
+          evento.preventDefault();
+          const primero = enlaces()[0];
+          if (primero) primero.focus();
+        }
+      });
+      capa.addEventListener("keydown", function (evento) {
+        const lista = enlaces();
+        const actual = lista.indexOf(document.activeElement);
+        if (evento.key === "ArrowDown") { evento.preventDefault(); (lista[actual + 1] || lista[actual]).focus(); }
+        if (evento.key === "ArrowUp") { evento.preventDefault(); (actual > 0 ? lista[actual - 1] : campo).focus(); }
+        if (evento.key === "Escape") { cerrar(); campo.focus(); }
+      });
+      document.addEventListener("click", function (evento) {
+        if (!evento.target.closest(".buscador-publico")) cerrar();
+      });
+    })();
+
+    function abrirCajon(datos) {
+      const cajon = document.querySelector("[data-cajon-carrito]");
+      if (!cajon || typeof cajon.showModal !== "function") return false;
+      const c = datos.carrito;
+      cajon.querySelector("[data-cajon-mensaje]").textContent = datos.mensaje;
+      cajon.querySelector("[data-cajon-titulo]").textContent = c.titulo;
+      cajon.querySelector("[data-cajon-precio]").textContent = c.precio;
+      cajon.querySelector("[data-cajon-total]").textContent = c.total;
+      cajon.querySelector("[data-cajon-unidades]").textContent = datos.unidades;
+      const falta = cajon.querySelector("[data-cajon-falta]");
+      falta.hidden = !c.falta_envio_gratis;
+      falta.querySelector("span").textContent = c.falta_envio_gratis;
+      const portada = cajon.querySelector("[data-cajon-portada]");
+      portada.replaceChildren();
+      if (c.portada) {
+        const imagen = document.createElement("img");
+        imagen.src = c.portada;
+        imagen.alt = "";
+        portada.append(imagen);
+      }
+      if (!cajon.open) cajon.showModal();
+      cajon.querySelector("[data-cajon-ir]").focus();
+      return true;
+    }
+    document.addEventListener("click", function (evento) {
+      const cajon = evento.target.closest("[data-cajon-carrito]");
+      if (evento.target.closest("[data-cajon-cerrar]") || evento.target === cajon) cajon.close();
+    });
+
     document.addEventListener("submit", async function (evento) {
       const formulario = evento.target.closest("[data-agregar-rapido]");
       if (!formulario) return;
@@ -251,8 +357,11 @@ propia página de preguntas ni si no hay nada publicado.
           headers: { "X-Requested-With": "fetch" },
         });
         const datos = await respuesta.json();
-        avisar(datos.nivel, datos.mensaje);
         if (datos.unidades !== undefined) contarUnidades(datos.unidades);
+        // Plan 00 de interfaz, U2: lo agregado, en el carrito lateral. Sin
+        // soporte de <dialog>, el aviso flotante de siempre.
+        if (datos.carrito && abrirCajon(datos)) return;
+        avisar(datos.nivel, datos.mensaje);
       } catch (error) {
         formulario.submit();
       } finally {

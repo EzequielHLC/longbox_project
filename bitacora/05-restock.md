@@ -135,3 +135,49 @@ Activo».
 Los cinco casos de uso están construidos: el aviso de reposición desde la ficha pública, el aviso
 FIFO con cada suba de stock, la propuesta semanal o manual, y su despacho o descarte por proveedor.
 Los productos sin proveedor quedan agrupados aparte hasta que su editorial tenga uno habitual.
+
+---
+
+### B-05-007 · El Cliente ve y cancela sus avisos de stock desde «Mi cuenta»
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-RST-SUS`, `CO-076`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, segunda parte, 15)
+
+**Qué apareció.**
+El Cliente sólo podía ver o cancelar un aviso de reposición entrando a la ficha de cada producto.
+
+**Qué dice la especificación.**
+> «La suscripción permanece activa hasta que CU-RST-NOT envíe la notificación al Cliente por turno
+> FIFO, o hasta que el Cliente la cancele manualmente.» (`CU-RST-SUS`, postcondiciones)
+
+No dice desde dónde.
+
+**Qué se hizo.**
+«Mi cuenta» suma «Avisos de stock»: los que esperan, con el lugar en la fila, y los ya avisados de
+los últimos 90 días. «Cancelar aviso» es `CO-076`, el mismo de la ficha, y tampoco se audita.
+
+**Qué habría que cambiar.**
+`CU-RST-SUS` A1: «desde la ficha del producto o desde la sección Avisos de stock de su cuenta».
+
+---
+
+### B-05-008 · Las cantidades de un proveedor se guardan de una vez
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-RST-APR`, `CO-069`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, segunda parte, 14)
+
+**Qué apareció.**
+Una propuesta automática trae cientos de productos, y cada cantidad se guardaba con su propio botón:
+ajustar diez eran diez envíos.
+
+**Qué dice la especificación.**
+`Nada` sobre cuántas líneas se ajustan por vez. `CO-069` ajusta una.
+
+**Qué se hizo.**
+Cada proveedor de la propuesta es un bloque plegable con sus cifras, y un solo «Guardar cantidades»
+aplica `CO-069` a cada línea que cambió, todo o nada: si una cantidad no es válida, no cambia
+ninguna. La propuesta se puede filtrar por título.
+
+**Qué habría que cambiar.**
+`CU-RST-APR` paso de ajuste: «el Administrador ajusta las cantidades de un proveedor y las guarda
+juntas».

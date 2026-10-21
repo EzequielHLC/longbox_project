@@ -20,7 +20,7 @@ mientras tanto, el servidor lo rechaza en vez de saltear un paso.
   </div>
 </header>
 
-<div class="panel{% if pendientes %} panel--atencion{% endif %} formulario--angosto pila-4">
+<div data-dialogo-contenido class="panel{% if pendientes %} panel--atencion{% endif %} formulario--angosto pila-4">
   <p>De <strong>{{ pedido.get_estado_display }}</strong> a <strong>{{ siguiente_display }}</strong>. No se puede deshacer. El cliente recibe un correo.</p>
 
   {% if pendientes %}

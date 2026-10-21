@@ -61,3 +61,29 @@ compras pagadas sólo con puntos.
 **Qué habría que cambiar.**
 `CU-CAJ-CIE` paso 2: «todas las transacciones aprobadas sin cierre previo, de la fecha o
 anteriores».
+
+---
+
+### B-14-003 · Las ventas de la jornada, en la caja
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-CAJ-CIE`, `CO-203`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, segunda parte, 12, opción a)
+
+**Qué apareció.**
+El cajero no tenía dónde ver lo que vendió en el día antes de cerrar: sólo los totales.
+
+**Qué dice la especificación.**
+> «Si el usuario exporta el resumen, el sistema genera el archivo CSV con el detalle de cada
+> transacción individual del día» (`CU-CAJ-CIE`, A2)
+
+El detalle existe sólo en la exportación.
+
+**Qué se hizo.**
+La caja lista las ventas de la jornada sin cerrar, la más reciente primero, con hora, cliente,
+canal, medio y monto, un filtro por medio y el enlace al comprobante de cada venta de mostrador. El
+detalle de un cierre anterior muestra lo mismo. Los totales se ven como recuadros por canal y por
+medio de pago, con su proporción. Es una lectura: no cierra ni marca nada. Un historial de
+cualquier fecha queda para los reportes (`CU-REP-GEN`).
+
+**Qué habría que cambiar.**
+`CU-CAJ-CIE` paso 3: suma «(e) el detalle de cada transacción incluida».

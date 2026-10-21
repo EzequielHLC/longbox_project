@@ -297,7 +297,8 @@ def confirmar(sesion, medio, actor):
 
         pedido = Pedido.objects.create(
             canal=Pedido.PRESENCIAL,
-            estado=Pedido.DESPACHADO,
+            estado=Pedido.VENDIDO_EN_LOCAL,
+            modalidad=Pedido.MOSTRADOR,
             usuario=actual.cliente,
             costo_envio=Decimal("0"),
             fecha=ahora,
@@ -313,7 +314,7 @@ def confirmar(sesion, medio, actor):
                 precio_unitario=item.precio,
                 cubierta_con_puntos=item.cubierta,
                 puntos_canjeados=item.puntos_necesarios if item.cubierta else 0,
-                estado=LineaPedido.DESPACHADO,
+                estado=LineaPedido.ENTREGADO_EN_LOCAL,
             )
             queda = bloqueados[item.producto.pk].stock - item.cantidad
             Producto.objects.filter(pk=item.producto.pk).update(

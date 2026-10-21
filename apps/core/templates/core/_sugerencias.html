@@ -1,0 +1,27 @@
+{% load moneda %}
+{% comment %}
+Las sugerencias del buscador del encabezado (plan 00 de interfaz, U1). El guion
+las pone debajo del campo; cada una es un enlace a la ficha, y la última lleva
+al catálogo con la búsqueda entera.
+{% endcomment %}
+{% if busqueda|length >= 2 %}
+  <ul class="sugerencias" role="listbox" aria-label="Sugerencias">
+    {% for producto in productos %}
+      <li role="option">
+        <a href="{% url 'core:tienda_producto' producto.pk %}" class="sugerencias__producto">
+          <span class="portada-mini" aria-hidden="true">{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+          <span class="sugerencias__datos">
+            <span class="sugerencias__titulo">{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</span>
+            <span class="texto-chico secundario">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}{% if producto.estado_publico == "agotado" %} · Sin stock{% elif producto.estado_publico == "pre_venta" %} · Pre-venta{% endif %}</span>
+          </span>
+          <span class="datos sugerencias__precio">{{ producto.precio_visible|pesos }}</span>
+        </a>
+      </li>
+    {% empty %}
+      <li class="sugerencias__vacio">Ningún producto coincide con «{{ busqueda }}».</li>
+    {% endfor %}
+    {% if productos %}
+      <li role="option"><a href="{% url 'core:tienda_catalogo' %}?q={{ busqueda|urlencode }}&amp;estado=todos" class="sugerencias__todos">Ver todos los resultados de «{{ busqueda }}»</a></li>
+    {% endif %}
+  </ul>
+{% endif %}

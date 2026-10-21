@@ -20,7 +20,7 @@ por qué no se puede avanzar a mano (E1).
   </div>
   <div class="fila-2">
     {% if siguiente %}
-      <a href="{% url 'pedidos:avanzar' pedido.pk %}" class="boton-primario">Avanzar a {{ siguiente_display|lower }}</a>
+      <a data-dialogo href="{% url 'pedidos:avanzar' pedido.pk %}" class="boton-primario">Avanzar a {{ siguiente_display|lower }}</a>
     {% endif %}
   </div>
 </header>
@@ -50,9 +50,11 @@ por qué no se puede avanzar a mano (E1).
       <dd class="datos">{{ pedido.correo_de_contacto }}</dd>
       <dt>Entrega</dt>
       <dd>
-        {% if pedido.retiro %}
+        {% if pedido.modalidad == "mostrador" %}
+          Venta de mostrador
+        {% elif pedido.retiro %}
           Retiro en el local
-          {% if pedido.estado == "en_local" %}· <a href="{% url 'almacen:retiro_pedido' pedido.pk %}">Entregar en el mostrador</a>{% endif %}
+          {% if pedido.estado == "en_local" %}· <a data-dialogo href="{% url 'almacen:retiro_pedido' pedido.pk %}">Entregar en el mostrador</a>{% endif %}
         {% else %}
           {{ pedido.direccion_de_envio|default:"—" }}
         {% endif %}
@@ -73,6 +75,7 @@ por qué no se puede avanzar a mano (E1).
 
   <section class="seccion" aria-labelledby="titulo-linea">
     <div class="seccion__titulo"><h2 id="titulo-linea">Línea de tiempo</h2></div>
+    {% if riel %}{% include "_riel.html" with riel=riel %}{% endif %}
     {% include "_linea_de_tiempo.html" with transiciones=transiciones con_actor=1 %}
   </section>
 </div>

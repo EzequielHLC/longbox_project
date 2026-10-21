@@ -13,10 +13,13 @@ en el mismo momento, por correo.
     <h1 class="titulo-1">Registramos tu arrepentimiento</h1>
   </div>
   <div class="panel pila-3">
-    <p>Tu código de solicitud:</p>
-    <ul class="lista-renglones">
+    <p class="antetitulo">{% if casos|length > 1 %}Tus códigos de solicitud{% else %}Tu código de solicitud{% endif %}</p>
+    <ul class="codigos-de-solicitud">
       {% for caso in casos %}
-        <li><strong class="datos">{{ caso.numero }}</strong> · {{ caso.unidades }} × {{ caso.linea.producto.especifico }}</li>
+        <li>
+          <span class="codigos-de-solicitud__codigo datos">{{ caso.numero }}</span>
+          <span class="secundario">{{ caso.unidades }} × {{ caso.linea.producto.especifico }}</span>
+        </li>
       {% endfor %}
     </ul>
     <p class="texto-chico secundario">Te lo mandamos también a <span class="datos">{{ casos.0.correo }}</span>. Te vamos a escribir para coordinar la devolución; cuando recibamos los artículos, te reintegramos lo que pagaste por el mismo medio de pago.</p>

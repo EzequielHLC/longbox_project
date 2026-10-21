@@ -137,3 +137,19 @@ def demorar(usuario, *, otros=(("5000", 1),), dias=3, precio="10000", puntos=0, 
     linea.refresh_from_db()
     producto.refresh_from_db()
     return producto, pedido, linea
+
+
+def como_venta_de_mostrador(pedido):
+    """Pasa un pedido armado a mano a venta de mostrador: canal, modalidad y estado
+    van juntos (B-06-005), y la base rechaza cambiar sólo el canal."""
+    Pedido.objects.filter(pk=pedido.pk).update(
+        canal=Pedido.PRESENCIAL, modalidad=Pedido.MOSTRADOR, estado=Pedido.VENDIDO_EN_LOCAL
+    )
+    pedido.lineas.filter(estado=LineaPedido.DESPACHADO).update(
+        estado=LineaPedido.ENTREGADO_EN_LOCAL
+    )
+    pedido.transiciones.filter(estado_nuevo=Pedido.DESPACHADO).update(
+        estado_nuevo=Pedido.VENDIDO_EN_LOCAL
+    )
+    pedido.refresh_from_db()
+    return pedido

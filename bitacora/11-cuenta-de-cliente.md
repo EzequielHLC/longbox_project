@@ -163,3 +163,25 @@ indicación de escribir a la tienda si no fue el titular.
 
 **Qué habría que cambiar.**
 `CO-110`, postcondiciones: «se envió un aviso al correo anterior».
+
+---
+
+### B-11-006 · El pedido para retirar sigue en curso hasta que se retira
+
+**Tipo:** Agregado · **Fecha:** 2026-10-21 · **Alcance:** `CU-CLI-HIS`, `CO-192`
+**Estado:** Abierta — decidida por el responsable el 2026-10-21 (plan 00 de interfaz, amb. 1)
+
+**Qué apareció.**
+El estado «En el local» (plan 07, octava parte) no figuraba ni en los pedidos activos ni en el
+historial: el Cliente dejaba de ver su pedido justo cuando estaba listo para buscarlo.
+
+**Qué dice la especificación.**
+`Nada` sobre este estado. B-11-004 fija activos («los que todavía no se despacharon») e historial
+(«los Despachados»), antes de que existiera el retiro.
+
+**Qué se hizo.**
+Un pedido «En el local» figura entre los pedidos en curso mientras le quede algún artículo esperando
+en el mostrador; cuando se retira todo, o vence lo que quedaba, pasa al historial.
+
+**Qué habría que cambiar.**
+`CU-CLI-HIS` pasos 3 y 5: sumar «En el local» con esa regla.

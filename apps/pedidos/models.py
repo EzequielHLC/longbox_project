@@ -41,6 +41,9 @@ class Pedido(models.Model):
     EN_LOCAL = "en_local"
     # B-08-008: un pedido que se queda sin artículos. Terminal.
     CANCELADO = "cancelado"
+    # B-06-005: la venta de mostrador, que nunca se despacha. Terminal y sólo del
+    # canal presencial; antes nacía Despachado y se contaba con los envíos.
+    VENDIDO_EN_LOCAL = "vendido_en_local"
     ESTADO_CHOICES = [  # noqa: RUF012
         (ESPERANDO_PRE_VENTA, "Esperando stock de pre-venta"),
         (PENDIENTE_ARMADO, "Pendiente de armado"),
@@ -50,14 +53,18 @@ class Pedido(models.Model):
         (DESPACHADO, "Despachado"),
         (EN_LOCAL, "En el local"),
         (CANCELADO, "Cancelado"),
+        (VENDIDO_EN_LOCAL, "Vendido en el local"),
     ]
 
     # Plan 07, octava parte: retiro en el local, sólo con cuenta (D4).
     ENVIO = "envio"
     RETIRO = "retiro"
+    # B-06-005: la venta de mostrador se entrega en el acto.
+    MOSTRADOR = "mostrador"
     MODALIDAD_CHOICES = [  # noqa: RUF012
         (ENVIO, "Envío a domicilio"),
         (RETIRO, "Retiro en el local"),
+        (MOSTRADOR, "Mostrador"),
     ]
 
     # Se asigna dentro de la misma transacción que crea el pedido, a partir de
@@ -113,6 +120,19 @@ class Pedido(models.Model):
                 | (Q(usuario__isnull=False) & Q(costo_envio=0) & Q(envio_direccion="")),
                 name="pedido_retiro_de_cuenta_sin_envio",
             ),
+            # B-06-005: lo presencial es de mostrador y se vende en el local; lo
+            # online, nunca. Ni la estadística ni la auditoría los mezclan.
+            models.CheckConstraint(
+                condition=(
+                    Q(canal="presencial", modalidad="mostrador", estado="vendido_en_local")
+                    | (
+                        Q(canal="online")
+                        & ~Q(modalidad="mostrador")
+                        & ~Q(estado="vendido_en_local")
+                    )
+                ),
+                name="pedido_mostrador_solo_presencial",
+            ),
         ]
 
     def __str__(self):
@@ -153,6 +173,8 @@ class LineaPedido(models.Model):
     EMPAQUETADO = "empaquetado"
     DESPACHADO = "despachado"
     CANCELADO_REEMBOLSO = "cancelado_reembolso"
+    # B-06-005: el ítem de una venta de mostrador.
+    ENTREGADO_EN_LOCAL = "entregado_en_local"
     ESTADO_CHOICES = [  # noqa: RUF012
         (DISPONIBLE, "Disponible"),
         (RESERVADO, "Reservado"),
@@ -160,7 +182,10 @@ class LineaPedido(models.Model):
         (EMPAQUETADO, "Empaquetado"),
         (DESPACHADO, "Despachado"),
         (CANCELADO_REEMBOLSO, "Cancelado con reembolso en puntos"),
+        (ENTREGADO_EN_LOCAL, "Entregado en el local"),
     ]
+    # Las que llegaron al Cliente: por correo o en el mostrador.
+    ENTREGADAS = (DESPACHADO, ENTREGADO_EN_LOCAL)
 
     PAUSAR = "pausar"
     DESPACHO_DIFERIDO = "despacho_diferido"

@@ -55,7 +55,7 @@
 
       {% if usuario_objetivo.se_puede_eliminar %}
         {# Salida para el correo cargado con un error de tipeo. #}
-        <a href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-seccion boton-seccion--critico">
+        <a data-dialogo href="{% url 'accounts:usuario_eliminar' usuario_objetivo.pk %}" class="boton-seccion boton-seccion--critico">
           {% include "_iconos.html" with icono="baja" %}<span>Eliminar cuenta</span>
         </a>
       {% endif %}

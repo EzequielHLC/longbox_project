@@ -18,7 +18,7 @@ CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
   {% if not ticket.vacio %}
     <form method="post" action="{% url 'ventas:nueva' %}">
       {% csrf_token %}
-      <button type="submit" class="boton-texto">Descartar y empezar otra venta</button>
+      <button type="submit" class="boton-seccion boton-seccion--critico">Descartar y empezar otra venta</button>
     </form>
   {% endif %}
 </header>
@@ -82,8 +82,13 @@ CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
             </thead>
             <tbody>
               {% for item in ticket.items %}
-                <tr>
-                  <td class="celda-principal">{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</td>
+                <tr{% if item.producto.pk == ultimo_agregado %} class="fila-destacada"{% endif %}>
+                  <td class="celda-principal">
+                    <span class="fila-2">
+                      <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if item.producto.portada %}<img src="{{ item.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                      <span>{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</span>
+                    </span>
+                  </td>
                   <td class="numero">{{ item.cantidad }}</td>
                   <td class="numero">{{ item.precio|pesos }}</td>
                   <td class="numero">{% if item.cubierta %}<s class="secundario">{{ item.importe|pesos }}</s> {{ 0|pesos }}{% else %}{{ item.importe|pesos }}{% endif %}</td>
@@ -105,7 +110,7 @@ CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
                   <td>
                     <form method="post" action="{% url 'ventas:quitar' item.producto.pk %}">
                       {% csrf_token %}
-                      <button type="submit" class="boton-texto boton-texto--critico">Quitar</button>
+                      <button type="submit" class="boton-icono boton-icono--critico" aria-label="Quitar {{ item.producto.titulo }}" title="Quitar">{% include "_iconos.html" with icono="baja" %}</button>
                     </form>
                   </td>
                 </tr>
@@ -126,7 +131,7 @@ CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
         <form method="post" action="{% url 'ventas:cliente' %}">
           {% csrf_token %}
           <input type="hidden" name="accion" value="quitar">
-          <button type="submit" class="boton-texto">Quitar cliente</button>
+          <button type="submit" class="boton-seccion boton-seccion--tenue">Quitar cliente</button>
         </form>
       {% else %}
         <form method="post" action="{% url 'ventas:cliente' %}" class="pila-2">
@@ -146,20 +151,31 @@ CO-104). A3: quitar ítems (CO-080). Pasos 5 y 6: medio de pago y confirmar
       {% if ticket.puntos_aplicados %}<div><dt>Canjeado</dt><dd class="datos">{{ ticket.puntos_aplicados }} pts</dd></div>{% endif %}
       {% if ticket.puntos_a_acreditar %}<div><dt>Suma</dt><dd class="datos">{{ ticket.puntos_a_acreditar }} pts</dd></div>{% endif %}
     </dl>
-    <p class="resumen-carrito__total"><span class="etiqueta">Total a cobrar</span> <span class="sin-envolver">{{ ticket.total|pesos }}</span></p>
+    {# Plan 00 de interfaz, segunda parte, 13.1: el total es lo que se mira. #}
+    <p class="cobro__total"><span class="etiqueta">Total a cobrar</span> <span class="sin-envolver" data-total="{{ ticket.total|stringformat:'f' }}">{{ ticket.total|pesos }}</span></p>
 
-    <form method="post" action="{% url 'ventas:confirmar' %}" class="pila-3">
+    <form method="post" action="{% url 'ventas:confirmar' %}" class="pila-4 cobro">
       {% csrf_token %}
       {% if ticket.total %}
-        <fieldset class="pila-2">
+        <fieldset class="opciones-tarjeta opciones-tarjeta--medios">
           <legend class="etiqueta">Medio de pago</legend>
           {% for valor, etiqueta in medios %}
-            <label class="casilla"><input type="radio" name="medio" value="{{ valor }}" {% if forloop.first %}checked{% endif %}><span>{{ etiqueta }}</span></label>
+            <label class="opcion-tarjeta opcion-tarjeta--compacta">
+              <input type="radio" name="medio" value="{{ valor }}" {% if forloop.first %}checked{% endif %}>
+              <span class="opcion-tarjeta__icono">{% include "_iconos.html" with icono=valor %}</span>
+              <span class="opcion-tarjeta__titulo">{{ etiqueta }}</span>
+            </label>
           {% endfor %}
         </fieldset>
+        <div class="campo cobro__recibido">
+          <label for="recibido" class="etiqueta">Recibido en efectivo</label>
+          <input type="text" id="recibido" name="recibido" inputmode="decimal" autocomplete="off" placeholder="Opcional" data-recibido>
+          <p class="cobro__vuelto" aria-live="polite" data-vuelto hidden><span data-vuelto-rotulo>Vuelto</span> <span class="datos" data-vuelto-cifra></span></p>
+        </div>
       {% endif %}
       <button type="submit" class="boton-primario"{% if ticket.vacio %} disabled{% endif %}>Confirmar venta</button>
     </form>
+    {% include "ventas/_vuelto_js.html" %}
   </aside>
 </div>
 {% endblock %}

@@ -11,7 +11,7 @@ from freezegun import freeze_time
 from apps.caja.models import CierreDeCaja
 from apps.core.models import RegistroAuditoria
 from apps.pedidos.models import Pedido, TransaccionPago
-from apps.pedidos.tests.util import crear_pedido
+from apps.pedidos.tests.util import como_venta_de_mostrador, crear_pedido
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,8 @@ def transaccion(
     hace_dias=0,
 ):
     pedido = crear_pedido(correo_invitado="x@correo.test", con_pago=False)
-    Pedido.objects.filter(pk=pedido.pk).update(canal=canal)
+    if canal == Pedido.PRESENCIAL:
+        como_venta_de_mostrador(pedido)
     return TransaccionPago.objects.create(
         pedido=pedido,
         medio=medio,
