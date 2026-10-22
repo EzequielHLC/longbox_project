@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from apps.catalog.models import Producto, ProductoEditorial
-from apps.pedidos import preventa
+from apps.pedidos import calendario, preventa
 from apps.pedidos.forms import DemoraForm, leer_unidades
 from apps.pedidos.views import PedidosMixin
 
@@ -31,7 +31,19 @@ class PreVentasView(PedidosMixin, View):
     """Las pre-ventas agrupadas por fecha de llegada y editorial."""
 
     def get(self, request):
-        return render(request, "pedidos/preventas.html", {"grupos": preventa.por_llegar()})
+        grupos = preventa.por_llegar()
+        # Plan 00 de interfaz, 22: el calendario del mes y las cifras, de los mismos grupos.
+        mes = calendario.mes_de(calendario.mes_pedido(request.GET.get("mes")), grupos)
+        return render(
+            request,
+            "pedidos/preventas.html",
+            {
+                "grupos": grupos,
+                "mes": mes,
+                "dias_de_la_semana": calendario.DIAS_DE_LA_SEMANA,
+                "resumen": calendario.resumen(grupos),
+            },
+        )
 
 
 class IngresoView(PedidosMixin, View):

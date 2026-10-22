@@ -917,6 +917,12 @@ class ProductoEditorial(Producto):
                 fields=["clave_edicion"],
                 name="producto_editorial_unico_por_clave",
             ),
+            # CO-005 (b): un precio fijado a mano no está asociado a la tabla de
+            # referencia. Si lo estuviera, CO-048 le pisaría el precio (B-01-014).
+            models.CheckConstraint(
+                condition=models.Q(precio_manual=False) | models.Q(precio_referencia__isnull=True),
+                name="producto_editorial_manual_sin_referencia",
+            ),
         ]
 
     def __str__(self):

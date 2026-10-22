@@ -685,6 +685,16 @@ calculado, y se separa de lo que escribió la persona.
       // campo lo marcaría como precio fijado a mano, que es justo lo contrario
       // de lo que significa tomarlo de la tabla.
       precio.placeholder = pvp ? pvp : "sin referencia";
+
+      // CU-ALT-NAC A3: el aviso aparece apenas el precio se aparta del de la
+      // tabla; si vuelve a coincidir, la confirmación se retira.
+      const aviso = item.querySelector("[data-aviso-precio]");
+      const editado = Boolean(pvp) && precio.value !== "" && Math.abs(parseFloat(precio.value) - parseFloat(pvp)) > 0.009;
+      aviso?.classList.toggle("hidden", !editado);
+      if (!editado) {
+        const casilla = item.querySelector('[name$="-confirma_precio_manual"]');
+        if (casilla) casilla.checked = false;
+      }
       if (!nota) return;
 
       if (pvp) {
@@ -700,6 +710,11 @@ calculado, y se separa de lo que escribió la persona.
     };
 
     window.recalcularTodo = () => window.itemsDelLote().forEach(window.recalcularItem);
+    // El aviso de precio a mano sigue lo que se escribe, sin esperar a salir del campo.
+    raiz.addEventListener("input", (evento) => {
+      const item = evento.target.closest("[data-item]");
+      if (item && evento.target.name?.endsWith("-precio")) window.recalcularItem(item);
+    });
     window.recalcularTodo();
   })();
 

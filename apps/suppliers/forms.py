@@ -160,6 +160,36 @@ class ProveedorForm(forms.ModelForm):
         return datos
 
 
+class ReactivacionDeProveedorForm(ProveedorForm):
+    """CU-PRV-REA pasos 3 a 7 (`CO-065`, `CO-066`): los datos vigentes, corregibles
+    antes de confirmar, y la decisión sobre el procesamiento de novedades.
+
+    Valida las mismas unicidades que la edición (E1, con el proveedor en
+    conflicto para enlazarlo) y el formato del correo (E2). No lleva la casilla
+    de CU-PRV-EDI A1: la pantalla entera es la revisión del correo, y confirmar la
+    reactivación es confirmar el correo que se ve. Las notas internas no están en
+    el contrato y se siguen editando desde CU-PRV-EDI.
+    """
+
+    class Meta(ProveedorForm.Meta):
+        fields = [
+            "razon_social",
+            "correo_comercial",
+            "editorial",
+            "tipo_por_defecto",
+            "procesa_novedades",
+            "nombre_contacto",
+            "telefono",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("confirma_cambio_de_correo", None)
+
+    def clean(self):
+        return forms.ModelForm.clean(self)
+
+
 MOTIVO_MINIMO = 4
 
 

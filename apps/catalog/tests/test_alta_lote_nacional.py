@@ -126,7 +126,10 @@ def test_desbloquear_un_item_convierte_el_lote_en_mixto(client_admin, referencia
 def test_un_item_puede_sobrescribir_el_precio_sin_desbloquear_nada(client_admin, referencia):
     """El precio y el estado siempre se pueden pisar por ítem: lo que el bloqueo
     protege es la clasificación, no los valores del alta."""
-    datos = lote_nacional([item("Akira", 1), item("Akira", 2, precio="9900")], referencia)
+    datos = lote_nacional(
+        [item("Akira", 1), item("Akira", 2, precio="9900", confirma_precio_manual="on")],
+        referencia,
+    )
 
     client_admin.post(URL_NACIONAL, datos)
 
@@ -137,12 +140,35 @@ def test_un_item_puede_sobrescribir_el_precio_sin_desbloquear_nada(client_admin,
 def test_el_precio_editado_a_mano_queda_excluido_de_la_propagacion(client_admin, referencia):
     """Sin la marca, un cambio de la tabla de precios le pisaría después una
     decisión que alguien tomó a propósito."""
-    datos = lote_nacional([item("Akira", 1), item("Akira", 2, precio="9900")], referencia)
+    datos = lote_nacional(
+        [item("Akira", 1), item("Akira", 2, precio="9900", confirma_precio_manual="on")],
+        referencia,
+    )
 
     client_admin.post(URL_NACIONAL, datos)
 
     assert ProductoEditorial.objects.get(volumen=1).precio_manual is False
     assert ProductoEditorial.objects.get(volumen=2).precio_manual is True
+
+
+def test_sobrescribir_el_precio_sin_confirmar_no_guarda_nada_y_advierte(client_admin, referencia):
+    """CU-ALT-NAC A3: la confirmación se valida en el servidor y no sólo en la
+    pantalla (B-01-013)."""
+    datos = lote_nacional([item("Akira", 1, precio="9900")], referencia)
+
+    respuesta = client_admin.post(URL_NACIONAL, datos)
+
+    assert respuesta.status_code == 200
+    assert not ProductoEditorial.objects.exists()
+    assert "romperá ese vínculo" in respuesta.content.decode()
+
+
+def test_escribir_el_mismo_precio_de_la_tabla_no_pide_confirmacion(client_admin, referencia):
+    datos = lote_nacional([item("Akira", 1, precio=str(referencia.pvp))], referencia)
+
+    client_admin.post(URL_NACIONAL, datos)
+
+    assert ProductoEditorial.objects.get().precio_manual is False
 
 
 def test_el_producto_queda_vinculado_a_su_combinacion_de_la_tabla(client_admin, referencia):
@@ -168,6 +194,7 @@ def test_en_un_lote_mixto_cada_item_declara_sus_propios_datos(client_admin):
                 tipo=otra.tipo.pk,
                 formato=otra.formato.pk,
                 precio="12000",
+                confirma_precio_manual="on",
             ),
         ]
     )

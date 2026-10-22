@@ -3,8 +3,10 @@
 La vuelta de la baja de CU-PRV-BAJ: la describe CU-PRV-REA, con CO-065 y CO-066.
 El motivo por el que existe está en la vista.
 
-Reactivar no destruye nada: el recuadro va con el borde común. Abandonar la
-pantalla sin confirmar es `CO-156 cancelarOperacion`.
+Los datos vigentes se presentan para corregirlos antes de confirmar (pasos 3 a
+5), con el correo comercial destacado: es lo que decide si las novedades vuelven
+a llegar. Reactivar no destruye nada: el recuadro va con el borde común.
+Abandonar la pantalla sin confirmar es `CO-156 cancelarOperacion`.
 {% endcomment %}
 
 {% block titulo %}Reactivar {{ proveedor.razon_social }} · Longbox{% endblock %}
@@ -24,22 +26,50 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
   <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este proveedor ya está activo.</span></p>
 {% else %}
   <div data-dialogo-contenido class="panel formulario--angosto">
-    <div class="seccion__titulo"><h2>Qué implica reactivarlo</h2></div>
-    <ul class="lista-renglones">
-      <li>
-        <span>Sus mensajes de novedades vuelven a procesarse.</span>
-      </li>
-    </ul>
-    <p class="texto-chico secundario">
-      Si cambió su correo, corríjalo antes de reactivarlo.
-    </p>
+    <div class="seccion__titulo"><h2>Revise sus datos antes de reactivarlo</h2></div>
 
-    <form method="post" class="acciones">
+    {# E1 de CU-PRV-REA: la colisión se informa con enlace a la ficha en conflicto. #}
+    {% if conflicto %}
+      <div class="mensaje mensaje--error" role="alert">
+        {% include "_iconos.html" with icono="error" %}
+        <span>
+          <span class="mensaje__prefijo">Error:</span>
+          ya hay un proveedor registrado con esos datos:
+          <a href="{% url 'suppliers:proveedor_detalle' conflicto.pk %}">{{ conflicto.razon_social }}</a>.
+          Corrija los datos o cancele la operación.
+        </span>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate class="formulario">
       {% csrf_token %}
-      <button type="submit" class="boton-primario">Confirmar reactivación</button>
-      {% url 'suppliers:proveedor_edicion' proveedor.pk as editar_antes %}
-      {% include "_boton_texto.html" with url=editar_antes texto="Editar antes de reactivar" %}
-      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+
+      <div class="panel panel--atencion" data-correo-destacado>
+        {% include "_campo.html" with campo=form.correo_comercial ayuda="Sus novedades vuelven a procesarse desde este correo. Si cambió mientras estuvo inactivo, corríjalo acá." %}
+      </div>
+      {% include "_campo.html" with campo=form.razon_social %}
+
+      <fieldset class="grupo-de-campos">
+        <legend>Procesamiento automático de novedades</legend>
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.editorial %}
+          {% include "_campo.html" with campo=form.tipo_por_defecto %}
+        </div>
+        {% include "_casilla.html" with campo=form.procesa_novedades interruptor=1 encendido="Activado" apagado="Apagado" %}
+      </fieldset>
+
+      <fieldset class="grupo-de-campos">
+        <legend>Contacto</legend>
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.nombre_contacto %}
+          {% include "_campo.html" with campo=form.telefono %}
+        </div>
+      </fieldset>
+
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Confirmar reactivación</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
     </form>
   </div>
 {% endif %}

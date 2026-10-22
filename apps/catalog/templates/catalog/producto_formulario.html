@@ -73,8 +73,10 @@ leer un informe de impacto.
       {% endif %}
       {% include "_campo.html" with campo=form.codigo_barras %}
 
-      {# El código es la identidad del producto y no cambia: se muestra para copiarlo. #}
-      <p class="texto-chico secundario">Código <span class="calculado">{{ producto.codigo }}</span>. No se modifica.</p>
+      {# CO-161: lo que no cambia se declara. El código es la identidad; el rubro decide la tabla; el costo en origen es la base del cálculo del importado. #}
+      <p class="texto-chico secundario" data-inmutables>
+        Código <span class="calculado">{{ producto.codigo }}</span> · rubro {{ producto.get_clase_display }}{% if producto.es_importado %} · costo en origen <span class="datos">{{ producto.costo_origen|pesos }}{% if producto.lote.tiene_conversion %} {{ producto.lote.moneda_origen }}{% endif %}</span>{% endif %}. No se modifican.
+      </p>
     </fieldset>
 
     <fieldset class="grupo-de-campos">

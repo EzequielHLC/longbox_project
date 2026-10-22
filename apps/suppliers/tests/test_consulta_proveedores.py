@@ -208,15 +208,14 @@ def test_la_ficha_de_un_inactivo_ofrece_reactivar_y_no_dar_de_baja(client_admin)
     assert reverse("suppliers:proveedor_baja", args=[proveedor.pk]) not in contenido
 
 
-def test_la_ficha_avisa_que_falta_el_historial_de_restock(client_admin):
-    """El paso 4 del CU lo pide, pero el módulo de Restock no existe. Se dice en
-    vez de mostrar una tabla vacía, que se leería como "nunca se le pidió
-    nada"."""
+def test_la_ficha_sin_pedidos_lo_dice(client_admin):
+    """El paso 4 del CU pide el historial de pedidos (B-04-008). Sin pedidos se
+    dice, en vez de una lista vacía."""
     proveedor = ProveedorFactory()
 
     contenido = client_admin.get(url_ficha(proveedor)).content.decode()
 
-    assert "No disponible." in contenido
+    assert "Todavía no se le hizo ningún pedido." in contenido
 
 
 # ---------------------------------------------------------------------------

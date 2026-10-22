@@ -9,7 +9,7 @@ el campo no hace nada y la propuesta se ve entera.
     if (!campo) return;
     campo.addEventListener("input", function () {
       const texto = campo.value.trim().toLowerCase();
-      for (const grupo of document.querySelectorAll(".grupo-restock")) {
+      for (const grupo of document.querySelectorAll(".grupo-plegable")) {
         let alguna = false;
         for (const fila of grupo.querySelectorAll("[data-fila-restock]")) {
           const coincide = !texto || fila.dataset.filaRestock.includes(texto);

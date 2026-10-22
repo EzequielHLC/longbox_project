@@ -3,6 +3,9 @@
 CU-ALT-TRA pasos 4 y 5 — las pre-ventas por fecha de llegada y editorial
 (B-01-006). Cada grupo es un lote: se cargan las unidades recibidas y lo que
 queda vacío es faltante (A1). Confirmar pasa antes por el resumen de CO-013.
+
+Plan 00 de interfaz, 22: arriba las cifras y el calendario del mes, armados con
+los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
 {% endcomment %}
 
 {% block titulo %}Pre-ventas por llegar · Longbox{% endblock %}
@@ -17,16 +20,61 @@ queda vacío es faltante (A1). Confirmar pasa antes por el resumen de CO-013.
   </div>
 </header>
 
-{% for grupo in grupos %}
-  <section class="seccion{% if grupo.vencido %} panel--atencion{% endif %}" aria-labelledby="grupo-{{ grupo.clave }}">
+{% if grupos %}
+  <div class="cifras">
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}Productos en pre-venta</span><span class="cifra__valor">{{ resumen.productos }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Unidades reservadas</span><span class="cifra__valor">{{ resumen.reservadas }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="reloj" %}Llegan esta semana</span><span class="cifra__valor">{{ resumen.esta_semana }}</span></div>
+    <div class="cifra{% if resumen.atrasados %} cifra--atencion{% endif %}">{% if resumen.atrasados %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasados</span><span class="cifra__valor">{{ resumen.atrasados }}</span></div>
+  </div>
+
+  <section class="seccion" aria-labelledby="titulo-calendario">
     <div class="seccion__titulo">
-      <h2 id="grupo-{{ grupo.clave }}">
-        <span class="datos">{{ grupo.llegada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ grupo.editorial }}
-      </h2>
-      {% if grupo.vencido %}<span class="marca-estado marca-estado--atencion">Atrasado</span>
-      {% elif grupo.es_hoy %}<span class="marca-estado marca-estado--dato">Llega hoy</span>{% endif %}
+      <h2 id="titulo-calendario">{{ mes.nombre }}</h2>
+      <nav class="fila-5" aria-label="Cambiar de mes">
+        <a href="?mes={{ mes.anterior|date:'Y-m' }}" class="boton-texto boton-texto--atras"><span aria-hidden="true">←</span>&nbsp;<span>Mes anterior</span></a>
+        <a href="?mes={{ mes.siguiente|date:'Y-m' }}" class="boton-texto"><span>Mes siguiente</span>&nbsp;<span aria-hidden="true">→</span></a>
+      </nav>
     </div>
-    <form method="post" action="{% url 'pedidos:ingreso' %}" class="pila-3">
+    <table class="calendario">
+      <thead><tr>{% for dia in dias_de_la_semana %}<th scope="col">{{ dia }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for semana in mes.semanas %}
+          <tr>
+            {% for dia in semana %}
+              <td class="calendario__dia{% if not dia.del_mes %} calendario__dia--otro-mes{% endif %}{% if dia.es_hoy %} calendario__dia--hoy{% endif %}"{% if dia.es_hoy %} aria-current="date"{% endif %}>
+                <span class="calendario__numero">{{ dia.fecha.day }}</span>
+                {% for grupo in dia.grupos %}
+                  <a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% endif %}">{{ grupo.editorial }} <span class="datos">{{ grupo.filas|length }}</span></a>
+                {% endfor %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {# En el celular la grilla no entra: sólo los días que tienen llegadas. #}
+    <ul class="calendario-lista">
+      {% for dia in mes.dias_con_llegadas %}
+        <li>
+          <span class="datos">{{ dia.fecha|date:"d/m" }}</span>
+          {% for grupo in dia.grupos %}<a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% endif %}">{{ grupo.editorial }} <span class="datos">{{ grupo.filas|length }}</span></a>{% endfor %}
+        </li>
+      {% empty %}
+        <li class="secundario">Nada llega este mes.</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+{% for grupo in grupos %}
+  <details class="grupo-plegable{% if grupo.vencido %} grupo-plegable--atencion{% endif %}" id="grupo-{{ grupo.clave }}"{% if grupo.cercano %} open{% endif %}>
+    <summary class="grupo-plegable__cabeza">
+      <span class="grupo-plegable__nombre"><span class="datos">{{ grupo.llegada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ grupo.editorial }}</span>
+      <span class="grupo-plegable__cuenta">{{ grupo.filas|length }} producto{{ grupo.filas|length|pluralize }} · {{ grupo.reservadas }} reservada{{ grupo.reservadas|pluralize }}</span>
+      <span class="marca-estado{% if grupo.vencido %} marca-estado--error{% elif grupo.es_hoy %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ grupo.cuando }}</span>
+    </summary>
+    <form method="post" action="{% url 'pedidos:ingreso' %}" class="grupo-plegable__cuerpo pila-3">
       {% csrf_token %}
       <div class="tabla-desplazable">
         <table class="tabla">
@@ -43,8 +91,13 @@ queda vacío es faltante (A1). Confirmar pasa antes por el resumen de CO-013.
             {% for fila in grupo.filas %}
               <tr>
                 <td class="celda-principal">
-                  <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a>
-                  {% if fila.producto.demorado %}<br><span class="texto-chico estado estado--atencion">Demorado</span>{% endif %}
+                  <span class="fila-2">
+                    <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                    <span>
+                      <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a>
+                      {% if fila.producto.demorado %}<br><span class="texto-chico estado estado--atencion">Demorado</span>{% endif %}
+                    </span>
+                  </span>
                 </td>
                 <td class="datos sin-cortar">{{ fila.producto.codigo }}</td>
                 <td class="numero">{{ fila.reservadas }}<span class="texto-chico secundario"> · {{ fila.pedidos }} ped.</span></td>
@@ -64,7 +117,7 @@ queda vacío es faltante (A1). Confirmar pasa antes por el resumen de CO-013.
         <span class="texto-chico secundario">Vacío o 0: no llegó.</span>
       </div>
     </form>
-  </section>
+  </details>
 {% empty %}
   <div class="vacio">
     {% include "_iconos.html" with icono="inventario" %}

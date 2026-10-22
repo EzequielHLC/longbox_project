@@ -1177,6 +1177,7 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
             return render(request, self.template_name, self._contexto(borrador, form=formulario))
 
         borrador = formulario.save()
+        revisiones.completar(borrador)
         self._marcar_revisadas(request, borrador)
 
         if "confirmar" not in request.POST:
@@ -1243,7 +1244,7 @@ class ConfirmarEnLoteView(CatalogoAdminMixin, View):
         for excluida in resultado.excluidas:
             messages.warning(
                 request,
-                f"«{excluida.borrador}» quedó en la cola: " f"{excluida.motivo_legible.lower()}.",
+                f"«{excluida.borrador}» quedó en la cola: {excluida.motivo_legible.lower()}.",
             )
         return redirect("catalog:borrador_lista")
 
@@ -1411,8 +1412,9 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             "stock": lambda p: str(p.stock),
             "código de barras": lambda p: p.codigo_barras or "sin declarar",
             "solo adultos": lambda p: "sí" if p.solo_adultos else "no",
-            "etiquetas": lambda p: ", ".join(e.nombre for e in p.etiquetas.order_by("nombre"))
-            or "ninguna",
+            "etiquetas": lambda p: (
+                ", ".join(e.nombre for e in p.etiquetas.order_by("nombre")) or "ninguna"
+            ),
             "portada": lambda p: p.portada.name.rsplit("/", 1)[-1] if p.portada else "pendiente",
             "descripción": _sinopsis,
         }
@@ -1467,8 +1469,8 @@ class ProductoBajaView(CatalogoAdminMixin, DetailView):
     **La baja es lógica, nunca un `DELETE`.** Lo pide la postcondición del CU:
     el producto se conserva en el inventario interno y en el historial de ventas.
 
-    Los pasos 7 a 9 —resolver las referencias y notificar a los clientes
-    afectados— quedan afuera: dependen de Pedidos, Restock, Pricing y Tienda.
+    Los pasos 7 a 9 —resolver las referencias y avisar a los clientes— los hace
+    `services.confirmar_baja_de_producto` (B-02-006).
     """
 
     model = Producto
@@ -1503,24 +1505,23 @@ class ProductoBajaView(CatalogoAdminMixin, DetailView):
             )
             return redirect("catalog:producto_detalle", pk=producto.pk)
 
-        impacto = services.calcular_impacto_de_baja(producto)
-        with transaction.atomic():
-            producto.estado = Producto.DESCATALOGADO
-            producto.save(update_fields=["estado"])
-            RegistroAuditoria.registrar(
-                RegistroAuditoria.BAJA_PRODUCTO,
-                actor=request.user,
-                ip=obtener_ip(request),
-                objetivo=producto,
-                detalle=(
-                    f"{producto.codigo} · «{producto.titulo}» · estado anterior: "
-                    f"{impacto.estado} · stock al momento de la baja: {impacto.stock}"
-                ),
-            )
-
+        hecho = services.confirmar_baja_de_producto(
+            producto, actor=request.user, ip=obtener_ip(request)
+        )
+        resuelto = [
+            f"{hecho.suscripciones} aviso(s) de stock cancelado(s)" if hecho.suscripciones else "",
+            (
+                f"{len(hecho.ofertas_eliminadas)} oferta(s) eliminada(s)"
+                if hecho.ofertas_eliminadas
+                else ""
+            ),
+            f"{hecho.carritos} carrito(s) avisado(s)" if hecho.carritos else "",
+        ]
+        resuelto = ", ".join(parte for parte in resuelto if parte)
         messages.success(
             request,
-            f"«{producto.titulo}» salió del catálogo. Sigue en el inventario interno.",
+            f"«{producto.titulo}» salió del catálogo. Sigue en el inventario interno."
+            + (f" Se resolvió: {resuelto}." if resuelto else ""),
         )
         return redirect("catalog:producto_detalle", pk=producto.pk)
 
@@ -1550,23 +1551,56 @@ class ProductoReactivarView(CatalogoAdminMixin, DetailView):
     def get_object(self, queryset=None):
         return super().get_object(queryset).especifico
 
+    def _fecha_vencida(self, producto):
+        """`CO-036` E2: la fecha de llegada programada ya pasó."""
+        llegada = getattr(producto, "fecha_llegada", None)
+        return llegada is not None and llegada < timezone.localdate()
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["fecha_vencida"] = self._fecha_vencida(self.object)
+        return contexto
+
     def post(self, request, *args, **kwargs):
         producto = self.get_object()
 
+        # CO-035 E1: el cancelado por editorial es terminal; no "ya está en el catálogo".
+        if producto.estado in Producto.ESTADOS_TERMINALES:
+            messages.error(
+                request,
+                f"«{producto.titulo}» está {producto.get_estado_display().lower()}: "
+                "es un estado terminal y no se reactiva.",
+            )
+            return redirect("catalog:producto_detalle", pk=producto.pk)
         if producto.estado != Producto.DESCATALOGADO:
             messages.info(request, f"«{producto.titulo}» ya está en el catálogo.")
             return redirect("catalog:producto_detalle", pk=producto.pk)
+        fecha_vencida = self._fecha_vencida(producto)
 
         with transaction.atomic():
+            anterior = producto.get_estado_display()
             producto.estado = Producto.ACTIVO
             producto.save(update_fields=["estado"])
+            # CO-036 pide el estado anterior y el nuevo en la entrada.
             RegistroAuditoria.registrar(
                 RegistroAuditoria.REACTIVACION_PRODUCTO,
                 actor=request.user,
                 ip=obtener_ip(request),
                 objetivo=producto,
-                detalle=f"{producto.codigo} · «{producto.titulo}» vuelve al catálogo activo",
+                detalle=(
+                    f"{producto.codigo} · «{producto.titulo}» · estado anterior: {anterior} → "
+                    f"{producto.get_estado_display()}"
+                    + (" · la fecha de llegada quedó sin efecto" if fecha_vencida else "")
+                ),
             )
 
-        messages.success(request, f"«{producto.titulo}» volvió al catálogo.")
+        messages.success(
+            request,
+            f"«{producto.titulo}» volvió al catálogo."
+            + (
+                " Su fecha de llegada programada ya pasó y quedó sin efecto."
+                if fecha_vencida
+                else ""
+            ),
+        )
         return redirect("catalog:producto_detalle", pk=producto.pk)

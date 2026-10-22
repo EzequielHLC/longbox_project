@@ -497,6 +497,9 @@ class RegistroAuditoria(models.Model):
     CADUCIDAD_PUNTOS = "caducidad_puntos"
     INCIDENTE_CADUCIDAD = "incidente_caducidad"
     AJUSTE_PUNTOS = "ajuste_puntos"
+    # CU-CFG-LLM: el diagnóstico (CO-149) y la comprobación de disponibilidad (CO-150).
+    DIAGNOSTICO_LLM = "diagnostico_llm"
+    DISPONIBILIDAD_LLM = "disponibilidad_llm"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -585,6 +588,8 @@ class RegistroAuditoria(models.Model):
         (CADUCIDAD_PUNTOS, "Caducidad de lote de puntos"),
         (INCIDENTE_CADUCIDAD, "Fallo en la caducidad de un lote de puntos"),
         (AJUSTE_PUNTOS, "Ajuste manual de puntos"),
+        (DIAGNOSTICO_LLM, "Diagnóstico del modelo de lenguaje"),
+        (DISPONIBILIDAD_LLM, "Comprobación de disponibilidad del modelo de lenguaje"),
     ]
 
     actor = models.ForeignKey(

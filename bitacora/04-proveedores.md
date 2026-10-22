@@ -256,3 +256,66 @@ falta.
 
 **Qué habría que cambiar.**
 Nada.
+
+---
+
+### B-04-008 · El historial de la ficha muestra todos los pedidos al proveedor, no sólo los de restock
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-PRV-CON` paso 4, `CO-173`, `CO-074`
+**Estado:** Abierta
+
+**Qué apareció.**
+Al escribir las pruebas de contrato del padrón (V2 del plan 00): la ficha del proveedor decía
+«No disponible» en el historial de pedidos, de cuando Restock no existía. Al llenarlo apareció que
+al proveedor se le hacen pedidos por dos caminos —el despacho de la propuesta de restock y el
+cierre de una revisión de novedades— y los dos son la misma operación, `CO-074`.
+
+**Qué dice la especificación.**
+> «historial de pedidos de restock despachados» (`CU-PRV-CON`, paso 4; `CO-173`)
+
+**Qué se hizo.**
+La ficha lista los pedidos enviados a ese proveedor por los dos caminos, con fecha, títulos,
+unidades y si el correo salió o no. Dejar afuera el pedido inicial de una novedad haría que un
+proveedor al que se le pidió todo por ese camino pareciera no haber recibido pedidos nunca.
+
+**Qué habría que cambiar.**
+`CU-PRV-CON` paso 4 y `CO-173`, salida: «historial de pedidos despachados al proveedor
+(`CO-074`)», sin acotarlo a restock.
+
+---
+
+### B-04-009 · La reactivación de proveedor no ofrecía corregir los datos, y la propuesta no marcaba al proveedor inactivo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-PRV-REA` pasos 3-8, `CO-064`, `CO-065`, `CO-066`
+**Estado:** Abierta
+
+**Qué apareció.**
+Al escribir las pruebas de contrato del padrón: la reactivación era sólo un botón de confirmar,
+con un enlace para «editar antes». No dejaba corregir los datos ni decidir el procesamiento de
+novedades, y no validaba nada. La propuesta de restock tampoco avisaba nada cuando el proveedor
+de una línea estaba dado de baja.
+
+**Qué dice la especificación.**
+> «El sistema presenta los datos vigentes del proveedor para su revisión, con el Correo Comercial
+> destacado, y ofrece corregirlos antes de confirmar.» (`CU-PRV-REA`, paso 3) ·
+> «LineaPropuestaRestock: las propuestas activas que lo involucraban quedaron marcadas con la
+> advertencia Proveedor inactivo.» (`CO-064`)
+
+**Qué se hizo.**
+La reactivación es la revisión: el correo destacado, la razón social, la editorial y el tipo
+habituales, el contacto y el procesamiento de novedades, todo corregible, y la confirmación guarda
+las correcciones y reactiva en el mismo acto. Dos decisiones que la especificación no toma:
+
+- **No pide la confirmación del cambio de correo de `CU-PRV-EDI` A1.** La pantalla entera es la
+  revisión del correo; confirmar la reactivación es confirmar el correo que se ve.
+- **Las notas internas no están.** El contrato no las nombra; se siguen editando desde
+  `CU-PRV-EDI`, también con el proveedor inactivo.
+
+La marca «Proveedor inactivo» de la propuesta se deriva del estado del proveedor y no se guarda en
+la línea: alcanza a la línea cuyo producto tiene ese proveedor, y a la que no tiene proveedor
+propio cuando el habitual de su editorial es el dado de baja y ningún otro lo reemplaza.
+Reactivarlo la quita sin tocar la propuesta.
+
+**Qué habría que cambiar.**
+`CU-PRV-REA`: anotar que el cambio de correo no lleva la confirmación de `CU-PRV-EDI` A1. `CO-064`,
+postcondición (c): «la advertencia se deriva del estado del proveedor mientras siga inactivo».

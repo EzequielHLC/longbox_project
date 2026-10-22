@@ -135,6 +135,14 @@ muestra**, no qué es obligatorio.
         <p data-referencia class="ayuda"></p>
       </div>
     </div>
+    {% comment %}
+    CU-ALT-NAC A3: un precio distinto del de la tabla rompe el vínculo con la
+    combinación. La casilla es la confirmación, y se vuelve a exigir en el servidor.
+    {% endcomment %}
+    <div data-aviso-precio class="panel panel--atencion{% if not form.confirma_precio_manual.value and not form.precio.errors %} hidden{% endif %}">
+      <p>Precio a mano: deja de actualizarse con la tabla de precios de referencia.</p>
+      {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
+    </div>
   {% endif %}
 
   <div class="rejilla-3">

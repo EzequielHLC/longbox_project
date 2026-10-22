@@ -21,7 +21,10 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
   </div>
 </header>
 
-{% if producto.estado != "descatalogado" %}
+{% if producto.estado == "cancelado_editorial" %}
+  {# CO-035 E1: el cancelado por editorial es terminal y no se reactiva. #}
+  <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> este producto está cancelado por editorial. Es un estado terminal y no se reactiva.</span></p>
+{% elif producto.estado != "descatalogado" %}
   <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>Este producto ya está en el catálogo.</span></p>
 {% else %}
   <div data-dialogo-contenido class="panel formulario--angosto">
@@ -29,6 +32,7 @@ pantalla sin confirmar es `CO-156 cancelarOperacion`.
     <ul class="lista-renglones">
       <li><span>Vuelve al catálogo público y se puede vender.</span></li>
       <li><span>Vuelve como <strong>Activo</strong>, no al estado que tenía antes de la baja.</span></li>
+      {% if fecha_vencida %}<li><span>Su fecha de llegada programada (<span class="datos">{{ producto.fecha_llegada|date:"d/m/Y" }}</span>) ya pasó y queda sin efecto.</span></li>{% endif %}
     </ul>
 
     <dl class="datos-de-ficha">

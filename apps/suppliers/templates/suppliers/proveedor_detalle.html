@@ -148,12 +148,20 @@ acciones viven en esta pantalla y no repartidas por el listado.
 </section>
 
 {% comment %}
-CU-PRV-CON paso 4 pide además el historial de pedidos de restock despachados. El
-módulo de Restock no está implementado todavía, así que se dice que falta en
-vez de mostrar una tabla vacía que se leería como «nunca se le pidió nada».
+CU-PRV-CON paso 4 — CO-173: el historial de pedidos despachados. Sale de la
+entrada que deja cada envío (CO-074), desde la propuesta de restock o desde el
+cierre de una revisión de novedades: los dos son pedidos a este proveedor.
 {% endcomment %}
 <section class="seccion" aria-labelledby="titulo-pedidos">
-  <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos de reposición</h2></div>
-  <p class="secundario">No disponible.</p>
+  <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos al proveedor</h2></div>
+  {% if pedidos %}
+    <ul class="lista-renglones">
+      {% for pedido in pedidos %}
+        <li><span class="datos secundario">{{ pedido.ocurrido_en|date:"d/m/Y H:i" }}</span> <span>{{ pedido.detalle }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="secundario">Todavía no se le hizo ningún pedido.</p>
+  {% endif %}
 </section>
 {% endblock %}

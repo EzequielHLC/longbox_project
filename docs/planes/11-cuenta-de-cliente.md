@@ -144,3 +144,84 @@ de sesión. Esta parte construye el panel y la edición del perfil. La sección 
 - La sección Stock en Local y `CU-STK-DES` (módulo 18).
 - El acceso a `CU-PED-OPC` desde un pedido con artículos demorados (plan 08, segunda parte).
 - La baja de la cuenta (`CU-CLI-BAJ`).
+
+---
+
+# Plan — `11` Cuenta de Cliente · tercera parte: la baja de la cuenta
+
+**Estado del plan:** Propuesto · **Fecha:** 2026-10-22
+
+Último caso de uso del módulo. Lo pedía la revisión funcional (plan 00, A4: Ley 25.326 y BR-11), y
+el módulo 18 dejó calculable el informe de impacto. Las fuentes leídas: la ficha de `CU-CLI-BAJ`,
+su apartado del DSS, `CO-112`, `CO-113` y `CO-156`, y en el modelo `Usuario`, `LotePuntos`,
+`MovimientoPuntos`, `SuscripcionReposicion`, `Carrito`, `LineaCarrito`, `ArticuloRetenido`,
+`Pedido` y `LineaPedido`.
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Contratos | Operaciones de escritura | Operaciones de consulta |
+| --- | --- | --- | --- |
+| `CU-CLI-BAJ` | `CO-112`, `CO-113`, `CO-156` | 1 (`CO-113`) | 2 (`CO-112`; `CO-156` es abandonar) |
+
+**Total:** 3 contratos.
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Usuario` | Sí | Pasa a Inactivo. El correo se conserva |
+| Sesiones | Sí | `invalidar_sesiones_de`, la de `CU-USR-BAJ`, incluida la sesión actual |
+| `LotePuntos` | Sí | Disponible a cero y estado Vencido |
+| `MovimientoPuntos` | Sí | Ver ambigüedad 1 |
+| `SuscripcionReposicion` | Sí | Se eliminan las en espera, como `CO-076` |
+| `LineaCarrito` | Sí | Se eliminan; el `Carrito` queda vacío |
+| `ArticuloRetenido`, `LineaPedido` | Sí | Sólo los lee: son los bloqueos E1 y E2 |
+| `Pedido` | Sí | Sólo lo lee y lo cuenta. Postcondición negativa: no se toca |
+| `IntentoFallido` | Sí | Ver ambigüedad 3 |
+| `RegistroAuditoria` | Sí | Acción nueva «Baja de cuenta de cliente» |
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | `CO-113` (c), puntos | **(a)** Sólo los lotes: disponible a cero y Vencido, como dice el contrato. El historial de «Mi cuenta» deja de cuadrar con el saldo. **(b)** Además, un débito «Baja de la cuenta» por lote en `MovimientoPuntos`, como hace la caducidad (B-10-006). | Decisión. **Recomiendo (b)**: el historial se conserva íntegro y además explica por qué el saldo llegó a cero. Va a la bitácora como agregado |
+| 2 | `CU-CLI-BAJ` paso 2 (b), qué pedido es «activo en proceso» | **(a)** Sólo los tres que nombra la ficha: Pendiente de armado, Armado y Empaquetado. **(b)** Todos los activos del sistema, que además incluyen Esperando pre-venta y Esperando artículo demorado (con la decisión ya tomada). | Decisión. **Recomiendo (b)**: la lista de la ficha es anterior a las pre-ventas y a la demora, y un pedido en esas etapas también sigue su ciclo. Los En el local ya quedan bloqueados por E1, porque sus unidades son stock en local |
+| 3 | `CO-113` E3, el bloqueo tras tres intentos | **(a)** Un contador propio del flujo de baja: tres contraseñas equivocadas bloquean la baja, no el inicio de sesión. **(b)** El mismo contador del inicio de sesión. | Decisión. **Recomiendo (a)**, que es lo que dice la ficha: «bloquea el flujo de baja». Se hace con un campo «flujo» en `IntentoFallido`, con migración |
+| 4 | La vuelta de la baja | La ficha dice que la cuenta «sólo el Administrador puede reactivarla desde `CU-USR-REA` o eliminarla desde `CU-USR-ELI`». Hoy esas dos pantallas sólo alcanzan cuentas de personal, y `CO-124` pide elegir un rol. **(a)** Extender `CU-USR-REA` a clientes, sin elegir rol. **(b)** Dejarlo fuera de este plan y anotarlo. | Decisión. **Recomiendo (b)** y consultar: extender `CU-USR-REA` cambia lo que ese caso de uso puede hacer, y su contrato no prevé un Cliente |
+| 5 | `CO-112`, la equivalencia en ARS del saldo | El valor del punto de Parámetros (`equivalencia_puntos`), el mismo del canje en el mostrador. | Ninguna: hay un solo valor. Se anota para que no parezca arbitrario |
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `CO-112`: el informe de cuatro categorías y los bloqueos E1 y E2 | — | Lo único que se lee antes de decidir |
+| 2 | `CO-113`: la confirmación con contraseña, en una transacción, con E3 y E4 | 1 | Es la escritura y sus postcondiciones negativas |
+| 3 | El correo de confirmación y la redirección al inicio de sesión | 2 | Pasos 9 y 10 |
+| 4 | `CO-156`: abandonar sin efecto | 1 | A1 |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde | Cómo se cubre |
+| --- | --- | --- |
+| Un pedido activo deja de notificarse porque su dueño está inactivo | Postcondición de la ficha | Prueba que avanza el pedido de un Cliente dado de baja y lee el buzón |
+| La baja se cuela entre el informe y la confirmación con un retenido nuevo | E1 | Los bloqueos se vuelven a evaluar dentro de la transacción de `CO-113` |
+| Un fallo a mitad de la transacción deja los puntos en cero con la cuenta activa | E4 | Todo en una sola transacción; prueba que fuerza el fallo y verifica que nada cambió |
+| El personal da de baja a un Cliente por esta dirección | Acceso | La operación es sólo del propio Cliente; 403 por la dirección real con otro rol |
+| El correo vuelve a registrarse | I-10 | Ya lo cubre el registro (`CO-107` E1, cualquier estado). Prueba |
+
+---
+
+## 6. Fuera de alcance
+
+- La reactivación o eliminación de una cuenta de Cliente por el Administrador (ambigüedad 4).
+- El vínculo con Telegram, que todavía no existe (plan 00 de interfaz, sección 24).

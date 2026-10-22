@@ -218,6 +218,29 @@ def _habituales():
     return {e: lista[0] for e, lista in por_editorial.items() if len(lista) == 1}
 
 
+def _inactivos():
+    """Editorial → un proveedor dado de baja que la tenía como habitual."""
+    return dict(
+        Proveedor.objects.filter(estado=Proveedor.INACTIVO, editorial__isnull=False)
+        .order_by("-pk")
+        .values_list("editorial_id", "pk")
+    )
+
+
+def proveedor_inactivo_de(producto, resuelto, inactivos):
+    """`CO-064` (c): el proveedor dado de baja que la línea involucraba, o `None`.
+
+    El suyo, si lo tiene y está inactivo; si no lo tiene, el habitual inactivo de
+    su editorial, sólo cuando ningún activo lo reemplaza. Se deriva y no se
+    guarda: la reactivación (`CO-066`) la limpia sin tocar la propuesta.
+    """
+    if producto.proveedor_id:
+        return producto.proveedor if producto.proveedor.estado == Proveedor.INACTIVO else None
+    if resuelto is None and producto.editorial_id in inactivos:
+        return Proveedor.objects.get(pk=inactivos[producto.editorial_id])
+    return None
+
+
 def proveedor_de(producto, habituales=None):
     if producto.proveedor_id and producto.proveedor.estado == Proveedor.ACTIVO:
         return producto.proveedor
@@ -434,13 +457,14 @@ class Grupo:
 
 def agrupar(propuesta):
     """Las líneas por proveedor; dentro de cada grupo, por suscriptores (CO-067)."""
-    habituales = _habituales()
+    habituales, inactivos = _habituales(), _inactivos()
     grupos = OrderedDict()
     lineas = propuesta.lineas.select_related(
         "producto", "producto__proveedor", "producto__editorial"
     ).order_by("-suscriptores_activos", "producto__titulo", "producto__volumen")
     for linea in lineas:
         proveedor = proveedor_de(linea.producto, habituales)
+        linea.proveedor_inactivo = proveedor_inactivo_de(linea.producto, proveedor, inactivos)
         clave = proveedor.pk if proveedor else 0
         grupos.setdefault(clave, Grupo(proveedor=proveedor)).lineas.append(linea)
     return sorted(grupos.values(), key=lambda g: (g.proveedor is None, g.nombre.lower()))

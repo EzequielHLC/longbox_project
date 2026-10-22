@@ -3100,11 +3100,11 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   animation: aparece var(--dur-3) var(--curva-golpe) both;
 }
 
-/* Restock (segunda parte, 14): cada proveedor en un bloque que se pliega. */
-.grupo-restock { border: var(--trazo) var(--linea); background: var(--fondo-2); }
-.grupo-restock + .grupo-restock { margin-top: var(--esp-3); }
-.grupo-restock--atencion { border-color: var(--acento); }
-.grupo-restock__cabeza {
+/* Bloque plegable (Restock, Pre-ventas): un grupo con su resumen en la cabeza. */
+.grupo-plegable { border: var(--trazo) var(--linea); background: var(--fondo-2); }
+.grupo-plegable + .grupo-plegable { margin-top: var(--esp-3); }
+.grupo-plegable--atencion { border-color: var(--acento); }
+.grupo-plegable__cabeza {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3113,22 +3113,22 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   cursor: pointer;
   list-style: none;
 }
-.grupo-restock__cabeza::-webkit-details-marker { display: none; }
-.grupo-restock__cabeza::before {
+.grupo-plegable__cabeza::-webkit-details-marker { display: none; }
+.grupo-plegable__cabeza::before {
   content: "›";
   color: var(--texto-2);
   transition: transform var(--dur-2) var(--curva-golpe);
 }
-.grupo-restock[open] > .grupo-restock__cabeza::before { transform: rotate(90deg); }
-.grupo-restock__cabeza:hover { background: var(--fondo-3); }
-.grupo-restock__nombre {
+.grupo-plegable[open] > .grupo-plegable__cabeza::before { transform: rotate(90deg); }
+.grupo-plegable__cabeza:hover { background: var(--fondo-3); }
+.grupo-plegable__nombre {
   font: 700 var(--op-titulo-2) / 1.2 var(--fuente-display);
   font-stretch: var(--ancho-condensado);
   text-transform: uppercase;
   color: var(--texto-fuerte);
 }
-.grupo-restock__cuenta { flex: 1; font-size: var(--op-chico); color: var(--texto-2); }
-.grupo-restock__cuerpo { padding: 0 var(--esp-4) var(--esp-4); }
+.grupo-plegable__cuenta { flex: 1; font-size: var(--op-chico); color: var(--texto-2); }
+.grupo-plegable__cuerpo { padding: 0 var(--esp-4) var(--esp-4); }
 
 /* P2: la tapa dibujada de un producto sin imagen. Trama de imprenta, la editorial
    arriba, el título grande y el número en un rombo de señal. */
@@ -3276,6 +3276,59 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .sugerencias__precio { font-weight: 700; color: var(--texto-fuerte); }
 .sugerencias__todos { justify-content: center; border-top: var(--trazo) var(--linea); font-weight: 700; color: var(--acento-texto); }
 .sugerencias__vacio { padding: var(--esp-3); color: var(--texto-2); }
+
+/* Calendario (tercera parte, 22): el mes en una grilla de lunes a domingo. Cada
+   día con su número; lo que llega, en fichas que llevan a su grupo. */
+.calendario { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.calendario th {
+  padding: var(--esp-1) var(--esp-2);
+  border-bottom: var(--trazo-fuerte) var(--texto);
+  font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-2);
+  text-align: left;
+}
+.calendario__dia {
+  height: 5.5rem;
+  padding: var(--esp-1) var(--esp-2);
+  border: var(--trazo) var(--linea);
+  vertical-align: top;
+}
+.calendario__numero {
+  display: block;
+  margin-bottom: var(--esp-1);
+  font: 500 var(--op-dato) / 1.2 var(--fuente-datos);
+  color: var(--texto);
+}
+.calendario__dia--otro-mes .calendario__numero { color: var(--texto-2); }
+.calendario__dia--otro-mes { background: var(--fondo); }
+.calendario__dia--hoy { outline: var(--trazo-fuerte) var(--acento); outline-offset: -2px; }
+.calendario__dia--hoy .calendario__numero { font-weight: 700; color: var(--acento-texto); }
+.calendario__llegada {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-1);
+  margin-top: var(--esp-1);
+  padding: 0 var(--esp-1);
+  border: var(--trazo) var(--borde-control);
+  background: var(--fondo-3);
+  color: var(--texto);
+  font-size: var(--op-chico);
+  text-decoration: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: border-color var(--dur-1) var(--curva-golpe);
+}
+.calendario__llegada:hover { border-color: var(--texto); }
+.calendario__llegada--atrasada { border-color: var(--error); color: var(--error); }
+.calendario-lista { display: none; margin: 0; padding: 0; list-style: none; }
+@media (max-width: 899px) {
+  .calendario { display: none; }
+  .calendario-lista { display: grid; gap: var(--esp-2); }
+  .calendario-lista li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); }
+}
 
 /* Riel de estados del pedido (4.2). Cada paso es una columna; el tramo que llega
    a un paso es su `::before`, del centro del anterior al centro de éste. */

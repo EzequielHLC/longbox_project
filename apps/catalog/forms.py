@@ -59,10 +59,22 @@ ADVERTENCIA_PRECIO_MANUAL = (
     "Este precio no será recalculado automáticamente ante cambios de margen."
 )
 
+# La de CU-ALT-NAC A3, con su texto. Cambia sólo el final: la ficha nombra
+# «CU-PVP-TBM», y la voz del sistema no muestra códigos de caso de uso (B-01-013).
+ADVERTENCIA_PRECIO_MANUAL_NACIONAL = (
+    "Este producto está vinculado a la combinación seleccionada de la tabla de precios de "
+    "referencia. Modificar el precio individualmente romperá ese vínculo: el producto dejará "
+    "de actualizarse automáticamente ante cambios de precio en la tabla de precios de referencia."
+)
+
 MENSAJE_LOTE_VACIO = "Cargue al menos un ítem para poder guardar el lote."
+# CO-003, excepción: el rechazo dice con qué ítem choca y por qué criterio.
 MENSAJE_REPETIDO_EN_LOTE = (
-    "Este ítem está repetido dentro del mismo lote: ya hay otro con el mismo título, "
+    "Este ítem está repetido dentro del mismo lote: el ítem {numero} tiene el mismo título, "
     "volumen, tipo, formato y editorial."
+)
+MENSAJE_REPETIDO_POR_ISBN = (
+    "Este ítem está repetido dentro del mismo lote: el ítem {numero} tiene el mismo ISBN ({isbn})."
 )
 MENSAJE_FECHA_PASADA = "La fecha de llegada no puede ser anterior a hoy."
 MENSAJE_COTIZACION_EN_PESOS = (
@@ -715,6 +727,11 @@ class ItemLoteNacionalForm(ItemLoteForm):
         required=False,
         ayuda="Vacío toma el precio de referencia de la editorial, el tipo y el formato.",
     )
+    # CU-ALT-NAC A3 (CO-004 → CO-005): sobrescribir el precio de la tabla se
+    # confirma, y la confirmación se valida acá y no sólo en la pantalla.
+    confirma_precio_manual = forms.BooleanField(
+        label="Confirmo la edición del precio", required=False
+    )
 
     def clean(self):
         datos = super().clean()
@@ -738,10 +755,12 @@ class ItemLoteNacionalForm(ItemLoteForm):
 
         datos["precio_final"] = precio if precio is not None else referencia.pvp
         datos["referencia"] = referencia
-        # Sobrescribir el precio pre-completado no lleva advertencia, pero sí
-        # deja marcado el producto, para que un cambio de la tabla de precios no
-        # le pise después una decisión tomada a mano.
+        # Sobrescribir el precio pre-completado deja marcado el producto, para
+        # que un cambio de la tabla no le pise después una decisión tomada a
+        # mano, y exige confirmar la advertencia (CU-ALT-NAC A3, B-01-013).
         datos["precio_manual"] = bool(referencia) and datos["precio_final"] != referencia.pvp
+        if datos["precio_manual"] and not datos.get("confirma_precio_manual"):
+            self.add_error("precio", ADVERTENCIA_PRECIO_MANUAL_NACIONAL)
         return datos
 
     def datos_del_producto(self):
@@ -757,7 +776,13 @@ class ItemLoteNacionalForm(ItemLoteForm):
             # CU-PVP-MAR no tenga que preguntar de qué origen es antes de leerlo.
             precio_base=precio,
             precio_manual=self.cleaned_data.get("precio_manual", False),
-            precio_referencia=self.cleaned_data.get("referencia"),
+            # CO-005 (b): un precio confirmado a mano no queda asociado a la tabla,
+            # y por eso CO-048 no lo alcanza (B-01-014).
+            precio_referencia=(
+                None
+                if self.cleaned_data.get("precio_manual")
+                else self.cleaned_data.get("referencia")
+            ),
         )
         return datos
 
@@ -860,12 +885,19 @@ class BaseItemFormSet(forms.BaseFormSet):
         dejara pasar el segundo ítem se rechazaría contra el primero recién
         después de guardar, cuando ya no hay nada que corregir en pantalla.
         """
-        vistos = set()
+        vistos = {}
         for form in cargados:
             clave = form.clave_de_duplicado()
             if clave in vistos:
-                form.add_error("titulo", MENSAJE_REPETIDO_EN_LOTE)
-            vistos.add(clave)
+                # El número es el de la pantalla: la posición del ítem en el lote.
+                numero = self.forms.index(vistos[clave]) + 1
+                if clave[0] == "isbn":
+                    mensaje = MENSAJE_REPETIDO_POR_ISBN.format(numero=numero, isbn=clave[1])
+                else:
+                    mensaje = MENSAJE_REPETIDO_EN_LOTE.format(numero=numero)
+                form.add_error("titulo", mensaje)
+            else:
+                vistos[clave] = form
 
     def datos_de_los_productos(self, etiquetas_del_lote=()):
         """Los datos de cada ítem, con las etiquetas del lote ya sumadas.
@@ -1260,6 +1292,9 @@ class ProductoEditorialForm(GaleriaFormMixin, forms.ModelForm):
         producto = super().save(commit=False)
         if self.cleaned_data.get("precio_manual"):
             producto.precio_manual = True
+            # CO-005 (b): se rompe la asociación con la tabla de referencia, si la
+            # había (B-01-014).
+            producto.precio_referencia = None
         if commit:
             producto.save()
             self.save_m2m()

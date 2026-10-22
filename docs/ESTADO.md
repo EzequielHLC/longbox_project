@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-19**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-22**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -11,7 +11,25 @@ enlazan a éste.
 
 ## Resumen
 
-Decimoquinta fotografía. **Revisión funcional y recorte para el cierre** (plan 00): se corrigió lo
+Del 2026-10-22: **todos los casos de uso construidos tienen sus contratos verificados** (V1 y V2
+del plan 00). Escribir las pruebas desde los contratos encontró lo que faltaba y se completó:
+
+- **La baja de producto resuelve lo que tenía atado** (B-02-006), y la reactivación registra el
+  estado anterior y el nuevo.
+- **El lote nacional exige confirmar el precio a mano** en el servidor (B-01-013), y un precio a mano
+  ya no lo pisa la tabla de referencia (B-01-014).
+- **La reactivación de proveedor es una revisión** con los datos corregibles, y la propuesta de
+  restock marca al proveedor inactivo (B-04-009). La ficha muestra el historial de pedidos
+  (B-04-008).
+- **El diagnóstico del modelo queda en el log** y la disponibilidad se comprueba con un botón
+  propio (B-17-018).
+- **La revisión de borradores**: completar un incompleto lo pasa a Pendiente, y los pedidos del
+  cierre de sesión dejan su entrada como cualquier pedido a proveedor (`CO-074`).
+- **El calendario de pre-ventas** en el panel (B-00-025).
+
+Quedan pendientes `CU-CLI-BAJ` y `CU-REP-GEN`, que esperan su plan.
+
+Del 2026-10-19, antes: decimoquinta fotografía. **Revisión funcional y recorte para el cierre** (plan 00): se corrigió lo
 que hacía aguas, se completó lo que el alcance promete y se descartó el resto con su
 justificación (`docs/DEUDA.md`, «Recorte para el cierre»).
 
@@ -66,15 +84,15 @@ tener suscriptores (B-05-001): su parcialidad viene de otras operaciones.
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 87 |
-| Construidos, sin verificar | 10 |
-| Parciales | 4 |
+| Verificados | 101 |
+| Construidos, sin verificar | 0 |
+| Parciales | 0 |
 | En curso | 0 |
 | Pendientes | 2 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba: **175**, de los cuales **174
-verificados** y **1 parcial**: `CO-060` (sólo el doble envío). Sin prueba: **44**. El detalle por
+Contratos de operación especificados: **219**. Con prueba y verificados: **215**. Sin prueba:
+**4**, los de `CU-CLI-BAJ` (`CO-112`, `CO-113`) y `CU-REP-GEN` (`CO-128`, `CO-204`). El detalle por
 contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy.
 
 ### Cómo leer la columna «Contratos»
@@ -94,10 +112,10 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-ALT-NAC` | Parcial | 3 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Alta al vuelo de editorial, tipo y formato** desde la cabecera del lote (`CO-137`, `CO-141`, `CO-144` verificados por su caso de uso propio; B-17-009). `CO-077` no aplica: un producto nuevo no tiene suscriptores (B-05-001). Las operaciones propias del alta (`CO-001` a `CO-006`) no tienen prueba de contrato. |
-| `CU-ALT-IMP` | Parcial | 4 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`. `CO-031` existe y está verificado (`CU-CAT-EDI` A2). Las operaciones propias del alta no tienen prueba de contrato. |
+| `CU-ALT-NAC` | Verificado | 9 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Todos sus contratos aplicables verificados** (`CO-001` a `CO-006`, V2 del plan 00): el precio a mano exige confirmación en el servidor y rompe el vínculo con la tabla (B-01-013, B-01-014). Alta al vuelo de editorial, tipo y formato (`CO-137`, `CO-141`, `CO-144`; B-17-009). `CO-077` no aplica: un producto nuevo no tiene suscriptores (B-05-001). |
+| `CU-ALT-IMP` | Verificado | 12 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. **Todos sus contratos aplicables verificados** (`CO-001`, `CO-002`, `CO-005` a `CO-010`, V2 del plan 00). Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`; `CO-031` desde `CU-CAT-EDI` A2. `CO-077` no aplica (B-05-001). |
 | `CU-ALT-NOV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `CO-017` y `CO-019` desde la ficha del correo; **`CO-016`, el monitoreo de la casilla, en el Temporizador** por IMAP, con la frecuencia de Parámetros, E1, E3 sin conexión e idempotencia (B-01-012). Plan 00, A1. |
-| `CU-ALT-REV` | Parcial | 0 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`, `ConfianzaCampo`. `CO-077` no aplica a productos nuevos (B-05-001). |
+| `CU-ALT-REV` | Verificado | 9 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`. **Todos sus contratos aplicables verificados.** Completar un borrador incompleto lo pasa a Pendiente (`CO-020`); el cierre encadena `CO-074` con su entrada por proveedor (`CO-025`); la colisión dice su criterio (`CO-022` E7). `CO-077` no aplica (B-05-001). |
 | `CU-ALT-DEM` | Verificado | 3 / 3 | `apps/pedidos/preventa.py`, `views_preventa.py`. **Todos sus contratos verificados**: informe de impacto (A3), E1 con lo ingresado conservado, la cascada a pedidos con la ventana de decisión (B-08-004) y el correo con acceso directo, E2 con un pedido que falla, y volver sin registrar (`CO-156`). Desde la ficha del producto. Plan 01. |
 | `CU-ALT-TRA` | Verificado | 5 / 5 | **Todos sus contratos verificados.** «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` cubre reservas en orden (B-01-007), demora los faltantes vencidos (B-01-008), avisa a los suscriptores con lo que sobra (B-05-001) y deja retenido lo de despacho diferido (B-18-002); `CO-011` y `CO-012` en el Temporizador (B-01-009). Plan 01. |
 | `CU-ALT-CAN` | Verificado | 3 / 3 | **Todos sus contratos verificados**: informe por cliente con los puntos (B-01-010), atomicidad total (E1), un lote por cliente, el envío de los pedidos que se quedan vacíos (B-08-008) y volver sin efecto (`CO-156`). Plan 01. |
@@ -106,10 +124,10 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CAT-ALT` | Construido, sin verificar | 0 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. |
-| `CU-CAT-EDI` | Parcial | 1 / 5 | `ProductoEdicionView`. **`CO-031 restaurarPrecioCalculado` construido y verificado**, ofrecido desde la ficha y desde la edición con el precio a la vista (B-03-005). La edición ofrece el valor actual de editorial, tipo, formato y etiquetas aunque esté dado de baja (B-17-007). `CO-030`, `CO-032`, `CO-005` y `CO-161` sin prueba de contrato. |
-| `CU-CAT-BAJ` | Construido, sin verificar | 1 / 3 | `ProductoBajaView`, con el informe de impacto previo. `CO-156` verificado. |
-| `CU-CAT-REA` | Construido, sin verificar | 1 / 3 | `ProductoReactivarView`. `CO-156` verificado. Falta comparar lo construido contra `CO-035`/`CO-036`. |
+| `CU-CAT-ALT` | Verificado | 2 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. **Todos sus contratos verificados.** |
+| `CU-CAT-EDI` | Verificado | 5 / 5 | `ProductoEdicionView`. **Todos sus contratos verificados.** La pantalla declara los inmutables: código, rubro y costo en origen del importado (`CO-161`). `CO-031` desde la ficha y desde la edición (B-03-005); el valor actual de editorial, tipo, formato y etiquetas aunque esté dado de baja (B-17-007). |
+| `CU-CAT-BAJ` | Verificado | 3 / 3 | `ProductoBajaView` y `services.confirmar_baja_de_producto`. **Todos sus contratos verificados.** El informe calcula las cuatro categorías y la baja las resuelve: suscripciones canceladas, oferta exclusiva eliminada, carritos avisados, pedidos intactos (B-02-006). |
+| `CU-CAT-REA` | Verificado | 3 / 3 | `ProductoReactivarView`. **Todos sus contratos verificados.** Rechaza el cancelado por editorial (E1), avisa la fecha de llegada vencida (E2) y registra el estado anterior y el nuevo. |
 | `CU-CAT-INV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** Exportación CSV del listado filtrado, sólo Administrador y auditada (`CO-037`); filtro por editorial y etiquetas inactivas marcadas (`CO-162`); ficha por rol que no dibuja lo que el Cajero no ve e indicadores «No disponible» (`CO-163`). |
 | `CU-CAT-GRC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `GrupoListaView`: activos y dados de baja, filtro por estado, cantidad de etiquetas. |
 | `CU-CAT-GRA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activo; la colisión enlaza el grupo existente con su estado. |
@@ -138,11 +156,11 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-PRV-ALT` | Construido, sin verificar | 0 / 2 | `ProveedorAltaView`, con alta de editorial al vuelo. |
-| `CU-PRV-EDI` | Construido, sin verificar | 0 / 3 | `ProveedorEdicionView`, con confirmación al cambiar el correo comercial. |
-| `CU-PRV-CON` | Construido, sin verificar | 0 / 2 | `ProveedorListaView` y `ProveedorDetalleView`. |
-| `CU-PRV-REA` | Construido, sin verificar | 1 / 3 | `ProveedorReactivarView`. `CO-156` verificado. Falta compararla contra `CO-065`/`CO-066`. |
-| `CU-PRV-BAJ` | Construido, sin verificar | 1 / 3 | `ProveedorBajaView` con informe de impacto, que ya cuenta la propuesta de restock pendiente (B-04-007). `CO-156` verificado; falta la prueba de contrato de la baja. |
+| `CU-PRV-ALT` | Verificado | 2 / 2 | `ProveedorAltaView`, con alta de editorial al vuelo. **Todos sus contratos verificados.** |
+| `CU-PRV-EDI` | Verificado | 3 / 3 | `ProveedorEdicionView`, con confirmación al cambiar el correo comercial. **Todos sus contratos verificados.** |
+| `CU-PRV-CON` | Verificado | 2 / 2 | `ProveedorListaView` y `ProveedorDetalleView`. **Todos sus contratos verificados.** La ficha muestra el historial de pedidos al proveedor (B-04-008). |
+| `CU-PRV-REA` | Verificado | 3 / 3 | `ProveedorReactivarView`. **Todos sus contratos verificados.** La reactivación es la revisión: datos corregibles con el correo destacado y el procesamiento de novedades declarado (B-04-009). |
+| `CU-PRV-BAJ` | Verificado | 3 / 3 | `ProveedorBajaView` con informe de impacto (B-04-007). **Todos sus contratos verificados.** La propuesta de restock marca «Proveedor inactivo» (B-04-009). |
 | `CU-PRV-COL` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Aprobar (`AprobarCorreoView`) y reprocesar (`ReprocesarCorreoView`) desde la ficha, con la transición condicionada de E1 y la corrección de E4 a favor del contrato (B-04-004). |
 
 ### `05` Restock
@@ -218,7 +236,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CLI-ALT` | Construido, sin verificar | 0 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. |
+| `CU-CLI-ALT` | Verificado | 1 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. **Todos sus contratos verificados.** |
 | `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
 | `CU-CLI-DAT` | Verificado | 4 / 4 | `apps/accounts/views_cuenta.py`. **Todos sus contratos verificados.** Datos con las validaciones del registro; contraseña que cierra las otras sesiones; correo con `TokenCambioCorreo` de 24 h (B-11-002), confirmación por botón y aviso al correo anterior (B-11-005). Plan 11, segunda parte. |
 | `CU-CLI-HIS` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Pedidos activos, historial (despachados y cancelados), detalle con su línea de tiempo y acceso a la decisión ante una demora, y la sección Stock en Local (B-11-003 resuelta). Planes 11 y 18. |
@@ -257,7 +275,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-CFG-PAR` | Verificado | 3 / 3 | `ParametrosView`: **todas las secciones** — operación, Seguridad (B-12-004), Compra online (Logística, Comercial con los plazos de arrepentimiento y de garantía, Fidelización y pasarela), Proveedores (frecuencia de la casilla) y el modelo de lenguaje. **Todos sus contratos verificados**: `CO-130` con E1 y E2, `CO-207` y `CO-053` desde el enlace al margen (A1). Plan 00, A3. |
-| `CU-CFG-LLM` | Construido, sin verificar | 0 / 3 | `DiagnosticoLLMView` y `core/llm.py`. |
+| `CU-CFG-LLM` | Verificado | 3 / 3 | `DiagnosticoLLMView` y `core/llm.py`. **Todos sus contratos verificados.** El diagnóstico y la comprobación de disponibilidad quedan en el log sin la credencial (B-17-018). |
 | `CU-CFG-EDC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EditorialListaView`, pantalla propia: activas y dadas de baja, productos vinculados, filtro por estado. |
 | `CU-CFG-EDA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activa; la colisión enlaza la existente con su estado. Alta al vuelo con la misma auditoría. |
 | `CU-CFG-EDM` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Corrige y reactiva; no da de baja. |
@@ -307,17 +325,22 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-21**, al cerrar el plan 00 de interfaz, con PostgreSQL levantado.
+Medición del **2026-10-22**, al cerrar la verificación de contratos (V1 y V2 del plan 00), con
+PostgreSQL levantado.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **2773 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 26 s) |
-| **Contratos** | **174 de 219 verificados**, 1 parcial, 44 sin prueba |
-| Cobertura sobre código de aplicación | **97 %** (12371 sentencias, 425 sin cubrir) |
+| Suite de pruebas | **2972 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 46 s) |
+| **Contratos** | **215 de 219 verificados**, 4 sin prueba: los de `CU-CLI-BAJ` y `CU-REP-GEN`, pendientes |
+| Cobertura sobre código de aplicación | **97 %** (12565 sentencias, 425 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 352 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `pillow` a 13.0.0 y `virtualenv` a 21.14.7 |
+| Formato | `black --check .`: 361 archivos sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `virtualenv` a 21.14.9 (CVE-2026-113722) |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
+
+**Verificación de contratos, a mano (2026-10-22).** `catalog.0023` y `core.0040` aplicaron sobre la
+base de desarrollo; `producto_editorial_manual_sin_referencia` está en `pg_constraint`, y
+`makemigrations --check` no detecta cambios.
 
 **Plan 00 de interfaz, verificaciones a mano (2026-10-21).** `pedidos.0007` aplicó sobre la base
 de desarrollo y pasó las 2 ventas presenciales existentes a «Vendido en el local · Mostrador»

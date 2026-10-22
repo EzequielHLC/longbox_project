@@ -108,6 +108,19 @@ def abrir_o_seguir(revisor):
 
 
 # ---------------------------------------------------------------------------
+# Editar
+# ---------------------------------------------------------------------------
+
+
+def completar(borrador):
+    """`CO-020` (c): un borrador en Extracción incompleta al que la edición le
+    completó todos los bloqueantes pasa a Pendiente de revisión."""
+    if borrador.estado == BorradorProducto.INCOMPLETO and not borrador.campos_bloqueantes_vacios:
+        borrador.estado = BorradorProducto.PENDIENTE
+        borrador.save(update_fields=["estado"])
+
+
+# ---------------------------------------------------------------------------
 # Confirmar
 # ---------------------------------------------------------------------------
 
@@ -231,7 +244,8 @@ def _crear_producto(borrador):
         estado=borrador.estado_sugerido,
         precio=precio,
         precio_base=borrador.precio,
-        precio_referencia=referencia,
+        # CO-005 (b): un precio a mano no queda asociado a la tabla (B-01-014).
+        precio_referencia=None if manual else referencia,
         precio_manual=manual,
         fecha_llegada=borrador.fecha_llegada,
         stock=borrador.stock_inicial,
@@ -332,7 +346,7 @@ def cerrar(sesion, *, actor, ip=None):
     )
 
     envios = [
-        _pedir_a(proveedor, borradores)
+        _pedir_a(proveedor, borradores, actor)
         for proveedor, borradores in _por_proveedor(confirmados).items()
     ]
 
@@ -353,7 +367,8 @@ def _por_proveedor(borradores):
     return grupos
 
 
-def _pedir_a(proveedor, borradores):
+def _pedir_a(proveedor, borradores, actor):
+    """`CO-074` completo, encadenado por `CO-025`: el envío y su entrada en el log."""
     lineas = [
         pedidos.LineaDePedido(
             titulo=borrador.titulo,
@@ -363,7 +378,7 @@ def _pedir_a(proveedor, borradores):
         )
         for borrador in borradores
     ]
-    return pedidos.enviar_pedido(proveedor, lineas)
+    return pedidos.enviar_y_registrar(proveedor, lineas, actor)
 
 
 def _auditar_cierre(sesion, confirmados, envios, *, actor, ip):

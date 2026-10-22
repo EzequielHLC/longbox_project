@@ -220,3 +220,43 @@ el grupo. La etiqueta nueva queda elegida.
 
 **Qué habría que cambiar.**
 `CU-CAT-ETA` y `CU-CAT-GRA`: agregar un A1 «alta desde otro formulario», como el de `CU-CFG-EDA`.
+
+---
+
+### B-02-006 · La baja de producto informaba cuatro categorías vacías y no resolvía ninguna
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-CAT-BAJ` pasos 3-10, `CO-033`, `CO-034`
+**Estado:** Abierta — el código ya cumple el contrato; queda una consulta sobre las ofertas
+
+**Qué apareció.**
+Al escribir las pruebas de contrato del módulo (V2 del plan 00): el informe de impacto mostraba
+las cuatro categorías como «No disponible todavía», de cuando Pedidos, Restock, Pricing y Tienda no
+existían, y la confirmación sólo cambiaba el estado. Las suscripciones seguían esperando un
+producto fuera del catálogo, las ofertas seguían vivas y nadie avisaba a los clientes que lo
+tenían en el carrito.
+
+**Qué dice la especificación.**
+> «(c) SuscripcionReposicion: las suscripciones activas del producto quedaron canceladas.
+> (a)(b) Oferta: las ofertas que referenciaban exclusivamente este producto fueron eliminadas; en
+> las que referenciaban varios, se rompió la asociación Oferta → Producto.» (`CO-034`)
+
+**Qué se hizo.**
+El informe calcula las cuatro cifras y la confirmación resuelve cada una en la misma operación:
+
+- Las suscripciones en espera se cancelan como lo hace el propio cliente (`CO-076`): se eliminan.
+- La oferta de alcance «producto individual» se elimina. Una oferta que «referencia varios» es, en
+  el modelo, la de alcance «tipo de material», y **no tiene asociación con el producto que
+  romper**: alcanza a su tipo. Sigue vigente para el resto del tipo y deja de alcanzar al
+  producto porque un descatalogado no está en la tienda.
+- La línea de carrito queda «Producto no disponible» por el estado del producto, y el cliente con
+  cuenta recibe un correo. El carrito de invitado no tiene a quién avisarle; ve la marca al volver.
+- Los pedidos activos no se tocan, y una única entrada de auditoría dice qué se resolvió.
+
+**Para consultar.** El contrato pide **eliminar** la oferta exclusiva, y así se hizo. El módulo de
+ofertas, en cambio, nunca borra: la baja de una oferta la deja «Dada de baja» y conserva el
+registro. Si el responsable prefiere el mismo criterio acá, es un cambio chico.
+
+**Qué habría que cambiar.**
+`CO-034`, postcondición de ofertas: «las de alcance tipo de material siguen vigentes y dejan de
+alcanzarlo por su estado», en lugar de la asociación Oferta → Producto que el modelo no tiene.
+`CO-033`, salida: lo mismo en la acción que el informe anuncia para las ofertas.

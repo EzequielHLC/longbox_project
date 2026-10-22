@@ -82,6 +82,8 @@ GRUPOS_DE_ACCIONES = (
             "borrador_confirmado",
             "borrador_rechazado",
             "sesion_revision_cerrada",
+            "diagnostico_llm",
+            "disponibilidad_llm",
         ),
     ),
     (

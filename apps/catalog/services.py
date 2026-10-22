@@ -9,9 +9,11 @@ from dataclasses import dataclass, field
 
 from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
+from django.utils import timezone
 
 from apps.catalog.models import (
     LoteAlta,
+    Producto,
     ProductoEditorial,
     ProductoNoEditorial,
     TablaPrecioReferencia,
@@ -286,24 +288,16 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
 
 @dataclass
 class ImpactoDeBaja:
-    """Lo que CU-CAT-BAJ tiene que informar antes de pedir la confirmacion.
+    """Lo que CU-CAT-BAJ tiene que informar antes de pedir la confirmacion (`CO-033`).
 
-    El CU enumera cuatro categorias, y **hoy ninguna de las cuatro se puede
-    calcular**: pedidos activos, suscripciones de reposicion, ofertas vigentes y
-    carritos de clientes pertenecen a Pedidos, Restock, Pricing y Tienda, que no
-    existen todavia.
-
-    Las cuatro se declaran igual y en `None`, no en cero, por el mismo criterio
-    con el que la baja de proveedor no inventa la cifra que no puede calcular
-    (CU-PRV-BAJ). Cero significaria "revise: no afecta a nadie", que es una afirmacion
-    sobre datos que el propio CU considera parte de la decision.
-
-    Dejar las cuatro declaradas tiene una consecuencia practica: cuando aparezca
-    cada modulo, sumar su cifra es llenar un hueco y no rediseniar la pantalla.
+    Las cuatro categorias del CU —pedidos activos, suscripciones de reposicion,
+    ofertas vigentes y carritos de clientes— se calculan desde que existen
+    Pedidos, Restock, Pricing y Tienda (B-02-006). Se conserva el `None` para lo
+    que no se pueda calcular: cero diria "no afecta a nadie", que es una
+    afirmacion sobre datos que el propio CU considera parte de la decision.
 
     `stock` y `estado` no son categorias del CU. Van igual porque son lo unico
-    verificable en la pantalla, y sin ellos la decision se tomaria sin ningun
-    dato del producto.
+    verificable del producto mismo.
     """
 
     stock: int
@@ -334,6 +328,118 @@ class ImpactoDeBaja:
         return all(valor is None for _, valor in self.categorias)
 
 
+def _ofertas_del_producto(producto, hoy):
+    """Las ofertas vivas que lo alcanzan: las de alcance producto, que lo
+    referencian sólo a él, y las de su tipo, que referencian a varios."""
+    from apps.catalog.models import Oferta
+
+    vivas = Oferta.objects.vivas(hoy)
+    return (
+        vivas.filter(alcance=Oferta.PRODUCTO, producto=producto),
+        vivas.filter(alcance=Oferta.TIPO, tipo_id=producto.tipo_id),
+    )
+
+
 def calcular_impacto_de_baja(producto):
-    """El mapeo de impacto que CU-CAT-BAJ exige antes de la confirmacion."""
-    return ImpactoDeBaja(stock=producto.stock, estado=producto.get_estado_display())
+    """`CO-033`: el informe de las cuatro categorias. Sólo lee."""
+    from apps.pedidos.models import Pedido
+    from apps.pedidos.servicios import ACTIVOS
+    from apps.restock.models import SuscripcionReposicion
+    from apps.tienda.models import LineaCarrito
+
+    exclusivas, del_tipo = _ofertas_del_producto(producto, timezone.localdate())
+    return ImpactoDeBaja(
+        stock=producto.stock,
+        estado=producto.get_estado_display(),
+        pedidos_activos=Pedido.objects.filter(estado__in=ACTIVOS, lineas__producto=producto)
+        .distinct()
+        .count(),
+        suscripciones_de_reposicion=SuscripcionReposicion.objects.filter(
+            producto=producto, estado__in=SuscripcionReposicion.EN_ESPERA
+        ).count(),
+        ofertas_vigentes=exclusivas.count() + del_tipo.count(),
+        carritos_con_el_producto=LineaCarrito.objects.filter(producto=producto)
+        .values("carrito")
+        .distinct()
+        .count(),
+    )
+
+
+@dataclass
+class BajaDeProducto:
+    suscripciones: int = 0
+    ofertas_eliminadas: list = field(default_factory=list)
+    ofertas_desvinculadas: int = 0
+    carritos: int = 0
+
+
+def confirmar_baja_de_producto(producto, *, actor, ip=None):
+    """`CO-034`: la baja lógica y la resolución de lo que el producto tenía atado.
+
+    - Las suscripciones en espera se cancelan (como `CO-076`, se eliminan).
+    - Las ofertas que lo referenciaban sólo a él se eliminan; las de su tipo,
+      que referencian a varios, dejan de alcanzarlo porque un descatalogado no
+      está en la tienda.
+    - Las líneas de carrito quedan «Producto no disponible» por su estado (lo
+      deriva la consulta del carrito) y sus clientes con cuenta reciben un aviso.
+    - Los pedidos activos no se tocan: postcondición negativa del CU.
+    """
+    from apps.core.segundo_plano import despues_del_commit
+    from apps.restock.models import SuscripcionReposicion
+    from apps.tienda.models import LineaCarrito
+
+    with transaction.atomic():
+        producto = type(producto).objects.select_for_update().get(pk=producto.pk)
+        anterior = producto.get_estado_display()
+        producto.estado = Producto.DESCATALOGADO
+        producto.save(update_fields=["estado"])
+
+        hecho = BajaDeProducto()
+        hecho.suscripciones = SuscripcionReposicion.objects.filter(
+            producto=producto, estado__in=SuscripcionReposicion.EN_ESPERA
+        ).delete()[0]
+        exclusivas, del_tipo = _ofertas_del_producto(producto, timezone.localdate())
+        hecho.ofertas_eliminadas = [str(oferta) for oferta in exclusivas]
+        hecho.ofertas_desvinculadas = del_tipo.count()
+        exclusivas.delete()
+        clientes = list(
+            LineaCarrito.objects.filter(producto=producto, carrito__usuario__isnull=False)
+            .values_list("carrito__usuario__email", flat=True)
+            .distinct()
+        )
+        hecho.carritos = (
+            LineaCarrito.objects.filter(producto=producto).values("carrito").distinct().count()
+        )
+
+        RegistroAuditoria.registrar(
+            RegistroAuditoria.BAJA_PRODUCTO,
+            actor=actor,
+            ip=ip,
+            objetivo=producto,
+            detalle=(
+                f"{producto.codigo} · «{producto.titulo}» · estado anterior: {anterior} → "
+                f"{producto.get_estado_display()} · stock al momento de la baja: "
+                f"{producto.stock} · "
+                f"suscripciones canceladas: {hecho.suscripciones} · ofertas eliminadas: "
+                f"{len(hecho.ofertas_eliminadas)} · ofertas de su tipo que dejan de alcanzarlo: "
+                f"{hecho.ofertas_desvinculadas} · carritos marcados: {hecho.carritos}"
+            ),
+        )
+        if clientes:
+            despues_del_commit(_avisar_carritos, producto.titulo, clientes)
+    return hecho
+
+
+def _avisar_carritos(titulo, correos):
+    """`CO-034`: los clientes con el producto en el carrito se enteran."""
+    from apps.core.mail import enviar_correo
+
+    for correo in correos:
+        enviar_correo(
+            asunto=f"«{titulo}» ya no está disponible",
+            cuerpo=(
+                f"«{titulo}» salió del catálogo y quedó marcado como no disponible en tu "
+                "carrito. Podés quitarlo y seguir con el resto de tu compra."
+            ),
+            destinatarios=[correo],
+        )

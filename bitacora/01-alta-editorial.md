@@ -407,3 +407,65 @@ sigue disponible.
 **Qué habría que cambiar.**
 `CO-016`: dónde se configuran las credenciales. `CU-CFG-PAR` y `ConfiguracionSistema`: la
 frecuencia, que la ficha ya nombra.
+
+---
+
+### B-01-013 · El lote nacional sobrescribía el precio de la tabla sin advertir ni confirmar
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-ALT-NAC` A3, `CO-004`, `CO-005`
+**Estado:** Abierta — el código ya cumple la ficha; queda la consulta sobre la auditoría
+
+**Qué apareció.**
+Al escribir las pruebas de contrato del alta de lotes (V1 del plan 00): en un lote nacional, un
+precio distinto del de la tabla se guardaba sin advertencia ni confirmación. El importado sí las
+pedía.
+
+**Qué dice la especificación.**
+> «el sistema muestra la advertencia: Este producto está vinculado a la combinación seleccionada de
+> la tabla de precios de referencia. Modificar el precio individualmente romperá ese vínculo: el
+> producto dejará de actualizarse automáticamente ante cambios de precio en CU-PVP-TBM. El
+> Administrador confirma la edición explícitamente. (…) La confirmación se valida en el servidor y
+> no únicamente en el formulario.» (`CU-ALT-NAC`, A3)
+
+**Qué se hizo.**
+El lote nacional muestra esa advertencia y exige la confirmación, también en el servidor: sin ella
+no se guarda nada. Del texto cambia sólo el final, «ante cambios de precio en la tabla de precios
+de referencia», porque la voz del sistema no muestra códigos de caso de uso. El aviso de un ítem
+repetido dentro del lote ahora dice con qué ítem choca y si es por ISBN o por la combinación, como
+pide la excepción de `CO-003`.
+
+**Para consultar.** `CO-005` pide una entrada de auditoría «Modificación de producto»; `CO-006`
+pide **una única** entrada consolidada por lote. En un lote se hace lo segundo: la entrada del lote
+dice cuántos ítems quedaron con precio a mano. Si el responsable prefiere otra cosa, es un cambio
+chico.
+
+**Qué habría que cambiar.**
+`CU-ALT-NAC` A3: el texto de la advertencia, sin el código. `CO-005`, postcondición de auditoría:
+«en un alta por lote, la entrada consolidada de `CO-006`».
+
+---
+
+### B-01-014 · Un precio fijado a mano lo pisaba un cambio de la tabla de referencia
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CO-005`, `CO-006`, `CO-048`, `CU-CAT-EDI` A1
+**Estado:** Resuelta el 2026-10-22
+
+**Qué apareció.**
+Un producto con precio confirmado a mano —en el alta por lote, en la edición o al confirmar un
+borrador— conservaba la asociación con su combinación de la tabla. Al modificar el precio de esa
+combinación (`CO-048`), la propagación lo alcanzaba y le pisaba el precio: un tomo a $9.900 pasaba a
+$12.000. También contaba como «vinculado» en el informe de baja de la combinación.
+
+**Qué dice la especificación.**
+> «(b) Se rompió la asociación ProductoEditorial → TablaPrecioReferencia (precio_referencia), si
+> existía.» (`CO-005`) · «p → TablaPrecioReferencia cuando el precio provino de la tabla y no fue
+> sobrescrito» (`CO-006`)
+
+**Qué se hizo.**
+Los tres caminos que fijan un precio a mano rompen la asociación; la propagación excluye además los
+precios a mano; y una restricción en la base impide que un producto tenga precio a mano y
+asociación a la vez. Una migración limpió los que hubiera (en la base de desarrollo, ninguno).
+Restaurar el precio calculado (`CO-031`) vuelve a asociarlo, como ya hacía.
+
+**Qué habría que cambiar.**
+`Nada`: la especificación ya lo decía.

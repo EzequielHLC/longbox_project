@@ -185,3 +185,30 @@ navegador qué elemento recibe el clic, y una prueba impide que la regla se pier
 
 **Qué habría que cambiar.**
 `Nada`.
+
+---
+
+### B-00-025 · Calendario de las pre-ventas por llegar
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-ALT-TRA`, `identidad_visual.md`
+**Estado:** Resuelta el 2026-10-22 — patrón agregado a `identidad_visual.md`
+
+**Qué apareció.**
+La pantalla de pre-ventas por llegar era una sucesión de tablas por fecha y editorial, sin un
+resumen ni una vista del mes. El responsable pidió un calendario.
+
+**Qué dice la especificación.**
+> «Si una pantalla necesita un patrón que no está descrito (un gráfico de reportes, un calendario,
+> arrastrar y soltar), no se improvisa.» (`identidad_visual.md`)
+
+**Qué se hizo.**
+Arriba, las cifras (productos, unidades reservadas, lo que llega esta semana y lo atrasado) y el
+calendario del mes, armado con los mismos grupos que la lista: cada llegada lleva a su grupo. Cada
+grupo es un bloque plegable que dice cuándo llega con palabras («Atrasado», «Llega hoy», «Llega en
+3 días») y queda abierto si es de la próxima semana. El ingreso sigue siendo el mismo (`CO-013`).
+El calendario público de lanzamientos quedó sin decidir.
+
+**Qué habría que cambiar.**
+`CU-ALT-TRA` paso 4: «el sistema presenta las pre-ventas en un calendario del mes y agrupadas por
+fecha de llegada y editorial».
+

@@ -40,13 +40,13 @@ CU-RST-PRO A1: generarla a mano (CO-068).
   </div>
 
   {% for grupo in grupos %}
-    <details class="grupo-restock{% if not grupo.proveedor or grupo.sin_contacto %} grupo-restock--atencion{% endif %}" id="grupo-{{ grupo.clave }}"{% if grupo.pendiente and forloop.first or grupos|length == 1 %} open{% endif %}>
-      <summary class="grupo-restock__cabeza">
-        <span class="grupo-restock__nombre">{{ grupo.nombre }}</span>
-        <span class="grupo-restock__cuenta">{{ grupo.lineas|length }} producto{{ grupo.lineas|length|pluralize }} · {{ grupo.unidades }} unidad{{ grupo.unidades|pluralize:"es" }}{% if grupo.suscriptores %} · {{ grupo.suscriptores }} esperando{% endif %}</span>
+    <details class="grupo-plegable{% if not grupo.proveedor or grupo.sin_contacto %} grupo-plegable--atencion{% endif %}" id="grupo-{{ grupo.clave }}"{% if grupo.pendiente and forloop.first or grupos|length == 1 %} open{% endif %}>
+      <summary class="grupo-plegable__cabeza">
+        <span class="grupo-plegable__nombre">{{ grupo.nombre }}</span>
+        <span class="grupo-plegable__cuenta">{{ grupo.lineas|length }} producto{{ grupo.lineas|length|pluralize }} · {{ grupo.unidades }} unidad{{ grupo.unidades|pluralize:"es" }}{% if grupo.suscriptores %} · {{ grupo.suscriptores }} esperando{% endif %}</span>
         <span class="marca-estado{% if grupo.estado == 'despachado' %} marca-estado--ok{% elif grupo.estado == 'descartado' %} marca-estado--apagado{% else %} marca-estado--dato{% endif %}">{% if grupo.estado == "despachado" %}Despachado{% elif grupo.estado == "descartado" %}Descartado{% else %}Pendiente{% endif %}</span>
       </summary>
-      <div class="grupo-restock__cuerpo pila-4">
+      <div class="grupo-plegable__cuerpo pila-4">
         {% if not grupo.proveedor %}
           <p class="texto-chico">Estos productos no tienen proveedor. Asigne su editorial a un proveedor para poder pedirlos, o descarte el grupo.</p>
         {% elif grupo.sin_contacto %}
@@ -69,6 +69,7 @@ CU-RST-PRO A1: generarla a mano (CO-068).
                       <span>
                         {{ linea.producto }}
                         {% if linea.anadida_a_mano %}<br><span class="texto-chico secundario">Añadido manualmente</span>{% endif %}
+                        {% if linea.proveedor_inactivo %}<br><span class="marca-estado marca-estado--atencion">Proveedor inactivo</span> <span class="texto-chico secundario">{{ linea.proveedor_inactivo.razon_social }}</span>{% endif %}
                       </span>
                     </span>
                   </td>

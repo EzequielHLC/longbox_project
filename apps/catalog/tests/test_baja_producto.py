@@ -57,11 +57,13 @@ def test_la_pantalla_muestra_las_cuatro_categorias(client_admin):
     assert "Carritos de clientes" in contenido
 
 
-def test_lo_que_no_se_puede_calcular_se_dice(client_admin):
-    """Un cero se leería como "no afecta a nadie"."""
+def test_las_cuatro_categorias_se_calculan(client_admin):
+    """Desde que existen Pedidos, Restock, Pricing y Tienda (B-02-006), el
+    informe dice cifras: sin referencias, ceros, y la pantalla ya no dice «No
+    disponible todavía»."""
     contenido = client_admin.get(url_baja(ProductoFactory())).content.decode()
 
-    assert "No disponible todavía" in contenido
+    assert "No disponible todavía" not in contenido
 
 
 def test_el_informe_trae_el_stock_y_el_estado(client_admin):
@@ -75,11 +77,11 @@ def test_el_informe_trae_el_stock_y_el_estado(client_admin):
     assert impacto.estado == "Activo"
 
 
-def test_hoy_ninguna_categoria_se_puede_determinar():
+def test_sin_referencias_cada_categoria_vale_cero():
     impacto = calcular_impacto_de_baja(ProductoFactory())
 
-    assert impacto.todo_sin_determinar
-    assert all(valor is None for _, valor in impacto.categorias)
+    assert not impacto.todo_sin_determinar
+    assert all(valor == 0 for _, valor in impacto.categorias)
 
 
 def test_ver_el_informe_no_da_de_baja(client_admin):

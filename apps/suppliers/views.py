@@ -13,6 +13,7 @@ un solo ciclo en procesarlo.
 """
 
 from django.contrib import messages
+from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404
@@ -31,6 +32,7 @@ from apps.suppliers.forms import (
     DescarteDeCorreoForm,
     ProveedorForm,
     PruebaDelModeloForm,
+    ReactivacionDeProveedorForm,
 )
 from apps.suppliers.models import CorreoProveedor, Proveedor
 
@@ -149,6 +151,13 @@ class ProveedorDetalleView(ProveedoresMixin, DetailView):
             "tipo", "productoeditorial__editorial", "productoeditorial__formato"
         )[:25]
         contexto["cantidad_productos"] = self.object.productos.count()
+        # `CO-173`: el historial de pedidos despachados. Cada envío (`CO-074`) deja
+        # su entrada apuntando al proveedor, con lo pedido y si salió (B-04-008).
+        contexto["pedidos"] = RegistroAuditoria.objects.filter(
+            accion=RegistroAuditoria.PEDIDO_A_PROVEEDOR,
+            objetivo_tipo=ContentType.objects.get_for_model(Proveedor),
+            objetivo_pk=self.object.pk,
+        ).order_by("-ocurrido_en")[:25]
         return contexto
 
 
@@ -305,7 +314,7 @@ class ProveedorBajaView(ProveedoresMixin, DetailView):
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
 
 
-class ProveedorReactivarView(ProveedoresMixin, DetailView):
+class ProveedorReactivarView(ProveedoresMixin, UpdateView):
     """La vuelta de la baja de CU-PRV-BAJ. La describe **CU-PRV-REA**.
 
     Reactivar Proveedor Editorial, con CO-065 y CO-066. Existe porque sin ella la
@@ -319,34 +328,57 @@ class ProveedorReactivarView(ProveedoresMixin, DetailView):
     A diferencia de la reactivación de una cuenta de personal, acá no hay
     credencial que renovar: un proveedor no inicia sesión. Vuelve directo a
     Activo, y con eso su correo vuelve al filtro de remitentes de CU-ALT-NOV.
+
+    El GET es `CO-065`: los datos vigentes, corregibles, con el correo destacado.
+    El POST es `CO-066`: guarda las correcciones y reactiva en el mismo acto, o
+    no hace ninguna de las dos (E1, E2).
     """
 
     model = Proveedor
+    form_class = ReactivacionDeProveedorForm
     template_name = "suppliers/proveedor_reactivar.html"
     context_object_name = "proveedor"
 
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["conflicto"] = _conflicto_de(contexto["form"])
+        return contexto
+
     def post(self, request, *args, **kwargs):
-        proveedor = self.get_object()
-        if proveedor.esta_activo:
+        if self.get_object().esta_activo:
             messages.info(request, MENSAJE_YA_ESTA_ACTIVO)
-            return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
+            return redirect("suppliers:proveedor_detalle", pk=kwargs["pk"])
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        anterior = Proveedor.objects.get(pk=self.object.pk)
 
         with transaction.atomic():
+            # El doble envío: el segundo encuentra el proveedor ya activo.
+            if Proveedor.objects.select_for_update().get(pk=anterior.pk).esta_activo:
+                messages.info(self.request, MENSAJE_YA_ESTA_ACTIVO)
+                return redirect("suppliers:proveedor_detalle", pk=anterior.pk)
+            proveedor = form.save(commit=False)
             proveedor.estado = Proveedor.ACTIVO
-            proveedor.save(update_fields=["estado", "actualizado_en"])
+            proveedor.save()
+            cambios = services.cambios_entre(anterior, proveedor)
+            detalle = (
+                f"«{proveedor.razon_social}» · estado anterior: Inactivo → Activo · "
+                f"vuelve al filtro de remitentes"
+            )
+            if cambios:
+                detalle += f" · {services.describir_cambios(cambios)}"
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.REACTIVACION_PROVEEDOR,
-                actor=request.user,
+                actor=self.request.user,
                 objetivo=proveedor,
                 objetivo_email=proveedor.correo_comercial,
-                ip=obtener_ip(request),
-                detalle=f"«{proveedor.razon_social}» vuelve al filtro de remitentes",
+                ip=obtener_ip(self.request),
+                detalle=detalle,
             )
 
-        messages.success(
-            request,
-            f"Se reactivó «{proveedor.razon_social}».",
-        )
+        self.object = proveedor
+        messages.success(self.request, f"Se reactivó «{proveedor.razon_social}».")
         return redirect("suppliers:proveedor_detalle", pk=proveedor.pk)
 
 
@@ -601,6 +633,16 @@ class DiagnosticoLLMView(ProveedoresMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         formulario = PruebaDelModeloForm(request.POST)
 
+        if request.POST.get("accion") == "disponibilidad":
+            # CU-CFG-LLM A2 — `CO-150`: sólo la comprobación, sin inferencia.
+            estado = llm.estado()
+            _auditar_diagnostico(
+                request, RegistroAuditoria.DISPONIBILIDAD_LLM, _describir_estado(estado)
+            )
+            return self.render_to_response(
+                self.get_context_data(estado=estado, disponibilidad_comprobada=True)
+            )
+
         # El estado se consulta **antes** de intentar la extracción, y no es un
         # detalle de orden: con el servicio caído, llamar al modelo esperaría el
         # timeout largo entero —minutos— para terminar fallando por lo mismo que
@@ -622,6 +664,48 @@ class DiagnosticoLLMView(ProveedoresMixin, TemplateView):
         else:
             resultado = extraccion.Extraccion(error=llm.SIN_SERVICIO)
 
+        _auditar_diagnostico(
+            request, RegistroAuditoria.DIAGNOSTICO_LLM, _describir_diagnostico(estado, resultado)
+        )
         return self.render_to_response(
             self.get_context_data(form=formulario, estado=estado, resultado=resultado)
         )
+
+
+def _auditar_diagnostico(request, accion, resultado):
+    """`CO-149` y `CO-150`: el resultado con la configuración vigente al
+    ejecutarlo —modalidad, dirección y modelo—, **sin la credencial**."""
+    configuracion = ConfiguracionSistema.obtener()
+    RegistroAuditoria.registrar(
+        accion=accion,
+        actor=request.user,
+        ip=obtener_ip(request),
+        detalle=(
+            f"{resultado} · modalidad {configuracion.get_llm_modo_display()} · "
+            f"{configuracion.llm_url} · modelo "
+            f"{configuracion.llm_modelo or 'el cargado en el servidor'}"
+        ),
+    )
+
+
+def _describir_estado(estado):
+    if estado.rechazado:
+        return f"Rechazado (HTTP {estado.estado_http}): {estado.detalle}"
+    if not estado.disponible:
+        return f"Sin respuesta: {estado.detalle}"
+    texto = f"En línea ({estado.milisegundos} ms)"
+    if estado.modelo_disponible is False:
+        texto += ": el servidor no ofrece el modelo configurado"
+    return texto
+
+
+def _describir_diagnostico(estado, resultado):
+    if resultado.sin_servicio:
+        return _describir_estado(estado)
+    if resultado.error:
+        return f"Respuesta ininterpretable ({resultado.milisegundos} ms): {resultado.error}"
+    resumen = resultado.resumen
+    return (
+        f"Extracción en {resultado.milisegundos} ms con el prompt {resultado.version_prompt}: "
+        f"{resumen['productos']} producto(s), {resumen['con_reparos']} con reparos"
+    )

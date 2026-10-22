@@ -63,7 +63,9 @@ def alcanzados_por_modificacion(fila):
     Un producto con precio a mano no está vinculado (`CO-005`): su precio
     sobrevive al cambio, que es exactamente para lo que se lo corrigió.
     """
-    return ProductoEditorial.objects.filter(precio_referencia=fila).exclude(
+    # El precio a mano ya no tiene asociación (B-01-014); se excluye igual, por si
+    # una fila vieja la conservara: una propagación nunca pisa una decisión manual.
+    return ProductoEditorial.objects.filter(precio_referencia=fila, precio_manual=False).exclude(
         estado=Producto.CANCELADO_EDITORIAL
     )
 

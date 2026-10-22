@@ -171,6 +171,33 @@ class GrupoDeLlegada:
     def es_hoy(self):
         return self.llegada == timezone.localdate()
 
+    @property
+    def dias_para(self):
+        return (self.llegada - timezone.localdate()).days if self.llegada else None
+
+    @property
+    def cuando(self):
+        """Una palabra en vez de una fecha para calcular (plan 00 de interfaz, 22.4)."""
+        dias = self.dias_para
+        if dias is None:
+            return "Sin fecha"
+        if dias < 0:
+            return "Atrasado"
+        if dias == 0:
+            return "Llega hoy"
+        if dias == 1:
+            return "Llega mañana"
+        return f"Llega en {dias} días"
+
+    @property
+    def cercano(self):
+        """Lo atrasado y lo de la próxima semana se muestra abierto."""
+        return self.dias_para is not None and self.dias_para <= 7
+
+    @property
+    def reservadas(self):
+        return sum(fila.reservadas for fila in self.filas)
+
 
 def _con_reservas(qs):
     pendientes = Q(lineas_pedido__estado__in=PENDIENTES)

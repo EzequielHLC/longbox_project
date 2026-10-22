@@ -25,6 +25,13 @@ def url_reactivar(proveedor):
     return reverse("suppliers:proveedor_reactivar", args=[proveedor.pk])
 
 
+def revision(proveedor, **cambios):
+    """La pantalla de reactivación con los datos vigentes, sin corregir (`CO-065`)."""
+    from apps.suppliers.tests.test_edicion_proveedor import datos
+
+    return datos(proveedor, **cambios)
+
+
 # ---------------------------------------------------------------------------
 # El informe de impacto (pasos 2 y 3)
 # ---------------------------------------------------------------------------
@@ -150,7 +157,7 @@ def test_dar_de_baja_dos_veces_no_registra_dos_bajas(client_admin):
 def test_reactivar_devuelve_el_correo_al_filtro_de_remitentes(client_admin):
     proveedor = ProveedorFactory(correo_comercial="novedades@ivrea.test", estado=Proveedor.INACTIVO)
 
-    respuesta = client_admin.post(url_reactivar(proveedor))
+    respuesta = client_admin.post(url_reactivar(proveedor), revision(proveedor))
 
     proveedor.refresh_from_db()
     assert respuesta.status_code == 302
@@ -162,7 +169,7 @@ def test_reactivar_conserva_los_datos_y_el_historial(client_admin):
     proveedor = ProveedorFactory(nombre_contacto="Laura", estado=Proveedor.INACTIVO)
     producto = ProductoFactory(proveedor=proveedor)
 
-    client_admin.post(url_reactivar(proveedor))
+    client_admin.post(url_reactivar(proveedor), revision(proveedor))
 
     proveedor.refresh_from_db()
     assert proveedor.nombre_contacto == "Laura"
@@ -175,7 +182,7 @@ def test_reactivar_conserva_los_datos_y_el_historial(client_admin):
 def test_reactivar_queda_auditado(client_admin):
     proveedor = ProveedorFactory(estado=Proveedor.INACTIVO)
 
-    client_admin.post(url_reactivar(proveedor))
+    client_admin.post(url_reactivar(proveedor), revision(proveedor))
 
     assert RegistroAuditoria.objects.filter(
         accion=RegistroAuditoria.REACTIVACION_PROVEEDOR
@@ -185,7 +192,7 @@ def test_reactivar_queda_auditado(client_admin):
 def test_reactivar_uno_ya_activo_no_hace_nada(client_admin):
     proveedor = ProveedorFactory()
 
-    client_admin.post(url_reactivar(proveedor))
+    client_admin.post(url_reactivar(proveedor), revision(proveedor))
 
     assert not RegistroAuditoria.objects.filter(
         accion=RegistroAuditoria.REACTIVACION_PROVEEDOR
@@ -199,7 +206,7 @@ def test_la_baja_no_bloquea_la_razon_social_para_siempre(client_admin):
     proveedor = ProveedorFactory(razon_social="Editorial Ivrea")
     client_admin.post(url_baja(proveedor))
 
-    client_admin.post(url_reactivar(proveedor))
+    client_admin.post(url_reactivar(proveedor), revision(proveedor))
 
     proveedor.refresh_from_db()
     assert proveedor.estado == Proveedor.ACTIVO

@@ -57,9 +57,10 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
     <div class="panel panel--atencion">
       <h2 class="fila-2">{% include "_iconos.html" with icono="atencion" %}<span>Este producto ya está en el catálogo</span></h2>
       <p>
-        Coincide con <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">{{ duplicado }}</a>{% if duplicado.isbn %}
-        (ISBN <span class="datos">{{ duplicado.isbn }}</span>){% endif %}.
-        Descarte el borrador indicando el motivo.
+        {# CO-022 E7: la ficha en conflicto y el criterio por el que se detectó. #}
+        Coincide con <a href="{% url 'catalog:producto_detalle' duplicado.pk %}">{{ duplicado }}</a>
+        {% if borrador.isbn and duplicado.isbn == borrador.isbn %}por ISBN (<span class="datos">{{ duplicado.isbn }}</span>){% else %}por título, volumen, tipo, formato y editorial{% endif %}.
+        Corrija los datos o descarte el borrador indicando el motivo.
       </p>
     </div>
   {% endif %}

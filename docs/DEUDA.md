@@ -231,11 +231,11 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
-| `bitacora/00-pulido-de-interfaz.md` | 7 | 2 | 4 agregados, 3 correcciones |
-| `bitacora/01-alta-editorial.md` | 12 | 10 | 9 agregados, 1 corrección, 1 desvío |
-| `bitacora/02-catalogo.md` | 5 | 3 | 4 agregados, 1 corrección |
+| `bitacora/00-pulido-de-interfaz.md` | 8 | 2 | 5 agregados, 3 correcciones |
+| `bitacora/01-alta-editorial.md` | 14 | 11 | 9 agregados, 3 correcciones, 1 desvío |
+| `bitacora/02-catalogo.md` | 6 | 4 | 4 agregados, 2 correcciones |
 | `bitacora/03-pricing.md` | 13 | 11 | 10 agregados, 2 correcciones |
-| `bitacora/04-proveedores.md` | 7 | 1 | 5 agregados, 1 corrección, 1 desvío |
+| `bitacora/04-proveedores.md` | 9 | 3 | 7 agregados, 1 corrección, 1 desvío |
 | `bitacora/05-restock.md` | 8 | 8 | 7 agregados, 1 corrección |
 | `bitacora/06-ventas-presenciales.md` | 6 | 6 | 4 agregados, 2 correcciones |
 | `bitacora/07-tienda-online.md` | 40 | 32 | 34 agregados, 4 correcciones, 1 desvío |
@@ -247,9 +247,9 @@ alcance sigue pendiente.
 | `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
 | `bitacora/14-caja.md` | 3 | 3 | 2 agregados, 1 corrección |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
-| `bitacora/17-configuracion-del-sistema.md` | 17 | 11 | 12 agregados, 4 correcciones, 1 desvío |
+| `bitacora/17-configuracion-del-sistema.md` | 18 | 12 | 13 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 4 correcciones |
-| **Total** | **195** | **142** | |
+| **Total** | **202** | **147** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es

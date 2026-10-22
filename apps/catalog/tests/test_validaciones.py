@@ -405,7 +405,7 @@ def test_dos_items_identicos_en_el_mismo_lote_se_marcan(client_admin, referencia
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 200
-    assert MENSAJE_REPETIDO_EN_LOTE in errores(respuesta, "titulo", indice=1)
+    assert MENSAJE_REPETIDO_EN_LOTE.format(numero=1) in errores(respuesta, "titulo", indice=1)
     assert not ProductoEditorial.objects.exists()
 
 
@@ -415,7 +415,7 @@ def test_el_repetido_se_detecta_sin_distinguir_mayusculas(client_admin, referenc
     respuesta = client_admin.post(URL_NACIONAL, datos)
 
     assert respuesta.status_code == 200
-    assert MENSAJE_REPETIDO_EN_LOTE in errores(respuesta, "titulo", indice=1)
+    assert MENSAJE_REPETIDO_EN_LOTE.format(numero=1) in errores(respuesta, "titulo", indice=1)
 
 
 def test_el_primero_de_los_repetidos_no_se_marca(client_admin, referencia):

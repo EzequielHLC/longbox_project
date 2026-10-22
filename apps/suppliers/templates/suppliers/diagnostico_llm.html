@@ -40,10 +40,21 @@ Indicadores), sin latido ni color.
         ○ Sin respuesta
       {% endif %}
     </p>
-    {% if estado.milisegundos %}
-      <p class="texto-chico secundario">Respondió en <span class="datos">{{ estado.milisegundos }} ms</span></p>
-    {% endif %}
+    <div class="fila-2">
+      {% if estado.milisegundos %}
+        <p class="texto-chico secundario">Respondió en <span class="datos">{{ estado.milisegundos }} ms</span></p>
+      {% endif %}
+      {# CU-CFG-LLM A2 — CO-150: sólo la disponibilidad, sin gastar inferencia; queda en el log. #}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="disponibilidad">
+        <button type="submit" class="boton-seccion boton-seccion--tenue">Comprobar disponibilidad</button>
+      </form>
+    </div>
   </div>
+  {% if disponibilidad_comprobada %}
+    <p class="texto-chico secundario" role="status">Comprobación registrada en el log de auditoría.</p>
+  {% endif %}
 
   {% if estado.detalle %}
     <p{% if not estado.disponible %} class="fuerte"{% endif %}>{{ estado.detalle }}</p>
@@ -66,6 +77,21 @@ Indicadores), sin latido ni color.
             <span class="estado estado--atencion">No disponible en este servidor</span>
           {% endif %}
         </p>
+        {% comment %}
+        E4 de CU-CFG-LLM: cuando el configurado no existe, los que sí ofrece. Plegados,
+        porque un proveedor remoto declara cientos.
+        {% endcomment %}
+        {% if estado.modelo_disponible is False and estado.modelos %}
+          <details class="grupo-plegable">
+            <summary class="grupo-plegable__cabeza">
+              <span class="grupo-plegable__nombre">Modelos que ofrece este servidor</span>
+              <span class="grupo-plegable__cuenta">{{ estado.modelos|length }}</span>
+            </summary>
+            <div class="grupo-plegable__cuerpo">
+              <p class="fila-2">{% for modelo in estado.modelos %}<span class="marca-estado datos">{{ modelo }}</span>{% endfor %}</p>
+            </div>
+          </details>
+        {% endif %}
       {% else %}
         {% comment %}
         Sin modelo declarado, el servidor usa el que tenga cargado, y ahí la lista

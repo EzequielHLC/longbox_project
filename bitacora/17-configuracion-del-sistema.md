@@ -580,3 +580,38 @@ catálogos **no mostraba los errores generales**: el formulario volvía sin ning
 
 **Qué habría que cambiar.**
 Nada en el documento.
+
+---
+
+### B-17-018 · El diagnóstico del modelo no quedaba en el log, y la disponibilidad no era una acción propia
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-CFG-LLM` paso 6, A2 y E4, `CO-149`, `CO-150`, `CO-214`
+**Estado:** Abierta
+
+**Qué apareció.**
+Al escribir las pruebas de contrato (V2 del plan 00): ni el diagnóstico ni la comprobación de
+disponibilidad dejaban entrada en el log. La disponibilidad se consultaba sola en cada carga de la
+pantalla, sin una acción que el Administrador ejecutara. Y cuando el modelo configurado no estaba
+en el servidor, la pantalla lo decía pero no listaba los que sí estaban.
+
+**Qué dice la especificación.**
+> «Se creó una entrada en el registro de auditoría con el resultado del diagnóstico y la
+> configuración vigente al momento de ejecutarlo (modalidad, dirección del servicio y modelo), sin
+> incluir la credencial.» (`CO-149`) · «Se creó una entrada en el registro de auditoría con el
+> resultado.» (`CO-150`) · Ninguno de los dos nombra la acción.
+
+**Qué se hizo.**
+- Dos acciones nuevas en el log: «Diagnóstico del modelo de lenguaje» y «Comprobación de
+  disponibilidad del modelo de lenguaje». Las dos registran el resultado —en línea, rechazado con
+  su código, sin respuesta, ininterpretable, o cuántos productos y cuántos con reparos— con la
+  modalidad, la dirección y el modelo. La credencial no aparece, ni enmascarada.
+- «Comprobar disponibilidad» es un botón del panel de estado (A2): no gasta inferencia y queda
+  en el log. El estado que se ve al abrir la pantalla se sigue consultando solo y **no** se
+  registra: es parte de presentar la configuración (`CO-214`), y registrarlo llenaría el log con
+  una entrada por cada visita.
+- E4: con el modelo configurado ausente, los que el servidor ofrece se listan plegados. Un
+  proveedor remoto declara cientos y la lista abierta tapaba el resto de la pantalla.
+
+**Qué habría que cambiar.**
+`CO-149` y `CO-150`: nombrar las acciones del log. `CU-CFG-LLM` paso 2: anotar que la pantalla
+muestra el estado del servicio al abrirse, sin registrarlo.

@@ -23,7 +23,7 @@ Volver no registra nada.
     <div class="seccion__titulo"><h2 id="titulo-pedido">Pedido</h2></div>
     <ul class="lista-renglones">
       {% for linea in grupo.lineas %}
-        <li><span>{{ linea.producto }}</span> <span class="datos">× {{ linea.cantidad_sugerida }}</span></li>
+        <li><span>{{ linea.producto }}{% if linea.proveedor_inactivo %} <span class="marca-estado marca-estado--atencion">Proveedor inactivo</span>{% endif %}</span> <span class="datos">× {{ linea.cantidad_sugerida }}</span></li>
       {% endfor %}
     </ul>
     {% if grupo.despachable %}
