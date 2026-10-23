@@ -48,6 +48,7 @@ GRUPOS_DE_ACCIONES = (
             "activacion_cuenta",
             "eliminacion_pendiente",
             "registro_cliente",
+            "baja_cuenta_cliente",
         ),
     ),
     (
@@ -96,7 +97,10 @@ GRUPOS_DE_ACCIONES = (
             "baja_banner",
         ),
     ),
-    ("Exportaciones", ("exportacion_inventario", "exportacion_auditoria")),
+    (
+        "Exportaciones",
+        ("exportacion_inventario", "exportacion_auditoria", "exportacion_reporte"),
+    ),
 )
 
 

@@ -1,4 +1,4 @@
-{% load static %}<!DOCTYPE html>
+{% load static estaticos %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -11,8 +11,9 @@
   pide nada a ningún servidor ajeno para dibujarse.
   {% endcomment %}
   <link rel="preload" href="{% static 'fuentes/archivo-variable.woff2' %}" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'css/longbox.css' %}">
+  {# Con versión: un cambio en la hoja llega sin que haga falta vaciar la caché. #}
+  <link rel="stylesheet" href="{% estatico 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/longbox.css' %}">
   {# Cada modo agrega acá lo suyo: guiones de componentes, la identidad de la tienda. #}
   {% include "_desplegable_propio.html" %}
   {% include "_interfaz_js.html" %}

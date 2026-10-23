@@ -24,9 +24,9 @@ es otra puerta y su número también vive ahí.
 | | |
 | --- | ---: |
 | Contratos especificados | 219 |
-| Con al menos una prueba que lleva su código | 215 |
-| Sin ninguna | 4 |
-| Pruebas de contrato en la suite | 987 |
+| Con al menos una prueba que lleva su código | 219 |
+| Sin ninguna | 0 |
+| Pruebas de contrato en la suite | 1032 |
 
 ---
 
@@ -55,7 +55,7 @@ es otra puerta y su número también vive ahí.
 | `CO-137` | registrarEditorial | 4 | `apps/catalog/tests/test_concurrencia_catalogos.py`, `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-141` | registrarTipoDeMaterial | 1 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-144` | registrarFormato | 2 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
-| `CO-156` | cancelarOperacion | 13 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/almacen/tests/test_contratos_18_almacen.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/pedidos/tests/test_contratos_08_demora.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-156` | cancelarOperacion | 14 | `apps/accounts/tests/test_contratos_11_baja.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`, `apps/almacen/tests/test_contratos_18_almacen.py`, `apps/catalog/tests/test_contratos_02_catalogo.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/catalog/tests/test_contratos_17_catalogos.py`, `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/pedidos/tests/test_contratos_08_demora.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 
 ### `01-alta-editorial.md` — 01 Alta Editorial
 
@@ -256,7 +256,7 @@ es otra puerta y su número también vive ahí.
 
 ### `11-cuenta-de-cliente.md` — 11 Cuenta de Cliente
 
-11 contratos · 9 con prueba · 2 sin.
+11 contratos · 11 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
@@ -265,8 +265,8 @@ es otra puerta y su número también vive ahí.
 | `CO-109` | solicitarCambioDeCorreo | 6 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-110` | confirmarCambioDeCorreo | 7 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-111` | cambiarContrasena | 4 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
-| `CO-112` | solicitarBajaDeCuentaPropia | — | — |
-| `CO-113` | confirmarBajaDeCuentaPropia | — | — |
+| `CO-112` | solicitarBajaDeCuentaPropia | 7 | `apps/accounts/tests/test_contratos_11_baja.py` |
+| `CO-113` | confirmarBajaDeCuentaPropia | 12 | `apps/accounts/tests/test_contratos_11_baja.py` |
 | `CO-192` | consultarPanelDeCuenta | 7 | `apps/accounts/tests/test_contratos_11_cuenta.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-193` | consultarDetalleDePedidoPropio | 4 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-194` | consultarCuentasDeCliente | 4 | `apps/accounts/tests/test_contratos_11_cuenta_de_cliente.py` |
@@ -294,8 +294,8 @@ es otra puerta y su número también vive ahí.
 | --- | --- | ---: | --- |
 | `CO-120` | registrarUsuarioDelSistema | 11 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-121` | modificarUsuarioDelSistema | 11 | `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
-| `CO-123` | confirmarBajaDeUsuario | 7 | `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
-| `CO-124` | confirmarReactivacionDeUsuario | 8 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
+| `CO-123` | confirmarBajaDeUsuario | 12 | `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_11_baja.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
+| `CO-124` | confirmarReactivacionDeUsuario | 13 | `apps/accounts/tests/test_contratos_11_baja.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-125` | confirmarEliminacionDeCuentaPendiente | 8 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-197` | abrirEdicionDeUsuario | 1 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-198` | solicitarBajaDeUsuario | 2 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
@@ -316,12 +316,12 @@ es otra puerta y su número también vive ahí.
 
 ### `15-reportes.md` — 15 Reportes
 
-2 contratos · 0 con prueba · 2 sin.
+2 contratos · 2 con prueba · 0 sin.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-128` | exportarReporte | — | — |
-| `CO-204` | generarReporteOperativo | — | — |
+| `CO-128` | exportarReporte | 3 | `apps/reportes/tests/test_contratos_15_reportes.py` |
+| `CO-204` | generarReporteOperativo | 12 | `apps/reportes/tests/test_contratos_15_reportes.py` |
 
 ### `16-auditoria.md` — 16 Auditoría
 
@@ -637,7 +637,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO034_deja_de_verse_en_el_catalogo_publico_y_la_busqueda` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO034_el_carrito_queda_no_disponible_y_el_cliente_se_entera` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO034_el_estado_pasa_a_descatalogado` — `apps/catalog/tests/test_contratos_02_producto.py`
-- `test_CO034_la_oferta_exclusiva_se_elimina_y_la_del_tipo_lo_deja_de_alcanzar` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO034_la_oferta_exclusiva_queda_dada_de_baja_y_la_del_tipo_lo_deja_de_alcanzar` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO034_las_suscripciones_quedan_canceladas` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO034_los_pedidos_activos_no_se_modifican` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO034_una_sola_entrada_con_el_impacto_resuelto` — `apps/catalog/tests/test_contratos_02_producto.py`
@@ -1295,6 +1295,31 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO111_la_sesion_actual_sigue_y_las_otras_se_cierran` — `apps/accounts/tests/test_contratos_11_cuenta.py`
 - `test_CO111_queda_en_la_auditoria` — `apps/accounts/tests/test_contratos_11_cuenta.py`
 
+**`CO-112` · solicitarBajaDeCuentaPropia**
+
+- `test_CO112_CO113_el_personal_no_entra` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_E1_E2_tambien_los_exige_la_confirmacion` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_E1_un_retenido_bloquea_y_dice_que_hacer` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_E2_una_decision_de_demora_pendiente_bloquea` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_el_informe_trae_las_cuatro_categorias_y_el_aviso` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_pedir_el_informe_no_modifica_nada` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO112_sin_sesion_va_al_ingreso` — `apps/accounts/tests/test_contratos_11_baja.py`
+
+**`CO-113` · confirmarBajaDeCuentaPropia**
+
+- `test_CO113_E3_tres_intentos_bloquean_la_baja_y_no_el_ingreso` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_E3_una_contrasena_equivocada_no_avanza_y_no_revela_nada` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_E4_un_fallo_tecnico_revierte_todo` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_el_correo_no_se_puede_volver_a_registrar` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_el_historial_y_el_correo_se_conservan` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_la_cuenta_pasa_a_inactiva_y_vuelve_al_ingreso` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_la_entrada_trae_puntos_suscripciones_y_pedidos` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_los_pedidos_activos_no_se_modifican_y_siguen_avisando` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_los_puntos_quedan_en_cero_y_vencidos_con_su_debito` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_manda_la_confirmacion_al_correo` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_se_cierran_las_sesiones_en_todos_los_dispositivos` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO113_se_eliminan_las_suscripciones_y_las_lineas_del_carrito` — `apps/accounts/tests/test_contratos_11_baja.py`
+
 **`CO-114` · iniciarSesion**
 
 - `test_CO114_E1_el_bloqueo_dura_el_periodo_parametrizado` — `apps/accounts/tests/test_parametros_de_seguridad.py`
@@ -1394,23 +1419,33 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-123` · confirmarBajaDeUsuario**
 
 - `test_CO123_dos_administradores_que_se_dan_de_baja_a_la_vez_dejan_uno` — `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`
+- `test_CO123_el_administrador_da_de_baja_un_cliente_sin_quitarle_nada` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO123_el_estado_pasa_de_activo_a_inactivo` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO123_el_historial_del_usuario_se_conserva_integro` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO123_invalida_los_tokens_de_todos_los_dispositivos` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO123_la_baja_cierra_las_sesiones_del_cliente` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO123_la_cuenta_no_puede_volver_a_iniciar_sesion` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO123_la_ficha_ofrece_dar_de_baja_y_despues_reactivar` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO123_no_se_puede_dar_de_baja_al_ultimo_administrador` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO123_otro_rol_no_da_de_baja_un_cliente` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO123_reactivar_tras_la_baja_del_administrador_devuelve_sus_puntos` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO123_registra_la_baja_en_auditoria` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 
 **`CO-124` · confirmarReactivacionDeUsuario**
 
+- `test_CO124_el_cliente_vuelve_a_pendiente_con_un_enlace_nuevo` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO124_el_enlace_se_envia_al_correo_de_la_cuenta` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_el_estado_pasa_de_inactivo_a_pendiente_de_activacion` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_el_historial_del_usuario_se_conserva_integro` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_el_rol_queda_con_el_valor_declarado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_la_auditoria_incluye_el_rol_asignado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_la_credencial_anterior_queda_invalidada` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO124_la_ficha_ofrece_reactivar_solo_si_esta_dado_de_baja` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO124_los_puntos_y_el_historial_no_vuelven_ni_se_pierden` — `apps/accounts/tests/test_contratos_11_baja.py`
+- `test_CO124_otro_rol_no_reactiva_un_cliente` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO124_registra_la_reactivacion_en_auditoria` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO124_se_creo_un_enlace_de_activacion_con_48_horas` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
+- `test_CO124_un_cliente_activo_no_se_reactiva` — `apps/accounts/tests/test_contratos_11_baja.py`
 
 **`CO-125` · confirmarEliminacionDeCuentaPendiente**
 
@@ -1441,6 +1476,12 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO127_el_csv_trae_cada_transaccion_y_los_totales` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO127_queda_en_la_auditoria` — `apps/caja/tests/test_contratos_14_caja.py`
+
+**`CO-128` · exportarReporte**
+
+- `test_CO128_el_csv_dice_lo_mismo_que_la_pantalla` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO128_precondicion_sin_reporte_valido_no_exporta` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO128_queda_en_el_log_con_tipo_rango_y_actor` — `apps/reportes/tests/test_contratos_15_reportes.py`
 
 **`CO-129` · exportarLogDeAuditoria**
 
@@ -1631,6 +1672,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO156_abandonar_la_baja_de_grupo_o_etiqueta_no_cambia_nada` — `apps/catalog/tests/test_contratos_02_catalogo.py`
 - `test_CO156_abandonar_la_baja_de_un_catalogo_no_cambia_nada` — `apps/catalog/tests/test_contratos_17_catalogos.py`
 - `test_CO156_abandonar_la_baja_de_una_combinacion_no_cambia_nada` — `apps/catalog/tests/test_contratos_03_pricing.py`
+- `test_CO156_abandonar_la_baja_no_cambia_nada` — `apps/accounts/tests/test_contratos_11_baja.py`
 - `test_CO156_abandonar_la_confirmacion_no_cambia_el_producto` — `apps/catalog/tests/test_contratos_02_catalogo.py`
 - `test_CO156_abandonar_la_confirmacion_no_cambia_el_proveedor` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO156_abandonar_la_modificacion_no_cambia_el_precio` — `apps/catalog/tests/test_contratos_03_pricing.py`
@@ -1674,7 +1716,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-163` · consultarFichaDeProducto**
 
 - `test_CO163_la_ficha_dibuja_para_el_cajero_solo_sus_campos` — `apps/catalog/tests/test_contratos_02_catalogo.py`
-- `test_CO163_los_indicadores_que_no_puede_calcular_se_declaran_no_disponibles` — `apps/catalog/tests/test_contratos_02_catalogo.py`
+- `test_CO163_los_indicadores_internos_se_calculan` — `apps/catalog/tests/test_contratos_02_catalogo.py`
 
 **`CO-164` · consultarGruposDeEtiqueta**
 
@@ -1941,6 +1983,21 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO203_cuenta_las_compras_pagadas_solo_con_puntos` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO203_el_resumen_previo_totaliza_por_canal_y_por_medio` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO203_no_modifica_el_estado_del_sistema` — `apps/caja/tests/test_contratos_14_caja.py`
+
+**`CO-204` · generarReporteOperativo**
+
+- `test_CO204_CO128_otro_rol_no_entra` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_E1_el_rango_es_obligatorio` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_E1_un_rango_invalido_no_procede` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_E2_sin_datos_el_reporte_vacio_lo_dice` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_mas_vendidos_filtra_por_categoria` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_mas_vendidos_ordena_por_unidades_y_el_canje_no_suma` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_movimientos_de_puntos_por_tipo_y_motivo` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_no_modifica_nada` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_solicitudes_de_reposicion_en_espera_del_rango` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_ventas_por_canal_separa_fisico_y_online` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_ventas_totales_consolida_por_dia` — `apps/reportes/tests/test_contratos_15_reportes.py`
+- `test_CO204_ventas_totales_filtra_por_canal` — `apps/reportes/tests/test_contratos_15_reportes.py`
 
 **`CO-205` · consultarLogDeAuditoria**
 

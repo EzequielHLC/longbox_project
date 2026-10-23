@@ -29,6 +29,7 @@ urlpatterns = [
     path("datos/", views.DatosView.as_view(), name="datos"),
     path("contrasena/", views.ContrasenaView.as_view(), name="contrasena"),
     path("correo/", views.CorreoView.as_view(), name="correo"),
+    path("baja/", views.BajaView.as_view(), name="baja"),
     path(
         "correo/confirmar/<uidb64>/<token>/",
         views.ConfirmarCorreoView.as_view(),

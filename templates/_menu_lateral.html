@@ -13,9 +13,8 @@ el resaltado de la pantalla actual— y no agregan un pedido de red ni una
 dependencia externa. Cada uno se dibuja con la misma familia geométrica que el
 resto del sistema: trazo de 1,5px, sin relleno, sin curvas innecesarias.
 
-Las secciones que todavía no existen se muestran igual, apagadas y marcadas.
-Mostrar el mapa completo del sistema desde el principio le dice al personal qué
-va a haber, y a nosotros nos evita rediseñar el menú en cada módulo nuevo.
+Mientras faltaban módulos, se mostraban apagados bajo «Próximamente»; con
+Reportes (plan 15) ya no queda ninguno.
 
 Ojo con lo que este archivo *no* es: esconder una entrada no protege nada. El
 control de acceso real está en `RolRequeridoMixin`, del lado del servidor
@@ -265,6 +264,13 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         </a>
       </details>
 
+      {# CU-REP-GEN (plan 15). #}
+      <a href="{% url 'reportes:generar' %}"
+         class="menu-enlace {% if 'reportes:' in actual %}menu-enlace--actual{% endif %}" {% if 'reportes:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="reportes" %}
+        <span>Reportes</span>
+      </a>
+
       <a href="{% url 'core:auditoria' %}"
          class="menu-enlace {% if 'core:auditoria' in actual %}menu-enlace--actual{% endif %}" {% if 'core:auditoria' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="auditoria" %}
@@ -288,17 +294,6 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         <span>Etiquetas</span>
       </a>
     {% endif %}
-
-    <p class="menu-rotulo menu-rotulo--siguiente">Próximamente</p>
-
-    {% comment %}
-    Módulos todavía no implementados, en el orden de `CLAUDE.md` para que el
-    menú y la estructura de apps se lean igual. Son `<span>`, no `<a>`: no
-    llevan a ninguna parte y no deben poder enfocarse con el tabulador.
-    {% endcomment %}
-    <span class="menu-enlace menu-enlace--inactivo">
-      {% include "_iconos.html" with icono="reportes" %}<span>Reportes</span>
-    </span>
 
     {% comment %}
     La identificación de la cuenta va al pie y `margin-top: auto` la empuja ahí: en un

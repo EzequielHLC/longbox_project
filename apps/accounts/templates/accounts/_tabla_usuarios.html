@@ -31,8 +31,10 @@ Por eso no puede depender de nada que esté fuera de él.
           {% for usuario in usuarios %}
             <tr>
               <td class="celda-principal">
-                <a href="{% url 'accounts:usuario_ficha' usuario.pk %}">{{ usuario.get_full_name|default:"Sin nombre cargado" }}</a>
-                {% if usuario.pk == user.pk %}<span class="marca-estado marca-estado--dato">Propia</span>{% endif %}
+                <span class="fila-2">
+                  <a href="{% url 'accounts:usuario_ficha' usuario.pk %}">{{ usuario.get_full_name|default:"Sin nombre cargado" }}</a>
+                  {% if usuario.pk == user.pk %}<span class="marca-estado marca-estado--dato">Propia</span>{% endif %}
+                </span>
               </td>
               <td class="cortar-palabras">{{ usuario.email }}</td>
               {# El rol se dice con su nombre, sin color propio. #}

@@ -392,14 +392,22 @@ def test_CO163_la_ficha_dibuja_para_el_cajero_solo_sus_campos(client, cajero):
     assert reverse("catalog:producto_editar", args=[producto.pk]) not in contenido
 
 
-def test_CO163_los_indicadores_que_no_puede_calcular_se_declaran_no_disponibles(client_admin):
-    producto = ProductoFactory(titulo="Akira")
+def test_CO163_los_indicadores_internos_se_calculan(client_admin):
+    """Desde que existen Pedidos y Restock, la ficha dice las cifras."""
+    from apps.accounts.tests.factories import UsuarioFactory
+    from apps.catalog.models import Producto
+    from apps.restock.models import SuscripcionReposicion
 
-    contenido = client_admin.get(reverse("catalog:producto_detalle", args=[producto.pk]))
+    producto = ProductoFactory(titulo="Akira", stock=0, estado=Producto.AGOTADO)
+    for _ in range(2):
+        SuscripcionReposicion.objects.create(usuario=UsuarioFactory(), producto=producto)
 
-    texto = contenido.content.decode()
+    respuesta = client_admin.get(reverse("catalog:producto_detalle", args=[producto.pk]))
+
+    texto = respuesta.content.decode()
     assert "Stock reservado en pedidos" in texto
-    assert "No disponible todavía" in texto
+    assert respuesta.context["suscriptores"] == 2
+    assert "No disponible todavía" not in texto
 
 
 def test_CO165_consultar_etiquetas_de_grupo_paginadas_con_busqueda_y_estado(client_admin):

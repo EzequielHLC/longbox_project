@@ -81,9 +81,9 @@ def test_el_menu_lateral_enlaza_las_secciones_disponibles(client_admin):
 
     assert reverse("accounts:usuario_lista") in contenido
     assert reverse("accounts:cliente_lista") in contenido
-    # Los módulos que todavía no existen se muestran, pero no enlazan.
-    assert "Próximamente" in contenido
-    assert "Reportes" in contenido
+    # Con Reportes (plan 15) no queda ningún módulo «próximamente».
+    assert reverse("reportes:generar") in contenido
+    assert "Próximamente" not in contenido
 
 
 def test_el_menu_marca_la_pantalla_en_la_que_se_esta(client_admin):

@@ -98,3 +98,42 @@ def test_ver_el_calendario_no_cambia_nada(client_admin):
 
     producto.refresh_from_db()
     assert producto.stock == 0
+
+
+# ---------------------------------------------------------------------------
+# Plan 00 de interfaz, cuarta parte, E: el calendario se usa, no sólo se mira
+# ---------------------------------------------------------------------------
+
+
+def test_cambiar_de_mes_pide_solo_el_calendario(client_admin):
+    llega = crear_preventa(dias=3)
+    mes = llega.llegada_vigente.strftime("%Y-%m")
+
+    respuesta = client_admin.get(URL, {"mes": mes, "parcial": "calendario"})
+
+    contenido = respuesta.content.decode()
+    assert '<table class="calendario">' in contenido
+    assert "Pre-ventas por llegar" not in contenido
+    assert "<html" not in contenido
+    assert "data-mes" in contenido
+
+
+def test_cada_llegada_abre_su_grupo_y_la_cercana_se_distingue(client_admin):
+    crear_preventa(dias=2)
+    grupo = preventa.por_llegar()[0]
+
+    contenido = client_admin.get(URL).content.decode()
+
+    assert f'data-llegada="grupo-{grupo.clave}"' in contenido
+    assert "calendario__llegada--cercana" in contenido
+
+
+def test_cada_grupo_ofrece_completar_con_lo_reservado(client_admin):
+    cliente = UsuarioFactory(rol="cliente")
+    producto = crear_preventa(dias=2)
+    reservar(cliente, producto, cantidad=3)
+
+    contenido = client_admin.get(URL).content.decode()
+
+    assert "data-completar" in contenido
+    assert 'data-reservadas="3"' in contenido

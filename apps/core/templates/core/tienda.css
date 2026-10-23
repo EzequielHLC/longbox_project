@@ -6,5 +6,38 @@
   --tienda-acento: {{ identidad.color_acento }};
   --tienda-fondo: {{ identidad.color_fondo }};
   --tienda-sobre-primario: {{ identidad.sobre_primario }};
-{% if identidad.tipo_fondo == "imagen" and identidad.imagen_fondo %}  --tienda-fondo-imagen: url("{{ identidad.imagen_fondo.url }}");
+  /* El mapa de colores (B-17-019): qué color de la paleta lleva cada parte. */
+{% for nombre, valor in roles %}  {{ nombre }}: {{ valor }};
+{% endfor %}{% if identidad.tipo_fondo == "imagen" and identidad.imagen_fondo %}  --tienda-fondo-imagen: url("{{ identidad.imagen_fondo.url }}");
 {% endif %}}
+{% if sobre_encabezado %}
+/* Encabezado y pie con color: su texto pasa al de contraste. */
+.modo-publico .pie-publico { background: var(--rol-encabezado); }
+.modo-publico :is(.encabezado-publico, .pie-publico) {
+  --texto: {{ sobre_encabezado }};
+  --texto-fuerte: {{ sobre_encabezado }};
+  --texto-2: {{ sobre_encabezado }};
+  --linea: color-mix(in srgb, {{ sobre_encabezado }} 35%, transparent);
+  --borde-control: color-mix(in srgb, {{ sobre_encabezado }} 60%, transparent);
+  /* Lo que lleva acento también: un acento igual al del encabezado no se vería. */
+  --acento: {{ sobre_encabezado }};
+  --acento-texto: {{ sobre_encabezado }};
+  --acento-vivo: {{ sobre_encabezado }};
+  --foco: {{ sobre_encabezado }};
+  --golpe: {{ sobre_encabezado }};
+  --rol-titulos: {{ sobre_encabezado }};
+  --rol-titulos-texto: {{ sobre_encabezado }};
+  --sombra-golpe-1: 3px 3px 0 {{ sobre_encabezado }};
+}
+/* El buscador tiene su propio fondo oscuro: recupera los colores de la superficie. */
+.modo-publico .encabezado-publico .buscador-publico {
+  --texto: var(--tiza);
+  --texto-2: var(--humo);
+  --texto-fuerte: var(--blanco);
+  --borde-control: var(--control);
+  --acento: var(--rol-enlaces);
+  --acento-texto: var(--rol-enlaces-texto);
+  --acento-vivo: var(--rol-enlaces-vivo);
+  --foco: var(--rol-enlaces);
+}
+{% endif %}

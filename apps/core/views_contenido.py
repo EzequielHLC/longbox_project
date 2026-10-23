@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
 
-from apps.core import contenido
+from apps.core import colores, contenido
 from apps.core.forms import (
     BannerEdicionForm,
     BannerForm,
@@ -229,7 +229,14 @@ class TiendaCssView(View):
 
     def get(self, request):
         identidad = IdentidadVisual.obtener()
-        hoja = render_to_string("core/tienda.css", {"identidad": identidad})
+        hoja = render_to_string(
+            "core/tienda.css",
+            {
+                "identidad": identidad,
+                "roles": colores.variables(identidad),
+                "sobre_encabezado": colores.encabezado_con_color(identidad),
+            },
+        )
         respuesta = HttpResponse(hoja, content_type="text/css; charset=utf-8")
         respuesta["Cache-Control"] = "public, max-age=86400"
         return respuesta

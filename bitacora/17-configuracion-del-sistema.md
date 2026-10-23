@@ -615,3 +615,37 @@ en el servidor, la pantalla lo decía pero no listaba los que sí estaban.
 **Qué habría que cambiar.**
 `CO-149` y `CO-150`: nombrar las acciones del log. `CU-CFG-LLM` paso 2: anotar que la pantalla
 muestra el estado del servicio al abrirse, sin registrarlo.
+
+---
+
+### B-17-019 · La identidad visual tiene un mapa de colores, y cada color trae su familia
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-CFG-VIS`, `CO-131`, `CO-208`
+**Estado:** Abierta — pedido del responsable (plan 00 de interfaz, cuarta parte, A y B)
+
+**Qué apareció.**
+Cambiar el acento de la tienda a azul dejaba en naranja el hover, la selección, las sombras de las
+tarjetas, la cinta del pie y los rótulos de pre-venta: esas variantes salían de la paleta fija y
+no del color elegido. Y no había forma de saber qué partes de la tienda pintaba cada color.
+
+**Qué dice la especificación.**
+> «Paleta de colores: Color primario (HEX), Color secundario (HEX), Color de acento (HEX)»
+> (`CU-CFG-VIS`, paso 2). Nada sobre qué pinta cada uno.
+
+**Qué se hizo.**
+- **Familias de color.** Cada color elegido trae sus variantes: más claro para el hover, más
+  oscuro para lo presionado, tenue para lo seleccionado. El texto encima de cada color es noche o
+  blanco, el que más contraste dé, y un color que no llega a 3:1 sobre el fondo no se usa como
+  texto. El backoffice no cambia: su paleta sigue fija (P-07).
+- **Mapa de colores.** Siete partes de la tienda, cada una con un selector entre los colores de la
+  paleta: botón principal, botones secundarios y enlaces, precios, rótulos y carteles, títulos de
+  sección, tarjetas e imágenes, encabezado y pie. Los precios, los títulos y las tarjetas admiten
+  además «Neutro»; el encabezado y el pie, «Fondo». Las opciones las valida el servidor.
+- **Los valores iniciales reproducen la tienda tal como se veía**, y no la «propuesta inicial» del
+  plan: sin tocar el mapa, nada cambia de lugar.
+- Con el encabezado y el pie en un color, su texto y sus acentos pasan al de contraste; el
+  buscador conserva los suyos.
+
+**Qué habría que cambiar.**
+`CU-CFG-VIS` paso 2: agregar el mapa de colores a la sección Apariencia. `CO-131`: los siete roles
+en la firma (`colores` pasa a incluir el mapa). `CO-208`: presentarlos.

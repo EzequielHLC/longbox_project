@@ -592,14 +592,14 @@ def test_el_cajero_no_ve_la_informacion_interna(client, cajero):
 
 
 @pytest.mark.django_db
-def test_la_ficha_no_inventa_las_cifras_que_no_puede_calcular(client_admin):
-    """Un cero acá se leería como "nadie lo tiene reservado", que es la
-    conclusión equivocada para decidir una baja."""
+def test_la_ficha_dice_las_cifras_internas(client_admin):
+    """Reservado en pedidos y suscriptores: con Pedidos y Restock, son cifras."""
     producto = ProductoFactory(titulo="Akira")
 
-    contenido = client_admin.get(url_ficha(producto)).content.decode()
+    respuesta = client_admin.get(url_ficha(producto))
 
-    assert "No disponible todavía" in contenido
+    assert respuesta.context["reservadas"] == 0
+    assert respuesta.context["suscriptores"] == 0
 
 
 @pytest.mark.django_db

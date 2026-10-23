@@ -755,6 +755,105 @@ class UsuarioReactivarView(GestionDeUsuariosMixin, DetailView):
         return redirect("accounts:usuario_lista")
 
 
+class ClienteBajaView(GestionDeUsuariosMixin, DetailView):
+    """`CU-USR-BAJ` para una cuenta de Cliente (B-11-010): la baja lógica desde la
+    administración, que el responsable pidió el 2026-10-22.
+
+    Es la misma baja que la del personal: la cuenta pasa a Inactiva y se cierran
+    sus sesiones. **No es la baja del propio Cliente** (`CU-CLI-BAJ`): no pierde
+    sus puntos ni sus avisos ni su carrito, porque una baja que decide otro tiene
+    que poder revertirse sin pérdida (`ClienteReactivarView`). Los pedidos en
+    curso siguen su ciclo.
+    """
+
+    model = Usuario
+    template_name = "accounts/cliente_baja.html"
+    context_object_name = "cliente"
+
+    def get_queryset(self):
+        return Usuario.objects.filter(rol=Usuario.CLIENTE)
+
+    def get_context_data(self, **kwargs):
+        from apps.accounts import baja_cliente
+
+        contexto = super().get_context_data(**kwargs)
+        contexto["implicaciones"] = baja_cliente.implicaciones(self.object)
+        return contexto
+
+    def post(self, request, *args, **kwargs):
+        cliente = self.get_object()
+        if cliente.estado != Usuario.ACTIVO:
+            messages.error(request, "Solo se puede dar de baja una cuenta activa.")
+            return redirect("accounts:cliente_ficha", pk=cliente.pk)
+
+        with transaction.atomic():
+            cliente.estado = Usuario.INACTIVO
+            cliente.save()
+            services.invalidar_sesiones_de(cliente)
+            RegistroAuditoria.registrar(
+                accion=RegistroAuditoria.BAJA_USUARIO,
+                actor=request.user,
+                objetivo=cliente,
+                ip=obtener_ip(request),
+                detalle=(
+                    f"estado: '{Usuario.ACTIVO}' → '{Usuario.INACTIVO}'; cuenta de cliente; "
+                    "sesiones cerradas; puntos, pedidos y datos se conservan"
+                ),
+            )
+
+        messages.success(
+            request,
+            f"Se dio de baja la cuenta de {cliente.email} y se cerraron sus sesiones. Sus "
+            "puntos, pedidos y datos se conservan.",
+        )
+        return redirect("accounts:cliente_ficha", pk=cliente.pk)
+
+
+class ClienteReactivarView(GestionDeUsuariosMixin, DetailView):
+    """`CU-USR-REA` para una cuenta de Cliente dada de baja por `CU-CLI-BAJ` (B-11-009).
+
+    El mismo camino que el personal —vuelve a Pendiente de activación con un
+    enlace nuevo, y el Cliente elige una contraseña nueva— salvo el rol, que no se
+    elige: una cuenta de Cliente sigue siendo de Cliente. Los puntos invalidados
+    por la baja no vuelven (`CO-113`: «sin posibilidad de recuperación»).
+    """
+
+    model = Usuario
+    template_name = "accounts/cliente_reactivar.html"
+    context_object_name = "cliente"
+
+    def get_queryset(self):
+        return Usuario.objects.filter(rol=Usuario.CLIENTE)
+
+    def post(self, request, *args, **kwargs):
+        self.object = cliente = self.get_object()
+        if not cliente.esta_congelada:
+            messages.error(request, "Solo se puede reactivar una cuenta dada de baja.")
+            return redirect("accounts:cliente_ficha", pk=cliente.pk)
+
+        with transaction.atomic():
+            services.preparar_para_activacion(cliente)
+            cliente.save()
+            services.enviar_enlace_de_activacion(cliente, request, reactivacion=True)
+            RegistroAuditoria.registrar(
+                accion=RegistroAuditoria.REACTIVACION_USUARIO,
+                actor=request.user,
+                objetivo=cliente,
+                ip=obtener_ip(request),
+                detalle=(
+                    f"estado: '{Usuario.INACTIVO}' → '{Usuario.PENDIENTE_ACTIVACION}'; "
+                    "cuenta de cliente; se envió un enlace para elegir una contraseña nueva"
+                ),
+            )
+
+        messages.success(
+            request,
+            f"Se reactivó la cuenta de {cliente.email} y se le envió un enlace para elegir una "
+            "contraseña nueva. Hasta entonces no puede iniciar sesión.",
+        )
+        return redirect("accounts:cliente_ficha", pk=cliente.pk)
+
+
 class UsuarioEliminarPendienteView(GestionDeUsuariosMixin, DetailView):
     """Elimina una cuenta que nunca llegó a activarse.
 

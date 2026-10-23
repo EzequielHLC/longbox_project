@@ -1,0 +1,52 @@
+{% comment %}
+El calendario de pre-ventas (plan 00 de interfaz, 22; cuarta parte, E; B-00-026).
+La vista lo devuelve solo con `?parcial=calendario`, para cambiar de mes sin
+recargar la pantalla; sin guion, los enlaces recargan como siempre. «Hoy» vuelve
+al mes actual. Cada llegada enlaza su grupo, que es donde se confirma (CO-013).
+{% endcomment %}
+<div class="calendario-cabeza">
+  <h2 id="titulo-calendario" class="calendario-cabeza__mes">{{ mes.nombre }}</h2>
+  <nav class="calendario-cabeza__nav" aria-label="Cambiar de mes">
+    <a href="?mes={{ mes.anterior|date:'Y-m' }}" class="boton-icono" data-mes aria-label="Mes anterior" title="Mes anterior">{% include "_iconos.html" with icono="anterior" %}</a>
+    <a href="?mes={{ mes.hoy|date:'Y-m' }}" class="calendario-cabeza__hoy" data-mes data-hoy{% if mes.es_el_actual %} aria-current="date"{% endif %}>Hoy</a>
+    <a href="?mes={{ mes.siguiente|date:'Y-m' }}" class="boton-icono" data-mes aria-label="Mes siguiente" title="Mes siguiente">{% include "_iconos.html" with icono="siguiente" %}</a>
+  </nav>
+</div>
+<ul class="calendario-leyenda" aria-label="Referencias">
+  <li class="calendario-leyenda__item calendario-leyenda__item--atrasada">Atrasada</li>
+  <li class="calendario-leyenda__item calendario-leyenda__item--cercana">Esta semana</li>
+  <li class="calendario-leyenda__item">Más adelante</li>
+</ul>
+<table class="calendario">
+  <thead><tr>{% for dia in dias_de_la_semana %}<th scope="col">{{ dia }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for semana in mes.semanas %}
+      <tr>
+        {% for dia in semana %}
+          <td class="calendario__dia{% if not dia.del_mes %} calendario__dia--otro-mes{% endif %}{% if dia.es_hoy %} calendario__dia--hoy{% endif %}{% if dia.fin_de_semana %} calendario__dia--finde{% endif %}"{% if dia.es_hoy %} aria-current="date" tabindex="-1"{% endif %}>
+            <span class="calendario__numero">{{ dia.fecha.day }}</span>
+            {% for grupo in dia.grupos %}
+              <a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% elif grupo.cercano %} calendario__llegada--cercana{% endif %}" data-llegada="grupo-{{ grupo.clave }}" title="{{ grupo.editorial }}: {{ grupo.filas|length }} producto{{ grupo.filas|length|pluralize }}">
+                <span class="calendario__editorial">{{ grupo.editorial }}</span>
+                <span class="calendario__cuenta datos">{{ grupo.filas|length }}</span>
+              </a>
+            {% endfor %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{# En el celular la grilla no entra: sólo los días que tienen llegadas. #}
+<ul class="calendario-lista">
+  {% for dia in mes.dias_con_llegadas %}
+    <li class="calendario-lista__dia{% if dia.es_hoy %} calendario-lista__dia--hoy{% endif %}">
+      <span class="calendario-lista__fecha datos">{{ dia.fecha|date:"D d" }}</span>
+      <span class="calendario-lista__llegadas">
+        {% for grupo in dia.grupos %}<a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% elif grupo.cercano %} calendario__llegada--cercana{% endif %}" data-llegada="grupo-{{ grupo.clave }}"><span class="calendario__editorial">{{ grupo.editorial }}</span><span class="calendario__cuenta datos">{{ grupo.filas|length }}</span></a>{% endfor %}
+      </span>
+    </li>
+  {% empty %}
+    <li class="secundario">Nada llega este mes.</li>
+  {% endfor %}
+</ul>

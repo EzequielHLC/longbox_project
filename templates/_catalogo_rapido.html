@@ -33,8 +33,48 @@ evitar.
 <script>
   (function () {
     const csrf = document.querySelector('[name="csrfmiddlewaretoken"]')?.value;
+    let dialogo = null;
 
-    document.addEventListener("click", async (evento) => {
+    // Un diálogo del sistema y no `prompt`/`confirm`/`alert` del navegador: las
+    // preguntas de sí o no son casillas, y el error se lee en el mismo lugar.
+    function armarDialogo() {
+      dialogo = document.createElement("dialog");
+      dialogo.className = "dialogo dialogo--confirmacion";
+      dialogo.setAttribute("aria-labelledby", "catalogo-rapido-titulo");
+      dialogo.innerHTML = `
+        <form method="dialog" novalidate>
+          <div class="dialogo__cabeza">
+            <h2 id="catalogo-rapido-titulo"></h2>
+            <p class="secundario">Se agrega al catálogo y queda elegida en este formulario.</p>
+            <button type="button" class="dialogo__cerrar" data-cerrar aria-label="Cerrar">×</button>
+          </div>
+          <div class="dialogo__cuerpo formulario">
+            <div class="campo">
+              <label class="etiqueta" for="catalogo-rapido-nombre">Nombre <span class="obligatorio" aria-hidden="true">*</span></label>
+              <input type="text" id="catalogo-rapido-nombre" name="nombre" autocomplete="off" required>
+            </div>
+            <div class="pila-2" data-preguntas></div>
+            <p class="error-de-campo" data-errores role="alert" hidden></p>
+            <div class="acciones">
+              <button type="submit" class="boton-primario" data-crear>Crear y elegir</button>
+              <button type="button" class="boton-texto" data-cerrar>Cancelar</button>
+            </div>
+          </div>
+        </form>`;
+      document.body.append(dialogo);
+      for (const cerrar of dialogo.querySelectorAll("[data-cerrar]")) {
+        cerrar.addEventListener("click", () => dialogo.close());
+      }
+      return dialogo;
+    }
+
+    function error(caja, texto) {
+      const errores = caja.querySelector("[data-errores]");
+      errores.textContent = "Error: " + texto;
+      errores.hidden = false;
+    }
+
+    document.addEventListener("click", (evento) => {
       const boton = evento.target.closest("[data-catalogo-rapido]");
       if (!boton) return;
 
@@ -44,61 +84,93 @@ evitar.
       if (!campo || !url) return;
 
       const genero = etiqueta.startsWith("la ") ? "a" : "o";
-      const titulo = etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
-      const nombre = window.prompt(`${titulo} nuev${genero}: escriba el nombre`);
-      if (!nombre) return;
+      const nombreSolo = etiqueta.replace(/^(la|el) /, "");
+      const caja = dialogo || armarDialogo();
+      const formulario = caja.querySelector("form");
+      const crear = caja.querySelector("[data-crear]");
+      formulario.reset();
+      caja.querySelector("[data-errores]").hidden = true;
+      caja.querySelector("#catalogo-rapido-titulo").textContent =
+        `Nuev${genero} ${nombreSolo}`;
+      crear.disabled = false;
+      crear.textContent = "Crear y elegir";
 
-      const cuerpo = new FormData();
-      cuerpo.append("nombre", nombre);
+      const preguntas = caja.querySelector("[data-preguntas]");
+      preguntas.innerHTML = "";
       for (const [nombreCampo, pregunta] of Object.entries(JSON.parse(boton.dataset.preguntas || "{}"))) {
-        cuerpo.append(nombreCampo, window.confirm(pregunta) ? "true" : "false");
-      }
-      if (boton.dataset.tipoDe) {
-        const tipo = boton.closest("form")?.querySelector(`select[name="${boton.dataset.tipoDe}"]`);
-        if (tipo?.value) cuerpo.append("tipos", tipo.value);
+        const casilla = document.createElement("label");
+        casilla.className = "casilla";
+        casilla.innerHTML = `<input type="checkbox" name="${nombreCampo}"><span></span>`;
+        casilla.querySelector("span").textContent = pregunta;
+        preguntas.append(casilla);
       }
 
-      let datos;
-      try {
-        const respuesta = await fetch(url, {
-          method: "POST",
-          headers: { "X-CSRFToken": csrf },
-          body: cuerpo,
-        });
-        datos = await respuesta.json();
-        if (!respuesta.ok) {
-          window.alert(datos.errores?.join("\n") || `No se pudo crear ${etiqueta}.`);
+      formulario.onsubmit = async (envio) => {
+        envio.preventDefault();
+        const nombre = caja.querySelector("[name=nombre]").value.trim();
+        if (!nombre) {
+          error(caja, "escribí el nombre.");
           return;
         }
-      } catch {
-        window.alert(`No se pudo crear ${etiqueta}: revise la conexión.`);
-        return;
-      }
-
-      // La opción nueva se agrega a **todos** los desplegables del mismo campo
-      // que haya en la pantalla, no solo al que se usó: en una carga en lote el
-      // ítem siguiente no la encontraría y habría que recargar perdiendo lo
-      // escrito. Los dos selectores cubren el campo suelto (`editorial`) y el
-      // que viene con prefijo de formset (`form-3-editorial`).
-      //
-      // El molde de los ítems nuevos entra en la cuenta porque los que se
-      // agregan después salen de él; sin esto nacerían sin la opción recién
-      // creada. En una pantalla sin formset simplemente no existe.
-      const selectores = `select[name="${campo}"], select[name$="-${campo}"]`;
-      const molde = document.getElementById("molde-item");
-      for (const raiz of [document, molde?.content].filter(Boolean)) {
-        for (const select of raiz.querySelectorAll(selectores)) {
-          select.add(new Option(datos.nombre, datos.id));
+        const cuerpo = new FormData();
+        cuerpo.append("nombre", nombre);
+        for (const casilla of preguntas.querySelectorAll("input")) {
+          cuerpo.append(casilla.name, casilla.checked ? "true" : "false");
         }
-      }
+        if (boton.dataset.tipoDe) {
+          const tipo = boton.closest("form")?.querySelector(`select[name="${boton.dataset.tipoDe}"]`);
+          if (tipo?.value) cuerpo.append("tipos", tipo.value);
+        }
 
-      // Y se deja elegida en el desplegable desde el que se pidió, que es lo
-      // que la persona estaba por hacer cuando descubrió que faltaba.
-      const propio = boton.parentElement.querySelector("select");
-      if (propio) {
-        propio.value = datos.id;
-        propio.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+        crear.disabled = true;
+        crear.textContent = "Creando…";
+        let datos;
+        try {
+          const respuesta = await fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrf },
+            body: cuerpo,
+          });
+          datos = await respuesta.json();
+          if (!respuesta.ok) {
+            error(caja, datos.errores?.join(" ") || `no se pudo crear ${etiqueta}.`);
+            crear.disabled = false;
+            crear.textContent = "Crear y elegir";
+            return;
+          }
+        } catch {
+          error(caja, `no se pudo crear ${etiqueta}: revisá la conexión.`);
+          crear.disabled = false;
+          crear.textContent = "Crear y elegir";
+          return;
+        }
+
+        // La opción nueva se agrega a **todos** los desplegables del mismo campo
+        // que haya en la pantalla, no solo al que se usó: en una carga en lote el
+        // ítem siguiente no la encontraría y habría que recargar perdiendo lo
+        // escrito. Los dos selectores cubren el campo suelto (`editorial`) y el
+        // que viene con prefijo de formset (`form-3-editorial`). El molde de los
+        // ítems nuevos entra en la cuenta porque los que se agregan después
+        // salen de él.
+        const selectores = `select[name="${campo}"], select[name$="-${campo}"]`;
+        const molde = document.getElementById("molde-item");
+        for (const raiz of [document, molde?.content].filter(Boolean)) {
+          for (const select of raiz.querySelectorAll(selectores)) {
+            select.add(new Option(datos.nombre, datos.id));
+          }
+        }
+
+        // Y queda elegida en el desplegable desde el que se pidió.
+        const propio = boton.parentElement.querySelector("select");
+        if (propio) {
+          propio.value = datos.id;
+          propio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        caja.close();
+      };
+
+      caja.showModal();
+      caja.querySelector("[name=nombre]").focus();
     });
   })();
 </script>

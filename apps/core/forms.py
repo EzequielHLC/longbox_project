@@ -10,7 +10,7 @@ import re
 from django import forms
 from django.core.validators import MaxValueValidator
 
-from apps.core import imagenes
+from apps.core import colores, imagenes
 from apps.core.contraste import MINIMO_TEXTO, contraste
 from apps.core.models import Banner, FilaPortada, IdentidadVisual
 
@@ -127,6 +127,7 @@ class IdentidadVisualForm(forms.ModelForm):
             "color_acento",
             "tipo_fondo",
             "color_fondo",
+            *(rol.campo for rol in colores.ROLES),
             "descripcion_tienda",
             "portada_antetitulo",
             "portada_titulo",
@@ -176,6 +177,14 @@ class IdentidadVisualForm(forms.ModelForm):
             self.fields[campo].widget.attrs.update(
                 {"placeholder": "#RRGGBB", "maxlength": 7, "data-color-tienda": campo}
             )
+        # El mapa de colores: cada rol ofrece sólo sus opciones (`colores.ROLES`).
+        for rol in colores.ROLES:
+            campo = self.fields[rol.campo]
+            campo.choices = [(clave, colores.NOMBRES[clave]) for clave in rol.opciones]
+            campo.help_text = rol.alcance
+            campo.widget.attrs["data-rol-color"] = rol.clave
+            # Un rol que no viaja conserva el que tenía (`clean`).
+            campo.required = False
 
     def _limpiar_hex(self, campo):
         valor = (self.cleaned_data.get(campo) or "").strip()
@@ -219,6 +228,9 @@ class IdentidadVisualForm(forms.ModelForm):
 
     def clean(self):
         datos = super().clean()
+        for rol in colores.ROLES:
+            if not datos.get(rol.campo) and rol.campo not in self.errors:
+                datos[rol.campo] = getattr(self.instance, rol.campo, None) or rol.inicial
         # `identidad_visual.md`: el texto secundario y el acento tienen que
         # leerse sobre el fondo, con 4,5:1 como mínimo.
         fondo = datos.get("color_fondo")

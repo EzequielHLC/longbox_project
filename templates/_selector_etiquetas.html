@@ -213,70 +213,113 @@ segundo estado que pueda desincronizarse del primero.
 
     function armarDialogo() {
       dialogo = document.createElement("dialog");
-      dialogo.className = "dialogo";
+      dialogo.className = "dialogo dialogo--confirmacion";
+      dialogo.setAttribute("aria-labelledby", "etiqueta-rapida-titulo");
       dialogo.innerHTML = `
-        <form method="dialog" class="formulario pila-3" novalidate>
-          <h2>Nueva etiqueta</h2>
-          <div class="campo">
-            <label class="etiqueta" for="etiqueta-rapida-nombre">Nombre</label>
-            <input type="text" id="etiqueta-rapida-nombre" name="nombre" autocomplete="off">
+        <form method="dialog" novalidate>
+          <div class="dialogo__cabeza">
+            <h2 id="etiqueta-rapida-titulo">Nueva etiqueta</h2>
+            <p class="secundario">Se agrega al catálogo de etiquetas y queda elegida en este producto.</p>
+            <button type="button" class="dialogo__cerrar" data-cerrar aria-label="Cerrar">×</button>
           </div>
-          <div class="campo">
-            <label class="etiqueta" for="etiqueta-rapida-grupo">Grupo</label>
-            <select id="etiqueta-rapida-grupo" name="grupo"></select>
-          </div>
-          <div class="campo" data-grupo-nuevo hidden>
-            <label class="etiqueta" for="etiqueta-rapida-grupo-nuevo">Nombre del grupo nuevo</label>
-            <input type="text" id="etiqueta-rapida-grupo-nuevo" name="grupo_nuevo" autocomplete="off">
-          </div>
-          <p class="error-de-campo" data-errores hidden></p>
-          <div class="acciones">
-            <button type="submit" class="boton-primario" value="crear">Crear y elegir</button>
-            <button type="submit" class="boton-texto" value="cancelar">Cancelar</button>
+          <div class="dialogo__cuerpo formulario">
+            <div class="campo">
+              <label class="etiqueta" for="etiqueta-rapida-nombre">Nombre <span class="obligatorio" aria-hidden="true">*</span></label>
+              <input type="text" id="etiqueta-rapida-nombre" name="nombre" autocomplete="off" required>
+            </div>
+            <div class="rejilla-2">
+              <div class="campo">
+                <label class="etiqueta" for="etiqueta-rapida-grupo">Grupo</label>
+                <select id="etiqueta-rapida-grupo" name="grupo"></select>
+              </div>
+              <div class="campo" data-grupo-nuevo hidden>
+                <label class="etiqueta" for="etiqueta-rapida-grupo-nuevo">Nombre del grupo nuevo</label>
+                <input type="text" id="etiqueta-rapida-grupo-nuevo" name="grupo_nuevo" autocomplete="off">
+              </div>
+            </div>
+            <p class="error-de-campo" data-errores role="alert" hidden></p>
+            <div class="acciones">
+              <button type="submit" class="boton-primario" value="crear" data-crear>Crear y elegir</button>
+              <button type="button" class="boton-texto" data-cerrar>Cancelar</button>
+            </div>
           </div>
         </form>`;
       document.body.append(dialogo);
 
       const grupo = dialogo.querySelector("[name=grupo]");
       grupo.addEventListener("change", () => {
-        dialogo.querySelector("[data-grupo-nuevo]").hidden = grupo.value !== "nuevo";
+        const nuevo = grupo.value === "nuevo";
+        dialogo.querySelector("[data-grupo-nuevo]").hidden = !nuevo;
+        if (nuevo) dialogo.querySelector("[name=grupo_nuevo]").focus();
       });
+      for (const cerrar of dialogo.querySelectorAll("[data-cerrar]")) {
+        cerrar.addEventListener("click", () => dialogo.close());
+      }
       return dialogo;
+    }
+
+    function mostrarError(caja, texto) {
+      const errores = caja.querySelector("[data-errores]");
+      errores.textContent = "Error: " + texto;
+      errores.hidden = false;
     }
 
     async function abrirAltaRapida(boton) {
       const caja = dialogo || armarDialogo();
       const formulario = caja.querySelector("form");
-      const errores = caja.querySelector("[data-errores]");
       const grupo = caja.querySelector("[name=grupo]");
+      const crear = caja.querySelector("[data-crear]");
       formulario.reset();
-      errores.hidden = true;
+      caja.querySelector("[data-errores]").hidden = true;
       caja.querySelector("[data-grupo-nuevo]").hidden = true;
+      crear.disabled = false;
+      crear.textContent = "Crear y elegir";
 
-      const respuesta = await fetch(boton.dataset.url, { headers: { Accept: "application/json" } });
-      const { grupos } = await respuesta.json();
-      grupo.innerHTML = "";
-      for (const dato of grupos) grupo.add(new Option(dato.nombre, dato.id));
-      grupo.add(new Option("Grupo nuevo…", "nuevo"));
-      if (!grupos.length) {
-        grupo.value = "nuevo";
-        caja.querySelector("[data-grupo-nuevo]").hidden = false;
+      caja.showModal();
+      caja.querySelector("[name=nombre]").focus();
+
+      try {
+        const respuesta = await fetch(boton.dataset.url, { headers: { Accept: "application/json" } });
+        const { grupos } = await respuesta.json();
+        grupo.innerHTML = "";
+        for (const dato of grupos) grupo.add(new Option(dato.nombre, dato.id));
+        grupo.add(new Option("Grupo nuevo…", "nuevo"));
+        if (!grupos.length) {
+          grupo.value = "nuevo";
+          caja.querySelector("[data-grupo-nuevo]").hidden = false;
+        }
+      } catch {
+        mostrarError(caja, "no se pudieron cargar los grupos. Revisá la conexión.");
       }
 
       formulario.onsubmit = async (evento) => {
-        if (evento.submitter?.value !== "crear") return;
         evento.preventDefault();
-        const cuerpo = new FormData(formulario);
+        if (!caja.querySelector("[name=nombre]").value.trim()) {
+          mostrarError(caja, "escribí el nombre de la etiqueta.");
+          return;
+        }
+        crear.disabled = true;
+        crear.textContent = "Creando…";
         const csrf = document.querySelector('[name="csrfmiddlewaretoken"]')?.value;
-        const envio = await fetch(boton.dataset.url, {
-          method: "POST",
-          headers: { "X-CSRFToken": csrf },
-          body: cuerpo,
-        });
-        const datos = await envio.json();
+        let envio;
+        let datos;
+        try {
+          envio = await fetch(boton.dataset.url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrf, Accept: "application/json" },
+            body: new FormData(formulario),
+          });
+          datos = await envio.json();
+        } catch {
+          mostrarError(caja, "no se pudo crear. Revisá la conexión y probá de nuevo.");
+          crear.disabled = false;
+          crear.textContent = "Crear y elegir";
+          return;
+        }
         if (!envio.ok) {
-          errores.textContent = "Error: " + Object.values(datos.errores || {}).flat().join(" ");
-          errores.hidden = false;
+          mostrarError(caja, Object.values(datos.errores || {}).flat().join(" "));
+          crear.disabled = false;
+          crear.textContent = "Crear y elegir";
           return;
         }
 
@@ -295,9 +338,6 @@ segundo estado que pueda desincronizarse del primero.
         }
         caja.close();
       };
-
-      caja.showModal();
-      caja.querySelector("[name=nombre]").focus();
     }
 
     document.addEventListener("click", (evento) => {

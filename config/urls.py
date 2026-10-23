@@ -33,6 +33,7 @@ urlpatterns = [
     path("stock-local/", include("apps.almacen.urls")),
     path("restock/", include("apps.restock.urls")),
     path("devoluciones/", include("apps.devoluciones.urls")),
+    path("reportes/", include("apps.reportes.urls")),
     path("tienda/arrepentimiento/", include("apps.devoluciones.urls_tienda")),
     path("tienda/carrito/", include("apps.tienda.urls")),
     path("tienda/compra/", include("apps.tienda.urls_compra")),

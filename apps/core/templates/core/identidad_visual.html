@@ -122,18 +122,45 @@ cambios» vuelve a cargar lo guardado (A1).
           {% endif %}
           {% include "_campo.html" with campo=form.fondo_nuevo %}
         </fieldset>
+
+        {% comment %}
+        El mapa de colores (plan 00 de interfaz, cuarta parte, B; B-17-019): qué
+        color de la paleta lleva cada parte de la tienda. El hover, lo presionado
+        y el texto encima salen solos del color elegido.
+        {% endcomment %}
+        <fieldset class="grupo-de-campos" data-mapa-colores>
+          <legend>Mapa de colores</legend>
+          <p class="ayuda">Qué color de la paleta lleva cada parte de la tienda. El tono al pasar el puntero, al presionar y el texto encima se calculan solos.</p>
+          <div class="rejilla-2">
+            {% for campo in form %}{% if campo.name|slice:":10" == "color_rol_" %}
+              {% include "_campo.html" with campo=campo %}
+            {% endif %}{% endfor %}
+          </div>
+        </fieldset>
       </div>
 
       <div class="pila-2">
         <p class="etiqueta">Vista previa</p>
         <div class="vista-previa-tienda modo-publico" data-vista-previa
              {% if identidad.tipo_fondo == "imagen" and identidad.imagen_fondo %}data-fondo-imagen="{{ identidad.imagen_fondo.url }}"{% endif %}>
-          <div class="encabezado-publico"><div class="columna-publica"><span class="marca" data-vista-nombre>{{ identidad.nombre_tienda }}</span></div></div>
-          <div class="columna-publica pila-2">
-            <p>Así se lee el texto de la tienda.</p>
+          <div class="encabezado-publico" data-vista-encabezado><div class="columna-publica"><span class="marca" data-vista-nombre>{{ identidad.nombre_tienda }}</span></div></div>
+          <div class="columna-publica pila-3">
+            <div class="titulo-seccion">
+              <p class="antetitulo">Antetítulo</p>
+              <h2 class="titulo-3">Título de sección</h2>
+            </div>
+            <p>Así se lee el texto de la tienda. <a href="#vista-previa">Un enlace</a>.</p>
             <p class="secundario">Texto secundario.</p>
-            <a href="#vista-previa">Un enlace</a>
+            <div class="fila">
+              <span class="rotulo-estado rotulo-estado--pre-venta rotulo-estado--en-linea"><span>Pre-venta</span></span>
+              <span class="tarjeta-producto__precio">$ 18.500</span>
+            </div>
+            <div class="fila">
+              <span class="boton-primario" role="presentation">Comprar</span>
+              <span class="boton-seccion" role="presentation">Ver más</span>
+            </div>
           </div>
+          <div class="pie-publico" data-vista-pie><div class="columna-publica"><p class="texto-chico">Pie de la tienda</p></div></div>
         </div>
       </div>
     </div>
@@ -174,9 +201,68 @@ cambios» vuelve a cargar lo guardado (A1).
       if (nombre) vista.querySelector("[data-vista-nombre]").textContent = nombre;
     }
 
-    formulario.addEventListener("input", actualizar);
-    formulario.addEventListener("change", actualizar);
+    // El mapa de colores, con la misma cuenta que `apps/core/colores.py`: el
+    // texto encima de cada color es noche o blanco, y un color que no llega a
+    // 3:1 sobre el fondo no se usa como texto.
+    // Noche y blanco salen de los tokens: la plantilla no escribe colores.
+    const tokens = getComputedStyle(document.documentElement);
+    const NOCHE = tokens.getPropertyValue("--noche").trim();
+    const BLANCO = tokens.getPropertyValue("--blanco").trim();
+    function canal(valor) {
+      const v = valor / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    }
+    function luminancia(color) {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
+      return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+    }
+    function contraste(uno, otro) {
+      const [claro, oscuro] = [luminancia(uno), luminancia(otro)].sort((a, b) => b - a);
+      return (claro + 0.05) / (oscuro + 0.05);
+    }
+    function masLegible(fondo) {
+      return contraste(fondo, NOCHE) >= contraste(fondo, BLANCO) ? NOCHE : BLANCO;
+    }
+    function paleta() {
+      const valores = {};
+      for (const nombre of ["primario", "secundario", "acento", "fondo"]) {
+        const valor = formulario.elements[`color_${nombre}`]?.value.trim();
+        if (valor && hex.test(valor)) valores[nombre] = valor;
+      }
+      return valores;
+    }
+    function aplicarMapa() {
+      const colores = paleta();
+      for (const selector of formulario.querySelectorAll("[data-rol-color]")) {
+        const rol = `--rol-${selector.dataset.rolColor}`;
+        const opcion = selector.value;
+        const color = colores[opcion];
+        if (opcion === "neutro" || !color) {
+          vista.style.setProperty(rol, "var(--texto-fuerte)");
+          vista.style.setProperty(`${rol}-sobre`, "var(--fondo)");
+          vista.style.setProperty(`${rol}-texto`, "var(--texto-fuerte)");
+          continue;
+        }
+        vista.style.setProperty(rol, `var(--tienda-${opcion})`);
+        vista.style.setProperty(`${rol}-sobre`, masLegible(color));
+        const legible = colores.fondo && contraste(color, colores.fondo) >= 3;
+        vista.style.setProperty(`${rol}-texto`, legible || !colores.fondo ? color : masLegible(colores.fondo));
+      }
+      const encabezado = formulario.elements.color_rol_encabezado?.value;
+      const conColor = encabezado && encabezado !== "fondo" && colores[encabezado];
+      for (const zona of vista.querySelectorAll("[data-vista-encabezado], [data-vista-pie]")) {
+        for (const variable of ["--texto", "--texto-fuerte", "--texto-2", "--acento", "--acento-texto", "--golpe", "--rol-titulos", "--rol-titulos-texto"]) {
+          if (conColor) zona.style.setProperty(variable, masLegible(colores[encabezado]));
+          else zona.style.removeProperty(variable);
+        }
+        zona.style.background = conColor ? "var(--rol-encabezado)" : "";
+      }
+    }
+
+    formulario.addEventListener("input", function () { actualizar(); aplicarMapa(); });
+    formulario.addEventListener("change", function () { actualizar(); aplicarMapa(); });
     actualizar();
+    aplicarMapa();
   })();
 </script>
 {% endblock %}

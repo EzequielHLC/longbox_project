@@ -53,6 +53,7 @@ def _inicio_de_ventana():
 def intentos_recientes(email, ip):
     """Cantidad de intentos fallidos vigentes para ese correo desde esa IP."""
     return IntentoFallido.objects.filter(
+        flujo=IntentoFallido.INICIO_SESION,
         email__iexact=email,
         ip=ip,
         ocurrido_en__gte=_inicio_de_ventana(),
@@ -72,7 +73,9 @@ def registrar_intento_fallido(email, ip):
 
 def limpiar_intentos(email, ip):
     """Un login exitoso corta la racha: los intentos dejan de contar."""
-    IntentoFallido.objects.filter(email__iexact=email, ip=ip).delete()
+    IntentoFallido.objects.filter(
+        flujo=IntentoFallido.INICIO_SESION, email__iexact=email, ip=ip
+    ).delete()
 
 
 def _notificar_bloqueo(email, ip):
@@ -180,7 +183,7 @@ def preparar_para_activacion(usuario):
     usuario.set_unusable_password()
 
 
-def enviar_enlace_de_activacion(usuario, request):
+def enviar_enlace_de_activacion(usuario, request, *, reactivacion=False):
     """Emite el `EnlaceActivacion` y manda el correo para que elija su contraseña.
 
     Emitir y enviar van juntos a propósito: un enlace emitido que no se envía es una fila
@@ -199,6 +202,8 @@ def enviar_enlace_de_activacion(usuario, request):
         "protocol": "https" if request.is_secure() else "http",
         "domain": sitio.domain,
         "vigencia_horas": settings.VIGENCIA_ENLACE_ACTIVACION // 3600,
+        # La reactivación de un Cliente (B-11-009) no «crea» nada: lo dice distinto.
+        "reactivacion": reactivacion,
     }
     ruta = reverse(
         "accounts:activar_cuenta", kwargs={"uidb64": contexto["uid"], "token": contexto["token"]}

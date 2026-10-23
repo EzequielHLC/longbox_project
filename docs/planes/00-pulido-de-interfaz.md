@@ -461,5 +461,107 @@ sesiones más.
 | # | Pregunta |
 | --- | --- |
 | 1 | ¿Se aprueba el apartado 22 y el patrón del calendario? ¿También un **calendario público de lanzamientos** en la tienda, con el mismo componente, de sólo lectura? |
-| 2 | Cambios de precio programados: ¿se hacen? Si sí, ¿flujo alternativo de `CU-PVP-TBM` o caso de uso propio, y con qué códigos? |
+| 2 | Cambios de precio programados: ¿se hacen? Si sí, ¿flujo alternativo de `CU-PVP-TBM` o caso de uso propio, y con qué códigos? **Respondida el 2026-10-22: se descartan** (DEUDA, «Recorte para el cierre») |
 | 3 | Telegram: ¿se aprueba preparar 24.1 a 24.3 ahora? ¿Qué opción de funciones, y los casos de uso? |
+
+---
+
+# Plan — `00` Pulido de interfaz · cuarta parte: colores, imágenes y calendario
+
+**Estado del plan:** Aprobado el 2026-10-22: ambigüedad 1 en (b), mapa parametrizado; 2 en (a), es el calendario de Pre-ventas; 3 en (a), «Usar como portada» intercambia · **Fecha:** 2026-10-22
+
+Los pedidos del responsable del 2026-10-22. Dos ya están resueltos, porque eran defectos de
+presentación y no cambian nada de lo que el sistema hace:
+
+- En `/cuentas/usuarios/`, la etiqueta «Propia» quedaba pegada al nombre: ahora van en una fila
+  con separación.
+- En la ficha pública, «Suscripto» quedaba pegado a «Cancelar aviso». La causa era común: una
+  `marca-estado` dentro de una fila se alineaba arriba. Ahora se centra en cualquier fila.
+
+## 26. Qué cubre
+
+| # | Pedido | Caso de uso | ¿Cambia el alcance? |
+| --- | --- | --- | --- |
+| A | Familias de color: el hover y los tonos intermedios salen del color elegido | `CU-CFG-VIS` | No |
+| B | Mapa de uso de los colores, parametrizable | `CU-CFG-VIS`, `CO-131`, `CO-208` | **Sí**: ver ambigüedad 1 |
+| C | La gestión de imágenes en la edición de producto | `CU-CAT-EDI`, `CO-030` | No |
+| D | Las imágenes en la ficha pública | `CU-TDA-CAT` | No |
+| E | El calendario de pre-ventas, más dinámico y junto a la confirmación de llegada | `CU-ALT-TRA`, `CO-013` | No |
+
+## 27. Qué se propone
+
+**A · Familias de color.** Hoy, cambiar el acento de la tienda a azul deja el hover en naranja:
+`--acento-vivo` y `--acento-suave` siguen leyendo el naranja de la paleta base. Se define una
+**regla de derivación** por color configurable, en CSS con `color-mix(in oklch, …)`:
+
+| Variante | Regla | Dónde se usa |
+| --- | --- | --- |
+| `-vivo` | El color con un 20 % de blanco: más claro, mismo tono | Hover y foco |
+| `-hondo` | El color con un 30 % de negro | Presionado; texto del color sobre papel |
+| `-suave` | El color al 14 % sobre transparente | Fondos de selección y resaltados |
+| `sobre-` | Noche o blanco, el de más contraste (ya existe para el primario) | Texto encima del color |
+
+Con eso, elegir azul da hover azul claro, presionado azul oscuro y selección azul tenue, sin que el
+Administrador cargue nada más. El backoffice no cambia: sigue con la paleta fija (P-07).
+
+**B · Mapa de uso.** Hoy los tres colores pintan siete lugares. Se propone una tabla de
+**roles** —qué partes de la tienda lleva cada color— y que el Administrador elija, por rol, cuál
+de los tres colores usa:
+
+| Rol | Hoy | Propuesta inicial |
+| --- | --- | --- |
+| Botón principal | Primario | Primario |
+| Botones secundarios y enlaces | Acento | Acento |
+| Precios y ofertas | Acento | Acento |
+| Etiquetas y marcas de estado de la tienda | Fijos | Acento |
+| Títulos de sección y antetítulos | Fijos | Secundario |
+| Bordes y sombras de las tarjetas | Fijos | Secundario |
+| Encabezado y pie | Fondo | Fondo |
+
+La pantalla de identidad visual muestra la tabla con un selector por rol, y la vista previa
+cambia en vivo. El mapa se documenta en `identidad_visual.md`.
+
+**C · Imágenes en la edición.** Hoy la portada es un campo de archivo sin vista de la actual, y
+las imágenes adicionales se quitan con casillas sueltas. Se propone un único bloque de imágenes:
+la portada actual a la vista; las adicionales en una grilla que se **reordena arrastrando**; por
+imagen, «Usar como portada» y «Quitar»; y las nuevas se ven antes de guardar. Todo viaja en el
+mismo envío del formulario: nada se guarda hasta «Guardar», como hoy.
+
+**D · Imágenes en la ficha pública.** Hoy son una portada y miniaturas que abren el archivo en
+otra pestaña. Se propone un visor: la imagen grande, las miniaturas debajo que la cambian, y al
+tocarla, una ampliación en un diálogo con flechas, teclado y deslizamiento en el teléfono.
+
+**E · Calendario.** El calendario está en «Pre-ventas», la misma pantalla donde se confirma la
+llegada. Se propone que deje de ser sólo de lectura:
+
+- Cambiar de mes sin recargar la pantalla.
+- Tocar un día abre su grupo de llegada debajo, ya desplegado, con los productos marcados para
+  confirmar.
+- Desde el día se puede confirmar la llegada (`CO-013`), con la misma previsualización de hoy.
+- Las fechas atrasadas y las de esta semana se distinguen en el calendario y en la lista.
+
+## 28. Ambigüedades
+
+| # | Dónde | Las lecturas | Qué se necesita |
+| --- | --- | --- | --- |
+| 1 | B, `CO-131` | **(a)** El mapa es fijo: se documenta y se muestra en la pantalla qué pinta cada color, sin parámetros nuevos. **(b)** El mapa es un parámetro: un selector por rol, guardado en la identidad visual. | Decisión. Pediste que se parametrice, así que **recomiendo (b)**. Agrega atributos a la identidad visual que `CO-131` no declara: va a la bitácora como agregado, para enmendar la firma |
+| 2 | E, «el apartado de restock» | **(a)** Es el calendario de Pre-ventas, donde se confirma la llegada. **(b)** Hace falta un calendario en Restock, para los pedidos a proveedor despachados. | Que lo confirmes. **Asumo (a)**: Restock no tiene fechas que dibujar en un calendario |
+| 3 | C, «Usar como portada» | **(a)** Intercambia: la portada pasa a ser una imagen adicional. **(b)** Reemplaza: la portada anterior se descarta. | Decisión. **Recomiendo (a)**: no se pierde ninguna imagen sin haberla quitado |
+
+## 29. Orden
+
+| # | Qué | Motivo |
+| --- | --- | --- |
+| 1 | A | Lo que B usa: cada rol pinta con la familia de su color |
+| 2 | B | Migración de `IdentidadVisual` y la pantalla |
+| 3 | C y D | Independientes de los colores |
+| 4 | E | Independiente |
+
+## 30. Riesgos
+
+| Riesgo | Cómo se cubre |
+| --- | --- |
+| Un color claro deja un texto ilegible en algún rol | `sobre-` se calcula siempre con el contraste; prueba con amarillo y con gris claro |
+| `color-mix` en navegadores viejos | Todos los navegadores actuales lo soportan; si no, queda el color base sin variante |
+| Reordenar imágenes sin JavaScript | El orden viaja en campos ocultos; sin guion, el orden queda como estaba |
+| El calendario se recarga a medias | El fragmento del mes es la misma plantilla que la carga completa |

@@ -541,12 +541,18 @@ def test_CO034_las_suscripciones_quedan_canceladas(client_admin, atado):
     ).exists()
 
 
-def test_CO034_la_oferta_exclusiva_se_elimina_y_la_del_tipo_lo_deja_de_alcanzar(
+def test_CO034_la_oferta_exclusiva_queda_dada_de_baja_y_la_del_tipo_lo_deja_de_alcanzar(
     client_admin, atado
 ):
+    """Desvío B-02-007: el contrato dice eliminarla; el responsable decidió que
+    quede Dada de baja, como cualquier baja de oferta, con su entrada propia."""
     client_admin.post(url_baja(atado["producto"]))
 
-    assert not Oferta.objects.filter(pk=atado["exclusiva"].pk).exists()
+    exclusiva = Oferta.objects.get(pk=atado["exclusiva"].pk)
+    assert exclusiva.estado == Oferta.DADA_DE_BAJA
+    assert RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.BAJA_OFERTA, objetivo_pk=exclusiva.pk
+    ).exists()
     # La del tipo sigue para los demás: referencia a varios y no se elimina.
     del_tipo = Oferta.objects.get(pk=atado["del_tipo"].pk)
     assert del_tipo.estado == Oferta.ACTIVA
@@ -589,7 +595,7 @@ def test_CO034_una_sola_entrada_con_el_impacto_resuelto(client_admin, atado, adm
     assert "Activo" in registro.detalle
     assert "Descatalogado" in registro.detalle
     assert "suscripciones canceladas: 1" in registro.detalle
-    assert "ofertas eliminadas: 1" in registro.detalle
+    assert "ofertas dadas de baja: 1" in registro.detalle
     assert "carritos marcados: 1" in registro.detalle
 
 
@@ -671,7 +677,7 @@ def test_CO036_no_se_restituyen_suscripciones_ni_ofertas(client_admin, atado):
     client_admin.post(url_reactivar(producto))
 
     assert not SuscripcionReposicion.objects.filter(producto=producto).exists()
-    assert not Oferta.objects.filter(producto=producto).exists()
+    assert Oferta.objects.get(producto=producto).estado == Oferta.DADA_DE_BAJA
 
 
 def test_CO036_la_entrada_guarda_el_estado_anterior_y_el_nuevo(client_admin, administrador):

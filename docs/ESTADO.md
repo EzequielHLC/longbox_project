@@ -27,7 +27,13 @@ del plan 00). Escribir las pruebas desde los contratos encontró lo que faltaba 
   cierre de sesión dejan su entrada como cualquier pedido a proveedor (`CO-074`).
 - **El calendario de pre-ventas** en el panel (B-00-025).
 
-Quedan pendientes `CU-CLI-BAJ` y `CU-REP-GEN`, que esperan su plan.
+Además, la cuarta parte del plan de interfaz con sus correcciones (B-17-019, B-00-026, B-00-027):
+el mapa de colores de la tienda, el gestor de imágenes, el visor compartido y el calendario con
+«Hoy»; y el Administrador da de baja y reactiva cuentas de Cliente sin borrar nada (B-11-009,
+B-11-010).
+
+Después, con los planes 11 (tercera parte) y 15 aprobados: **la baja de la cuenta del Cliente** y
+**los reportes**. Con eso, los 103 casos de uso están verificados.
 
 Del 2026-10-19, antes: decimoquinta fotografía. **Revisión funcional y recorte para el cierre** (plan 00): se corrigió lo
 que hacía aguas, se completó lo que el alcance promete y se descartó el resto con su
@@ -84,15 +90,14 @@ tener suscriptores (B-05-001): su parcialidad viene de otras operaciones.
 | | |
 | --- | --- |
 | Casos de uso especificados | 103 |
-| Verificados | 101 |
+| Verificados | 103 |
 | Construidos, sin verificar | 0 |
 | Parciales | 0 |
 | En curso | 0 |
-| Pendientes | 2 |
+| Pendientes | 0 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba y verificados: **215**. Sin prueba:
-**4**, los de `CU-CLI-BAJ` (`CO-112`, `CO-113`) y `CU-REP-GEN` (`CO-128`, `CO-204`). El detalle por
+Contratos de operación especificados: **219**. Con prueba y verificados: **219**. El detalle por
 contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy.
 
 ### Cómo leer la columna «Contratos»
@@ -240,7 +245,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
 | `CU-CLI-DAT` | Verificado | 4 / 4 | `apps/accounts/views_cuenta.py`. **Todos sus contratos verificados.** Datos con las validaciones del registro; contraseña que cierra las otras sesiones; correo con `TokenCambioCorreo` de 24 h (B-11-002), confirmación por botón y aviso al correo anterior (B-11-005). Plan 11, segunda parte. |
 | `CU-CLI-HIS` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Pedidos activos, historial (despachados y cancelados), detalle con su línea de tiempo y acceso a la decisión ante una demora, y la sección Stock en Local (B-11-003 resuelta). Planes 11 y 18. |
-| `CU-CLI-BAJ` | Pendiente | 0 / 3 | El informe de impacto necesita Stock Almacenado; pedidos y puntos ya existen. |
+| `CU-CLI-BAJ` | Verificado | 3 / 3 | `BajaView` y `accounts/baja_cliente.py`. **Todos sus contratos verificados.** Informe de cuatro categorías con los bloqueos E1 y E2; la confirmación con contraseña invalida los puntos con un débito por lote, cancela suscripciones, vacía el carrito y cierra las sesiones; tres intentos bloquean la baja y no el ingreso (B-11-007). La vuelta por el Administrador queda en consulta (B-11-008). |
 
 ### `12` Autenticación
 
@@ -267,7 +272,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-CAJ-CIE` | Verificado | 3 / 3 | `apps/caja`. **Todos sus contratos verificados**: resumen por canal y por medio, un cierre por día (lo posterior va al siguiente, B-14-001), lo de días anteriores sin cerrar entra y se avisa (B-14-002), A1, CSV auditado, y dos cierres a la vez. Plan 14. |
-| `CU-REP-GEN` | Pendiente | 0 / 2 | No hay generación de reportes. |
+| `CU-REP-GEN` | Verificado | 2 / 2 | `apps/reportes`. **Todos sus contratos verificados.** Los cinco reportes con su filtro, E1 y E2, y el CSV auditado (B-15-001). |
 | `CU-AUD-CON` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `LogListaView` de a 50 con filtros por actor, rol, acción, entidad y fechas (B-16-001, B-16-002); `LogDetalleView`; exportación CSV en flujo de todo el filtro, auditada. Toda escritura responde 403. |
 
 ### `17` Configuración del Sistema
@@ -325,21 +330,21 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-22**, al cerrar la verificación de contratos (V1 y V2 del plan 00), con
-PostgreSQL levantado.
+Medición del **2026-10-22**, al cerrar los planes 11 (tercera parte) y 15, con PostgreSQL
+levantado.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **2972 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 46 s) |
-| **Contratos** | **215 de 219 verificados**, 4 sin prueba: los de `CU-CLI-BAJ` y `CU-REP-GEN`, pendientes |
-| Cobertura sobre código de aplicación | **97 %** (12565 sentencias, 425 sin cubrir) |
+| Suite de pruebas | **3061 pasan**, 0 fallos, en paralelo y en orden aleatorio (4 min 4 s) |
+| **Contratos** | **219 de 219 verificados** |
+| Cobertura sobre código de aplicación | **97 %** (13083 sentencias, 441 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 361 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `virtualenv` a 21.14.9 (CVE-2026-113722) |
+| Formato | `black --check .`: 378 archivos sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `virtualenv` a 21.14.9 (CVE-2026-113722) y `black` a 26.10.1 (CVE-2026-114134), que no cambia el formato de ningún archivo |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
 
-**Verificación de contratos, a mano (2026-10-22).** `catalog.0023` y `core.0040` aplicaron sobre la
-base de desarrollo; `producto_editorial_manual_sin_referencia` está en `pg_constraint`, y
+**Verificación de contratos, a mano (2026-10-22).** `catalog.0023`, `core.0040` a `0043` y
+`accounts.0010` aplicaron sobre la base de desarrollo; `producto_editorial_manual_sin_referencia` está en `pg_constraint`, y
 `makemigrations --check` no detecta cambios.
 
 **Plan 00 de interfaz, verificaciones a mano (2026-10-21).** `pedidos.0007` aplicó sobre la base

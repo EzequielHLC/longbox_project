@@ -49,6 +49,9 @@ flujo y se enlazan desde acá.
     <p><a href="{% url 'cuenta:correo' %}" class="boton-seccion boton-seccion--tenue">Cambiar el correo</a></p>
     <p class="antetitulo">Contraseña</p>
     <p><a href="{% url 'cuenta:contrasena' %}" class="boton-seccion boton-seccion--tenue">Cambiar la contraseña</a></p>
+    {# CU-CLI-BAJ paso 1. #}
+    <p class="antetitulo">Cuenta</p>
+    <p><a href="{% url 'cuenta:baja' %}" class="boton-texto boton-texto--critico">Dar de baja mi cuenta</a></p>
   </aside>
 </div>
 {% endblock %}

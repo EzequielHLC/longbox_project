@@ -1,0 +1,35 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-USR-REA para una cuenta de Cliente dada de baja (B-11-009). Igual que la del
+personal, sin elegir rol: la cuenta sigue siendo de Cliente.
+{% endcomment %}
+
+{% block titulo %}Reactivar cuenta de cliente · Longbox{% endblock %}
+{% block seccion %}Clientes{% endblock %}
+
+{% block contenido %}
+{% url 'accounts:cliente_ficha' cliente.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del cliente" atras=1 %}</span>
+    <h1>Reactivar la cuenta</h1>
+    <p>{{ cliente.get_full_name|default:cliente.email }} · <span class="datos">{{ cliente.email }}</span></p>
+  </div>
+</header>
+
+<div data-dialogo-contenido class="panel formulario--angosto">
+  {% if cliente.esta_congelada %}
+    <ul class="lista-renglones">
+      <li><span>La cuenta vuelve a <strong>Pendiente de activación</strong> y el cliente recibe un enlace para elegir una contraseña nueva.</span></li>
+      <li><span>Los puntos que perdió al darse de baja no vuelven.</span></li>
+    </ul>
+    <form method="post" class="acciones">
+      {% csrf_token %}
+      <button type="submit" class="boton-primario">Reactivar cuenta</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  {% else %}
+    <p class="error-de-campo">Error: la cuenta no se encuentra dada de baja.</p>
+  {% endif %}
+</div>
+{% endblock %}

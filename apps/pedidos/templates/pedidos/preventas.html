@@ -28,42 +28,8 @@ los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
     <div class="cifra{% if resumen.atrasados %} cifra--atencion{% endif %}">{% if resumen.atrasados %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasados</span><span class="cifra__valor">{{ resumen.atrasados }}</span></div>
   </div>
 
-  <section class="seccion" aria-labelledby="titulo-calendario">
-    <div class="seccion__titulo">
-      <h2 id="titulo-calendario">{{ mes.nombre }}</h2>
-      <nav class="fila-5" aria-label="Cambiar de mes">
-        <a href="?mes={{ mes.anterior|date:'Y-m' }}" class="boton-texto boton-texto--atras"><span aria-hidden="true">←</span>&nbsp;<span>Mes anterior</span></a>
-        <a href="?mes={{ mes.siguiente|date:'Y-m' }}" class="boton-texto"><span>Mes siguiente</span>&nbsp;<span aria-hidden="true">→</span></a>
-      </nav>
-    </div>
-    <table class="calendario">
-      <thead><tr>{% for dia in dias_de_la_semana %}<th scope="col">{{ dia }}</th>{% endfor %}</tr></thead>
-      <tbody>
-        {% for semana in mes.semanas %}
-          <tr>
-            {% for dia in semana %}
-              <td class="calendario__dia{% if not dia.del_mes %} calendario__dia--otro-mes{% endif %}{% if dia.es_hoy %} calendario__dia--hoy{% endif %}"{% if dia.es_hoy %} aria-current="date"{% endif %}>
-                <span class="calendario__numero">{{ dia.fecha.day }}</span>
-                {% for grupo in dia.grupos %}
-                  <a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% endif %}">{{ grupo.editorial }} <span class="datos">{{ grupo.filas|length }}</span></a>
-                {% endfor %}
-              </td>
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {# En el celular la grilla no entra: sólo los días que tienen llegadas. #}
-    <ul class="calendario-lista">
-      {% for dia in mes.dias_con_llegadas %}
-        <li>
-          <span class="datos">{{ dia.fecha|date:"d/m" }}</span>
-          {% for grupo in dia.grupos %}<a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% endif %}">{{ grupo.editorial }} <span class="datos">{{ grupo.filas|length }}</span></a>{% endfor %}
-        </li>
-      {% empty %}
-        <li class="secundario">Nada llega este mes.</li>
-      {% endfor %}
-    </ul>
+  <section class="seccion" aria-labelledby="titulo-calendario" data-calendario>
+    {% include "pedidos/_calendario_preventas.html" %}
   </section>
 {% endif %}
 
@@ -105,7 +71,7 @@ los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
                 <td class="numero">
                   <input type="hidden" name="producto" value="{{ fila.producto.pk }}">
                   <label class="sr-only" for="unidades-{{ fila.producto.pk }}">Unidades recibidas de {{ fila.producto }}</label>
-                  <input type="number" id="unidades-{{ fila.producto.pk }}" name="unidades_{{ fila.producto.pk }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra">
+                  <input type="number" id="unidades-{{ fila.producto.pk }}" name="unidades_{{ fila.producto.pk }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra" data-reservadas="{{ fila.reservadas }}">
                 </td>
               </tr>
             {% endfor %}
@@ -114,6 +80,8 @@ los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
       </div>
       <div class="fila-5">
         <button type="submit" class="boton-seccion">Revisar ingreso</button>
+        {# Plan 00 de interfaz, cuarta parte, E: el atajo del caso más común. #}
+        <button type="button" class="boton-texto" data-completar>Completar con lo reservado</button>
         <span class="texto-chico secundario">Vacío o 0: no llegó.</span>
       </div>
     </form>
@@ -124,4 +92,64 @@ los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
     <p>No hay pre-ventas pendientes.</p>
   </div>
 {% endfor %}
+
+<script>
+  (function () {
+    const calendario = document.querySelector("[data-calendario]");
+
+    // Abrir el grupo de una llegada, resaltarlo y dejar el foco en su primer campo.
+    function abrir(id) {
+      const grupo = document.getElementById(id);
+      if (!grupo) return;
+      grupo.open = true;
+      document.querySelectorAll(".grupo-plegable--elegido").forEach((g) => g.classList.remove("grupo-plegable--elegido"));
+      grupo.classList.add("grupo-plegable--elegido");
+      grupo.scrollIntoView({ block: "start" });
+      grupo.querySelector("input[type=number]")?.focus({ preventScroll: true });
+    }
+
+    if (calendario) {
+      calendario.addEventListener("click", async function (evento) {
+        const llegada = evento.target.closest("[data-llegada]");
+        if (llegada) {
+          evento.preventDefault();
+          abrir(llegada.dataset.llegada);
+          history.replaceState(null, "", "#" + llegada.dataset.llegada);
+          return;
+        }
+        // Cambiar de mes sin recargar: se pide sólo el calendario.
+        const mes = evento.target.closest("[data-mes]");
+        if (!mes) return;
+        evento.preventDefault();
+        evento.stopPropagation();
+        const destino = new URL(mes.href, location.href);
+        const parcial = new URL(destino);
+        parcial.searchParams.set("parcial", "calendario");
+        try {
+          const respuesta = await fetch(parcial, { headers: { "X-Requested-With": "fetch" } });
+          if (!respuesta.ok) throw new Error(respuesta.status);
+          calendario.innerHTML = await respuesta.text();
+          history.replaceState(null, "", destino);
+          // «Hoy» deja el foco en el día de hoy; las flechas, en la flecha.
+          const hoy = mes.hasAttribute("data-hoy") && calendario.querySelector("td[aria-current=date]");
+          if (hoy) hoy.focus();
+          else calendario.querySelector(`[data-mes][aria-label="${mes.getAttribute("aria-label")}"]`)?.focus();
+        } catch (error) {
+          location.href = destino;
+        }
+      });
+    }
+
+    // Completar con lo reservado: el caso más común es que llegue lo pedido.
+    document.addEventListener("click", function (evento) {
+      const boton = evento.target.closest("[data-completar]");
+      if (!boton) return;
+      for (const campo of boton.closest("form").querySelectorAll("[data-reservadas]")) {
+        campo.value = campo.dataset.reservadas;
+      }
+    });
+
+    if (location.hash.startsWith("#grupo-")) abrir(location.hash.slice(1));
+  })();
+</script>
 {% endblock %}

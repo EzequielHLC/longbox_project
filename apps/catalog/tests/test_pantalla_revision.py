@@ -126,8 +126,9 @@ def test_solo_se_puede_seleccionar_lo_que_el_lote_va_a_confirmar(client_admin, c
 
     contenido = client_admin.get(LISTA).content.decode()
 
-    assert f'value="{listo.pk}"' in contenido
-    assert f'value="{incompleto.pk}"' not in contenido
+    # Sólo en las casillas: el mismo número puede aparecer en otro lugar de la página.
+    assert f'name="borrador" value="{listo.pk}"' in contenido
+    assert f'name="borrador" value="{incompleto.pk}"' not in contenido
 
 
 def test_la_cola_no_muestra_una_sesion_hasta_que_haya_una_accion(client_admin, correo):

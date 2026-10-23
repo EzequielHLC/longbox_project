@@ -947,6 +947,14 @@ class VariasImagenesWidget(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 
+class PortadaWidget(forms.ClearableFileInput):
+    """La portada en la edición: un campo de archivo simple. La portada actual
+    y su casilla «Quitar» (`portada-clear`, que este widget sigue leyendo) se
+    dibujan en la galería (plan 00 de interfaz, cuarta parte, C)."""
+
+    template_name = "django/forms/widgets/file.html"
+
+
 class CampoVariasImagenes(forms.FileField):
     """Cero o más archivos; devuelve siempre una lista."""
 
@@ -974,6 +982,23 @@ class GaleriaFormMixin:
                 required=False,
                 widget=forms.CheckboxSelectMultiple,
             )
+            # Plan 00 de interfaz, cuarta parte, C: el orden (lo arma el guion al
+            # arrastrar; sin guion no viaja y queda el que estaba) y la imagen que
+            # pasa a ser la portada.
+            self.fields["orden_imagenes"] = forms.CharField(
+                required=False, widget=forms.HiddenInput
+            )
+            if "portada" in self.fields:
+                self.fields["portada"].widget = PortadaWidget(
+                    attrs={"accept": "image/jpeg,image/png,image/webp"}
+                )
+                self.fields["portada"].label = "Reemplazar la portada"
+            self.fields["nueva_portada"] = forms.ModelChoiceField(
+                label="Usar como portada",
+                queryset=self.instance.imagenes.all(),
+                required=False,
+                widget=forms.RadioSelect,
+            )
         self.fields["imagenes_nuevas"] = CampoVariasImagenes(
             label="Imágenes adicionales",
             required=False,
@@ -983,6 +1008,55 @@ class GaleriaFormMixin:
             ),
         )
         self.fields["imagenes_nuevas"].widget.attrs["accept"] = "image/jpeg,image/png,image/webp"
+
+    def clean_orden_imagenes(self):
+        texto = self.cleaned_data.get("orden_imagenes") or ""
+        validos = set(self.instance.imagenes.values_list("pk", flat=True))
+        orden = [int(parte) for parte in texto.split(",") if parte.strip().isdigit()]
+        return [pk for pk in orden if pk in validos]
+
+    def clean_nueva_portada(self):
+        elegida = self.cleaned_data.get("nueva_portada")
+        if elegida is None:
+            return None
+        if elegida in (self.cleaned_data.get("quitar_imagenes") or []):
+            raise forms.ValidationError("No se puede usar como portada una imagen que se quita.")
+        if self.files.get(self.add_prefix("portada")):
+            raise forms.ValidationError(
+                "Elegí una sola: subir una portada nueva o usar una imagen de la galería."
+            )
+        return elegida
+
+    def portada_guardada(self):
+        """La portada tal como está guardada. No se lee de `instance`: un
+        formulario que vuelve con errores ya le aplicó lo que llegó en el envío
+        (por ejemplo, «Quitar»), y la casilla diría «Elegir» con la portada ahí."""
+        if not self.instance.pk:
+            return None
+        return Producto.objects.only("portada").get(pk=self.instance.pk).portada or None
+
+    def galeria_actual(self):
+        """Las adicionales para dibujar, en el orden y con las marcas del envío."""
+        if "nueva_portada" not in self.fields:
+            return []
+        imagenes = list(self.instance.imagenes.order_by("posicion", "pk"))
+        por_pk = {imagen.pk: imagen for imagen in imagenes}
+        quitar, portada, orden = set(), "", []
+        if self.is_bound:
+            quitar = set(self.data.getlist(self.add_prefix("quitar_imagenes")))
+            portada = self.data.get(self.add_prefix("nueva_portada"), "")
+            texto = self.data.get(self.add_prefix("orden_imagenes"), "")
+            orden = [int(p) for p in texto.split(",") if p.isdigit() and int(p) in por_pk]
+        ordenadas = [por_pk[pk] for pk in orden]
+        ordenadas += [imagen for imagen in imagenes if imagen.pk not in orden]
+        return [
+            {
+                "imagen": imagen,
+                "quitar": str(imagen.pk) in quitar,
+                "portada": str(imagen.pk) == portada,
+            }
+            for imagen in ordenadas
+        ]
 
     def clean_imagenes_nuevas(self):
         archivos = self.cleaned_data.get("imagenes_nuevas") or []

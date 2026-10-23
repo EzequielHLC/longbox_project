@@ -226,7 +226,7 @@ el grupo. La etiqueta nueva queda elegida.
 ### B-02-006 · La baja de producto informaba cuatro categorías vacías y no resolvía ninguna
 
 **Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-CAT-BAJ` pasos 3-10, `CO-033`, `CO-034`
-**Estado:** Abierta — el código ya cumple el contrato; queda una consulta sobre las ofertas
+**Estado:** Abierta — la consulta sobre las ofertas se resolvió el 2026-10-22 (B-02-007); queda la enmienda de las ofertas de su tipo
 
 **Qué apareció.**
 Al escribir las pruebas de contrato del módulo (V2 del plan 00): el informe de impacto mostraba
@@ -260,3 +260,28 @@ registro. Si el responsable prefiere el mismo criterio acá, es un cambio chico.
 `CO-034`, postcondición de ofertas: «las de alcance tipo de material siguen vigentes y dejan de
 alcanzarlo por su estado», en lugar de la asociación Oferta → Producto que el modelo no tiene.
 `CO-033`, salida: lo mismo en la acción que el informe anuncia para las ofertas.
+
+---
+
+### B-02-007 · La baja de producto deja su oferta exclusiva Dada de baja, no la elimina
+
+**Tipo:** Desvío · **Fecha:** 2026-10-22 · **Alcance:** `CU-CAT-BAJ`, `CO-034`, `CO-058`
+**Estado:** Abierta — decidido por el responsable el 2026-10-22, consultado antes de construir
+
+**Qué apareció.**
+La consulta de B-02-006: el contrato de la baja de producto elimina la oferta que lo referenciaba
+sólo a él, y el módulo de ofertas nunca elimina, deja la oferta Dada de baja.
+
+**Qué dice la especificación.**
+> «(a)(b) Oferta: las ofertas que referenciaban exclusivamente este producto fueron eliminadas»
+> (`CO-034`)
+
+**Qué se hizo.**
+La oferta exclusiva pasa por la misma baja de oferta (`CO-058`): queda Dada de baja, con su propia
+entrada «Baja de oferta» en el log. La entrada de la baja del producto la cuenta como «ofertas
+dadas de baja». Reactivar el producto no la restituye.
+
+**Qué habría que cambiar.**
+`CO-034`, postcondición (a)(b): «las ofertas que referenciaban exclusivamente este producto
+pasaron a Dada de baja (`CO-058`)».
+

@@ -40,6 +40,10 @@ class Dia:
     def atrasado(self):
         return any(grupo.vencido for grupo in self.grupos)
 
+    @property
+    def fin_de_semana(self):
+        return self.fecha.weekday() >= 5
+
 
 @dataclass
 class Mes:
@@ -57,6 +61,14 @@ class Mes:
     @property
     def siguiente(self):
         return (self.primero + timedelta(days=31)).replace(day=1)
+
+    @property
+    def es_el_actual(self):
+        return self.primero == timezone.localdate().replace(day=1)
+
+    @property
+    def hoy(self):
+        return timezone.localdate()
 
     @property
     def dias_con_llegadas(self):

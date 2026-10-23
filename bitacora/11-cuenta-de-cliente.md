@@ -185,3 +185,112 @@ en el mostrador; cuando se retira todo, o vence lo que quedaba, pasa al historia
 
 **Qué habría que cambiar.**
 `CU-CLI-HIS` pasos 3 y 5: sumar «En el local» con esa regla.
+
+---
+
+### B-11-007 · La baja de la cuenta deja un débito por cada lote, y su contador de intentos es propio
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-CLI-BAJ`, `CO-112`, `CO-113`
+**Estado:** Abierta — decidido en el plan 11, tercera parte (ambigüedades 1 a 3)
+
+**Qué apareció.**
+Al construir la baja: el contrato pone los lotes en cero sin movimiento, el historial de «Mi
+cuenta» dejaría de explicar el saldo; la ficha nombra tres estados de pedido activo, y hoy hay
+cinco; y el bloqueo tras tres intentos no dice con qué contador.
+
+**Qué dice la especificación.**
+> «El disponible de todos los LotePuntos del Cliente pasó a cero y su estado a Vencido» (`CO-113`) ·
+> «Los pedidos activos en proceso (Pendiente de Armado / Armado / Empaquetado)» (`CU-CLI-BAJ`) ·
+> «Tras tres intentos fallidos consecutivos, el sistema bloquea el flujo de baja» (E3)
+
+**Qué se hizo.**
+- Cada lote invalidado deja un débito «Baja de la cuenta» en el historial, como la caducidad.
+- El informe y la entrada del log cuentan todos los pedidos del ciclo: también los que esperan una
+  pre-venta o un artículo demorado ya decidido.
+- Tres contraseñas equivocadas bloquean la baja por el período de Parámetros; el inicio de sesión
+  tiene su propio contador y no se entera.
+
+**Qué habría que cambiar.**
+`CO-113`: agregar el débito por lote. `CU-CLI-BAJ` paso 2 (b): «los pedidos activos», sin
+enumerarlos.
+
+---
+
+### B-11-008 · La cuenta de un Cliente dado de baja no tiene vuelta desde ninguna pantalla
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-CLI-BAJ`, `CU-USR-REA`, `CU-USR-ELI`, `CO-124`
+**Estado:** Resuelta el 2026-10-22 (B-11-009)
+
+**Qué apareció.**
+La baja ya funciona, y la cuenta queda Inactiva. Pero la reactivación y la eliminación del
+Administrador sólo alcanzan cuentas de personal, y la reactivación pide elegir un rol.
+
+**Qué dice la especificación.**
+> «La cuenta no puede ser reactivada por el Cliente; solo el Administrador puede reactivarla desde
+> CU-USR-REA o eliminarla desde CU-USR-ELI.» (`CU-CLI-BAJ`, postcondiciones) ·
+> `confirmarReactivacionDeUsuario(usuario, rol)` (`CO-124`)
+
+**Qué se hizo.**
+Nada todavía, por decisión del plan: extender `CU-USR-REA` a clientes cambia lo que ese caso de uso
+puede hacer, y su contrato no prevé un Cliente.
+
+**Qué habría que cambiar.**
+Una de dos: `CU-USR-REA` y `CU-USR-ELI` alcanzan también cuentas de Cliente (sin elegir rol), o
+`CU-CLI-BAJ` deja de nombrarlos y la baja del Cliente pasa a ser definitiva.
+
+---
+
+### B-11-009 · El Administrador reactiva la cuenta de un Cliente; ninguna cuenta se elimina
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-CLI-BAJ`, `CU-USR-REA`, `CU-USR-ELI`, `CO-124`
+**Estado:** Abierta — consulta resuelta el 2026-10-23: `CU-USR-ELI` queda como única excepción (una cuenta de personal que nunca se activó); queda la enmienda
+
+**Qué apareció.**
+La consulta de B-11-008: la ficha de la baja del Cliente nombra la reactivación y la eliminación
+por el Administrador, y esas pantallas sólo alcanzaban cuentas de personal.
+
+**Qué dice la especificación.**
+> «solo el Administrador puede reactivarla desde CU-USR-REA o eliminarla desde CU-USR-ELI.»
+> (`CU-CLI-BAJ`, postcondiciones)
+
+**Qué se hizo.**
+Decisión del responsable: **el Administrador nunca elimina una cuenta**, sólo la da de baja o la
+reactiva; los datos no se borran. La ficha de un Cliente dado de baja ofrece «Reactivar la
+cuenta»: vuelve a Pendiente de activación y el Cliente recibe un enlace para elegir una contraseña
+nueva, como el personal, sin elegir rol. Los puntos perdidos en la baja no vuelven. La
+eliminación no se extiende a los clientes.
+
+**Para consultar.** `CU-USR-ELI` hoy elimina una cuenta de personal que nunca se activó (por
+ejemplo, cargada con un correo equivocado). Con la regla «ninguna cuenta se elimina», ¿se retira
+ese caso de uso, o queda como la única excepción porque esa cuenta nunca llegó a tener datos?
+
+**Qué habría que cambiar.**
+`CU-CLI-BAJ`, postcondiciones: «solo el Administrador puede reactivarla desde CU-USR-REA», sin la
+eliminación. `CO-124`: el rol no se elige cuando la cuenta es de Cliente.
+
+
+---
+
+### B-11-010 · El Administrador da de baja la cuenta de un Cliente, sin quitarle nada
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-USR-BAJ`, `CO-123`, `CU-CLI-CON`
+**Estado:** Abierta — pedido del responsable el 2026-10-22
+
+**Qué apareció.**
+Con la reactivación de clientes (B-11-009), el responsable pidió que el Administrador también
+pueda dar de baja la cuenta de un Cliente: una baja lógica, nunca una eliminación.
+
+**Qué dice la especificación.**
+`CU-USR-BAJ` describe la baja de cuentas de personal. Ninguna ficha prevé que el Administrador dé
+de baja a un Cliente: la única baja de un Cliente es la propia (`CU-CLI-BAJ`).
+
+**Qué se hizo.**
+La ficha del Cliente ofrece «Dar de baja». Es la baja del personal aplicada a un Cliente: la cuenta
+queda Inactiva y se cierran sus sesiones. **No es la baja del propio Cliente**: no pierde puntos,
+avisos ni carrito, porque una baja que decide otro tiene que poder revertirse sin pérdida. La
+reactivación (B-11-009) la devuelve tal cual. Los pedidos en curso siguen su ciclo. La pantalla
+de confirmación dice todo eso antes de confirmar.
+
+**Qué habría que cambiar.**
+`CU-USR-BAJ` y `CO-123`: alcanzar también cuentas de Cliente, con la aclaración de que no invalida
+puntos. `CU-CLI-CON`: la ficha ofrece dar de baja y reactivar.

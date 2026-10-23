@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils import timezone
 from markdown_it import MarkdownIt
 
+from apps.core import colores
 from apps.core.models import Banner, ContenidoFAQ, IdentidadVisual, RegistroAuditoria
 
 # C-16: CommonMark sin HTML crudo. Lo que el Administrador puede escribir en
@@ -165,6 +166,7 @@ CAMPOS_DE_IDENTIDAD = (
     ("color_acento", "color de acento"),
     ("tipo_fondo", "fondo"),
     ("color_fondo", "color de fondo"),
+    *((rol.campo, f"color de {rol.nombre.lower()}") for rol in colores.ROLES),
     ("descripcion_tienda", "descripción de la tienda"),
     ("portada_antetitulo", "antetítulo de la portada"),
     ("portada_titulo", "título de la portada"),

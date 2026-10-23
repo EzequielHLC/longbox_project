@@ -60,6 +60,7 @@ from apps.core.utils import celda_csv, obtener_ip
 from apps.pedidos import preventa
 from apps.puntos.servicios import puntos_por_monto
 from apps.restock import servicios as restock
+from apps.restock.models import SuscripcionReposicion
 from apps.suppliers.models import Proveedor
 
 MENSAJE_BORRADOR_YA_RESUELTO = "Este borrador ya fue confirmado o rechazado."
@@ -930,10 +931,8 @@ class ProductoDetalleView(InventarioMixin, DetailView):
       ficha es de solo lectura sin acciones.
 
     Los otros dos campos que el paso 6 le reserva al Administrador —stock
-    reservado en pedidos y suscriptores de reposición activos— pertenecen a
-    Pedidos y a Restock, que no existen. La ficha lo dice en vez de mostrar un
-    cero, por el mismo criterio con el que la baja de proveedor no inventa la
-    cifra de propuestas de restock que no puede calcular.
+    reservado en pedidos y suscriptores de reposición activos— se calculan desde
+    que existen Pedidos y Restock.
     """
 
     model = Producto
@@ -970,6 +969,9 @@ class ProductoDetalleView(InventarioMixin, DetailView):
                 preventa.reservas_pendientes(self.object).aggregate(total=Sum("cantidad"))["total"]
                 or 0
             )
+            contexto["suscriptores"] = SuscripcionReposicion.objects.filter(
+                producto=self.object, estado__in=SuscripcionReposicion.EN_ESPERA
+            ).count()
             contexto["puede_demorar"] = self._puede_demorar()
         return contexto
 
@@ -1351,6 +1353,12 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
 
         with transaction.atomic():
             producto = form.save()
+            # Antes de medir los cambios: «Usar como portada» cambia la portada.
+            orden_y_portada = galeria.ordenar(
+                producto,
+                orden=form.cleaned_data.get("orden_imagenes") or [],
+                portada_desde=form.cleaned_data.get("nueva_portada"),
+            )
             agregadas, quitadas = galeria.actualizar(
                 producto,
                 nuevas=form.cleaned_data.get("imagenes_nuevas") or [],
@@ -1377,6 +1385,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             )
             if agregadas or quitadas:
                 partes.append(galeria.describir(agregadas, quitadas))
+            partes.extend(orden_y_portada)
             if partes:
                 RegistroAuditoria.registrar(
                     RegistroAuditoria.MODIFICACION_PRODUCTO,
@@ -1511,8 +1520,8 @@ class ProductoBajaView(CatalogoAdminMixin, DetailView):
         resuelto = [
             f"{hecho.suscripciones} aviso(s) de stock cancelado(s)" if hecho.suscripciones else "",
             (
-                f"{len(hecho.ofertas_eliminadas)} oferta(s) eliminada(s)"
-                if hecho.ofertas_eliminadas
+                f"{len(hecho.ofertas_dadas_de_baja)} oferta(s) dada(s) de baja"
+                if hecho.ofertas_dadas_de_baja
                 else ""
             ),
             f"{hecho.carritos} carrito(s) avisado(s)" if hecho.carritos else "",

@@ -34,9 +34,15 @@ class PreVentasView(PedidosMixin, View):
         grupos = preventa.por_llegar()
         # Plan 00 de interfaz, 22: el calendario del mes y las cifras, de los mismos grupos.
         mes = calendario.mes_de(calendario.mes_pedido(request.GET.get("mes")), grupos)
+        # Cuarta parte, E: cambiar de mes sin recargar pide sólo el calendario.
+        plantilla = (
+            "pedidos/_calendario_preventas.html"
+            if request.GET.get("parcial") == "calendario"
+            else "pedidos/preventas.html"
+        )
         return render(
             request,
-            "pedidos/preventas.html",
+            plantilla,
             {
                 "grupos": grupos,
                 "mes": mes,

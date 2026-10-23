@@ -368,7 +368,7 @@ def calcular_impacto_de_baja(producto):
 @dataclass
 class BajaDeProducto:
     suscripciones: int = 0
-    ofertas_eliminadas: list = field(default_factory=list)
+    ofertas_dadas_de_baja: list = field(default_factory=list)
     ofertas_desvinculadas: int = 0
     carritos: int = 0
 
@@ -377,13 +377,15 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
     """`CO-034`: la baja lógica y la resolución de lo que el producto tenía atado.
 
     - Las suscripciones en espera se cancelan (como `CO-076`, se eliminan).
-    - Las ofertas que lo referenciaban sólo a él se eliminan; las de su tipo,
-      que referencian a varios, dejan de alcanzarlo porque un descatalogado no
-      está en la tienda.
+    - Las ofertas que lo referenciaban sólo a él quedan Dadas de baja por
+      `CO-058`, con su entrada en el log: no se borran (B-02-007, desvío decidido
+      por el responsable). Las de su tipo, que referencian a varios, dejan de
+      alcanzarlo porque un descatalogado no está en la tienda.
     - Las líneas de carrito quedan «Producto no disponible» por su estado (lo
       deriva la consulta del carrito) y sus clientes con cuenta reciben un aviso.
     - Los pedidos activos no se tocan: postcondición negativa del CU.
     """
+    from apps.catalog import ofertas
     from apps.core.segundo_plano import despues_del_commit
     from apps.restock.models import SuscripcionReposicion
     from apps.tienda.models import LineaCarrito
@@ -399,9 +401,10 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
             producto=producto, estado__in=SuscripcionReposicion.EN_ESPERA
         ).delete()[0]
         exclusivas, del_tipo = _ofertas_del_producto(producto, timezone.localdate())
-        hecho.ofertas_eliminadas = [str(oferta) for oferta in exclusivas]
         hecho.ofertas_desvinculadas = del_tipo.count()
-        exclusivas.delete()
+        for oferta in list(exclusivas):
+            ofertas.confirmar_baja(oferta, actor=actor, ip=ip)
+            hecho.ofertas_dadas_de_baja.append(str(oferta))
         clientes = list(
             LineaCarrito.objects.filter(producto=producto, carrito__usuario__isnull=False)
             .values_list("carrito__usuario__email", flat=True)
@@ -420,8 +423,8 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
                 f"{producto.codigo} · «{producto.titulo}» · estado anterior: {anterior} → "
                 f"{producto.get_estado_display()} · stock al momento de la baja: "
                 f"{producto.stock} · "
-                f"suscripciones canceladas: {hecho.suscripciones} · ofertas eliminadas: "
-                f"{len(hecho.ofertas_eliminadas)} · ofertas de su tipo que dejan de alcanzarlo: "
+                f"suscripciones canceladas: {hecho.suscripciones} · ofertas dadas de baja: "
+                f"{len(hecho.ofertas_dadas_de_baja)} · ofertas de su tipo que dejan de alcanzarlo: "
                 f"{hecho.ofertas_desvinculadas} · carritos marcados: {hecho.carritos}"
             ),
         )

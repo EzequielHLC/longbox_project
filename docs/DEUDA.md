@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-19**.
+> **Tipo: Fotografía.** Tomada el **2026-10-22**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -81,6 +81,7 @@ lugar en el documento es la tabla «Alcance construido y alcance especificado».
 | Estado «Entregado» y plazo desde la recepción | Límite declarado: «No rastreará el paquete más allá del estado Despachado» |
 | Limpieza de carritos de invitado y aviso de carrito abandonado | Sin caso de uso; sólo un parámetro en el modelo |
 | Costo de envío por peso y destino | Requiere el peso de cada producto y una cuenta comercial con el operador |
+| Cambios de precio programados (2026-10-22) | No se pidieron y no tienen caso de uso. Lo temporal ya lo cubren las ofertas con fecha de inicio y de vencimiento (`CU-PVP-ALT`); un cambio definitivo a fecha exige un concepto nuevo y un proceso del Temporizador que reaplique la propagación de la tabla |
 
 **Lo que el tutor tiene que confirmar**: los valores legales de los plazos (arrepentimiento, piso
 10 días; garantía, 90 por defecto) y si el envío se reintegra en un arrepentimiento parcial. Los
@@ -157,16 +158,10 @@ archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y n
 
 El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
 
-**Faltan 44 de 219.** 175 tienen al menos una prueba que lleva su código; de esos, sólo
-`CO-060` no cierra del todo (sólo el doble envío). `CO-114`, `CO-130` y los de grupos y etiquetas
-(`CO-039`, `CO-041`, `CO-043`, `CO-045`) se cerraron el 2026-10-19 (plan 00, A3 y A6).
-
-`CO-089 registrarResultadoDePago` y `CO-087 declararDireccionDeEnvio` están verificados en la
-compra online; los referencia también `CU-STK-DES`, que no existe.
-
-Los contratos sin prueba que más pesan siguen siendo los de las altas de lote (`CO-001` a
-`CO-010`): la funcionalidad está construida y probada por pantalla, pero ninguna prueba lleva su
-código.
+**No falta ninguno: los 219 tienen prueba y están verificados** (2026-10-22, V1 y V2 del plan 00,
+y los planes 11 tercera parte y 15). `CO-089 registrarResultadoDePago` y `CO-087
+declararDireccionDeEnvio` están verificados en la compra online; los referencia también
+`CU-STK-DES`, que no existe.
 
 ---
 
@@ -192,16 +187,6 @@ mayor que cero, y montos, costos de envío y compensaciones no negativos, como `
 
 Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` y no figuran en
 `pg_constraint`. Buscarlas ahí da el falso negativo contra el que advierte `CLAUDE.md`.
-
----
-
-## Una prueba frágil
-
-`apps/catalog/tests/test_pantalla_revision.py::test_solo_se_puede_seleccionar_lo_que_el_lote_va_a_confirmar`
-falló una vez en la corrida completa del 2026-10-17 y pasó en las cuatro siguientes. Busca el texto
-`value="<pk>"` en toda la página, y otro elemento puede llevar por casualidad el mismo número
-según el orden de las pruebas. No es un defecto del código: hay que acotar la búsqueda a las
-casillas de selección.
 
 ---
 
@@ -231,9 +216,9 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
-| `bitacora/00-pulido-de-interfaz.md` | 8 | 2 | 5 agregados, 3 correcciones |
+| `bitacora/00-pulido-de-interfaz.md` | 10 | 3 | 6 agregados, 4 correcciones |
 | `bitacora/01-alta-editorial.md` | 14 | 11 | 9 agregados, 3 correcciones, 1 desvío |
-| `bitacora/02-catalogo.md` | 6 | 4 | 4 agregados, 2 correcciones |
+| `bitacora/02-catalogo.md` | 7 | 5 | 4 agregados, 2 correcciones, 1 desvío |
 | `bitacora/03-pricing.md` | 13 | 11 | 10 agregados, 2 correcciones |
 | `bitacora/04-proveedores.md` | 9 | 3 | 7 agregados, 1 corrección, 1 desvío |
 | `bitacora/05-restock.md` | 8 | 8 | 7 agregados, 1 corrección |
@@ -242,14 +227,15 @@ alcance sigue pendiente.
 | `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
 | `bitacora/09-devoluciones.md` | 9 | 8 | 4 agregados, 4 correcciones |
 | `bitacora/10-puntos.md` | 12 | 11 | 7 agregados, 4 correcciones |
-| `bitacora/11-cuenta-de-cliente.md` | 6 | 4 | 6 agregados |
+| `bitacora/11-cuenta-de-cliente.md` | 10 | 7 | 8 agregados, 2 correcciones |
 | `bitacora/12-autenticacion.md` | 4 | 1 | 1 agregado, 1 corrección, 1 desvío |
 | `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
 | `bitacora/14-caja.md` | 3 | 3 | 2 agregados, 1 corrección |
+| `bitacora/15-reportes.md` | 1 | 1 | 1 agregado |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
-| `bitacora/17-configuracion-del-sistema.md` | 18 | 12 | 13 agregados, 4 correcciones, 1 desvío |
+| `bitacora/17-configuracion-del-sistema.md` | 19 | 13 | 14 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 4 correcciones |
-| **Total** | **202** | **147** | |
+| **Total** | **211** | **154** | |
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es

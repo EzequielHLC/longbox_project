@@ -212,3 +212,75 @@ El calendario público de lanzamientos quedó sin decidir.
 `CU-ALT-TRA` paso 4: «el sistema presenta las pre-ventas en un calendario del mes y agrupadas por
 fecha de llegada y editorial».
 
+
+---
+
+### B-00-026 · Imágenes ordenables con «Usar como portada», visor en la tienda y calendario que se usa
+
+**Tipo:** Agregado · **Fecha:** 2026-10-22 · **Alcance:** `CU-CAT-EDI` (`CO-030`), `CU-TDA-CAT`, `CU-ALT-TRA` (`CO-013`)
+**Estado:** Abierta — plan 00 de interfaz, cuarta parte, C, D y E
+
+**Qué apareció.**
+Pedidos del responsable: las imágenes de un producto se manejaban con casillas sueltas y un campo
+de archivo sin vista de la portada; en la tienda se abrían en otra pestaña; y el calendario de
+pre-ventas sólo se miraba.
+
+**Qué dice la especificación.**
+Nada sobre el orden de las imágenes, el visor ni la interacción del calendario.
+
+**Qué se hizo.**
+- **Edición:** la portada y las adicionales en una grilla. Las adicionales se ordenan arrastrando
+  o con flechas; cada una ofrece «Usar como portada», que **intercambia** (decisión del
+  responsable): la portada anterior queda entre las adicionales, y ningún archivo se borra. La
+  portada tiene su «Quitar». Las nuevas se ven antes de guardar. El historial registra el cambio
+  de portada y el nuevo orden.
+- **Tienda:** un visor con la imagen grande y miniaturas que la cambian; tocarla la amplía en un
+  diálogo con flechas, teclado y deslizamiento.
+- **Pre-ventas:** el mes cambia sin recargar; tocar una llegada abre su grupo y deja el foco en su
+  primer campo; cada grupo ofrece «Completar con lo reservado»; lo que llega esta semana se
+  distingue de lo atrasado.
+- El menú ya no muestra «Próximamente»: con Reportes no queda ningún módulo por construir.
+
+**Qué habría que cambiar.**
+Nada en los casos de uso.
+
+---
+
+### B-00-027 · Lo que la revisión del responsable encontró en la cuarta parte
+
+**Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** plan 00 de interfaz, cuarta parte (C, D, E)
+**Estado:** Resuelta el 2026-10-22
+
+**Qué apareció.**
+El responsable revisó la cuarta parte y encontró:
+
+- La gestión de imágenes de la edición se veía rota, con imágenes a escala completa.
+- La ampliación cambiaba también la imagen de fondo.
+- La ficha del backoffice no tenía el visor.
+- El calendario se veía pobre y no tenía «Hoy».
+- El alta rápida de etiquetas dejaba la pantalla cargando, con un diálogo chico.
+- La ficha pública decía «Sinopsis» para cualquier producto.
+
+**Qué dice la especificación.**
+Nada: son defectos de construcción.
+
+**Qué se hizo.**
+- **La causa común de la «pantalla rota».** La hoja de estilos no llevaba versión, y el navegador
+  seguía usando la vieja. Ahora cada hoja y cada guion llevan la fecha del archivo en su
+  dirección.
+- **Capa de carga.** La de la pantalla operativa ya no aparece cuando un guion toma el envío de un
+  formulario, ni en el formulario de un diálogo: eso dejaba la pantalla cargando para siempre.
+- **Altas rápidas.** El alta de etiquetas y la de editorial, tipo y formato usan un diálogo del
+  sistema, más ancho, con errores en el lugar y un estado «Creando…». Desaparecen `prompt`,
+  `confirm` y `alert` del navegador.
+- **Gestor de imágenes.** Es dueño de la portada y de las adicionales: tarjetas compactas con su
+  barra de acciones, una zona para soltar imágenes nuevas y vista previa de todo.
+- **Visor compartido.** El mismo visor en la ficha de la tienda y en la del backoffice. La
+  ampliación tiene su propio índice, flechas, la tira de miniaturas, teclado y deslizamiento.
+- **Calendario.** Celdas separadas, el número de hoy destacado, fichas con una barra de estado y
+  su leyenda, y «Hoy».
+- **«Descripción»** en lugar de «Sinopsis». La ficha del producto muestra los suscriptores de
+  reposición, que decía «No disponible todavía» desde antes de que existiera Restock.
+
+**Qué habría que cambiar.**
+Nada.

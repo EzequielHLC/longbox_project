@@ -1,0 +1,39 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+CU-USR-BAJ para una cuenta de Cliente (B-11-010). Baja lógica y reversible: no
+borra nada ni quita puntos; eso sólo pasa cuando el propio Cliente se da de
+baja (CU-CLI-BAJ).
+{% endcomment %}
+
+{% block titulo %}Dar de baja una cuenta de cliente · Longbox{% endblock %}
+{% block seccion %}Clientes{% endblock %}
+
+{% block contenido %}
+{% url 'accounts:cliente_ficha' cliente.pk as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del cliente" atras=1 %}</span>
+    <h1>Dar de baja la cuenta</h1>
+    <p>{{ cliente.get_full_name|default:cliente.email }} · <span class="datos">{{ cliente.email }}</span></p>
+  </div>
+</header>
+
+<div data-dialogo-contenido="critico" class="panel panel--atencion formulario--angosto pila-4">
+  <p class="fila-2 fuerte">{% include "_iconos.html" with icono="atencion" %}<span>Atención: la cuenta deja de poder iniciar sesión.</span></p>
+  {% if cliente.estado == "activo" %}
+    <ul class="lista-renglones">
+      <li><span>La cuenta queda <strong>Inactiva</strong> y se cierran sus sesiones abiertas.</span></li>
+      <li><span>Conserva sus <span class="datos">{{ implicaciones.puntos }}</span> puntos, sus pedidos y sus datos. Reactivarla los devuelve tal cual.</span></li>
+      {% if implicaciones.pedidos_activos %}<li><span>Sus {{ implicaciones.pedidos_activos }} pedido(s) en curso siguen su ciclo y se le avisan por correo.</span></li>{% endif %}
+      {% if implicaciones.retenidos %}<li><span>Tiene {{ implicaciones.retenidos }} artículo(s) guardado(s) en el local, que siguen con su plazo.</span></li>{% endif %}
+    </ul>
+    <form method="post" class="acciones">
+      {% csrf_token %}
+      <button type="submit" class="boton-primario">Confirmar baja</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  {% else %}
+    <p class="error-de-campo">Error: la cuenta no está activa.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -36,6 +36,12 @@ urlpatterns = [
     # Consulta de cuentas de Cliente: solo lectura (ver `ClienteListaView`).
     path("clientes/", views.ClienteListaView.as_view(), name="cliente_lista"),
     path("clientes/<int:pk>/", views.ClienteFichaView.as_view(), name="cliente_ficha"),
+    path("clientes/<int:pk>/baja/", views.ClienteBajaView.as_view(), name="cliente_baja"),
+    path(
+        "clientes/<int:pk>/reactivar/",
+        views.ClienteReactivarView.as_view(),
+        name="cliente_reactivar",
+    ),
     # CU-PTS-ADM: los puntos del Cliente y su ajuste manual (plan 10, segunda parte).
     path("clientes/<int:pk>/puntos/", AjustePuntosView.as_view(), name="cliente_puntos"),
     path("usuarios/nuevo/", views.UsuarioAltaView.as_view(), name="usuario_alta"),

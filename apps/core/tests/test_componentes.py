@@ -207,6 +207,10 @@ def test_los_desplegables_son_nativos_y_el_propio_solo_falta_base_select(client_
 # El invitado elige entre iniciar sesión y comprar como invitado (CU-TDA-INV paso 1).
 DOS_CAMINOS = {"_decision_de_correo.html", "producto_lista.html", "_carrito.html"}
 
+# La vista previa de la identidad visual dibuja el botón principal de la tienda
+# como muestra de color (plan 00 de interfaz, cuarta parte, B): no es una acción.
+MUESTRAS = {"identidad_visual.html"}
+
 # Las plantillas que dibujan filas: son las unicas donde una acción de nivel 3
 # se lee como "esta fila tiene acciones" y no como ruido.
 CON_FILAS = {
@@ -294,7 +298,7 @@ def test_ninguna_pantalla_repite_el_boton_principal():
         )
         ramas = re.split(r"\{%\s*(?:else|elif[^%]*)\s*%\}", contenido)
         mayor = max(rama.count('class="boton-primario') for rama in ramas)
-        if mayor > 1 and ruta.name not in DOS_CAMINOS:
+        if mayor > 1 and ruta.name not in DOS_CAMINOS | MUESTRAS:
             repetidas[ruta.name] = mayor
 
     assert repetidas == {}

@@ -36,6 +36,41 @@ def actualizar(producto, *, nuevas=(), quitar=()):
     return len(nuevas), len(quitadas)
 
 
+def ordenar(producto, *, orden=(), portada_desde=None):
+    """El orden de las adicionales y «Usar como portada» (plan 00 de interfaz,
+    cuarta parte, C). Va **antes** de `actualizar`, que quita y renumera
+    respetando este orden. Devuelve lo que cambió para el historial.
+
+    «Usar como portada» intercambia (decisión del responsable): la portada
+    anterior pasa a ser una imagen adicional en el lugar de la elegida, así no
+    se pierde ninguna imagen que nadie quitó. Sin portada anterior, la elegida
+    sale de la galería. Ningún archivo se borra: sólo cambian de lugar.
+    """
+    partes = []
+    if portada_desde is not None and portada_desde.producto_id == producto.pk:
+        anterior = producto.portada.name
+        producto.portada = portada_desde.imagen.name
+        producto.save(update_fields=["portada"])
+        if anterior:
+            portada_desde.imagen = anterior
+            portada_desde.save(update_fields=["imagen"])
+        else:
+            ImagenProducto.objects.filter(pk=portada_desde.pk).delete()
+
+    actuales = list(producto.imagenes.order_by("posicion", "pk"))
+    if orden:
+        por_pk = {imagen.pk: imagen for imagen in actuales}
+        nuevas = [por_pk[pk] for pk in orden if pk in por_pk]
+        nuevas += [imagen for imagen in actuales if imagen not in nuevas]
+        if [i.pk for i in nuevas] != [i.pk for i in actuales]:
+            for posicion, imagen in enumerate(nuevas):
+                if imagen.posicion != posicion:
+                    imagen.posicion = posicion
+                    imagen.save(update_fields=["posicion"])
+            partes.append("imágenes adicionales: nuevo orden")
+    return partes
+
+
 def describir(agregadas, quitadas):
     """El cambio de la galería tal como se lee en el historial."""
     partes = []

@@ -6,6 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from apps.core import colores
+
 
 class RegistroAuditoriaError(Exception):
     """Se intentó modificar o borrar una entrada del log de auditoría."""
@@ -500,6 +502,10 @@ class RegistroAuditoria(models.Model):
     # CU-CFG-LLM: el diagnóstico (CO-149) y la comprobación de disponibilidad (CO-150).
     DIAGNOSTICO_LLM = "diagnostico_llm"
     DISPONIBILIDAD_LLM = "disponibilidad_llm"
+    # CU-CLI-BAJ (CO-113).
+    BAJA_CUENTA_CLIENTE = "baja_cuenta_cliente"
+    # CU-REP-GEN A1 (CO-128).
+    EXPORTACION_REPORTE = "exportacion_reporte"
 
     ACCION_CHOICES = [  # noqa: RUF012
         (INICIO_SESION, "Inicio de sesión"),
@@ -590,6 +596,8 @@ class RegistroAuditoria(models.Model):
         (AJUSTE_PUNTOS, "Ajuste manual de puntos"),
         (DIAGNOSTICO_LLM, "Diagnóstico del modelo de lenguaje"),
         (DISPONIBILIDAD_LLM, "Comprobación de disponibilidad del modelo de lenguaje"),
+        (BAJA_CUENTA_CLIENTE, "Baja de cuenta de cliente"),
+        (EXPORTACION_REPORTE, "Exportación de reporte"),
     ]
 
     actor = models.ForeignKey(
@@ -756,6 +764,33 @@ class IdentidadVisual(InstanciaUnica):
     tipo_fondo = models.CharField("fondo", max_length=10, choices=TIPOS_DE_FONDO, default=COLOR)
     color_fondo = models.CharField("color de fondo", max_length=7, default="#0A0A0C")
     imagen_fondo = models.ImageField("imagen de fondo", upload_to="identidad/", blank=True)
+    # El mapa de colores (plan 00 de interfaz, cuarta parte, B; B-17-019): qué
+    # color de la paleta lleva cada parte de la tienda. Los roles, sus opciones
+    # válidas y lo que pinta cada uno están en `apps/core/colores.py`.
+    color_rol_boton = models.CharField(
+        "botón principal", max_length=10, choices=colores.OPCIONES, default=colores.PRIMARIO
+    )
+    color_rol_enlaces = models.CharField(
+        "botones secundarios y enlaces",
+        max_length=10,
+        choices=colores.OPCIONES,
+        default=colores.ACENTO,
+    )
+    color_rol_precios = models.CharField(
+        "precios", max_length=10, choices=colores.OPCIONES, default=colores.NEUTRO
+    )
+    color_rol_marcas = models.CharField(
+        "rótulos y carteles", max_length=10, choices=colores.OPCIONES, default=colores.ACENTO
+    )
+    color_rol_titulos = models.CharField(
+        "títulos de sección", max_length=10, choices=colores.OPCIONES, default=colores.ACENTO
+    )
+    color_rol_tarjetas = models.CharField(
+        "tarjetas e imágenes", max_length=10, choices=colores.OPCIONES, default=colores.ACENTO
+    )
+    color_rol_encabezado = models.CharField(
+        "encabezado y pie", max_length=10, choices=colores.OPCIONES, default=colores.FONDO
+    )
     # La que acompaña al formulario en las pantallas de acceso (B-07-020). Sin
     # ella, el logo; sin logo, el nombre de la tienda en grande.
     imagen_acceso = models.ImageField("imagen del ingreso", upload_to="identidad/", blank=True)

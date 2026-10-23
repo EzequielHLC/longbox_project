@@ -1,0 +1,54 @@
+{% extends "cuenta/base_cuenta.html" %}
+{% load moneda %}
+{% comment %}
+CU-CLI-BAJ — CO-112: el informe de las cuatro categorías, o el bloqueo (E1, E2)
+con lo que hay que resolver. CO-113: la confirmación con la contraseña actual.
+Volver sin confirmar es CO-156 cancelarOperacion.
+{% endcomment %}
+
+{% block titulo_cuenta %}Dar de baja mi cuenta{% endblock %}
+
+{% block cuenta %}
+{% if implicaciones.bloqueo %}
+  <div class="panel panel--atencion pila-3" role="alert" data-bloqueo-baja>
+    <p class="fuerte">{{ implicaciones.bloqueo }}</p>
+    <p>
+      {% if implicaciones.retenidos %}
+        <a href="{% url 'cuenta:stock' %}" class="boton-seccion">Ir a Stock en Local</a>
+      {% else %}
+        <a href="{% url 'cuenta:pedidos' %}" class="boton-seccion">Ir a mis pedidos</a>
+      {% endif %}
+    </p>
+  </div>
+{% else %}
+  <section class="panel pila-4" aria-labelledby="titulo-implicaciones">
+    <h2 id="titulo-implicaciones" class="titulo-3">Qué pasa si das de baja tu cuenta</h2>
+    <dl class="datos-de-ficha">
+      <dt>Puntos</dt>
+      <dd><span class="datos fuerte">{{ implicaciones.puntos }} pts</span>{% if implicaciones.puntos %} <span class="secundario">({{ implicaciones.equivalencia|pesos }})</span>{% endif %}: se pierden y no se recuperan.</dd>
+      <dt>Pedidos en curso</dt>
+      <dd><span class="datos">{{ implicaciones.pedidos_activos }}</span>{% if implicaciones.pedidos_activos %}: el local los sigue gestionando y te avisa a tu correo.{% endif %}</dd>
+      <dt>Avisos de reposición</dt>
+      <dd><span class="datos">{{ implicaciones.suscripciones }}</span>{% if implicaciones.suscripciones %}: se cancelan.{% endif %}</dd>
+      <dt>Carrito</dt>
+      <dd>{% if implicaciones.lineas_carrito %}Se vacía ({{ implicaciones.lineas_carrito }} producto{{ implicaciones.lineas_carrito|pluralize }}).{% else %}Está vacío.{% endif %}</dd>
+    </dl>
+    <p class="fuerte">
+      Es permanente: tu cuenta queda inactiva y sólo el local puede reactivarla.
+    </p>
+  </section>
+
+  {% if bloqueada %}
+    <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span>Por seguridad, la baja quedó bloqueada durante {{ minutos }} minutos después de tres intentos fallidos.</span></p>
+  {% else %}
+    <form method="post" novalidate class="formulario formulario--angosto">
+      {% csrf_token %}
+      {% include "_campo.html" with campo=form.contrasena %}
+      <div class="acciones fila-5">
+        <button type="submit" class="boton-primario boton-primario--critico">Confirmar baja de cuenta</button>
+        <a href="{% url 'cuenta:datos' %}" class="boton-texto">Cancelar</a>
+      </div>
+    </form>
+  {% endif %}
+{% endif %}
+{% endblock %}

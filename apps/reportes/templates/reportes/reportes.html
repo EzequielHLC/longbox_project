@@ -1,0 +1,73 @@
+{% extends "base_operativo.html" %}
+{% load reportes %}
+{% comment %}
+CU-REP-GEN — CO-204 generarReporteOperativo: los parámetros (paso 3) y el reporte
+(paso 6). E1: el rango inválido se marca en el formulario. E2: sin datos, el
+reporte vacío con su aviso. Generar muestra la capa de carga de la pantalla
+operativa (RNF-02). A1 — CO-128 exportarReporte: el mismo reporte en CSV.
+{% endcomment %}
+
+{% block titulo %}Reportes · Longbox{% endblock %}
+{% block seccion %}Reportes{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Reportes</h1>
+    <p>Datos consolidados de un período.</p>
+  </div>
+</header>
+
+<form method="get" novalidate class="panel formulario pila-4" aria-label="Parámetros del reporte">
+  <div class="rejilla-3">
+    {% include "_campo.html" with campo=form.tipo %}
+    {% include "_campo.html" with campo=form.desde %}
+    {% include "_campo.html" with campo=form.hasta %}
+  </div>
+  <div class="rejilla-3">
+    {% include "_campo.html" with campo=form.canal %}
+    {% include "_campo.html" with campo=form.categoria %}
+    {% include "_campo.html" with campo=form.tipo_movimiento %}
+  </div>
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Generar reporte</button>
+  </div>
+</form>
+
+{% if reporte %}
+  <section class="seccion pila-3" aria-labelledby="titulo-reporte">
+    <div class="seccion__titulo">
+      <h2 id="titulo-reporte">{{ reporte.titulo }}</h2>
+      {% if not reporte.vacio %}
+        <a href="{% url 'reportes:exportar' %}?{{ consulta }}" class="boton-seccion boton-seccion--tenue" download>{% include "_iconos.html" with icono="descargar" %}<span>Exportar CSV</span></a>
+      {% endif %}
+    </div>
+    <p class="texto-chico secundario">Del {{ form.cleaned_data.desde|date:"d/m/Y" }} al {{ form.cleaned_data.hasta|date:"d/m/Y" }}.</p>
+
+    {% if reporte.vacio %}
+      <div class="vacio" data-reporte-vacio>
+        {% include "_iconos.html" with icono="reportes" %}
+        <p>No hay datos para este reporte en el período elegido.</p>
+      </div>
+    {% else %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr>{% for columna, numerica in reporte.encabezados %}<th{% if numerica %} class="numero"{% endif %}>{{ columna }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for fila in reporte.filas %}
+              <tr>{% for valor in fila %}<td{% if valor|es_cifra %} class="numero"{% endif %}>{{ valor|celda }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+          {% if reporte.totales %}
+            <tfoot>
+              <tr>{% for valor in reporte.totales %}<td class="fuerte{% if valor|es_cifra %} numero{% endif %}">{{ valor|celda }}</td>{% endfor %}</tr>
+            </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}

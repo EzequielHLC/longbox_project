@@ -114,12 +114,9 @@ leer un informe de impacto.
 
   <fieldset class="grupo-de-campos">
     <legend>Datos opcionales</legend>
-    <div class="rejilla-2">
-      {% if es_editorial %}
-        {% include "_campo.html" with campo=form.autor %}
-      {% endif %}
-      {% include "_campo.html" with campo=form.portada %}
-    </div>
+    {% if es_editorial %}
+      <div class="rejilla-2">{% include "_campo.html" with campo=form.autor %}</div>
+    {% endif %}
     {% include "catalog/_galeria_campos.html" with form=form %}
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}

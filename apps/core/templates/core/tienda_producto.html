@@ -21,10 +21,11 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
 
     <div class="ficha-publica">
       <div class="pila-5">
-        <div class="ficha-publica__portada">
-          {% if producto.portada %}
-            <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}">
-          {% else %}
+        {% if producto.portada or producto.imagenes.exists %}
+          {# El visor compartido con la ficha del backoffice (B-00-026). #}
+          {% include "_visor_imagenes.html" with producto=producto %}
+        {% else %}
+          <div class="ficha-publica__portada">
             {# Plan 00 de interfaz, P2: sin imagen, una tapa dibujada con el título. #}
             <div class="portada-vacia portada-vacia--tapa" aria-hidden="true">
               <span class="portada-vacia__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca producto.tipo.nombre %}</span>
@@ -32,15 +33,6 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
               {% if producto.productoeditorial.volumen %}<span class="portada-vacia__numero">#{{ producto.productoeditorial.volumen }}</span>{% endif %}
               <span class="portada-vacia__nota">Imagen pendiente</span>
             </div>
-          {% endif %}
-        </div>
-        {% if producto.imagenes.all %}
-          <div class="galeria-producto" aria-label="Más imágenes">
-            {% for imagen in producto.imagenes.all %}
-              <a href="{{ imagen.imagen.url }}" class="galeria-producto__item" target="_blank" rel="noopener">
-                <img src="{{ imagen.imagen.url }}" alt="Imagen {{ forloop.counter }} de {{ producto.titulo }}">
-              </a>
-            {% endfor %}
           </div>
         {% endif %}
       </div>
@@ -65,7 +57,7 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
         <div class="pila-2">
           {% if producto.estado_publico == "agotado" %}
             {% if aviso.puede_pedir %}
-              <form method="post" action="{% url 'restock:aviso' producto.pk %}" class="fila-2">
+              <form method="post" action="{% url 'restock:aviso' producto.pk %}" class="fila">
                 {% csrf_token %}
                 {% if aviso.suscripcion %}
                   <span class="marca-estado marca-estado--ok">Suscripto</span>
@@ -118,7 +110,7 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
 
         {% if producto.descripcion %}
           <div class="pila-2">
-            <p class="antetitulo">Sinopsis</p>
+            <p class="antetitulo">Descripción</p>
             <p class="lectura">{{ producto.descripcion|linebreaksbr }}</p>
           </div>
         {% endif %}

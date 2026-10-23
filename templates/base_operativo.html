@@ -51,8 +51,15 @@ pantalla.
 
     document.addEventListener("submit", function (evento) {
       // El buscador de la tabla trae su propio indicador; las descargas no
-      // navegan a ninguna pantalla nueva.
-      if (evento.target.hasAttribute("data-sin-capa")) return;
+      // navegan a ninguna pantalla nueva. Un formulario que resuelve un guion
+      // (lo detiene con `preventDefault`) o el de un diálogo tampoco navega: con
+      // la capa puesta, la pantalla quedaba cargando para siempre.
+      const formulario = evento.target;
+      if (
+        evento.defaultPrevented ||
+        formulario.hasAttribute("data-sin-capa") ||
+        formulario.getAttribute("method") === "dialog"
+      ) return;
       mostrar();
     });
 

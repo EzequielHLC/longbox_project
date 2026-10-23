@@ -149,7 +149,7 @@ de sesión. Esta parte construye el panel y la edición del perfil. La sección 
 
 # Plan — `11` Cuenta de Cliente · tercera parte: la baja de la cuenta
 
-**Estado del plan:** Propuesto · **Fecha:** 2026-10-22
+**Estado del plan:** Aprobado el 2026-10-22: las ambigüedades 1 a 4 con la recomendación del plan · **Fecha:** 2026-10-22
 
 Último caso de uso del módulo. Lo pedía la revisión funcional (plan 00, A4: Ley 25.326 y BR-11), y
 el módulo 18 dejó calculable el informe de impacto. Las fuentes leídas: la ficha de `CU-CLI-BAJ`,

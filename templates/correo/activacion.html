@@ -7,7 +7,7 @@
 {% block titulo %}Bienvenido/a al mostrador{% endblock %}
 {% block contenido %}
 <p style="{% estilo 'parrafo' %}">Estimado/a <span style="{% estilo 'destacado' %}">{{ usuario.get_full_name|default:usuario.email }}</span>:</p>
-<p style="{% estilo 'parrafo' %}">Se ha creado una cuenta a su nombre en el sistema, con el rol de <span style="{% estilo 'destacado' %}">{{ usuario.get_rol_display }}</span>. Para comenzar a utilizarla, establezca su contraseña.</p>
+{% if reactivacion %}<p style="{% estilo 'parrafo' %}">Su cuenta fue reactivada. Para volver a utilizarla, establezca una contraseña nueva.</p>{% else %}<p style="{% estilo 'parrafo' %}">Se ha creado una cuenta a su nombre en el sistema, con el rol de <span style="{% estilo 'destacado' %}">{{ usuario.get_rol_display }}</span>. Para comenzar a utilizarla, establezca su contraseña.</p>{% endif %}
 {% include "correo/_boton.html" with url=enlace texto="Establecer contraseña" %}
 <p style="{% estilo 'secundario' %}">El enlace vence en {{ vigencia_horas }} horas y puede utilizarse una sola vez. Si recibió más de un correo como este, sólo es válido el último: los anteriores quedaron invalidados.</p>
 <p style="{% estilo 'secundario' %}">Si no esperaba recibir este mensaje, comuníquelo al administrador del sistema.</p>

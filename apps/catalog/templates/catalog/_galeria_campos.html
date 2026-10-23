@@ -1,20 +1,191 @@
 {% comment %}
-Las imágenes adicionales del producto (B-01-003), debajo de la portada. En la
-edición se ven las que ya tiene, cada una con su casilla para quitarla.
+El gestor de imágenes del producto (B-01-003; plan 00 de interfaz, cuarta parte,
+C; B-00-026). Es dueño de la portada y de las imágenes adicionales, en el alta y
+en la edición:
+
+- La portada en su casilla, con «Elegir» o «Cambiar» y, si tiene, «Quitar».
+- Las adicionales en tarjetas compactas, con su barra: mover antes o después,
+  «Portada» (intercambia con la actual; la anterior queda entre las adicionales)
+  y «Quitar». Se ordenan arrastrando.
+- La zona de soltar suma imágenes nuevas, que se ven antes de guardar.
+
+Nada se guarda hasta «Guardar». Sin guion funciona todo menos el orden, que
+queda como estaba, y la vista previa de lo nuevo.
 
     {% include "catalog/_galeria_campos.html" with form=form %}
 {% endcomment %}
-{% if form.quitar_imagenes %}
-  <div class="campo">
-    <p class="etiqueta">{{ form.quitar_imagenes.label }}</p>
-    <div class="galeria-producto">
-      {% for opcion in form.quitar_imagenes %}
-        <label class="galeria-producto__item">
-          <img src="{{ opcion.data.value.instance.imagen.url }}" alt="Imagen adicional {{ forloop.counter }}">
-          <span class="casilla">{{ opcion.tag }}<span>Quitar</span></span>
-        </label>
-      {% endfor %}
-    </div>
+{% with actuales=form.galeria_actual portada=form.portada_guardada %}
+<div class="gestor-imagenes" data-galeria>
+  <div class="gestor-imagenes__cabeza">
+    <p class="etiqueta">Imágenes</p>
+    <p class="texto-chico secundario">La portada y hasta 8 imágenes adicionales. Arrastrá una tarjeta para cambiar el orden.</p>
   </div>
-{% endif %}
-{% include "_campo.html" with campo=form.imagenes_nuevas %}
+
+  <ol class="gestor-imagenes__grilla" data-grilla>
+    <li class="gestor-imagenes__item gestor-imagenes__item--portada">
+      <div class="gestor-imagenes__marco">
+        {% if portada %}
+          <img src="{{ portada.url }}" alt="Portada actual" data-portada-actual>
+        {% else %}
+          <img alt="" data-portada-actual hidden>
+          <span class="gestor-imagenes__vacio" data-portada-vacia>{% include "_iconos.html" with icono="imagen" %}<span>Sin portada</span></span>
+        {% endif %}
+        <span class="gestor-imagenes__rotulo">Portada</span>
+      </div>
+      <div class="gestor-imagenes__acciones">
+        <label class="ficha-accion">
+          <input type="file" name="{{ form.portada.html_name }}" accept="image/jpeg,image/png,image/webp" class="sr-only" data-portada-archivo data-vista-propia>
+          {% include "_iconos.html" with icono="imagen" %}<span data-portada-texto>{% if portada %}Cambiar{% else %}Elegir{% endif %}</span>
+        </label>
+        {% if portada %}
+          <label class="ficha-accion ficha-accion--critica">
+            <input type="checkbox" name="{{ form.portada.html_name }}-clear" class="sr-only">
+            {% include "_iconos.html" with icono="baja" %}<span>Quitar</span>
+          </label>
+        {% endif %}
+      </div>
+    </li>
+
+    {% for item in actuales %}
+      <li class="gestor-imagenes__item" draggable="true" data-imagen="{{ item.imagen.pk }}">
+        <div class="gestor-imagenes__marco">
+          <img src="{{ item.imagen.imagen.url }}" alt="Imagen adicional {{ forloop.counter }}" loading="lazy">
+          <span class="gestor-imagenes__numero datos" data-numero>{{ forloop.counter }}</span>
+        </div>
+        <div class="gestor-imagenes__acciones">
+          <button type="button" class="ficha-accion ficha-accion--icono" data-mover="-1" aria-label="Mover antes" title="Mover antes">{% include "_iconos.html" with icono="anterior" %}</button>
+          <button type="button" class="ficha-accion ficha-accion--icono" data-mover="1" aria-label="Mover después" title="Mover después">{% include "_iconos.html" with icono="siguiente" %}</button>
+          <label class="ficha-accion" title="Usarla como portada: la actual pasa a las adicionales">
+            <input type="radio" name="{{ form.nueva_portada.html_name }}" value="{{ item.imagen.pk }}" class="sr-only"{% if item.portada %} checked{% endif %}>
+            <span>Portada</span>
+          </label>
+          <label class="ficha-accion ficha-accion--critica">
+            <input type="checkbox" name="{{ form.quitar_imagenes.html_name }}" value="{{ item.imagen.pk }}" class="sr-only"{% if item.quitar %} checked{% endif %}>
+            <span>Quitar</span>
+          </label>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+  {% if actuales %}
+    <input type="hidden" name="{{ form.orden_imagenes.html_name }}" value="{% for item in actuales %}{{ item.imagen.pk }}{% if not forloop.last %},{% endif %}{% endfor %}" data-orden>
+  {% endif %}
+
+  <label class="gestor-imagenes__soltar" data-soltar>
+    <input type="file" name="{{ form.imagenes_nuevas.html_name }}" accept="image/jpeg,image/png,image/webp" multiple class="sr-only" data-nuevas data-vista-propia>
+    {% include "_iconos.html" with icono="agregar" %}
+    <span><strong>Agregar imágenes</strong> · soltalas acá o tocá para elegir</span>
+    <span class="texto-chico secundario">JPG, PNG o WebP. Se guardan en WebP.</span>
+  </label>
+  <ol class="gestor-imagenes__grilla" data-previa-nuevas aria-live="polite"></ol>
+
+  {% for campo in form %}{% if campo.name == "portada" or campo.name == "imagenes_nuevas" or campo.name == "nueva_portada" or campo.name == "quitar_imagenes" %}
+    {% for error in campo.errors %}<p class="error-de-campo" role="alert">Error: {{ error }}</p>{% endfor %}
+  {% endif %}{% endfor %}
+</div>
+{% endwith %}
+
+<script>
+  (function () {
+    const galeria = document.currentScript.previousElementSibling;
+    if (!galeria || !galeria.matches("[data-galeria]")) return;
+    const grilla = galeria.querySelector("[data-grilla]");
+    const orden = galeria.querySelector("[data-orden]");
+
+    // La portada elegida se ve en su casilla antes de guardar.
+    const portadaArchivo = galeria.querySelector("[data-portada-archivo]");
+    const portadaImagen = galeria.querySelector("[data-portada-actual]");
+    portadaArchivo.addEventListener("change", function () {
+      const archivo = portadaArchivo.files[0];
+      if (!archivo) return;
+      portadaImagen.src = URL.createObjectURL(archivo);
+      portadaImagen.hidden = false;
+      galeria.querySelector("[data-portada-vacia]")?.remove();
+      galeria.querySelector("[data-portada-texto]").textContent = "Cambiar";
+    });
+
+    // Las nuevas, a la vista, con el rótulo «Nueva».
+    const nuevas = galeria.querySelector("[data-nuevas]");
+    const previa = galeria.querySelector("[data-previa-nuevas]");
+    function mostrarNuevas() {
+      previa.replaceChildren();
+      for (const archivo of nuevas.files) {
+        const item = document.createElement("li");
+        item.className = "gestor-imagenes__item gestor-imagenes__item--nueva";
+        const marco = document.createElement("div");
+        marco.className = "gestor-imagenes__marco";
+        const imagen = document.createElement("img");
+        imagen.src = URL.createObjectURL(archivo);
+        imagen.alt = "Nueva: " + archivo.name;
+        const rotulo = document.createElement("span");
+        rotulo.className = "gestor-imagenes__rotulo";
+        rotulo.textContent = "Nueva";
+        marco.append(imagen, rotulo);
+        const nombre = document.createElement("p");
+        nombre.className = "texto-chico secundario gestor-imagenes__nombre";
+        nombre.textContent = archivo.name;
+        item.append(marco, nombre);
+        previa.append(item);
+      }
+    }
+    nuevas.addEventListener("change", mostrarNuevas);
+
+    // Soltar archivos en la zona.
+    const zona = galeria.querySelector("[data-soltar]");
+    zona.addEventListener("dragover", function (evento) {
+      if (![...evento.dataTransfer.types].includes("Files")) return;
+      evento.preventDefault();
+      zona.classList.add("gestor-imagenes__soltar--encima");
+    });
+    zona.addEventListener("dragleave", () => zona.classList.remove("gestor-imagenes__soltar--encima"));
+    zona.addEventListener("drop", function (evento) {
+      evento.preventDefault();
+      zona.classList.remove("gestor-imagenes__soltar--encima");
+      const lista = new DataTransfer();
+      for (const archivo of evento.dataTransfer.files) {
+        if (archivo.type.startsWith("image/")) lista.items.add(archivo);
+      }
+      nuevas.files = lista.files;
+      mostrarNuevas();
+    });
+
+    // El orden de las adicionales.
+    const items = () => [...grilla.querySelectorAll("[data-imagen]")];
+    function guardarOrden() {
+      items().forEach((item, indice) => {
+        item.querySelector("[data-numero]").textContent = indice + 1;
+      });
+      if (orden) orden.value = items().map((item) => item.dataset.imagen).join(",");
+    }
+    grilla.addEventListener("click", function (evento) {
+      const boton = evento.target.closest("[data-mover]");
+      if (!boton) return;
+      const item = boton.closest("[data-imagen]");
+      const lista = items();
+      const destino = lista[lista.indexOf(item) + Number(boton.dataset.mover)];
+      if (!destino) return;
+      if (boton.dataset.mover === "-1") destino.before(item); else destino.after(item);
+      guardarOrden();
+      boton.focus();
+    });
+    let arrastrada = null;
+    grilla.addEventListener("dragstart", function (evento) {
+      arrastrada = evento.target.closest("[data-imagen]");
+      if (!arrastrada) return;
+      arrastrada.classList.add("gestor-imagenes__item--arrastrada");
+      evento.dataTransfer.effectAllowed = "move";
+    });
+    grilla.addEventListener("dragover", function (evento) {
+      const sobre = evento.target.closest("[data-imagen]");
+      if (!arrastrada || !sobre || sobre === arrastrada) return;
+      evento.preventDefault();
+      const caja = sobre.getBoundingClientRect();
+      if (evento.clientX < caja.left + caja.width / 2) sobre.before(arrastrada); else sobre.after(arrastrada);
+    });
+    grilla.addEventListener("dragend", function () {
+      arrastrada?.classList.remove("gestor-imagenes__item--arrastrada");
+      arrastrada = null;
+      guardarOrden();
+    });
+  })();
+</script>

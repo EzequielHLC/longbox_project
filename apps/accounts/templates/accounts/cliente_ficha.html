@@ -15,11 +15,18 @@ es el de sus puntos (`CU-PTS-ADM` paso 1; B-10-011), que no toca datos personale
     {% url 'accounts:cliente_lista' as volver %}
     <span class="miga">{% include "_boton_texto.html" with url=volver texto="Clientes" atras=1 %}</span>
     <h1>{{ cliente.get_full_name|default:"Sin nombre cargado" }}</h1>
-    <p>Cuenta de cliente · sólo lectura</p>
+    <p>Cuenta de cliente · sus datos los cambia el titular</p>
   </div>
   {% if cliente.estado == "activo" %}
     <div class="fila-2">
       <a href="{% url 'accounts:cliente_puntos' cliente.pk %}" class="boton-seccion">{% include "_iconos.html" with icono="puntos" %}<span>Puntos</span></a>
+      {# B-11-010: la baja lógica desde la administración. #}
+      <a data-dialogo href="{% url 'accounts:cliente_baja' cliente.pk %}" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Dar de baja</span></a>
+    </div>
+  {% elif cliente.esta_congelada %}
+    {# B-11-009: la vuelta de CU-CLI-BAJ. No toca datos personales. #}
+    <div class="fila-2">
+      <a data-dialogo href="{% url 'accounts:cliente_reactivar' cliente.pk %}" class="boton-seccion">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar la cuenta</span></a>
     </div>
   {% endif %}
 </header>

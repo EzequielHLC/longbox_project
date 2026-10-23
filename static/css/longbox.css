@@ -225,6 +225,9 @@ em, i { font-style: normal; }
   white-space: nowrap;
   color: var(--texto);
 }
+/* En una fila, la marca se centra con lo que acompaña; el `flex-start` es para
+   las pilas, donde evita que se estire a todo el ancho. */
+:is(.fila, .fila-2, .fila-5) > .marca-estado { align-self: center; }
 /* Los colores funcionales, siempre con la palabra (guía, «Últimos ingresos»). */
 .marca-estado--ok { color: var(--ok); }
 .marca-estado--dato { color: var(--dato); }
@@ -359,7 +362,6 @@ em, i { font-style: normal; }
   text-transform: uppercase;
   color: var(--texto-2);
 }
-.menu-rotulo--siguiente { margin-top: var(--esp-5); }
 
 .menu-enlace,
 .menu-titulo {
@@ -390,8 +392,6 @@ em, i { font-style: normal; }
   transform-origin: top;
   animation: marcador-entra var(--dur-2) var(--curva-golpe) both;
 }
-.menu-enlace--inactivo { color: var(--texto-2); cursor: default; }
-.menu-enlace--inactivo:hover { background: transparent; }
 
 .menu-grupo { padding-block: var(--esp-1); border-bottom: var(--trazo) var(--linea); }
 /* El título de un grupo es un rótulo, como en la guía: el que se lee es el ítem. */
@@ -440,6 +440,72 @@ em, i { font-style: normal; }
   background-size: cover;
   background-attachment: fixed;
 }
+/* ---------------------------------------------------------------------
+   El mapa de colores de la tienda (plan 00 de interfaz, cuarta parte; B-17-019)
+   Cada rol apunta a un color de la paleta (`apps/core/colores.py`) y sus
+   variantes salen de ese color: un acento azul tiene el hover azul claro. Los
+   valores de acá son los iniciales; la hoja de la tienda los reemplaza. El
+   `-sobre` y el `-texto` los calcula el servidor por contraste.
+   --------------------------------------------------------------------- */
+.modo-publico {
+  --rol-boton: var(--tienda-primario);
+  --rol-boton-sobre: var(--tienda-sobre-primario);
+  --rol-enlaces: var(--tienda-acento);
+  --rol-enlaces-sobre: var(--noche);
+  --rol-enlaces-texto: var(--tienda-acento);
+  --rol-precios-texto: var(--texto-fuerte);
+  --rol-marcas: var(--tienda-acento);
+  --rol-marcas-sobre: var(--noche);
+  --rol-marcas-texto: var(--tienda-acento);
+  --rol-titulos: var(--tienda-acento);
+  --rol-titulos-texto: var(--tienda-acento);
+  --rol-tarjetas: var(--tienda-acento);
+  --rol-encabezado: var(--tienda-fondo);
+
+  --rol-boton-vivo: color-mix(in oklch, var(--rol-boton), var(--blanco) 20%);
+  --rol-boton-hondo: color-mix(in oklch, var(--rol-boton), var(--noche) 30%);
+  --rol-enlaces-vivo: color-mix(in oklch, var(--rol-enlaces), var(--blanco) 20%);
+  --rol-enlaces-hondo: color-mix(in oklch, var(--rol-enlaces), var(--noche) 30%);
+  --rol-enlaces-suave: color-mix(in srgb, var(--rol-enlaces) 14%, transparent);
+  /* La cinta se resolvía en la raíz, con el naranja: acá toma el de los rótulos. */
+  --cinta: repeating-linear-gradient(-45deg, var(--rol-marcas) 0 14px, var(--noche) 14px 28px);
+}
+/* Las superficies del escaparate toman la familia del rol «enlaces» y la sombra
+   del rol «tarjetas». El backoffice no pasa por acá: su paleta es fija (P-07). */
+.modo-publico .superficie-noche,
+.modo-publico.superficie-noche {
+  --acento: var(--rol-enlaces);
+  --acento-vivo: var(--rol-enlaces-vivo);
+  --acento-texto: var(--rol-enlaces-texto);
+  --acento-suave: var(--rol-enlaces-suave);
+  --sobre-acento: var(--rol-enlaces-sobre);
+  --foco: var(--rol-enlaces);
+  --golpe: var(--rol-tarjetas);
+  /* Las sombras se resolvían en la raíz con el naranja: se redefinen donde
+     `--golpe` ya es el del rol. */
+  --sombra-golpe-1: 3px 3px 0 var(--golpe);
+  --sombra-golpe-2: 6px 6px 0 var(--golpe);
+  --sombra-golpe-3: 10px 10px 0 var(--golpe);
+}
+.modo-publico .superficie-papel {
+  --acento: var(--rol-enlaces);
+  --acento-vivo: var(--rol-enlaces);
+  --acento-texto: var(--rol-enlaces-hondo);
+  --acento-suave: color-mix(in srgb, var(--rol-enlaces) 22%, transparent);
+  --sobre-acento: var(--rol-enlaces-sobre);
+}
+.modo-publico .tarjeta-producto__agregar button { color: var(--rol-boton-sobre); }
+.modo-publico .tarjeta-producto__agregar button::before { background: var(--rol-boton); }
+.modo-publico .tarjeta-producto__agregar button:hover::before { background: var(--rol-boton-vivo); }
+.modo-publico :is(.tarjeta-producto__precio, .ficha-publica__precio) { color: var(--rol-precios-texto); }
+.modo-publico .rotulo-estado--pre-venta {
+  background: repeating-linear-gradient(-45deg, var(--rol-marcas) 0 6px, var(--noche) 6px 12px);
+}
+.modo-publico .rotulo-estado--pre-venta > span { color: var(--rol-marcas-texto); }
+.modo-publico .cartel-tomo--primero { background: var(--rol-marcas); color: var(--rol-marcas-sobre); }
+.modo-publico .antetitulo { color: var(--rol-titulos-texto); }
+.modo-publico .titulo-seccion::after { background: var(--rol-titulos); }
+
 /* Una sola capa de grano para todo el escaparate. */
 .modo-publico::before {
   content: "";
@@ -456,7 +522,7 @@ em, i { font-style: normal; }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--tienda-fondo);
+  background: var(--rol-encabezado);
   border-bottom: var(--trazo) var(--linea);
 }
 /* Pasada la portada queda más bajo y marca el borde con una sombra dura
@@ -959,8 +1025,10 @@ em, i { font-style: normal; }
 .boton-primario:hover::before { background: var(--acento-vivo); }
 .modo-operativo .boton-primario:active { transform: translateY(1px); }
 .modo-publico .boton-primario { min-height: 48px; padding: var(--esp-2) var(--esp-5); font-size: var(--op-titulo-3); }
-.modo-publico .boton-primario::before { background: var(--tienda-primario); }
-.modo-publico .boton-primario { color: var(--tienda-sobre-primario); }
+.modo-publico .boton-primario::before { background: var(--rol-boton); }
+.modo-publico .boton-primario { color: var(--rol-boton-sobre); }
+.modo-publico .boton-primario:hover::before { background: var(--rol-boton-vivo); }
+.modo-publico .boton-primario:active::before { background: var(--rol-boton-hondo); }
 .modo-publico .boton-primario:hover {
   transform: translate(-2px, -2px);
   filter: drop-shadow(3px 3px 0 var(--texto-fuerte));
@@ -1024,6 +1092,11 @@ em, i { font-style: normal; }
   --acento-vivo: var(--error);
   --acento-texto: var(--error);
   --sobre-acento: var(--sobre-error);
+  /* En la tienda el botón principal lee su rol (B-17-019): también pasa a error. */
+  --rol-boton: var(--error);
+  --rol-boton-vivo: var(--error);
+  --rol-boton-hondo: var(--error);
+  --rol-boton-sobre: var(--sobre-error);
 }
 .boton-seccion--critico { border-color: var(--error); color: var(--error); --texto: var(--error); }
 
@@ -2038,6 +2111,227 @@ table { border-collapse: collapse; width: 100%; }
   transition: transform var(--dur-2) var(--curva-golpe), box-shadow var(--dur-2) var(--curva-golpe);
 }
 a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shadow: var(--sombra-golpe-1); }
+
+/* ---------------------------------------------------------------------
+   El visor de imágenes de un producto (`_visor_imagenes.html`; B-00-026): la
+   imagen grande, la tira de miniaturas y la ampliación en un diálogo propio.
+   --------------------------------------------------------------------- */
+.visor { display: grid; gap: var(--esp-5); min-width: 0; }
+.visor__principal {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-3);
+  box-shadow: var(--sombra-golpe-3);
+  cursor: zoom-in;
+}
+.visor__principal img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: contain; }
+.visor__lupa {
+  position: absolute;
+  right: var(--esp-2);
+  bottom: var(--esp-2);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: var(--trazo) var(--texto-fuerte);
+  background: var(--noche);
+  color: var(--texto-fuerte);
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--curva-golpe);
+}
+.visor__principal:hover .visor__lupa,
+.visor__principal:focus-visible .visor__lupa { opacity: 1; }
+.visor__miniaturas { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.visor__tira { display: flex; gap: var(--esp-2); overflow-x: auto; }
+.visor__miniatura {
+  flex: 0 0 4.5rem;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: var(--trazo) var(--linea);
+  background: var(--fondo-3);
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity var(--dur-1) var(--curva-golpe), border-color var(--dur-1) var(--curva-golpe);
+}
+.visor__miniatura img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.visor__miniatura:hover { border-color: var(--texto); opacity: 1; }
+.visor__miniatura[aria-current] { border: var(--trazo-fuerte) var(--acento); opacity: 1; }
+.visor__dialogo {
+  width: min(72rem, calc(100vw - 2 * var(--esp-4)));
+  max-width: none;
+  height: min(92vh, 60rem);
+  max-height: none;
+  padding: 0;
+  background: var(--noche);
+}
+.visor__dialogo[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.visor__dialogo-cabeza {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 var(--esp-4);
+  border-bottom: var(--trazo) var(--linea);
+  color: var(--texto-2);
+}
+.visor__escenario {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--esp-3) var(--esp-8);
+}
+/* La imagen llena el escenario y se ajusta adentro: nunca lo desborda. */
+.visor__escenario img { display: block; width: 100%; height: 100%; object-fit: contain; touch-action: pan-y; user-select: none; }
+.visor__paso {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: var(--trazo-fuerte) var(--borde-control);
+  background: var(--fondo-2);
+  color: var(--texto-fuerte);
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.visor__paso:hover { border-color: var(--acento); color: var(--acento-texto); }
+.visor__paso--anterior { left: var(--esp-3); }
+.visor__paso--siguiente { right: var(--esp-3); }
+.visor__tira { justify-content: center; padding: var(--esp-3); border-top: var(--trazo) var(--linea); }
+.visor__tira:empty { display: none; }
+.visor__tira .visor__miniatura { flex-basis: 3.5rem; }
+@media (max-width: 600px) {
+  .visor__escenario { padding: var(--esp-2); }
+  .visor__paso { width: 40px; height: 40px; background: color-mix(in srgb, var(--noche) 80%, transparent); }
+  .visor__tira { justify-content: flex-start; }
+}
+
+/* ---------------------------------------------------------------------
+   El gestor de imágenes del producto (plan 00 de interfaz, cuarta parte, C;
+   B-00-026): la portada y las adicionales en tarjetas compactas, cada una con
+   su barra de acciones, y la zona de soltar para sumar.
+   --------------------------------------------------------------------- */
+.gestor-imagenes { display: grid; gap: var(--esp-4); }
+.gestor-imagenes__cabeza { display: grid; gap: var(--esp-1); }
+.gestor-imagenes__cabeza > * { margin: 0; }
+.gestor-imagenes__grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--esp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gestor-imagenes__grilla:empty { display: none; }
+.gestor-imagenes__item {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--esp-2);
+  min-width: 0;
+  padding: var(--esp-2);
+  border: var(--trazo) var(--linea);
+  background: var(--fondo-2);
+  transition: border-color var(--dur-1) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe);
+}
+.gestor-imagenes__item[draggable="true"] { cursor: grab; }
+.gestor-imagenes__item[draggable="true"]:hover { border-color: var(--borde-control); }
+.gestor-imagenes__item--portada { border-color: var(--acento); }
+.gestor-imagenes__item--arrastrada { opacity: 0.45; }
+.gestor-imagenes__item:has(input[type="checkbox"]:checked) .gestor-imagenes__marco { opacity: 0.35; }
+.gestor-imagenes__item:has(input[type="radio"]:checked) { border-color: var(--acento); }
+.gestor-imagenes__marco {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border: var(--trazo) var(--linea);
+  background: var(--fondo-3);
+}
+.gestor-imagenes__marco img { width: 100%; height: 100%; object-fit: cover; }
+.gestor-imagenes__vacio {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  color: var(--texto-2);
+  font-size: var(--op-chico);
+  text-align: center;
+}
+.gestor-imagenes__vacio .icono { width: 28px; height: 28px; }
+.gestor-imagenes__rotulo,
+.gestor-imagenes__numero {
+  position: absolute;
+  top: var(--esp-1);
+  padding: 1px var(--esp-2);
+  font: 700 var(--op-rotulo) / 1.6 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+}
+.gestor-imagenes__rotulo { left: var(--esp-1); background: var(--acento); color: var(--sobre-acento); }
+.gestor-imagenes__numero { right: var(--esp-1); background: var(--noche); color: var(--texto-fuerte); }
+.gestor-imagenes__nombre { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gestor-imagenes__acciones { display: flex; flex-wrap: wrap; align-content: start; gap: var(--esp-1); }
+.gestor-imagenes__soltar {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-5) var(--esp-4);
+  border: var(--trazo-fuerte) dashed var(--borde-control);
+  background: var(--fondo-2);
+  color: var(--texto);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--curva-golpe), background-color var(--dur-1) var(--curva-golpe);
+}
+.gestor-imagenes__soltar .icono { width: 24px; height: 24px; color: var(--acento); }
+.gestor-imagenes__soltar:hover,
+.gestor-imagenes__soltar:focus-within,
+.gestor-imagenes__soltar--encima { border-color: var(--acento); background: var(--acento-suave); }
+
+/* La acción compacta de una tarjeta: un rótulo que se marca. Envuelve su
+   casilla o su archivo, que quedan ocultos; marcada, se llena de acento. */
+.ficha-accion {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-1);
+  min-height: 32px;
+  padding: 0 var(--esp-2);
+  border: var(--trazo) var(--borde-control);
+  background: transparent;
+  color: var(--texto);
+  font: 700 var(--op-rotulo) / 1 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--curva-golpe), background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+/* La casilla o el archivo van dentro, ocultos: la acción entera es el control.
+   Lleva el tipo en el selector para ganarle a la regla general de las casillas. */
+.ficha-accion > input[type] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.ficha-accion .icono { width: 14px; height: 14px; }
+.ficha-accion--icono { width: 32px; padding: 0; }
+.ficha-accion:hover { border-color: var(--texto); color: var(--texto-fuerte); }
+.ficha-accion:focus-within,
+.ficha-accion:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+.ficha-accion:has(input:checked) { border-color: var(--acento); background: var(--acento); color: var(--sobre-acento); }
+.ficha-accion--critica:hover { border-color: var(--error); color: var(--error); }
+.ficha-accion--critica:has(input:checked) { border-color: var(--error); background: var(--error); color: var(--sobre-error); }
 
 .miniatura-banner {
   display: block;
@@ -3104,6 +3398,8 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .grupo-plegable { border: var(--trazo) var(--linea); background: var(--fondo-2); }
 .grupo-plegable + .grupo-plegable { margin-top: var(--esp-3); }
 .grupo-plegable--atencion { border-color: var(--acento); }
+/* El grupo que se abrió desde el calendario (cuarta parte, E). */
+.grupo-plegable--elegido { outline: 2px solid var(--acento); outline-offset: 2px; }
 .grupo-plegable__cabeza {
   display: flex;
   flex-wrap: wrap;
@@ -3277,12 +3573,41 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .sugerencias__todos { justify-content: center; border-top: var(--trazo) var(--linea); font-weight: 700; color: var(--acento-texto); }
 .sugerencias__vacio { padding: var(--esp-3); color: var(--texto-2); }
 
-/* Calendario (tercera parte, 22): el mes en una grilla de lunes a domingo. Cada
-   día con su número; lo que llega, en fichas que llevan a su grupo. */
-.calendario { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* Calendario (tercera parte, 22; cuarta parte, E; B-00-026): el mes en una
+   grilla de lunes a domingo, con celdas separadas. Hoy lleva su número en una
+   ficha de acento; cada llegada es una ficha con una barra de su estado. */
+.calendario-cabeza { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--esp-3); }
+.calendario-cabeza__mes {
+  margin: 0;
+  font: 800 var(--op-titulo-1) / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+}
+.calendario-cabeza__nav { display: flex; align-items: stretch; gap: var(--esp-1); }
+.calendario-cabeza__nav .boton-icono { width: 40px; height: 40px; }
+.calendario-cabeza__hoy {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--esp-4);
+  border: var(--trazo-fuerte) var(--borde-control);
+  color: var(--texto-fuerte);
+  font: 700 var(--op-rotulo) / 1 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: border-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.calendario-cabeza__hoy:hover { border-color: var(--acento); color: var(--acento-texto); }
+.calendario-cabeza__hoy[aria-current] { border-color: var(--acento); }
+.calendario-leyenda { display: flex; flex-wrap: wrap; gap: var(--esp-4); margin: var(--esp-3) 0; padding: 0; list-style: none; font-size: var(--op-chico); color: var(--texto-2); }
+.calendario-leyenda__item { display: inline-flex; align-items: center; gap: var(--esp-2); }
+.calendario-leyenda__item::before { content: ""; width: 12px; height: 12px; background: var(--borde-control); }
+.calendario-leyenda__item--atrasada::before { background: var(--error); }
+.calendario-leyenda__item--cercana::before { background: var(--acento); }
+.calendario { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; margin-inline: -4px; }
 .calendario th {
   padding: var(--esp-1) var(--esp-2);
-  border-bottom: var(--trazo-fuerte) var(--texto);
   font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
   letter-spacing: var(--tracking-rotulo);
   text-transform: uppercase;
@@ -3290,44 +3615,57 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   text-align: left;
 }
 .calendario__dia {
-  height: 5.5rem;
-  padding: var(--esp-1) var(--esp-2);
-  border: var(--trazo) var(--linea);
+  height: 6.75rem;
+  padding: var(--esp-2);
+  border: var(--trazo) transparent;
+  background: var(--fondo-2);
   vertical-align: top;
+  transition: border-color var(--dur-1) var(--curva-golpe);
 }
+.calendario__dia:hover { border-color: var(--linea); }
+.calendario__dia--finde { background: color-mix(in srgb, var(--fondo-2) 55%, var(--fondo)); }
+.calendario__dia--otro-mes { background: transparent; }
+.calendario__dia--otro-mes .calendario__numero { opacity: 0.4; }
+.calendario__dia--hoy { border-color: var(--acento); }
+.calendario__dia--hoy:focus { outline: 2px solid var(--foco); outline-offset: 2px; }
 .calendario__numero {
-  display: block;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
   margin-bottom: var(--esp-1);
-  font: 500 var(--op-dato) / 1.2 var(--fuente-datos);
+  font: 600 var(--op-dato) / 1 var(--fuente-datos);
   color: var(--texto);
 }
-.calendario__dia--otro-mes .calendario__numero { color: var(--texto-2); }
-.calendario__dia--otro-mes { background: var(--fondo); }
-.calendario__dia--hoy { outline: var(--trazo-fuerte) var(--acento); outline-offset: -2px; }
-.calendario__dia--hoy .calendario__numero { font-weight: 700; color: var(--acento-texto); }
+.calendario__dia--hoy .calendario__numero { background: var(--acento); color: var(--sobre-acento); font-weight: 700; }
 .calendario__llegada {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: var(--esp-1);
   margin-top: var(--esp-1);
-  padding: 0 var(--esp-1);
-  border: var(--trazo) var(--borde-control);
+  padding: 2px var(--esp-2) 2px var(--esp-2);
+  border-left: 3px solid var(--borde-control);
   background: var(--fondo-3);
   color: var(--texto);
   font-size: var(--op-chico);
   text-decoration: none;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: border-color var(--dur-1) var(--curva-golpe);
+  transition: background-color var(--dur-1) var(--curva-golpe);
 }
-.calendario__llegada:hover { border-color: var(--texto); }
-.calendario__llegada--atrasada { border-color: var(--error); color: var(--error); }
+.calendario__llegada:hover { background: var(--acento-suave); }
+.calendario__editorial { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendario__cuenta { flex: none; padding: 0 var(--esp-1); background: var(--fondo); color: var(--texto-fuerte); font-size: var(--op-rotulo); }
+.calendario__llegada--cercana { border-left-color: var(--acento); }
+.calendario__llegada--atrasada { border-left-color: var(--error); color: var(--error); }
 .calendario-lista { display: none; margin: 0; padding: 0; list-style: none; }
+.calendario-lista__dia { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: var(--esp-3); padding: var(--esp-2); background: var(--fondo-2); }
+.calendario-lista__dia--hoy { outline: var(--trazo) var(--acento); }
+.calendario-lista__fecha { text-transform: uppercase; color: var(--texto-2); }
+.calendario-lista__llegadas { display: grid; gap: var(--esp-1); }
+.calendario-lista .calendario__llegada { margin-top: 0; }
 @media (max-width: 899px) {
   .calendario { display: none; }
   .calendario-lista { display: grid; gap: var(--esp-2); }
-  .calendario-lista li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); }
 }
 
 /* Riel de estados del pedido (4.2). Cada paso es una columna; el tramo que llega

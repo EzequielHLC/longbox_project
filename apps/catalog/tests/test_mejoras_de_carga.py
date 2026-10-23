@@ -192,7 +192,7 @@ def test_el_alta_no_editorial_carga_imagenes_y_la_ficha_las_muestra(client_admin
     producto = tipo.productos.get()
     contenido = client_admin.get(url_ficha(producto)).content.decode()
     assert producto.imagenes.count() == 2
-    assert 'class="galeria-producto"' in contenido
+    assert "data-visor-miniatura" in contenido
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.ALTA_PRODUCTO_NO_EDITORIAL)
     assert "imágenes adicionales: 2 agregadas" in registro.detalle
 

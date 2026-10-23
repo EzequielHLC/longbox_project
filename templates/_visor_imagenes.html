@@ -1,0 +1,137 @@
+{% comment %}
+El visor de imágenes de un producto (plan 00 de interfaz, cuarta parte, D;
+B-00-026). Lo usan la ficha de la tienda y la del backoffice.
+
+La imagen grande y, debajo, las miniaturas que la cambian. Tocar la grande abre la
+ampliación: un diálogo con su propia imagen, flechas a los costados, la tira de
+miniaturas, teclado (← →, Esc) y deslizamiento en el teléfono. **Recorrer la
+ampliación no cambia la imagen de la pantalla**: son dos lugares distintos.
+
+No dibuja nada si el producto no tiene ninguna imagen: el estado vacío es de
+cada pantalla.
+
+    {% include "_visor_imagenes.html" with producto=producto %}
+{% endcomment %}
+{% with adicionales=producto.imagenes.all %}
+{% if producto.portada or adicionales %}
+<div class="visor" data-visor>
+  <button type="button" class="visor__principal" data-visor-ampliar aria-label="Ampliar la imagen">
+    {% if producto.portada %}
+      <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" data-visor-imagen>
+    {% else %}
+      <img src="{{ adicionales.0.imagen.url }}" alt="Imagen 1 de {{ producto.titulo }}" data-visor-imagen>
+    {% endif %}
+    <span class="visor__lupa" aria-hidden="true">{% include "_iconos.html" with icono="buscar" %}</span>
+  </button>
+
+  {% if adicionales.count > 1 or producto.portada and adicionales %}
+    <div class="visor__miniaturas" aria-label="Imágenes de {{ producto.titulo }}">
+      {% if producto.portada %}
+        <a href="{{ producto.portada.url }}" class="visor__miniatura" data-visor-miniatura aria-current="true">
+          <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy">
+        </a>
+      {% endif %}
+      {% for imagen in adicionales %}
+        <a href="{{ imagen.imagen.url }}" class="visor__miniatura" data-visor-miniatura{% if not producto.portada and forloop.first %} aria-current="true"{% endif %}>
+          <img src="{{ imagen.imagen.url }}" alt="Imagen {{ forloop.counter }} de {{ producto.titulo }}" loading="lazy">
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <dialog class="dialogo visor__dialogo" data-visor-dialogo aria-label="Imágenes de {{ producto.titulo }}">
+    <div class="visor__dialogo-cabeza">
+      <span class="datos texto-chico" data-visor-contador aria-live="polite"></span>
+      <button type="button" class="dialogo__cerrar" data-visor-cerrar aria-label="Cerrar">×</button>
+    </div>
+    <div class="visor__escenario">
+      <button type="button" class="visor__paso visor__paso--anterior" data-visor-paso="-1" aria-label="Imagen anterior">{% include "_iconos.html" with icono="anterior" %}</button>
+      <img alt="" data-visor-ampliada draggable="false">
+      <button type="button" class="visor__paso visor__paso--siguiente" data-visor-paso="1" aria-label="Imagen siguiente">{% include "_iconos.html" with icono="siguiente" %}</button>
+    </div>
+    <div class="visor__tira" data-visor-tira></div>
+  </dialog>
+</div>
+
+<script>
+  (function () {
+    for (const visor of document.querySelectorAll("[data-visor]:not([data-listo])")) {
+      visor.dataset.listo = "1";
+      const principal = visor.querySelector("[data-visor-imagen]");
+      const dialogo = visor.querySelector("[data-visor-dialogo]");
+      const ampliada = dialogo.querySelector("[data-visor-ampliada]");
+      const contador = dialogo.querySelector("[data-visor-contador]");
+      const tira = dialogo.querySelector("[data-visor-tira]");
+      const miniaturas = [...visor.querySelectorAll("[data-visor-miniatura]")];
+      const fuentes = miniaturas.length
+        ? miniaturas.map((m) => ({ src: m.href, alt: m.querySelector("img").alt }))
+        : [{ src: principal.src, alt: principal.alt }];
+
+      // Dos índices: el de la pantalla y el de la ampliación.
+      let enPantalla = 0;
+      let enAmpliacion = 0;
+
+      function mostrarEnPantalla(indice) {
+        enPantalla = indice;
+        principal.src = fuentes[indice].src;
+        principal.alt = fuentes[indice].alt;
+        miniaturas.forEach((m, i) => m.toggleAttribute("aria-current", i === indice));
+      }
+
+      function mostrarAmpliada(indice) {
+        enAmpliacion = (indice + fuentes.length) % fuentes.length;
+        ampliada.src = fuentes[enAmpliacion].src;
+        ampliada.alt = fuentes[enAmpliacion].alt;
+        contador.textContent = fuentes.length > 1 ? `${enAmpliacion + 1} de ${fuentes.length}` : "";
+        tira.querySelectorAll("button").forEach((b, i) => b.toggleAttribute("aria-current", i === enAmpliacion));
+      }
+
+      fuentes.forEach((fuente, indice) => {
+        if (fuentes.length < 2) return;
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "visor__miniatura";
+        boton.setAttribute("aria-label", fuente.alt);
+        const imagen = document.createElement("img");
+        imagen.src = fuente.src;
+        imagen.alt = "";
+        boton.append(imagen);
+        boton.addEventListener("click", () => mostrarAmpliada(indice));
+        tira.append(boton);
+      });
+      for (const paso of dialogo.querySelectorAll("[data-visor-paso]")) {
+        paso.hidden = fuentes.length < 2;
+        paso.addEventListener("click", () => mostrarAmpliada(enAmpliacion + Number(paso.dataset.visorPaso)));
+      }
+
+      miniaturas.forEach((miniatura, indice) => {
+        miniatura.addEventListener("click", function (evento) {
+          evento.preventDefault();
+          mostrarEnPantalla(indice);
+        });
+      });
+      visor.querySelector("[data-visor-ampliar]").addEventListener("click", function () {
+        mostrarAmpliada(enPantalla);
+        dialogo.showModal();
+      });
+      dialogo.querySelector("[data-visor-cerrar]").addEventListener("click", () => dialogo.close());
+      dialogo.addEventListener("click", (evento) => { if (evento.target === dialogo) dialogo.close(); });
+      dialogo.addEventListener("keydown", function (evento) {
+        if (evento.key === "ArrowLeft") mostrarAmpliada(enAmpliacion - 1);
+        if (evento.key === "ArrowRight") mostrarAmpliada(enAmpliacion + 1);
+      });
+
+      // Deslizar en el teléfono: más de 40 px de costado cambia de imagen.
+      let desde = null;
+      ampliada.addEventListener("pointerdown", (evento) => { desde = evento.clientX; });
+      ampliada.addEventListener("pointerup", function (evento) {
+        if (desde === null) return;
+        const recorrido = evento.clientX - desde;
+        desde = null;
+        if (Math.abs(recorrido) > 40 && fuentes.length > 1) mostrarAmpliada(enAmpliacion + (recorrido < 0 ? 1 : -1));
+      });
+    }
+  })();
+</script>
+{% endif %}
+{% endwith %}

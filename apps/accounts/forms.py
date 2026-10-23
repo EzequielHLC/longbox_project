@@ -691,6 +691,16 @@ class DatosPersonalesForm(forms.ModelForm):
         return usuario
 
 
+class BajaDeCuentaForm(forms.Form):
+    """`CO-113`: la contraseña actual, como verificación de identidad (paso 4)."""
+
+    contrasena = forms.CharField(
+        label="Tu contraseña actual",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+
+
 class CambioDeCorreoForm(forms.Form):
     """`CO-109`: la contraseña actual y el correo nuevo.
 

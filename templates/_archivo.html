@@ -8,7 +8,9 @@ cuando el producto ya está en el catálogo, y verla al adjuntarla evita ese via
 <script>
     function mejorarArchivos(raiz) {
       const contenedor = raiz || document;
-      for (const input of contenedor.querySelectorAll('input[type="file"]:not([data-mejorado])')) {
+      // `data-vista-propia`: el campo ya dibuja su vista previa (el gestor de
+      // imágenes del producto); una segunda aparecía dentro de sus botones.
+      for (const input of contenedor.querySelectorAll('input[type="file"]:not([data-mejorado]):not([data-vista-propia])')) {
         armarVistaPrevia(input);
       }
     }

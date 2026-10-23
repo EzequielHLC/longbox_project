@@ -4,7 +4,7 @@
 
 # Plan — `15` Reportes
 
-**Estado del plan:** Propuesto · **Fecha:** 2026-10-22
+**Estado del plan:** Aprobado el 2026-10-22: las ambigüedades 1 a 4 con la recomendación del plan · **Fecha:** 2026-10-22
 
 El único caso de uso del módulo. La revisión funcional lo dejó en su versión mínima (plan 00, A5:
 RF-23). Las fuentes leídas: la ficha de `CU-REP-GEN`, su apartado del DSS, `CO-204` y `CO-128`, y

@@ -12,10 +12,10 @@ desde el enlace del correo y se autentica por su token, no por la sesión.
 import logging
 
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.sites.shortcuts import get_current_site
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,7 +25,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views import View
 
-from apps.accounts.forms import CambioDeCorreoForm, DatosPersonalesForm
+from apps.accounts import baja_cliente
+from apps.accounts.forms import BajaDeCuentaForm, CambioDeCorreoForm, DatosPersonalesForm
 from apps.accounts.models import TokenCambioCorreo, Usuario
 from apps.accounts.tokens import token_de_cambio_de_correo
 from apps.almacen.models import ArticuloRetenido
@@ -355,6 +356,64 @@ class ContrasenaView(ClienteMixin, View):
             request, "Tu contraseña cambió. Cerramos tu sesión en los demás dispositivos."
         )
         return redirect("cuenta:datos")
+
+
+# ---------------------------------------------------------------------------
+# CU-CLI-BAJ — CO-112 solicitarBajaDeCuentaPropia · CO-113 confirmarBajaDeCuentaPropia
+# ---------------------------------------------------------------------------
+
+
+class BajaView(ClienteMixin, View):
+    """El GET es `CO-112`: el informe, o el bloqueo con lo que hay que resolver.
+    El POST es `CO-113`, con la contraseña actual. Abandonar es `CO-156`."""
+
+    template_name = "cuenta/baja.html"
+
+    def _render(self, request, formulario=None):
+        return render(
+            request,
+            self.template_name,
+            {
+                "seccion": "datos",
+                "implicaciones": baja_cliente.implicaciones(request.user),
+                "bloqueada": baja_cliente.esta_bloqueada(request.user),
+                "minutos": baja_cliente.minutos_de_bloqueo(),
+                "form": formulario or BajaDeCuentaForm(),
+            },
+        )
+
+    def get(self, request):
+        return self._render(request)
+
+    def post(self, request):
+        usuario = request.user
+        formulario = BajaDeCuentaForm(request.POST)
+        if baja_cliente.esta_bloqueada(usuario):
+            return self._render(request, formulario)
+        if not formulario.is_valid():
+            return self._render(request, formulario)
+        if not usuario.check_password(formulario.cleaned_data["contrasena"]):
+            # E3: el mismo mensaje con cualquier contraseña equivocada.
+            baja_cliente.registrar_intento(usuario, obtener_ip(request))
+            formulario.add_error("contrasena", baja_cliente.MENSAJE_CONTRASENA)
+            return self._render(request, formulario)
+
+        try:
+            baja_cliente.confirmar(usuario, ip=obtener_ip(request))
+        except baja_cliente.BajaBloqueada as bloqueo:
+            messages.error(request, bloqueo.motivo)
+            return redirect("cuenta:baja")
+        except DatabaseError:
+            # E4: la transacción se revirtió entera; la cuenta sigue activa.
+            logger.exception("Falló la baja de la cuenta %s.", usuario.pk)
+            messages.error(
+                request, "No pudimos dar de baja tu cuenta por un error técnico. Probá de nuevo."
+            )
+            return redirect("cuenta:baja")
+
+        logout(request)
+        messages.success(request, baja_cliente.MENSAJE_DESACTIVADA)
+        return redirect("accounts:login")
 
 
 # ---------------------------------------------------------------------------

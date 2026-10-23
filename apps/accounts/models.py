@@ -270,9 +270,20 @@ class IntentoFallido(models.Model):
     Se guarda el correo tal como se tipeó (puede no corresponder a ninguna
     cuenta: si solo contáramos los intentos contra cuentas existentes, la
     diferencia de comportamiento delataría qué correos están registrados).
+
+    `flujo` separa los dos contadores: tres contraseñas equivocadas al dar de
+    baja la cuenta bloquean la baja (`CO-113` E3), no el inicio de sesión.
     """
 
+    INICIO_SESION = "inicio_sesion"
+    BAJA_CUENTA = "baja_cuenta"
+    FLUJO_CHOICES = [  # noqa: RUF012
+        (INICIO_SESION, "Inicio de sesión"),
+        (BAJA_CUENTA, "Baja de la cuenta"),
+    ]
+
     email = models.CharField(max_length=254, db_index=True)
+    flujo = models.CharField("flujo", max_length=15, choices=FLUJO_CHOICES, default=INICIO_SESION)
     ip = models.GenericIPAddressField(null=True, blank=True)
     ocurrido_en = models.DateTimeField(auto_now_add=True, db_index=True)
 

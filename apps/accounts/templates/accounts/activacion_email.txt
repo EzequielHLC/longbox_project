@@ -1,7 +1,7 @@
 {% autoescape off %}Estimado/a {{ usuario.get_full_name|default:usuario.email }}:
 
-Se ha creado una cuenta a su nombre en el sistema Longbox, con el rol de
-{{ usuario.get_rol_display }}.
+{% if reactivacion %}Su cuenta de Longbox fue reactivada.{% else %}Se ha creado una cuenta a su nombre en el sistema Longbox, con el rol de
+{{ usuario.get_rol_display }}.{% endif %}
 
 Para comenzar a utilizarla, acceda al siguiente enlace y establezca su contraseña:
 

@@ -39,8 +39,9 @@ esconderse con CSS.
 
 <div class="dos-columnas dos-columnas--lateral-izquierda">
   <div class="pila">
-    {% if producto.portada %}
-      <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" class="portada">
+    {% if producto.portada or producto.imagenes.exists %}
+      {# El mismo visor que la ficha de la tienda (B-00-026). #}
+      {% include "_visor_imagenes.html" with producto=producto %}
     {% else %}
       {% comment %}
       El producto se dio de alta sin portada. Se adjunta más adelante, desde la
@@ -50,18 +51,6 @@ esconderse con CSS.
         <span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span>
       </div>
     {% endif %}
-    {% with adicionales=producto.imagenes.all %}
-      {% if adicionales %}
-        {# B-01-003: las imágenes que acompañan a la portada. #}
-        <div class="galeria-producto" aria-label="Imágenes adicionales">
-          {% for imagen in adicionales %}
-            <a href="{{ imagen.imagen.url }}" class="galeria-producto__item" target="_blank" rel="noopener">
-              <img src="{{ imagen.imagen.url }}" alt="Imagen adicional {{ forloop.counter }} de {{ producto.titulo }}">
-            </a>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
 
     {% if es_administrador %}
       <ul class="lista-renglones">
@@ -221,7 +210,7 @@ esconderse con CSS.
           <dt>Stock reservado en pedidos</dt>
           <dd class="datos">{{ reservadas }}</dd>
           <dt>Suscriptores de reposición</dt>
-          <dd class="secundario">No disponible todavía.</dd>
+          <dd class="datos">{{ suscriptores }}</dd>
         </dl>
 
         <h3>Historial de modificaciones</h3>

@@ -413,7 +413,7 @@ frecuencia, que la ficha ya nombra.
 ### B-01-013 · El lote nacional sobrescribía el precio de la tabla sin advertir ni confirmar
 
 **Tipo:** Corrección · **Fecha:** 2026-10-22 · **Alcance:** `CU-ALT-NAC` A3, `CO-004`, `CO-005`
-**Estado:** Abierta — el código ya cumple la ficha; queda la consulta sobre la auditoría
+**Estado:** Abierta — consulta resuelta el 2026-10-23: en un lote basta la entrada consolidada de `CO-006`; queda la enmienda
 
 **Qué apareció.**
 Al escribir las pruebas de contrato del alta de lotes (V1 del plan 00): en un lote nacional, un
