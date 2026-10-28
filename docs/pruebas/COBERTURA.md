@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-22, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-10-28, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -26,7 +26,7 @@ es otra puerta y su número también vive ahí.
 | Contratos especificados | 219 |
 | Con al menos una prueba que lleva su código | 219 |
 | Sin ninguna | 0 |
-| Pruebas de contrato en la suite | 1032 |
+| Pruebas de contrato en la suite | 1080 |
 
 ---
 
@@ -39,16 +39,16 @@ es otra puerta y su número también vive ahí.
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-005` | confirmarPrecioManual | 3 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-017` | aprobarCorreoParaProcesamiento | 11 | `apps/suppliers/tests/test_concurrencia_correos.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
+| `CO-017` | aprobarCorreoParaProcesamiento | 12 | `apps/suppliers/tests/test_concurrencia_correos.py`, `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-019` | reprocesarCorreo | 5 | `apps/suppliers/tests/test_contratos_04_proveedores.py` |
 | `CO-025` | cerrarSesionDeRevision | 6 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-031` | restaurarPrecioCalculado | 4 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-053` | confirmarCambioDeMargenGlobal | 4 | `apps/accounts/tests/test_parametros_de_seguridad.py`, `apps/catalog/tests/test_contratos_03_pricing.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-074` | enviarPedidoConsolidado — *contrato de operación interna* | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
-| `CO-077` | notificarReposicionASuscriptores — *contrato de operación interna* | 7 | `apps/restock/tests/test_contratos_05_restock.py` |
-| `CO-086` | fusionarCarritoDeSesion | 3 | `apps/tienda/tests/test_contratos_07_carrito.py` |
+| `CO-074` | enviarPedidoConsolidado — *contrato de operación interna* | 2 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
+| `CO-077` | notificarReposicionASuscriptores — *contrato de operación interna* | 8 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
+| `CO-086` | fusionarCarritoDeSesion | 4 | `apps/tienda/tests/test_contratos_07_carrito.py`, `apps/tienda/tests/test_tope_de_reservas.py` |
 | `CO-087` | declararDireccionDeEnvio | 9 | `apps/almacen/tests/test_contratos_18_almacen.py`, `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_retiro_en_local.py` |
-| `CO-089` | registrarResultadoDePago | 40 | `apps/almacen/tests/test_contratos_18_almacen.py`, `apps/tienda/tests/test_barra_envio.py`, `apps/tienda/tests/test_concurrencia_compra.py`, `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_contratos_07_invitado.py`, `apps/tienda/tests/test_retiro_en_local.py` |
+| `CO-089` | registrarResultadoDePago | 41 | `apps/almacen/tests/test_contratos_18_almacen.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py`, `apps/tienda/tests/test_barra_envio.py`, `apps/tienda/tests/test_concurrencia_compra.py`, `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_contratos_07_invitado.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-103` | aplicarCanjeDePuntosAItem | 12 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/ventas/tests/test_contratos_06_ventas.py` |
 | `CO-104` | revertirCanjeDePuntosDeItem | 2 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/ventas/tests/test_contratos_06_ventas.py` |
 | `CO-122` | regenerarEnlaceDeActivacion | 5 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
@@ -65,22 +65,22 @@ es otra puerta y su número también vive ahí.
 | --- | --- | ---: | --- |
 | `CO-001` | iniciarLoteEditorial | 3 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-002` | declararCabeceraLote | 4 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-003` | agregarItemLote | 6 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
+| `CO-003` | agregarItemLote | 9 | `apps/catalog/tests/test_carreras_de_unicidad.py`, `apps/catalog/tests/test_contratos_01_alta_lotes.py`, `apps/catalog/tests/test_portadas_rnf05.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-004` | fijarPrecioManualItem | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-006` | confirmarLote | 4 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-007` | declararCalculadoraLote | 2 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-008` | sobrescribirCotizacion | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-009` | agregarItemLoteImportado | 2 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
+| `CO-009` | agregarItemLoteImportado | 3 | `apps/catalog/tests/test_contratos_01_alta_lotes.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-010` | fijarPrecioFinalManual | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-011` | ejecutarCicloVigilanciaPreventa | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
 | `CO-012` | ejecutarCicloEscaladoPorInaccion | 3 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
-| `CO-013` | confirmarIngresoDeLote | 15 | `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/restock/tests/test_contratos_05_restock.py` |
+| `CO-013` | confirmarIngresoDeLote | 16 | `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-014` | solicitarRegistroDeDemora | 4 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
-| `CO-015` | confirmarRegistroDeDemora | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
-| `CO-016` | ejecutarCicloMonitoreoCasilla | 7 | `apps/suppliers/tests/test_monitoreo_casilla.py` |
-| `CO-020` | editarBorrador | 4 | `apps/catalog/tests/test_contratos_01_revision.py` |
+| `CO-015` | confirmarRegistroDeDemora | 7 | `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/pedidos/tests/test_demora_de_varios_tomos.py` |
+| `CO-016` | ejecutarCicloMonitoreoCasilla | 11 | `apps/suppliers/tests/test_monitoreo_casilla.py` |
+| `CO-020` | editarBorrador | 5 | `apps/catalog/tests/test_contratos_01_revision.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-021` | marcarCampoRevisado | 1 | `apps/catalog/tests/test_contratos_01_revision.py` |
-| `CO-022` | confirmarBorrador | 6 | `apps/catalog/tests/test_contratos_01_revision.py` |
+| `CO-022` | confirmarBorrador | 7 | `apps/catalog/tests/test_contratos_01_revision.py`, `apps/catalog/tests/test_revision_borradores.py` |
 | `CO-023` | confirmarBorradoresEnLote | 1 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-024` | rechazarBorrador | 2 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-026` | solicitarCancelacionDePreventaEnLote | 2 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
@@ -94,9 +94,9 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-028` | registrarProductoNoEditorial | 9 | `apps/catalog/tests/test_contratos_02_producto.py` |
+| `CO-028` | registrarProductoNoEditorial | 14 | `apps/catalog/tests/test_carreras_de_unicidad.py`, `apps/catalog/tests/test_contratos_02_producto.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-029` | confirmarAltaPeseAHomonimo | 2 | `apps/catalog/tests/test_contratos_02_producto.py` |
-| `CO-030` | editarProducto | 9 | `apps/catalog/tests/test_contratos_02_producto.py` |
+| `CO-030` | editarProducto | 13 | `apps/catalog/tests/test_carreras_de_unicidad.py`, `apps/catalog/tests/test_contratos_02_producto.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-032` | confirmarEdicionPeseAColision | 2 | `apps/catalog/tests/test_contratos_02_producto.py` |
 | `CO-033` | solicitarBajaDeProducto | 3 | `apps/catalog/tests/test_contratos_02_producto.py` |
 | `CO-034` | confirmarBajaDeProducto | 9 | `apps/catalog/tests/test_contratos_02_producto.py` |
@@ -172,9 +172,9 @@ es otra puerta y su número también vive ahí.
 | `CO-069` | ajustarCantidadDeLinea | 4 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-070` | eliminarLineaDePropuesta | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-071` | agregarProductoAPropuesta | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
-| `CO-072` | despacharPedidoAProveedor | 3 | `apps/restock/tests/test_contratos_05_restock.py` |
+| `CO-072` | despacharPedidoAProveedor | 5 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pantallas_pedidos.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-073` | descartarProveedorDePropuesta | 2 | `apps/restock/tests/test_contratos_05_restock.py` |
-| `CO-075` | suscribirseAReposicion | 4 | `apps/restock/tests/test_contratos_05_restock.py` |
+| `CO-075` | suscribirseAReposicion | 5 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-076` | cancelarSuscripcionDeReposicion | 2 | `apps/restock/tests/test_avisos_de_la_cuenta.py`, `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-174` | consultarPropuestaDeRestock | 2 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-175` | consultarLineasDeProveedor | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
@@ -197,16 +197,16 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-083` | agregarProductoAlCarrito | 14 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_concurrencia_carrito.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-084` | modificarCantidadDeLinea | 7 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
+| `CO-083` | agregarProductoAlCarrito | 21 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py`, `apps/tienda/tests/test_concurrencia_carrito.py`, `apps/tienda/tests/test_contratos_07_carrito.py`, `apps/tienda/tests/test_tope_de_reservas.py` |
+| `CO-084` | modificarCantidadDeLinea | 8 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-085` | eliminarLineaDelCarrito | 3 | `apps/core/tests/test_tienda_quinta_parte.py`, `apps/tienda/tests/test_contratos_07_carrito.py` |
 | `CO-088` | confirmarPedido | 8 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-090` | declararDatosDeInvitado | 6 | `apps/tienda/tests/test_contratos_07_invitado.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-091` | confirmarPedidoDeInvitado | 2 | `apps/tienda/tests/test_contratos_07_invitado.py` |
 | `CO-176` | consultarCatalogoPublico | 11 | `apps/core/tests/test_contratos_07_tienda.py`, `apps/core/tests/test_tienda_quinta_parte.py` |
 | `CO-177` | consultarFichaPublicaDeProducto | 3 | `apps/core/tests/test_contratos_07_tienda.py` |
-| `CO-178` | consultarCarrito | 5 | `apps/tienda/tests/test_contratos_07_carrito.py` |
-| `CO-179` | procederAlPago | 6 | `apps/tienda/tests/test_contratos_07_compra.py` |
+| `CO-178` | consultarCarrito | 6 | `apps/tienda/tests/test_contratos_07_carrito.py`, `apps/tienda/tests/test_tope_de_reservas.py` |
+| `CO-179` | procederAlPago | 7 | `apps/tienda/tests/test_contratos_07_compra.py`, `apps/tienda/tests/test_tope_de_reservas.py` |
 | `CO-180` | iniciarCheckout | 4 | `apps/tienda/tests/test_contratos_07_compra.py` |
 | `CO-181` | iniciarCompraComoInvitado | 5 | `apps/tienda/tests/test_contratos_07_invitado.py` |
 
@@ -260,7 +260,7 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-107` | registrarCuentaDeCliente | 7 | `apps/accounts/tests/test_contratos_11_registro.py` |
+| `CO-107` | registrarCuentaDeCliente | 8 | `apps/accounts/tests/test_carreras_de_unicidad.py`, `apps/accounts/tests/test_contratos_11_registro.py` |
 | `CO-108` | actualizarDatosPersonales | 5 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-109` | solicitarCambioDeCorreo | 6 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
 | `CO-110` | confirmarCambioDeCorreo | 7 | `apps/accounts/tests/test_contratos_11_cuenta.py` |
@@ -292,8 +292,8 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-120` | registrarUsuarioDelSistema | 11 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
-| `CO-121` | modificarUsuarioDelSistema | 11 | `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
+| `CO-120` | registrarUsuarioDelSistema | 12 | `apps/accounts/tests/test_carreras_de_unicidad.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
+| `CO-121` | modificarUsuarioDelSistema | 12 | `apps/accounts/tests/test_carreras_de_unicidad.py`, `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-123` | confirmarBajaDeUsuario | 12 | `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`, `apps/accounts/tests/test_contratos_11_baja.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-124` | confirmarReactivacionDeUsuario | 13 | `apps/accounts/tests/test_contratos_11_baja.py`, `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
 | `CO-125` | confirmarEliminacionDeCuentaPendiente | 8 | `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py` |
@@ -310,7 +310,7 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-126` | confirmarCierreDeCaja | 11 | `apps/caja/tests/test_concurrencia_caja.py`, `apps/caja/tests/test_contratos_14_caja.py` |
+| `CO-126` | confirmarCierreDeCaja | 12 | `apps/caja/tests/test_concurrencia_caja.py`, `apps/caja/tests/test_contratos_14_caja.py` |
 | `CO-127` | exportarCierreDeCaja | 2 | `apps/caja/tests/test_contratos_14_caja.py` |
 | `CO-203` | solicitarCierreDeCaja | 6 | `apps/caja/tests/test_contratos_14_caja.py` |
 
@@ -339,7 +339,7 @@ es otra puerta y su número también vive ahí.
 
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
-| `CO-130` | actualizarParametrosOperacionales | 15 | `apps/accounts/tests/test_parametros_de_seguridad.py`, `apps/catalog/tests/test_parametros_compra.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py`, `apps/puntos/tests/test_contratos_10_caducidad_y_ajuste.py` |
+| `CO-130` | actualizarParametrosOperacionales | 19 | `apps/accounts/tests/test_parametros_de_seguridad.py`, `apps/catalog/tests/test_parametros_compra.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py`, `apps/puntos/tests/test_contratos_10_caducidad_y_ajuste.py` |
 | `CO-131` | actualizarIdentidadVisual | 8 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-132` | agregarBanner | 2 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-133` | editarBanner | 4 | `apps/core/tests/test_contratos_17_contenido.py` |
@@ -411,6 +411,9 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO003_c_el_precio_sale_de_la_tabla_y_el_producto_queda_asociado` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO003_c_sin_combinacion_en_la_tabla_el_precio_es_el_declarado` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO003_c_sin_portada_queda_con_imagen_pendiente` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO003_el_tomo_cargado_mientras_tanto_se_excluye_como_duplicado` — `apps/catalog/tests/test_carreras_de_unicidad.py`
+- `test_CO003_la_portada_del_lote_nacional_queda_en_webp_sin_el_original` — `apps/catalog/tests/test_portadas_rnf05.py`
+- `test_CO003_una_preventa_del_lote_nace_sin_stock_y_su_cantidad_queda_pedida` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 
 **`CO-004` · fijarPrecioManualItem**
 
@@ -442,6 +445,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO009_A3_sin_imagen_se_registra_con_imagen_pendiente` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO009_c_precio_base_y_final_salen_del_cre_y_del_margen` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO009_la_portada_del_lote_importado_queda_en_webp_sin_el_original` — `apps/catalog/tests/test_portadas_rnf05.py`
 
 **`CO-010` · fijarPrecioFinalManual**
 
@@ -470,6 +474,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO013_la_pantalla_agrupa_por_fecha_y_editorial` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO013_la_pantalla_rechaza_unidades_invalidas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO013_la_revision_dice_que_faltante_se_demora_y_cual_no_cambia` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO013_lo_confirmado_en_preventas_por_llegar_se_descuenta_del_pedido` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 - `test_CO013_lo_que_sobra_al_llegar_una_preventa_avisa_a_los_suscriptores` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO013_lo_recibido_cubre_las_reservas_en_orden_de_compra` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO013_no_saltea_una_reserva_que_no_alcanza` — `apps/pedidos/tests/test_contratos_01_preventa.py`
@@ -492,7 +497,9 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO015_A3_sin_pedidos_registra_la_demora_sin_avisos` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO015_E2_un_pedido_que_falla_no_frena_a_los_demas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO015_confirmar_demora_marca_el_producto_y_transiciona_los_pedidos` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_el_que_ya_no_admite_la_demora_queda_afuera_y_los_demas_siguen` — `apps/pedidos/tests/test_demora_de_varios_tomos.py`
 - `test_CO015_el_servicio_rechaza_una_fecha_estimada_que_no_es_futura` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO015_varios_tomos_cada_uno_con_su_fecha_y_su_auditoria` — `apps/pedidos/tests/test_demora_de_varios_tomos.py`
 
 **`CO-016` · ejecutarCicloMonitoreoCasilla**
 
@@ -500,8 +507,12 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO016_E3_sin_conexion_avisa_al_administrador_y_no_encola` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 - `test_CO016_I16_correr_dos_veces_no_encola_dos_veces` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 - `test_CO016_corre_en_el_temporizador` — `apps/suppliers/tests/test_monitoreo_casilla.py`
+- `test_CO016_el_boton_de_la_cola_encola_sin_esperar_la_frecuencia` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 - `test_CO016_encola_lo_de_un_proveedor_habilitado_sin_procesarlo` — `apps/suppliers/tests/test_monitoreo_casilla.py`
+- `test_CO016_escuchar_al_bot_vigila_la_casilla` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 - `test_CO016_respeta_la_frecuencia_configurada` — `apps/suppliers/tests/test_monitoreo_casilla.py`
+- `test_CO016_revisar_casilla_saltea_la_frecuencia` — `apps/suppliers/tests/test_monitoreo_casilla.py`
+- `test_CO016_revisar_casilla_si_corresponde_respeta_la_frecuencia` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 - `test_CO016_sin_casilla_configurada_no_hace_nada` — `apps/suppliers/tests/test_monitoreo_casilla.py`
 
 **`CO-017` · aprobarCorreoParaProcesamiento**
@@ -510,6 +521,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO017_E1_un_correo_ya_tomado_por_otro_no_se_vuelve_a_procesar` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO017_E4_si_el_servicio_no_responde_el_correo_falla_y_queda_en_la_cola` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO017_E4_si_no_identifica_ningun_producto_el_correo_falla` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
+- `test_CO017_E4_un_correo_bien_clasificado_que_no_es_de_novedades_no_falla` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO017_aprobar_pasa_el_correo_de_pendiente_a_procesado` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO017_crea_un_borrador_por_producto_con_sus_asociaciones` — `apps/suppliers/tests/test_contratos_04_proveedores.py`
 - `test_CO017_dos_aprobaciones_simultaneas_procesan_una_sola_vez` — `apps/suppliers/tests/test_concurrencia_correos.py`
@@ -535,6 +547,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO020_a_CO025_otro_rol_no_resuelve_borradores` — `apps/catalog/tests/test_contratos_01_revision.py`
 - `test_CO020_completar_los_bloqueantes_lo_pasa_a_pendiente` — `apps/catalog/tests/test_contratos_01_revision.py`
+- `test_CO020_la_portada_que_se_le_carga_a_un_borrador_queda_en_webp` — `apps/catalog/tests/test_portadas_rnf05.py`
 - `test_CO020_los_atributos_y_el_stock_inicial_pasan_a_lo_declarado` — `apps/catalog/tests/test_contratos_01_revision.py`
 - `test_CO020_si_sigue_faltando_un_bloqueante_sigue_incompleto` — `apps/catalog/tests/test_contratos_01_revision.py`
 
@@ -545,6 +558,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-022` · confirmarBorrador**
 
 - `test_CO022_E3_un_bloqueante_vacio_bloquea` — `apps/catalog/tests/test_contratos_01_revision.py`
+- `test_CO022_E7_el_tomo_confirmado_mientras_tanto_se_informa_como_duplicado` — `apps/catalog/tests/test_revision_borradores.py`
 - `test_CO022_E7_la_colision_se_bloquea_antes_de_crear_y_enlaza_la_ficha` — `apps/catalog/tests/test_contratos_01_revision.py`
 - `test_CO022_E7_por_combinacion_lo_dice` — `apps/catalog/tests/test_contratos_01_revision.py`
 - `test_CO022_crea_el_producto_con_los_valores_del_borrador` — `apps/catalog/tests/test_contratos_01_revision.py`
@@ -587,13 +601,18 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO028_E1_falta_un_obligatorio_no_registra_y_conserva_lo_escrito` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_E2_el_homonimo_advierte_con_enlace_y_no_registra_sin_confirmar` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO028_E3_el_codigo_ajeno_enlaza_la_ficha_en_conflicto` — `apps/catalog/tests/test_carreras_de_unicidad.py`
+- `test_CO028_E3_el_codigo_tomado_mientras_se_validaba_bloquea_y_enlaza` — `apps/catalog/tests/test_carreras_de_unicidad.py`
+- `test_CO028_E3_la_portada_del_alta_que_perdio_no_queda_en_el_almacenamiento` — `apps/catalog/tests/test_carreras_de_unicidad.py`
 - `test_CO028_E3_un_codigo_ajeno_bloquea_aunque_se_confirme` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_crea_el_producto_con_sus_atributos_y_asociaciones` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_el_alta_no_la_hace_otro_rol` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO028_la_portada_del_alta_no_editorial_queda_en_webp_sin_el_original` — `apps/catalog/tests/test_portadas_rnf05.py`
 - `test_CO028_precondicion_el_precio_es_mayor_que_cero` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_precondicion_el_stock_no_es_negativo` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_precondicion_el_tipo_tiene_que_ser_del_rubro` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO028_sin_codigo_declarado_se_genera_uno_unico` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO028_una_portada_gif_se_rechaza_y_no_registra` — `apps/catalog/tests/test_portadas_rnf05.py`
 
 **`CO-029` · confirmarAltaPeseAHomonimo**
 
@@ -604,10 +623,14 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO030_E1_un_obligatorio_vacio_no_actualiza` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_E1_una_clasificacion_de_otro_rubro_no_actualiza` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO030_E2_el_codigo_de_barras_ajeno_enlaza_la_ficha_y_el_criterio` — `apps/catalog/tests/test_carreras_de_unicidad.py`
+- `test_CO030_E2_el_codigo_de_barras_tomado_mientras_se_validaba_no_actualiza` — `apps/catalog/tests/test_carreras_de_unicidad.py`
+- `test_CO030_E2_el_isbn_tomado_mientras_se_validaba_no_actualiza` — `apps/catalog/tests/test_carreras_de_unicidad.py`
 - `test_CO030_E2_la_colision_bloqueante_informa_con_enlace_y_no_actualiza` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_E3_la_colision_no_bloqueante_pide_confirmacion` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_cambiar_un_precio_vinculado_cumple_CO005` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_la_edicion_no_la_hace_otro_rol` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO030_la_portada_que_reemplaza_queda_en_webp_sin_el_original` — `apps/catalog/tests/test_portadas_rnf05.py`
 - `test_CO030_los_atributos_cambian_y_la_auditoria_guarda_el_par` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_precondicion_un_descatalogado_se_edita` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO030_se_forman_y_rompen_las_asociaciones` — `apps/catalog/tests/test_contratos_02_producto.py`
@@ -871,6 +894,8 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO072_E2_si_el_correo_falla_el_proveedor_sigue_pendiente` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO072_despachar_envia_el_correo_y_marca_las_lineas` — `apps/restock/tests/test_contratos_05_restock.py`
+- `test_CO072_despachar_restock_registra_el_pedido_y_abre_la_preventa_de_lo_agotado` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
+- `test_CO072_el_despacho_lleva_la_llegada_estimada` — `apps/suppliers/tests/test_pantallas_pedidos.py`
 - `test_CO072_el_grupo_sin_proveedor_no_se_despacha` — `apps/restock/tests/test_contratos_05_restock.py`
 
 **`CO-073` · descartarProveedorDePropuesta**
@@ -881,11 +906,13 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-074` · enviarPedidoConsolidado — *contrato de operación interna***
 
 - `test_CO074_E2_sin_correo_no_se_envia_y_se_registra` — `apps/restock/tests/test_contratos_05_restock.py`
+- `test_CO074_un_pedido_que_no_salio_no_queda_registrado` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 
 **`CO-075` · suscribirseAReposicion**
 
 - `test_CO075_E1_no_registra_un_duplicado` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO075_E2_si_ya_hay_stock_no_se_suscribe` — `apps/restock/tests/test_contratos_05_restock.py`
+- `test_CO075_con_la_preventa_completa_se_puede_pedir_el_aviso` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 - `test_CO075_el_invitado_va_al_ingreso_y_el_personal_no_puede` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO075_suscribirse_desde_la_ficha_de_un_agotado` — `apps/restock/tests/test_contratos_05_restock.py`
 
@@ -902,6 +929,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO077_bajar_el_stock_no_avisa` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO077_con_mas_unidades_que_suscriptores_avisa_a_todos` — `apps/restock/tests/test_contratos_05_restock.py`
 - `test_CO077_el_articulo_que_vuelve_por_vencimiento_tambien_avisa` — `apps/restock/tests/test_contratos_05_restock.py`
+- `test_CO077_lo_que_llega_avisa_a_la_lista_de_espera` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 - `test_CO077_reponer_por_la_edicion_avisa_a_los_primeros_n` — `apps/restock/tests/test_contratos_05_restock.py`
 
 **`CO-078` · abrirVentaPresencial**
@@ -952,24 +980,32 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-083` · agregarProductoAlCarrito**
 
-- `test_CO083_A1_la_pre_venta_se_reserva_sin_tope_de_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_A1_la_pre_venta_se_reserva_sin_mirar_el_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_A1_la_reserva_queda_en_el_maximo_por_cliente_y_se_avisa` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_E1_la_cantidad_no_pasa_del_stock_y_se_informa_el_maximo` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_agregar_desde_la_tarjeta_responde_json_con_las_unidades` — `apps/core/tests/test_tienda_quinta_parte.py`
+- `test_CO083_con_el_cupo_lleno_no_se_reserva_y_se_dice` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
+- `test_CO083_con_el_maximo_ya_reservado_no_agrega_y_lo_dice` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO083_desde_la_tarjeta_el_tope_de_stock_se_avisa_igual` — `apps/core/tests/test_tienda_quinta_parte.py`
 - `test_CO083_dos_pestanas_que_agregan_a_la_vez_dejan_una_linea_con_la_suma` — `apps/tienda/tests/test_concurrencia_carrito.py`
 - `test_CO083_el_cliente_crea_un_carrito_persistente_asociado_a_su_cuenta` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_el_invitado_crea_un_carrito_de_sesion_con_la_linea` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_el_personal_no_agrega_desde_la_tarjeta` — `apps/core/tests/test_tienda_quinta_parte.py`
+- `test_CO083_el_tope_cuenta_lo_reservado_en_pedidos_en_curso` — `apps/tienda/tests/test_tope_de_reservas.py`
+- `test_CO083_las_reservas_de_otro_cliente_no_cuentan` — `apps/tienda/tests/test_tope_de_reservas.py`
+- `test_CO083_lo_cancelado_o_entregado_no_cuenta_como_reserva` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO083_no_toca_el_producto_ni_se_audita` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_rechaza_una_cantidad_que_no_es_al_menos_uno` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_si_ya_estaba_suma_a_la_misma_linea` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO083_un_activo_sigue_con_el_tope_del_stock_y_no_el_de_reserva` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO083_un_producto_fuera_de_la_tienda_responde_404` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_un_producto_sin_stock_no_se_agrega` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO083_volver_a_una_direccion_externa_se_ignora` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-084` · modificarCantidadDeLinea**
 
-- `test_CO084_A1_en_pre_venta_no_hay_tope` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_A1_el_maximo_sale_de_parametros` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO084_A1_en_pre_venta_el_tope_es_el_maximo_por_reserva` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO084_E1_no_pasa_del_stock` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO084_E2_menos_de_uno_se_rechaza_y_la_linea_no_cambia` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO084_cambiar_la_cantidad_devuelve_el_carrito_recalculado` — `apps/core/tests/test_tienda_quinta_parte.py`
@@ -987,6 +1023,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO086_con_carrito_propio_suma_con_tope_y_elimina_el_de_sesion` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO086_el_personal_que_inicia_sesion_descarta_el_carrito_de_invitado` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO086_la_fusion_respeta_el_tope_contando_los_pedidos` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO086_sin_carrito_propio_el_de_sesion_pasa_a_la_cuenta` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-087` · declararDireccionDeEnvio**
@@ -1039,6 +1076,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO089_el_mismo_aviso_repetido_en_paralelo_genera_un_solo_pedido` — `apps/tienda/tests/test_concurrencia_compra.py`
 - `test_CO089_el_mismo_saldo_canjeado_en_dos_compras_a_la_vez_se_gasta_una_sola_vez` — `apps/tienda/tests/test_concurrencia_compra.py`
 - `test_CO089_el_pedido_nace_para_retirar_sin_direccion_ni_envio` — `apps/tienda/tests/test_retiro_en_local.py`
+- `test_CO089_el_ultimo_lugar_del_cupo_pagado_dos_veces_se_rechaza_la_segunda` — `apps/suppliers/tests/test_pedidos_a_proveedor.py`
 - `test_CO089_envia_la_confirmacion_despues_del_commit` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO089_invitado_E3_rechazo_conserva_los_datos_del_formulario` — `apps/tienda/tests/test_contratos_07_invitado.py`
 - `test_CO089_invitado_el_pedido_queda_asociado_al_correo_y_no_a_un_usuario` — `apps/tienda/tests/test_contratos_07_invitado.py`
@@ -1253,6 +1291,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-107` · registrarCuentaDeCliente**
 
+- `test_CO107_E1_el_correo_registrado_mientras_se_validaba_avisa_sin_error` — `apps/accounts/tests/test_carreras_de_unicidad.py`
 - `test_CO107_E1_un_correo_registrado_en_cualquier_estado_no_duplica` — `apps/accounts/tests/test_contratos_11_registro.py`
 - `test_CO107_E2_contrasenas_invalidas_no_crean_y_conservan_lo_escrito` — `apps/accounts/tests/test_contratos_11_registro.py`
 - `test_CO107_E3_sin_aceptar_la_politica_se_bloquea` — `apps/accounts/tests/test_contratos_11_registro.py`
@@ -1382,6 +1421,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-120` · registrarUsuarioDelSistema**
 
+- `test_CO120_E2_el_correo_dado_de_alta_mientras_se_validaba_avisa_sin_error` — `apps/accounts/tests/test_carreras_de_unicidad.py`
 - `test_CO120_el_correo_queda_normalizado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO120_el_enlace_nace_vigente_y_con_48_horas` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO120_el_rol_queda_con_el_valor_declarado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
@@ -1396,6 +1436,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-121` · modificarUsuarioDelSistema**
 
+- `test_CO121_E2_el_correo_tomado_mientras_se_validaba_la_edicion_avisa_sin_error` — `apps/accounts/tests/test_carreras_de_unicidad.py`
 - `test_CO121_cambiar_el_rol_invalida_la_sesion_del_usuario_modificado` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
 - `test_CO121_dos_administradores_que_se_sacan_el_rol_a_la_vez_dejan_uno` — `apps/accounts/tests/test_concurrencia_ultimo_administrador.py`
 - `test_CO121_la_ultima_modificacion_queda_con_el_instante` — `apps/accounts/tests/test_contratos_13_gestion_de_usuarios.py`
@@ -1468,6 +1509,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO126_c_las_incluidas_pasan_a_incluidas_en_cierre` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO126_c_las_pendientes_y_rechazadas_quedan_fuera` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO126_dos_cierres_a_la_vez_dejan_uno_solo_con_cada_transaccion_una_vez` — `apps/caja/tests/test_concurrencia_caja.py`
+- `test_CO126_el_resumen_del_cierre_se_abre_con_sus_totales_y_sus_ventas` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO126_la_base_no_admite_dos_cierres_de_la_misma_fecha` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO126_lo_vendido_despues_entra_en_el_cierre_siguiente` — `apps/caja/tests/test_contratos_14_caja.py`
 - `test_CO126_queda_en_la_auditoria_con_los_totales` — `apps/caja/tests/test_contratos_14_caja.py`
@@ -1490,11 +1532,15 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-130` · actualizarParametrosOperacionales**
 
+- `test_CO130_E1_el_margen_del_cupo_no_pasa_del_50` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_E1_el_maximo_por_reserva_es_al_menos_uno` — `apps/catalog/tests/test_parametros_compra.py`
 - `test_CO130_E1_el_plazo_bajo_el_piso_legal_se_rechaza_solo_y_los_demas_se_guardan` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO130_E2_otro_campo_invalido_no_guarda_nada_aunque_el_plazo_tambien_falle` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO130_E2_un_valor_fuera_de_rango_no_guarda_nada` — `apps/accounts/tests/test_parametros_de_seguridad.py`
 - `test_CO130_b_la_configuracion_queda_asociada_al_administrador` — `apps/catalog/tests/test_parametros_compra.py`
 - `test_CO130_el_aviso_previo_se_configura_en_parametros` — `apps/puntos/tests/test_contratos_10_caducidad_y_ajuste.py`
+- `test_CO130_el_margen_del_cupo_pasa_al_declarado_y_se_audita` — `apps/catalog/tests/test_parametros_compra.py`
+- `test_CO130_el_maximo_por_reserva_pasa_al_declarado_y_se_audita` — `apps/catalog/tests/test_parametros_compra.py`
 - `test_CO130_el_plazo_de_devolucion_pasa_al_declarado_y_queda_auditado` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO130_guardar_sin_cambios_no_deja_entradas` — `apps/catalog/tests/test_parametros_compra.py`
 - `test_CO130_la_base_no_admite_un_plazo_bajo_el_piso_legal` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
@@ -1804,6 +1850,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO178_A3_y_A4_la_disponibilidad_se_deriva_del_producto` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO178_A4_la_pre_venta_figura_siempre_disponible` — `apps/tienda/tests/test_contratos_07_carrito.py`
 - `test_CO178_la_consulta_no_modifica_nada` — `apps/tienda/tests/test_contratos_07_carrito.py`
+- `test_CO178_la_linea_que_pasa_el_tope_queda_marcada` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO178_presenta_las_lineas_con_precio_subtotal_y_total` — `apps/tienda/tests/test_contratos_07_carrito.py`
 
 **`CO-179` · procederAlPago**
@@ -1811,6 +1858,7 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO179_con_todas_las_lineas_disponibles_transfiere_al_checkout` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO179_el_invitado_que_elige_comprar_como_invitado_va_al_formulario` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO179_el_invitado_sin_elegir_va_a_iniciar_sesion_y_vuelve_al_checkout` — `apps/tienda/tests/test_contratos_07_compra.py`
+- `test_CO179_la_reserva_hecha_en_otra_pestana_bloquea_el_pago` — `apps/tienda/tests/test_tope_de_reservas.py`
 - `test_CO179_no_modifica_el_estado_del_sistema` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO179_stock_insuficiente_bloquea` — `apps/tienda/tests/test_contratos_07_compra.py`
 - `test_CO179_una_linea_no_disponible_bloquea_y_vuelve_al_carrito` — `apps/tienda/tests/test_contratos_07_compra.py`

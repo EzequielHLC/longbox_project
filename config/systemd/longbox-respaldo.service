@@ -1,0 +1,15 @@
+# El respaldo diario de la base en la VM (B-19-013): `respaldar_base` deja el volcado
+# verificado en /srv/longbox/respaldos y conserva los últimos siete. Si falta el de
+# las últimas 26 horas, el bot lo avisa (`VIGILAR_RESPALDO=True` en el .env).
+[Unit]
+Description=Longbox: respaldo diario de la base
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=longbox
+Group=longbox
+WorkingDirectory=/srv/longbox
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=/srv/longbox/venv/bin/python manage.py respaldar_base

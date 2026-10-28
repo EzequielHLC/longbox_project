@@ -1140,3 +1140,88 @@ pago y listo.
 **Qué habría que cambiar.**
 `CU-TDA-CAT` paso 2: «al escribir, el sistema sugiere coincidencias». Paso 6: «el sistema muestra lo
 agregado y el total del carrito».
+
+---
+
+### B-07-041 · La reserva de pre-venta tiene un máximo por Cliente
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-TDA-CRA` A1, `CU-TDA-CRM` A1, `CU-TDA-CRC`, `CU-TDA-CMP`, `CU-CFG-PAR`, `CO-083`, `CO-084`, `CO-086`, `CO-178`, `CO-179`, `CO-130`, `ConfiguracionSistema`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (plan 00 de tope de reservas y errores, A)
+
+**Qué apareció.**
+Un Cliente podía reservar cualquier cantidad de un tomo en pre-venta: 9999 unidades entraban al
+carrito y al pedido, y las que el ingreso no cubriera pasaban a demora. Una sola compra así deja
+sin el tomo a todos los demás suscriptores de la serie y llena de demoras la gestión de pedidos.
+
+**Qué dice la especificación.**
+> «si el producto está en Pre-venta, el sistema no verifica stock: la reserva no tiene tope, y las
+> unidades que no cubra el ingreso pasan a demora» (`CU-TDA-CRA` A1) · «Un producto en Pre-venta se
+> agrega sin tope por stock (M11).» (`CO-083`, notas) · «En Pre-venta no hay tope por stock.»
+> (`CO-084`, notas)
+
+**Qué se hizo.**
+- Parámetros globales → Compra online → Comercial gana el **«máximo de unidades por reserva»**, 5 por
+  defecto, al menos 1, con su entrada de auditoría como cualquier parámetro.
+- El máximo cuenta **por Cliente y por tomo**: la línea del carrito más lo que ya tiene reservado en
+  pedidos que no están cancelados ni entregados. Así no se esquiva comprando de a cinco.
+- Al agregar y al cambiar la cantidad, la línea queda en el máximo y se avisa («Cada Cliente puede
+  reservar hasta 5 unidades de «…», contando sus pedidos»), como con el stock. Si ya no le queda
+  nada por reservar, no se agrega y se le dice cuánto tiene reservado. Al fusionar el carrito del
+  invitado pasa lo mismo.
+- La consulta del carrito marca la línea que se pasa («Pasa el máximo por reserva · podés tener N»)
+  y el pago no avanza hasta ajustarla. Cubre la reserva hecha en otra pestaña mientras la línea
+  esperaba, y el máximo que el Administrador baja con carritos armados: se marcan, no se recortan.
+- La ficha de una pre-venta dice «Hasta N unidades por Cliente» y el selector no ofrece más de lo
+  que le queda; con la reserva completa, en lugar de «Reservar» informa que ya tiene el máximo.
+- El stock sigue sin limitar la reserva: lo que falte al llegar el ingreso pasa a demora, como
+  antes.
+
+**Qué habría que cambiar.**
+`CU-TDA-CRA` A1 y `CU-TDA-CRM` A1: «el sistema no verifica stock; la cantidad tiene como tope el
+máximo de unidades por reserva menos lo que el Cliente ya tiene reservado de ese producto en pedidos
+en curso». `CO-083` y `CO-084`: la misma nota, y E1 también para ese tope. `CO-178`: la línea que
+supera el tope se informa como cantidad a ajustar. `ConfiguracionSistema` en el modelo de dominio y
+`CU-CFG-PAR` (sección Comercial): el máximo de unidades por reserva, 5 por defecto.
+
+---
+
+### B-07-042 · La pre-venta se reserva contra lo que viene en camino, hasta un cupo
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-TDA-CRA`, `CU-TDA-CRM`, `CU-TDA-CMP`, `CU-RST-SUS`, `CU-CFG-PAR`, `CO-083`, `CO-084`, `CO-089`, `CO-075`, `CO-130`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (plan 00 del circuito de proveedores)
+
+**Qué apareció.**
+Con el máximo por Cliente (B-07-041) un Cliente ya no reserva cien tomos, pero cien Clientes
+todavía pueden reservar cinco cada uno de algo de lo que se pidieron veinte. La reserva no sabía
+cuánto venía en camino porque lo pedido no estaba registrado (B-05-010).
+
+**Qué dice la especificación.**
+> «si el producto está en Pre-venta, el sistema no verifica stock: la reserva no tiene tope, y las
+> unidades que no cubra el ingreso pasan a demora» (`CU-TDA-CRA` A1) · «Un producto en Pre-venta se
+> agrega sin tope por stock (M11).» (`CO-083`, notas)
+
+**Qué se hizo.** Con las cuatro decisiones del responsable:
+- **La pre-venta se abre contra un pedido enviado** (decisión 1): un producto editorial sin stock
+  con unidades pendientes en un pedido pasa solo a Pre-venta, con la llegada estimada del pedido.
+  Nunca se reserva lo que no se pidió.
+- **El cupo** es lo pendiente de recibir menos un **margen** de Parámetros → Compra online (10 % por
+  defecto, entre 0 y 50, global; decisión 2), hacia abajo, menos lo ya reservado. Cubre lo que el
+  proveedor suele no mandar completo.
+- **Con stock se vende el stock** (decisión 4): la reserva se abre recién cuando la venta, en la
+  tienda o en el mostrador, deja el producto en cero y hay un pedido en camino.
+- El cupo se controla al agregar, al cambiar la cantidad y en la consulta del carrito, que no lo
+  reserva; y otra vez, con el producto bloqueado, al confirmar el pago. Si se llenó mientras se
+  pagaba, el cobro se reembolsa como el último ejemplar perdido (B-07-035). Al Cliente se le dice
+  cuántos lugares quedan, distinto del máximo por Cliente.
+- **Con el cupo lleno**, la ficha dice «La pre-venta está completa» y ofrece **«Avisarme si llegan
+  de más»**: la lista de espera de `CU-RST-SUS`, que se avisa con lo que sobre al llegar.
+- Una pre-venta sin fecha estimada se admite: la ficha dice «Se envía cuando llegue».
+- La pre-venta sigue siendo sólo editorial (decisión 3).
+
+**Qué habría que cambiar.**
+`CU-TDA-CRA` A1 y `CU-TDA-CRM` A1: la cantidad tiene como tope el menor entre el máximo por Cliente
+(B-07-041) y el **cupo de la pre-venta**. `CO-083` y `CO-084`: la misma nota, con E1 para el cupo.
+`CO-089`: con el producto bloqueado se vuelve a contar el cupo, y si se llenó el cobro se
+reembolsa. `CO-075`, precondiciones: el producto está Agotado **o en Pre-venta con el cupo
+completo**. `CU-CFG-PAR` y `CO-130`, sección Comercial: el margen del cupo de pre-venta. En el modelo
+de dominio, el estado Pre-venta se define por el pedido en camino (B-05-010).

@@ -17,4 +17,7 @@ if __name__ == "__main__":
     # Verifica la base antes de lanzar nada.
     preparar()
     comando = [sys.executable, str(RAIZ / "manage.py"), *sys.argv[1:]]
-    sys.exit(subprocess.call(comando, env=entorno_para_subproceso(), cwd=RAIZ))  # nosec B603
+    codigo = subprocess.call(  # nosec B603 - manage.py, sin shell
+        comando, env=entorno_para_subproceso(), cwd=RAIZ
+    )
+    sys.exit(codigo)

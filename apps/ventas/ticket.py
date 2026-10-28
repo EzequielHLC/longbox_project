@@ -23,6 +23,7 @@ from apps.pedidos.models import LineaPedido, Pedido, TransaccionPago
 from apps.pedidos.servicios import registrar_transicion
 from apps.puntos import servicios as puntos
 from apps.puntos.models import LotePuntos
+from apps.suppliers import llegadas
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +323,9 @@ def confirmar(sesion, medio, actor):
                 estado=Producto.AGOTADO if queda == 0 else Producto.ACTIVO,
                 actualizado_en=ahora,
             )
+            if queda == 0:
+                # Decisión 4 del plan del circuito: si hay pedido en camino, se reserva.
+                llegadas.al_agotarse(item.producto)
 
         TransaccionPago.objects.create(
             pedido=pedido,

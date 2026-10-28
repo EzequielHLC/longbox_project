@@ -1,0 +1,15 @@
+# Una vuelta del reloj por minuto (B-19-011): la casilla de novedades si le toca
+# según la frecuencia de Parámetros (B-04-015), el resumen de la mañana si es la
+# hora, y los controles de salud. La dispara `longbox-reloj.timer`.
+[Unit]
+Description=Longbox: reloj por minuto
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=longbox
+Group=longbox
+WorkingDirectory=/srv/longbox
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=/srv/longbox/venv/bin/python manage.py cada_minuto

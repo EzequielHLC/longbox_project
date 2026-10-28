@@ -121,8 +121,8 @@ def test_un_correo_que_no_es_de_novedades_no_genera_borradores(correo):
 
     assert BorradorProducto.objects.count() == 0
     correo.refresh_from_db()
-    # `CO-017` E4: sin productos identificados, el correo queda para reprocesar.
-    assert correo.estado == CorreoProveedor.FALLIDO
+    # B-04-010: bien clasificado como «otro» no es una falla; sale de la cola.
+    assert correo.estado == CorreoProveedor.PROCESADO
 
 
 @pytest.mark.django_db

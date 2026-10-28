@@ -10,8 +10,8 @@ y la versión en texto. Los deja como `.eml`, que el sistema ya ingiere con
 `manage.py ingerir_correos <carpeta>`, o los manda por SMTP a una casilla.
 
 Es la herramienta de la demostración (plan 00, decisión 8): **no es parte del
-sistema** y no lo toca. La lectura de la casilla por IMAP es `CO-016`, que no
-existe todavía.
+sistema** y no lo toca. Contra el correo de prueba (`config/correo-de-prueba/`), la
+novedad llega a la casilla que lee el Temporizador (`CO-016`).
 """
 
 import argparse

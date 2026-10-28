@@ -1,0 +1,61 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Todas las propuestas de restock, abiertas y cerradas (plan 00 del circuito,
+B-05-009). Sólo lee: la pendiente se trabaja en «Restock».
+{% endcomment %}
+
+{% block titulo %}Propuestas de restock · Longbox{% endblock %}
+{% block seccion %}Restock{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'restock:propuesta' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Restock" atras=1 %}</span>
+    <h1>Propuestas de restock</h1>
+  </div>
+</header>
+
+<section class="seccion">
+  {% if pagina.object_list %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Propuesta</th>
+            <th>Disparo</th>
+            <th class="numero">Productos</th>
+            <th class="numero">Pedidos</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for propuesta in pagina.object_list %}
+            <tr>
+              <td class="celda-principal"><a href="{% url 'restock:propuesta_detalle' propuesta.pk %}">{{ propuesta }}</a><br><span class="texto-chico secundario">{{ propuesta.fecha_generacion|date:"d/m/Y H:i" }}</span></td>
+              <td>{{ propuesta.get_tipo_disparo_display }}</td>
+              <td class="numero">{{ propuesta.lineas.all|length }}</td>
+              <td class="numero">{{ propuesta.pedidos.all|length }}</td>
+              <td>{% if propuesta.estado == "pendiente" %}<span class="marca-estado marca-estado--atencion">Pendiente</span>{% else %}<span class="marca-estado marca-estado--apagado">Cerrada{% if propuesta.cerrada_en %} el {{ propuesta.cerrada_en|date:"d/m/Y" }}{% endif %}</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagina.has_other_pages %}
+      <div class="paginacion">
+        <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}" class="boton-texto">Anterior</a>{% endif %}
+          {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}" class="boton-texto">Siguiente</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="vacio">
+      {% include "_iconos.html" with icono="lote" %}
+      <p>Todavía no se generó ninguna propuesta.</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

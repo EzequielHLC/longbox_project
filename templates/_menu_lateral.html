@@ -30,6 +30,33 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
   {% endcomment %}
   <nav>
 
+    {% comment %}
+    La cuenta va arriba de todo (pedido del responsable, B-00-030): quién está
+    adentro, con su rol, y sus dos acciones con el botón compacto del sistema
+    (el de las fichas del gestor de imágenes). Cerrar sesión se repite acá porque
+    en un teléfono el menú es lo que se abre, y el encabezado queda arriba.
+    {% endcomment %}
+    {% if user.is_authenticated %}
+      <div class="menu-cuenta">
+        <div class="menu-cuenta__quien">
+          <span class="menu-cuenta__icono" aria-hidden="true">{% include "_iconos.html" with icono="usuario" %}</span>
+          <span class="menu-cuenta__datos">
+            <span class="menu-cuenta__rol">{{ user.get_rol_display }}</span>
+            <span class="menu-cuenta__correo" title="{{ user.email }}">{{ user.email }}</span>
+          </span>
+        </div>
+        <div class="menu-cuenta__acciones">
+          {% if user.rol == "administrador" %}
+            <a href="{% url 'avisos:perfil' %}" class="ficha-accion{% if actual == 'avisos:perfil' %} ficha-accion--actual{% endif %}">{% include "_iconos.html" with icono="usuario" %}<span>Mi perfil</span></a>
+          {% endif %}
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="ficha-accion" title="Cerrar sesión" aria-label="Cerrar sesión">{% include "_iconos.html" with icono="salir" %}<span>Salir</span></button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
     <p class="menu-rotulo">Operación</p>
 
     {% comment %}
@@ -75,6 +102,11 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="proveedores" %}
         <span>Restock</span>
         {% if pendientes.restock %}<span class="contador-menu" title="Productos por pedir"><span class="sr-only">, </span>{{ pendientes.restock }}<span class="sr-only"> productos por pedir</span></span>{% endif %}
+      </a>
+      <a href="{% url 'suppliers:pedido_lista' %}"
+         class="menu-enlace {% if 'suppliers:pedido' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:pedido' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="camion" %}
+        <span>Pedidos por llegar</span>
       </a>
       <a href="{% url 'devoluciones:lista' %}"
          class="menu-enlace {% if 'devoluciones:' in actual %}menu-enlace--actual{% endif %}" {% if 'devoluciones:' in actual %}aria-current="page"{% endif %}>
@@ -180,7 +212,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       es la casilla de ellos lo que la alimenta, y su ficha es donde se
       resuelve por qué un proveedor manda o no manda a la cola.
       {% endcomment %}
-      <details class="menu-grupo" {% if 'suppliers:' in actual %}open{% endif %}>
+      <details class="menu-grupo" {% if 'suppliers:' in actual and 'suppliers:pedido' not in actual %}open{% endif %}>
         <summary class="menu-titulo">
           {% include "_iconos.html" with icono="proveedores" %}
           <span>Proveedores</span>
@@ -295,25 +327,6 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       </a>
     {% endif %}
 
-    {% comment %}
-    La identificación de la cuenta va al pie y `margin-top: auto` la empuja ahí: en un
-    menú corto queda abajo igual, sin depender de cuántas entradas haya arriba.
-    {% endcomment %}
-    {% comment %}
-    El rol se dice con su nombre, sin color propio. Cerrar sesión se repite acá
-    porque en un teléfono el menú es lo que se abre, y el encabezado queda
-    arriba de todo.
-    {% endcomment %}
-    {% if user.is_authenticated %}
-      <div class="menu-cuenta">
-        <p class="fuerte">{{ user.get_rol_display }}</p>
-        <p class="secundario">{{ user.email }}</p>
-        <form method="post" action="{% url 'accounts:logout' %}" class="separado-arriba">
-          {% csrf_token %}
-          <button type="submit" class="boton-texto">{% include "_iconos.html" with icono="salir" %}<span>Cerrar sesión</span></button>
-        </form>
-      </div>
-    {% endif %}
   </nav>
 </aside>
 {% endwith %}

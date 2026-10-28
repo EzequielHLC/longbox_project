@@ -1,0 +1,127 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Módulo 19 · `CU-AVI-PEC` Consultar mi perfil. La misma forma que una ficha del
+sistema: los datos y Telegram lado a lado, y abajo los avisos (`CU-AVI-CAM`), una
+fila por tipo con sus dos canales. Vincular (`CU-AVI-TGA`) pide un enlace de un
+solo uso que se abre desde el teléfono; desvincular (`CU-AVI-TGB`) vuelve todo al
+correo.
+{% endcomment %}
+
+{% block titulo %}Mi perfil · Longbox{% endblock %}
+{% block seccion %}Mi perfil{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Mi perfil</h1>
+    <p><span class="marca-estado marca-estado--dato">{{ user.get_rol_display }}</span> · {{ user.email }}</p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Mis datos</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Nombre</dt><dd>{{ user.get_full_name|default:"—" }}</dd>
+      <dt>Correo</dt><dd class="datos">{{ user.email }}</dd>
+      <dt>Rol</dt><dd>{{ user.get_rol_display }}</dd>
+      <dt>Último ingreso</dt><dd class="datos">{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</dd>
+    </dl>
+    <div class="fila-5">
+      <a href="{% url 'avisos:contrasena' %}" class="boton-seccion">{% include "_iconos.html" with icono="editar" %}<span>Cambiar mi contraseña</span></a>
+      <a href="{% url 'accounts:usuario_edicion' user.pk %}" class="boton-texto">Corregir mis datos</a>
+    </div>
+  </section>
+
+  <section class="seccion pila-3" aria-labelledby="titulo-telegram">
+    <div class="seccion__titulo">
+      <h2 id="titulo-telegram">Telegram</h2>
+      {% if vinculo %}<span class="marca-estado marca-estado--ok">Vinculado</span>{% endif %}
+    </div>
+    {% if not telegram_configurado %}
+      <p class="mensaje">{% include "_iconos.html" with icono="info" %}<span>El bot no está configurado: falta <span class="datos">TELEGRAM_BOT_TOKEN</span> en el <span class="datos">.env</span>. Mientras tanto, todos los avisos salen por correo.</span></p>
+    {% elif vinculo %}
+      <dl class="datos-de-ficha">
+        <dt>Cuenta</dt><dd>{{ vinculo.nombre_en_telegram|default:"Sin nombre" }}</dd>
+        <dt>Desde</dt><dd class="datos">{{ vinculo.vinculado_en|date:"d/m/Y H:i" }}</dd>
+      </dl>
+      <p class="texto-chico secundario">Los avisos que marques con Telegram te llegan a ese chat; los correos de proveedores, con sus botones para aprobarlos o descartarlos. En el chat podés consultar stock, llegadas, pendientes y caja, y cargar borradores con foto: mandá <span class="datos">/ayuda</span> para ver los comandos. Con <span class="datos">/salir</span> se desvincula.</p>
+      <form method="post" action="{% url 'avisos:desvincular' %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-seccion boton-seccion--critico">{% include "_iconos.html" with icono="baja" %}<span>Desvincular Telegram</span></button>
+      </form>
+    {% elif codigo %}
+      {% comment %}
+      B-19-005: dos pasos. El teléfono abre el enlace y el bot le da un número; el
+      número se escribe acá, donde sólo entra el dueño de la cuenta.
+      {% endcomment %}
+      <div class="panel panel--atencion pila-3">
+        {% if codigo.espera_confirmacion %}
+          <p><strong>{{ codigo.nombre_pendiente|default:"Un chat de Telegram" }}</strong> abrió el enlace. Escribí el número de seis cifras que te mandó el bot.</p>
+        {% else %}
+          <p><strong>1.</strong> Abrí el enlace desde el teléfono donde tenés Telegram y tocá <strong>Iniciar</strong>. Vence a las <span class="datos">{{ codigo.vence_en|time:"H:i" }}</span>.</p>
+          {% if enlace_telegram %}
+            <a href="{{ enlace_telegram }}" class="boton-seccion" target="_blank" rel="noopener">{% include "_iconos.html" with icono="adelante" %}<span>Abrir Telegram</span></a>
+            <p class="texto-chico secundario cortar-palabras datos">{{ enlace_telegram }}</p>
+          {% else %}
+            <p class="texto-chico">No se pudo consultar el nombre del bot. Mandale este mensaje: <span class="datos cortar-palabras">/start {{ codigo.codigo }}</span></p>
+          {% endif %}
+          <p><strong>2.</strong> Escribí acá el número que te contesta el bot.</p>
+        {% endif %}
+        <form method="post" action="{% url 'avisos:confirmar' %}" class="fila-5 fila-abajo" novalidate>
+          {% csrf_token %}
+          <div class="campo">
+            <label for="numero" class="etiqueta">Número del bot</label>
+            <input type="text" id="numero" name="numero" inputmode="numeric" autocomplete="one-time-code" maxlength="7" class="entrada-cifra" required>
+          </div>
+          <button type="submit" class="boton-seccion">{% include "_iconos.html" with icono="listo" %}<span>Confirmar</span></button>
+        </form>
+        <form method="post" action="{% url 'avisos:cancelar' %}">
+          {% csrf_token %}
+          <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="cerrar" %}<span>{% if codigo.espera_confirmacion %}No fui yo: anular el enlace{% else %}Anular el enlace{% endif %}</span></button>
+        </form>
+      </div>
+    {% else %}
+      <p class="secundario">Vinculá tu cuenta para recibir los avisos en el teléfono y resolver los correos de proveedores desde el chat.</p>
+      <form method="post" action="{% url 'avisos:vincular' %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Vincular Telegram</span></button>
+      </form>
+    {% endif %}
+  </section>
+</div>
+
+<section class="seccion" aria-labelledby="titulo-avisos">
+  <div class="seccion__titulo">
+    <h2 id="titulo-avisos">{% include "_iconos.html" with icono="correo" %}Mis avisos</h2>
+  </div>
+  <p class="seccion__bajada">Por dónde te llega cada aviso del sistema. Si elegís Telegram y el chat no responde, te llega por correo; las ventas, el resumen y el estado del sistema, no: sin Telegram no se mandan.</p>
+  <form method="post" action="{% url 'avisos:canales' %}" class="pila-3">
+    {% csrf_token %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th>Aviso</th><th class="centro">Correo</th><th class="centro">Telegram</th></tr>
+        </thead>
+        <tbody>
+          {% for fila in preferencias %}
+            <tr>
+              <td class="celda-principal">{{ fila.nombre }}<br><span class="texto-chico secundario">{{ fila.descripcion }}</span></td>
+              <td class="centro">
+                <label class="casilla"><input type="checkbox" name="correo_{{ fila.clave }}"{% if fila.por_correo %} checked{% endif %}><span class="sr-only">{{ fila.nombre }} por correo</span></label>
+              </td>
+              <td class="centro">
+                <label class="casilla"><input type="checkbox" name="telegram_{{ fila.clave }}"{% if fila.por_telegram %} checked{% endif %}{% if not vinculo %} disabled{% endif %}><span class="sr-only">{{ fila.nombre }} por Telegram</span></label>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="fila-5">
+      <button type="submit" class="boton-primario">Guardar mis avisos</button>
+      {% if vinculo %}<button type="submit" name="atajo" value="telegram" class="boton-seccion boton-seccion--tenue">Todo por Telegram</button>{% else %}<span class="texto-chico secundario">Telegram se habilita al vincular la cuenta.</span>{% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

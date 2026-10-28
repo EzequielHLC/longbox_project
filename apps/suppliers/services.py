@@ -340,22 +340,32 @@ def extraer_novedades(correo, *, actor=None, ip=None):
     El estado del correo cambia según cómo salga (`CO-017`):
 
     - **Procesado** si el modelo respondió e identificó al menos un producto.
-    - **Falló el procesamiento** si no hubo respuesta utilizable **o si no
-      identificó ningún producto** (`CO-017` E4). El correo queda en la cola
-      para reprocesarlo: el fallo puede deberse a una indisponibilidad
-      transitoria y no al contenido. Hasta el 2026-09-30 un correo sin
-      productos quedaba Procesado; se corrigió a favor del contrato (B-04-004).
+    - **Procesado** también si lo clasificó bien como aviso de demora o como
+      «otro» (B-04-010, plan 00 del circuito): no es una falla, y dejarlo
+      fallido invitaba a reprocesar algo que salió bien. No genera borradores;
+      la demora se propone en la ficha del correo (`demoras.proponer`).
+    - **Falló el procesamiento** si no hubo respuesta utilizable **o si lo
+      clasificó como novedades sin identificar ningún producto** (`CO-017`
+      E4). El correo queda en la cola para reprocesarlo: el fallo puede
+      deberse a una indisponibilidad transitoria y no al contenido.
 
     Nunca levanta: quien llama puede estar recorriendo una cola.
     """
-    resultado = extraccion_de_novedades.extraer(correo.contenido, cids=correo.cids)
+    resultado = extraccion_de_novedades.extraer(
+        correo.contenido,
+        cids=correo.cids,
+        recibido=timezone.localdate(correo.fecha or correo.recibido_en),
+    )
 
     correo.extraccion = resultado.como_json()
     correo.version_prompt = resultado.version_prompt
     identifico_productos = bool(resultado) and bool(resultado.productos)
-    if identifico_productos:
+    no_es_de_novedades = bool(resultado) and (
+        resultado.intencion != extraccion_de_novedades.NOVEDADES
+    )
+    if identifico_productos or no_es_de_novedades:
         correo.estado = CorreoProveedor.PROCESADO
-        correo.motivo = ""
+        correo.motivo = _motivo_sin_novedades(resultado) if no_es_de_novedades else ""
     else:
         correo.estado = CorreoProveedor.FALLIDO
         correo.motivo = _motivo_del_fallo(resultado)
@@ -370,6 +380,15 @@ def extraer_novedades(correo, *, actor=None, ip=None):
             correo, portadas=portadas_de(correo), actor=actor, ip=ip
         )
     return ResultadoDeProcesamiento(extraccion=resultado, generacion=generacion)
+
+
+def _motivo_sin_novedades(resultado):
+    if resultado.intencion == extraccion_de_novedades.DEMORA:
+        return (
+            "Es un aviso de demora: no genera borradores. Registrá la demora en las "
+            "pre-ventas que menciona."
+        )
+    return "No anuncia novedades ni demoras: no genera borradores."
 
 
 def _motivo_del_fallo(resultado):

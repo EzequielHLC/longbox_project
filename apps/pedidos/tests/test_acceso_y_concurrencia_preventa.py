@@ -86,7 +86,7 @@ def test_acceso_los_parametros_de_la_preventa_se_guardan_y_se_auditan(client_adm
         "dias_aviso_preventa": "4",
         "cantidad_minima_restock": "3",
         "margen_stock_restock": "2",
-        "frecuencia_casilla_horas": "24",
+        "frecuencia_casilla_minutos": "24",
     }
 
     client_admin.post(reverse("catalog:parametros"), datos)

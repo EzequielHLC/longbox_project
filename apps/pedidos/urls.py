@@ -13,6 +13,7 @@ urlpatterns = [
     path("preventas/", views_preventa.PreVentasView.as_view(), name="preventas"),
     path("preventas/ingreso/", views_preventa.IngresoView.as_view(), name="ingreso"),
     path("preventas/<int:pk>/demora/", views_preventa.DemoraView.as_view(), name="demora"),
+    path("preventas/demora/", views_preventa.DemoraLoteView.as_view(), name="demora_lote"),
     path(
         "preventas/<int:pk>/cancelar/",
         views_preventa.CancelarPreVentaView.as_view(),

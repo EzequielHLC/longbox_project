@@ -37,6 +37,7 @@ from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models.functions import Lower
 
+from apps.catalog.precios import redondear_a_peso
 from apps.core import cotizaciones
 
 # Los importes nunca son negativos. El validador va en el modelo y no solo en el
@@ -322,7 +323,11 @@ class TablaPrecioReferencia(models.Model):
             models.UniqueConstraint(
                 fields=["editorial", "tipo", "formato"],
                 name="precio_unico_por_editorial_tipo_y_formato",
-            )
+            ),
+            # I-09: ningún precio de venta es cero (plan 00 de cierre de deuda, D3).
+            models.CheckConstraint(
+                condition=models.Q(pvp__gt=0), name="precio_referencia_pvp_positivo"
+            ),
         ]
 
     def __str__(self):
@@ -449,6 +454,23 @@ class LoteAlta(models.Model):
         verbose_name = "lote de alta"
         verbose_name_plural = "lotes de alta"
         ordering = ["-creado_en"]
+        constraints = [  # noqa: RUF012
+            # I-09 en la base, con los mismos topes que los validadores (plan 00 de
+            # cierre de deuda, D3). Vacíos en un lote nacional, que no los usa.
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(costo_envio_total__isnull=True) | models.Q(costo_envio_total__gte=0))
+                    & (
+                        models.Q(valor_compra_total__isnull=True)
+                        | models.Q(valor_compra_total__gt=0)
+                    )
+                    & (models.Q(cre__isnull=True) | models.Q(cre__gte=0))
+                    & (models.Q(margen_aplicado__isnull=True) | models.Q(margen_aplicado__gte=0))
+                    & (models.Q(cotizacion__isnull=True) | models.Q(cotizacion__gt=0))
+                ),
+                name="lote_importes_no_negativos",
+            ),
+        ]
 
     def __str__(self):
         return f"Lote {self.get_origen_display().lower()} #{self.pk} · {self.creado_en:%d/%m/%Y}"
@@ -663,6 +685,19 @@ class Producto(models.Model):
                 fields=["codigo_barras"],
                 condition=~models.Q(codigo_barras=""),
                 name="producto_unico_por_codigo_de_barras",
+            ),
+            # I-09 en la base (plan 00 de cierre de deuda, D3): la propagación de
+            # precios escribe con `update()` y no pasa por el validador del campo.
+            models.CheckConstraint(
+                condition=models.Q(precio__gt=0), name="producto_precio_positivo"
+            ),
+            # I-06 en la base. El rubro vive en esta misma tabla (`clase`), así que
+            # alcanza una restricción de fila: no hace falta mirar la tabla hija.
+            models.CheckConstraint(
+                condition=~models.Q(
+                    clase=NO_EDITORIAL, estado__in=["pre_venta", "cancelado_editorial"]
+                ),
+                name="producto_no_editorial_sin_preventa_ni_cancelado",
             ),
         ]
         indexes = [  # noqa: RUF012
@@ -923,6 +958,12 @@ class ProductoEditorial(Producto):
                 condition=models.Q(precio_manual=False) | models.Q(precio_referencia__isnull=True),
                 name="producto_editorial_manual_sin_referencia",
             ),
+            # I-09: ningún importe es negativo (plan 00 de cierre de deuda, D3).
+            models.CheckConstraint(
+                condition=models.Q(precio_base__gte=0)
+                & (models.Q(costo_origen__isnull=True) | models.Q(costo_origen__gte=0)),
+                name="producto_editorial_importes_no_negativos",
+            ),
         ]
 
     def __str__(self):
@@ -1122,17 +1163,40 @@ class BorradorProducto(models.Model):
     # de qué correo salió es lo que permite volver a mirarlo cuando algo
     # extraído resulte raro. Los correos no se borran; si alguna vez se
     # borraran, esto lo diría en voz alta en vez de llevarse los borradores.
+    # De dónde salió: un correo de proveedor, o cargado desde Telegram por un
+    # Administrador (B-19-006, `CU-AVI-BOR`). El de Telegram no tiene correo, y su
+    # proveedor es el de la editorial si hay uno cargado.
+    CORREO = "correo"
+    TELEGRAM = "telegram"
+    ORIGEN_CHOICES = [
+        (CORREO, "Correo de proveedor"),
+        (TELEGRAM, "Cargado desde Telegram"),
+    ]  # noqa: RUF012
+
+    origen = models.CharField("origen", max_length=10, choices=ORIGEN_CHOICES, default=CORREO)
     correo = models.ForeignKey(
         "suppliers.CorreoProveedor",
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="borradores",
         verbose_name="correo de origen",
     )
     proveedor = models.ForeignKey(
         "suppliers.Proveedor",
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="borradores",
         verbose_name="proveedor",
+    )
+    cargado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="borradores_cargados",
+        verbose_name="cargado por",
     )
 
     # ------------------------------------------------------------------
@@ -1179,6 +1243,11 @@ class BorradorProducto(models.Model):
     sinopsis = models.TextField("sinopsis", blank=True)
     autor = models.CharField("autor", max_length=200, blank=True)
     solo_adultos = models.BooleanField("solo para adultos", default=False)
+    # B-01-020: las de la serie, si ya está en el catálogo; el producto las
+    # recibe al confirmarse. El correo nunca las trae.
+    etiquetas = models.ManyToManyField(
+        Etiqueta, blank=True, related_name="borradores", verbose_name="etiquetas"
+    )
 
     # Pre-completado con el valor de `ConfiguracionSistema` y editable en la
     # revisión (CU-ALT-REV paso 2). Es el único stock del sistema que nace con un
@@ -1356,7 +1425,35 @@ class BorradorProducto(models.Model):
         individual hasta que se los revise uno por uno, y **excluir el borrador
         entero** de una confirmación en lote.
         """
-        return [confianza for confianza in self.confianzas.all() if confianza.exige_revision]
+        de_la_tabla = self.precio_es_el_de_la_tabla
+        return [
+            confianza
+            for confianza in self.confianzas.all()
+            if confianza.exige_revision and not (confianza.campo == "precio" and de_la_tabla)
+        ]
+
+    @property
+    def precio_de_la_tabla(self):
+        """La fila de la tabla de referencia para su editorial, tipo y formato, o `None`."""
+        if not (self.editorial_id and self.tipo_id and self.formato_id):
+            return None
+        return TablaPrecioReferencia.objects.filter(
+            editorial_id=self.editorial_id, tipo_id=self.tipo_id, formato_id=self.formato_id
+        ).first()
+
+    @property
+    def precio_es_el_de_la_tabla(self):
+        """Si el precio es el de la tabla (B-01-018).
+
+        Entonces el dato no sale del modelo, y la confianza que el modelo declaró
+        sobre el precio deja de exigir revisión: lo decidió la tabla.
+        """
+        fila = self.precio_de_la_tabla
+        return (
+            fila is not None
+            and self.precio is not None
+            and redondear_a_peso(fila.pvp) == redondear_a_peso(self.precio)
+        )
 
 
 class SesionRevision(models.Model):

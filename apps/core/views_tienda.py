@@ -24,6 +24,7 @@ from django.views import View
 
 from apps.catalog.models import Editorial, Etiqueta, Producto, ProductoEditorial, Tipo
 from apps.catalog.precio_visible import OfertasDelDia
+from apps.core.models import ConfiguracionSistema
 
 POR_PAGINA = 24
 
@@ -365,13 +366,15 @@ class FichaPublicaView(View):
             raise Http404("Producto no disponible en la tienda.")
         producto.estado_publico = estado_publico(producto)
         OfertasDelDia().anotar([producto])
+        en_carrito = _en_carrito(request, producto)
         return render(
             request,
             "core/tienda_producto.html",
             {
                 "serie": _mas_de_la_serie(producto),
                 "producto": producto,
-                "en_carrito": _en_carrito(request, producto),
+                "en_carrito": en_carrito,
+                "reserva": _reserva(request, producto, en_carrito),
                 "editorial": getattr(producto, "productoeditorial", None),
                 "aviso": _aviso(request, producto),
                 # Volver al catálogo con los filtros que traía (paso 7).
@@ -381,8 +384,12 @@ class FichaPublicaView(View):
 
 
 def _aviso(request, producto):
-    """CU-RST-SUS paso 2: el botón, el estado del Cliente y cuántos esperan."""
-    if producto.estado_publico != "agotado":
+    """CU-RST-SUS paso 2: el botón, el estado del Cliente y cuántos esperan. También
+    con la pre-venta completa (plan 00 del circuito, ambigüedad 5)."""
+    from apps.suppliers import llegadas
+
+    completa = producto.estado_publico == "pre_venta" and llegadas.cupo(producto) == 0
+    if producto.estado_publico != "agotado" and not completa:
         return None
     from apps.restock import servicios as restock
 
@@ -422,6 +429,24 @@ def _mas_de_la_serie(producto):
         imagen=None,
         productos=_marcar(tomos),
         ver_todo=f"{reverse('core:tienda_catalogo')}?{filtro}",
+    )
+
+
+def _reserva(request, producto, en_carrito):
+    """En una pre-venta, cuántas unidades más puede reservar quien mira y el máximo
+    por Cliente (plan 00 de tope de reservas). `None` fuera de la pre-venta."""
+    from apps.tienda import carrito as servicio
+
+    if producto.estado_publico != "pre_venta":
+        return None
+    usuario = request.user if request.user.is_authenticated else None
+    from apps.suppliers import llegadas
+
+    return SimpleNamespace(
+        quedan=max(0, servicio.maximo_de_reserva(usuario, producto) - en_carrito),
+        maximo=ConfiguracionSistema.obtener().maximo_reserva_preventa,
+        # Plan 00 del circuito: se reservó todo lo que se le pidió al proveedor.
+        completa=llegadas.cupo(producto) == 0,
     )
 
 

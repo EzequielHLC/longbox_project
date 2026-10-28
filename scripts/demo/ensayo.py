@@ -87,7 +87,7 @@ ESCENARIOS = [
 def correr(comando, destino):
     inicio = time.perf_counter()
     with open(destino, "w", encoding="utf-8") as archivo:
-        codigo = subprocess.call(  # nosec B603
+        codigo = subprocess.call(  # nosec B603 - comandos fijos del ensayo, sin shell
             [str(parte) for parte in comando],
             cwd=RAIZ,
             stdout=archivo,

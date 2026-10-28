@@ -172,7 +172,7 @@ def test_CO022_crea_el_producto_con_los_valores_del_borrador(
     assert producto.volumen == 5
     assert producto.isbn == BERSERK
     assert producto.precio == borrador.precio
-    assert producto.stock == 4
+    assert producto.stock == 0  # B-01-016: los 4 se piden al cerrar la sesión
     assert producto.estado == borrador.estado_sugerido
     # (b)
     assert producto.tipo == borrador.tipo

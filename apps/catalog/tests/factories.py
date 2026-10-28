@@ -125,6 +125,8 @@ class ProductoFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = ProductoEditorial
+        # `pedido_en_camino` no cambia el producto: no hace falta volver a guardarlo.
+        skip_postgeneration_save = True
 
     titulo = factory.Sequence(lambda n: f"Título {n}")
     volumen = 1
@@ -135,6 +137,23 @@ class ProductoFactory(factory.django.DjangoModelFactory):
     estado = Producto.ACTIVO
     precio = PVP_DE_PRUEBA
     precio_base = PVP_DE_PRUEBA
+
+    @factory.post_generation
+    def pedido_en_camino(self, create, cantidad, **kwargs):
+        """Una pre-venta se reserva contra lo pedido al proveedor (plan 00 del circuito
+        con los proveedores): la fábrica le da un pedido en camino de 100 unidades,
+        o los que diga la prueba. `pedido_en_camino=0` la deja sin pedido."""
+        if not create or self.estado != Producto.PRE_VENTA:
+            return
+        cantidad = 100 if cantidad is None else cantidad
+        if not cantidad:
+            return
+        from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor
+
+        pedido = PedidoProveedor.objects.create(
+            origen=PedidoProveedor.LOTE, fecha_estimada=self.fecha_llegada
+        )
+        LineaPedidoProveedor.objects.create(pedido=pedido, producto=self, cantidad_pedida=cantidad)
 
 
 class TipoNoEditorialFactory(factory.django.DjangoModelFactory):

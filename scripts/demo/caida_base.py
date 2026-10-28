@@ -35,7 +35,9 @@ DELATORES = [
 
 
 def docker(*argumentos):
-    subprocess.run(["docker", *argumentos], check=True, capture_output=True)  # nosec B603 B607
+    subprocess.run(  # nosec B603 B607 - docker con argumentos fijos, sin shell
+        ["docker", *argumentos], check=True, capture_output=True
+    )
 
 
 def pedir():

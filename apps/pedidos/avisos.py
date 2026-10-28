@@ -62,6 +62,13 @@ def correos_de_administradores():
     )
 
 
-def avisar_administradores(**kwargs):
+def avisar_administradores(*, tipo="", **kwargs):
+    """El aviso a los Administradores, por el canal que eligió cada uno (módulo 19).
+
+    `tipo` es uno de `apps.avisos.models.TIPOS`: decide qué preferencia se mira.
+    Sin tipo, o sin preferencias cargadas, sale por correo como siempre.
+    """
+    from apps.avisos import canales
+
     kwargs.setdefault("rotulo", "Pre-venta")
-    avisar(correos_de_administradores(), **kwargs)
+    canales.avisar_administradores(tipo, **kwargs)

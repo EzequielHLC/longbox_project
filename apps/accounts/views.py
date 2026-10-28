@@ -10,7 +10,8 @@ from django.contrib.auth.views import (
     PasswordResetDoneView,
     PasswordResetView,
 )
-from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, resolve_url
@@ -22,6 +23,8 @@ from django.views.generic import CreateView, DetailView, ListView, TemplateView,
 
 from apps.accounts import services
 from apps.accounts.forms import (
+    MENSAJE_CORREO_EN_USO,
+    MENSAJE_CORREO_YA_REGISTRADO,
     MENSAJE_CUENTA_CON_HISTORIAL,
     MENSAJE_CUENTA_CONGELADA,
     MENSAJE_UNICO_ADMINISTRADOR,
@@ -165,6 +168,21 @@ def renovar_sesion(request):
     return JsonResponse({"segundos_restantes": segundos_de_sesion()})
 
 
+def correo_ganado_por_otro(form, mensaje, *, salvo=None):
+    """¿El `IntegrityError` del guardado fue otra cuenta que ganó el correo?
+
+    El formulario ya lo había visto libre: entre la validación y el guardado otro
+    pedido creó la cuenta (plan 00 de cierre de deuda, D1). Si de verdad está
+    tomado, el error queda en el campo con el mismo código que pone el
+    formulario, y la pantalla lo muestra igual que cuando lo ve antes. Si no lo
+    está, el error de integridad es otro y no se disfraza de duplicado.
+    """
+    if not services.correo_en_uso(form.cleaned_data["email"], salvo=salvo):
+        return False
+    form.add_error("email", ValidationError(mensaje, code="correo_en_uso"))
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Módulo 11 — Cuenta de Cliente (CU-CLI-ALT)
 # ---------------------------------------------------------------------------
@@ -198,32 +216,38 @@ class RegistroClienteView(CreateView):
         # La cuenta, el correo de bienvenida y el registro de auditoría son una
         # sola unidad: si algo falla no queda una cuenta a medio crear ni un
         # registro de un alta que no ocurrió.
-        with transaction.atomic():
-            usuario = form.save(commit=False)
-            usuario.username = services.username_disponible_para(usuario.email)
-            # El rol y el estado no salen del formulario: los fija el sistema.
-            # A diferencia del alta de personal (CU-USR-ALT), la cuenta nace Activa
-            # porque el propio registro ya autentica al titular.
-            usuario.rol = Usuario.CLIENTE
-            usuario.estado = Usuario.ACTIVO
-            # Evidencia del consentimiento informado (Ley 25.326): el checkbox
-            # no se valida y se descarta, queda fechado junto con la cuenta.
-            usuario.fecha_aceptacion_politica = timezone.now()
-            usuario.save()
+        try:
+            with transaction.atomic():
+                usuario = form.save(commit=False)
+                usuario.username = services.username_disponible_para(usuario.email)
+                # El rol y el estado no salen del formulario: los fija el sistema.
+                # A diferencia del alta de personal (CU-USR-ALT), la cuenta nace
+                # Activa porque el propio registro ya autentica al titular.
+                usuario.rol = Usuario.CLIENTE
+                usuario.estado = Usuario.ACTIVO
+                # Evidencia del consentimiento informado (Ley 25.326): el checkbox
+                # no se valida y se descarta, queda fechado junto con la cuenta.
+                usuario.fecha_aceptacion_politica = timezone.now()
+                usuario.save()
 
-            # TODO(loyalty): cuando exista el módulo de Puntos, el saldo del
-            # Cliente nuevo arranca en cero por defecto en ese módulo, no acá.
-            # TODO(stock-local): ídem con el stock almacenado en local, que
-            # nace vacío y es responsabilidad del Módulo 18.
+                # TODO(loyalty): cuando exista el módulo de Puntos, el saldo del
+                # Cliente nuevo arranca en cero por defecto en ese módulo, no acá.
+                # TODO(stock-local): ídem con el stock almacenado en local, que
+                # nace vacío y es responsabilidad del Módulo 18.
 
-            services.enviar_bienvenida(usuario, self.request)
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.REGISTRO_CLIENTE,
-                actor=usuario,
-                objetivo=usuario,
-                ip=obtener_ip(self.request),
-                detalle="alta pública de cuenta de cliente; política de privacidad aceptada",
-            )
+                services.enviar_bienvenida(usuario, self.request)
+                RegistroAuditoria.registrar(
+                    accion=RegistroAuditoria.REGISTRO_CLIENTE,
+                    actor=usuario,
+                    objetivo=usuario,
+                    ip=obtener_ip(self.request),
+                    detalle="alta pública de cuenta de cliente; política de privacidad aceptada",
+                )
+        except IntegrityError:
+            # CO-107 E1 cuando otra alta ganó el correo después de validarlo.
+            if not correo_ganado_por_otro(form, MENSAJE_CORREO_YA_REGISTRADO):
+                raise
+            return self.form_invalid(form)
 
         self.object = usuario
         # Paso 5: inicia sesión automáticamente. `login()` dispara la signal
@@ -460,19 +484,25 @@ class UsuarioAltaView(GestionDeUsuariosMixin, CreateView):
         # La cuenta, el enlace y el registro de auditoría son una sola unidad:
         # si falla el envío del correo no queda una cuenta a la que nadie pueda
         # entrar ni un registro de un alta que no ocurrió.
-        with transaction.atomic():
-            usuario = form.save(commit=False)
-            usuario.username = services.username_disponible_para(usuario.email)
-            services.preparar_para_activacion(usuario)
-            usuario.save()
-            services.enviar_enlace_de_activacion(usuario, self.request)
-            RegistroAuditoria.registrar(
-                accion=RegistroAuditoria.ALTA_USUARIO,
-                actor=self.request.user,
-                objetivo=usuario,
-                ip=obtener_ip(self.request),
-                detalle=f"rol asignado: {usuario.get_rol_display()}",
-            )
+        try:
+            with transaction.atomic():
+                usuario = form.save(commit=False)
+                usuario.username = services.username_disponible_para(usuario.email)
+                services.preparar_para_activacion(usuario)
+                usuario.save()
+                services.enviar_enlace_de_activacion(usuario, self.request)
+                RegistroAuditoria.registrar(
+                    accion=RegistroAuditoria.ALTA_USUARIO,
+                    actor=self.request.user,
+                    objetivo=usuario,
+                    ip=obtener_ip(self.request),
+                    detalle=f"rol asignado: {usuario.get_rol_display()}",
+                )
+        except IntegrityError:
+            # CO-120 E2 cuando otra alta ganó el correo después de validarlo.
+            if not correo_ganado_por_otro(form, MENSAJE_CORREO_EN_USO):
+                raise
+            return self.form_invalid(form)
 
         self.object = usuario
         messages.success(
@@ -523,27 +553,33 @@ class UsuarioEdicionView(GestionDeUsuariosMixin, UpdateView):
         # objeto ya modificado los anteriores se pierden.
         anterior = Usuario.objects.get(pk=self.object.pk)
 
-        with transaction.atomic():
-            cambia_el_rol = form.cleaned_data["rol"] != anterior.rol
-            if cambia_el_rol and services.es_el_unico_administrador_activo(anterior):
-                form.add_error("rol", MENSAJE_UNICO_ADMINISTRADOR)
-                return self.form_invalid(form)
+        try:
+            with transaction.atomic():
+                cambia_el_rol = form.cleaned_data["rol"] != anterior.rol
+                if cambia_el_rol and services.es_el_unico_administrador_activo(anterior):
+                    form.add_error("rol", MENSAJE_UNICO_ADMINISTRADOR)
+                    return self.form_invalid(form)
 
-            usuario = form.save()
-            cambios = services.cambios_entre(anterior, usuario)
+                usuario = form.save()
+                cambios = services.cambios_entre(anterior, usuario)
 
-            if cambios:
-                RegistroAuditoria.registrar(
-                    accion=RegistroAuditoria.MODIFICACION_USUARIO,
-                    actor=self.request.user,
-                    objetivo=usuario,
-                    ip=obtener_ip(self.request),
-                    detalle=services.describir_cambios(cambios),
-                )
-            if cambia_el_rol:
-                # Los permisos viejos siguen vivos en la sesión abierta: hay
-                # que forzar el re-login para que tome los nuevos.
-                services.invalidar_sesiones_de(usuario)
+                if cambios:
+                    RegistroAuditoria.registrar(
+                        accion=RegistroAuditoria.MODIFICACION_USUARIO,
+                        actor=self.request.user,
+                        objetivo=usuario,
+                        ip=obtener_ip(self.request),
+                        detalle=services.describir_cambios(cambios),
+                    )
+                if cambia_el_rol:
+                    # Los permisos viejos siguen vivos en la sesión abierta: hay
+                    # que forzar el re-login para que tome los nuevos.
+                    services.invalidar_sesiones_de(usuario)
+        except IntegrityError:
+            # CO-121 E2 cuando otra cuenta ganó el correo después de validarlo.
+            if not correo_ganado_por_otro(form, MENSAJE_CORREO_EN_USO, salvo=anterior):
+                raise
+            return self.form_invalid(form)
 
         if not cambia_el_rol:
             messages.success(self.request, f"Se actualizó la cuenta de {usuario.email}.")

@@ -5,16 +5,20 @@ producto (`CO-014`, `CO-015`) y la cancelación por la editorial (`CO-026`,
 `CO-027`). Sólo el Administrador.
 """
 
+import datetime
 import logging
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views import View
 
 from apps.catalog.models import Producto, ProductoEditorial
 from apps.pedidos import calendario, preventa
 from apps.pedidos.forms import DemoraForm, leer_unidades
 from apps.pedidos.views import PedidosMixin
+from apps.suppliers import demoras
+from apps.suppliers.models import CorreoProveedor
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +123,35 @@ class DemoraView(PedidosMixin, View):
             return redirect("catalog:producto_detalle", pk=producto.pk)
         return None
 
+    @staticmethod
+    def _correo(request):
+        """El aviso de demora del que se viene, si se viene de uno (B-04-010)."""
+        pk = request.GET.get("correo", "")
+        correo = CorreoProveedor.objects.filter(pk=pk).first() if pk.isdigit() else None
+        return correo if correo and correo.es_aviso_de_demora else None
+
+    @staticmethod
+    def _propuesta(correo, producto):
+        """La fecha y la nota que sugiere el aviso, para revisar. Nunca se aplican solas."""
+        fila = next(
+            (f for f in demoras.proponer(correo).filas if f.producto.pk == producto.pk), None
+        )
+        fecha = fila.fecha_propuesta if fila else None
+        if fecha and fecha <= timezone.localdate():
+            fecha = None
+        return {
+            "fecha_estimada": fecha,
+            "nota": f"Aviso de {correo.proveedor}: «{correo.asunto or 'sin asunto'}».",
+        }
+
     def get(self, request, pk):
         producto = _producto(pk)
+        correo = self._correo(request)
+        formulario = DemoraForm(initial=self._propuesta(correo, producto) if correo else None)
         return self._rechazar(request, producto) or render(
-            request, self.template_name, {"producto": producto, "form": DemoraForm()}
+            request,
+            self.template_name,
+            {"producto": producto, "form": formulario, "correo": correo},
         )
 
     def post(self, request, pk):
@@ -130,9 +159,14 @@ class DemoraView(PedidosMixin, View):
         rechazo = self._rechazar(request, producto)
         if rechazo:
             return rechazo
+        correo = self._correo(request)
         formulario = DemoraForm(request.POST)
         if not formulario.is_valid():
-            return render(request, self.template_name, {"producto": producto, "form": formulario})
+            return render(
+                request,
+                self.template_name,
+                {"producto": producto, "form": formulario, "correo": correo},
+            )
         datos = formulario.cleaned_data
         if "confirmar" not in request.POST:
             return render(
@@ -141,6 +175,7 @@ class DemoraView(PedidosMixin, View):
                 {
                     "producto": producto,
                     "form": formulario,
+                    "correo": correo,
                     "informe": preventa.informe_de_demora(producto),
                 },
             )
@@ -167,6 +202,8 @@ class DemoraView(PedidosMixin, View):
             messages.error(
                 request, "No se pudieron actualizar los pedidos " + ", ".join(resumen.errores) + "."
             )
+        if correo:
+            return redirect("suppliers:correo_detalle", pk=correo.pk)
         return redirect("catalog:producto_detalle", pk=pk)
 
 
@@ -207,3 +244,145 @@ class CancelarPreVentaView(PedidosMixin, View):
             + f", {informe.total_puntos} pts emitidos.",
         )
         return redirect("catalog:producto_detalle", pk=pk)
+
+
+class DemoraLoteView(PedidosMixin, View):
+    """B-01-022: la demora de varios tomos, con un informe conjunto y una confirmación.
+
+    Llega desde el aviso de demora (`?correo=` con los tomos elegidos) o desde un
+    grupo de «Pre-ventas por llegar». Tres tiempos, como la de un tomo: elegir y
+    fechar, ver el impacto de todos, confirmar. Cada tomo es un `CO-015` propio.
+    """
+
+    template_name = "pedidos/demora_lote.html"
+
+    def _correo(self, request):
+        pk = request.GET.get("correo", "")
+        correo = CorreoProveedor.objects.filter(pk=pk).first() if pk.isdigit() else None
+        return correo if correo and correo.es_aviso_de_demora else None
+
+    def _volver(self, correo):
+        if correo:
+            return redirect("suppliers:correo_detalle", pk=correo.pk)
+        return redirect("pedidos:preventas")
+
+    @staticmethod
+    def _productos(ids):
+        ids = [int(pk) for pk in ids if str(pk).isdigit()]
+        return list(
+            ProductoEditorial.objects.filter(pk__in=ids, estado=Producto.PRE_VENTA)
+            .select_related("editorial")
+            .order_by("fecha_llegada", "titulo", "volumen")
+        )
+
+    def _filas(self, productos, correo, datos=None):
+        """Cada tomo con su fecha (la propuesta, o la escrita), su impacto y si admite."""
+        propuestas = {}
+        if correo:
+            propuestas = {f.producto.pk: f.fecha_propuesta for f in demoras.proponer(correo).filas}
+        hoy = timezone.localdate()
+        filas = []
+        for producto in productos:
+            try:
+                preventa.validar_demora(producto)
+                no_admite = ""
+            except preventa.OperacionRechazada as rechazo:
+                no_admite = str(rechazo)
+            if datos is None:
+                fecha = propuestas.get(producto.pk)
+                fecha = fecha if fecha and fecha > hoy else None
+                texto, incluido = (fecha.isoformat() if fecha else ""), not no_admite
+            else:
+                texto = (datos.get(f"fecha_{producto.pk}") or "").strip()
+                incluido = str(producto.pk) in datos.getlist("incluir") and not no_admite
+            filas.append(
+                {
+                    "producto": producto,
+                    "informe": preventa.informe_de_demora(producto),
+                    "fecha_texto": texto,
+                    "incluido": incluido,
+                    "no_admite": no_admite,
+                    "error": "",
+                }
+            )
+        return filas
+
+    @staticmethod
+    def _validar(filas):
+        """Las fechas de lo incluido: vacía o posterior a hoy (`CO-014` E1)."""
+        hoy, fechas = timezone.localdate(), {}
+        for fila in filas:
+            if not fila["incluido"]:
+                continue
+            texto = fila["fecha_texto"]
+            try:
+                fecha = datetime.date.fromisoformat(texto) if texto else None
+            except ValueError:
+                fila["error"] = "No es una fecha válida."
+                continue
+            if fecha and fecha <= hoy:
+                fila["error"] = "La nueva fecha estimada debe ser posterior a hoy."
+                continue
+            fila["fecha"] = fecha
+            fechas[fila["producto"]] = fecha
+        return fechas
+
+    def _pantalla(self, request, correo, filas, **extra):
+        return render(
+            request,
+            self.template_name,
+            {"correo": correo, "filas": filas, "nota": request.POST.get("nota", ""), **extra},
+        )
+
+    def get(self, request):
+        correo = self._correo(request)
+        productos = self._productos(request.GET.getlist("producto"))
+        if not productos:
+            messages.error(request, "Elegí al menos una pre-venta para demorar.")
+            return self._volver(correo)
+        return self._pantalla(request, correo, self._filas(productos, correo))
+
+    def post(self, request):
+        correo = self._correo(request)
+        productos = self._productos(request.POST.getlist("producto"))
+        filas = self._filas(productos, correo, request.POST)
+        fechas = self._validar(filas)
+        if not fechas or any(fila["error"] for fila in filas):
+            if not fechas and not any(fila["error"] for fila in filas):
+                messages.error(request, "Elegí al menos una pre-venta que admita la demora.")
+            return self._pantalla(request, correo, filas)
+        if "editar" in request.POST:
+            return self._pantalla(request, correo, filas)
+        if "confirmar" not in request.POST:
+            elegidos = [fila for fila in filas if fila["incluido"]]
+            informes, clientes = preventa.informe_de_demoras([f["producto"] for f in elegidos])
+            return self._pantalla(
+                request,
+                correo,
+                filas,
+                revision=True,
+                elegidos=elegidos,
+                total_pedidos=sum(i.pedidos for i in informes),
+                total_clientes=clientes,
+            )
+        resumen = preventa.registrar_demoras(
+            fechas, request.user, nota=request.POST.get("nota", "").strip(), origen=_origen(request)
+        )
+        if resumen.demorados:
+            messages.success(
+                request,
+                "Demora registrada en "
+                + _plural(len(resumen.demorados), "tomo", "tomos")
+                + ": "
+                + _plural(len(resumen.pedidos), "pedido afectado", "pedidos afectados")
+                + ", "
+                + _plural(len(resumen.clientes), "cliente notificado", "clientes notificados")
+                + ".",
+            )
+        for producto, motivo in resumen.excluidos:
+            messages.warning(request, f"«{producto}» quedó afuera: {motivo}")
+        if resumen.errores:
+            messages.error(
+                request, "No se pudieron actualizar los pedidos " + ", ".join(resumen.errores) + "."
+            )
+        return self._volver(correo)

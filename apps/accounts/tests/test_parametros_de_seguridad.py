@@ -118,7 +118,7 @@ def test_CO207_parametros_presenta_todas_las_secciones_sin_modificar_nada(client
         "dias_aviso_preventa",
         "plazo_devolucion_dias",
         "plazo_garantia_dias",
-        "frecuencia_casilla_horas",
+        "frecuencia_casilla_minutos",
         "expiracion_sesion_minutos",
         "bloqueo_intentos_minutos",
         "caducidad_puntos_meses",

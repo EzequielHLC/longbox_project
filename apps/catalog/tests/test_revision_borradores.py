@@ -22,6 +22,7 @@ from apps.catalog.models import (
     BorradorProducto,
     ConfianzaCampo,
     Producto,
+    ProductoEditorial,
     SesionRevision,
 )
 from apps.catalog.tests.factories import (
@@ -96,7 +97,8 @@ def test_confirmar_crea_el_producto(correo, administrador):
     producto = confirmacion.producto
     assert producto.titulo == "Berserk Deluxe"
     assert producto.isbn == BERSERK
-    assert producto.stock == 2
+    # B-01-016: nace sin stock; lo del borrador se pide al cerrar la sesión.
+    assert producto.stock == 0
     assert producto.estado == Producto.ACTIVO
     assert Producto.objects.count() == 1
 
@@ -169,9 +171,28 @@ def test_un_precio_distinto_del_de_la_tabla_queda_manual(correo, administrador, 
     PrecioReferenciaFactory(editorial=editorial, tipo=tipo, formato=formato, pvp=Decimal("20000"))
     borrador = borrador_de(correo, formato=formato, precio=Decimal("24900"))
 
-    producto = revisiones.confirmar(borrador, actor=administrador).producto
+    producto = revisiones.confirmar(
+        borrador, actor=administrador, confirma_precio_manual=True
+    ).producto
 
     assert producto.precio_manual is True
+
+
+@pytest.mark.django_db
+def test_un_precio_distinto_del_de_la_tabla_sin_confirmar_no_se_confirma(
+    correo, administrador, editorial, tipo
+):
+    """B-01-018, como CU-ALT-NAC A3: apartarse de la tabla se confirma, en el servidor."""
+    formato = FormatoFactory(nombre="Tapa dura")
+    PrecioReferenciaFactory(editorial=editorial, tipo=tipo, formato=formato, pvp=Decimal("20000"))
+    borrador = borrador_de(correo, formato=formato, precio=Decimal("24900"))
+
+    confirmacion = revisiones.confirmar(borrador, actor=administrador)
+
+    assert not confirmacion
+    assert confirmacion.motivo == revisiones.PRECIO_APARTE_DE_LA_TABLA
+    borrador.refresh_from_db()
+    assert borrador.esta_abierto
 
 
 @pytest.mark.django_db
@@ -610,37 +631,77 @@ def test_el_cierre_registra_confirmados_rechazados_y_pendientes(correo, administ
 
 
 @pytest.mark.django_db
-def test_el_stock_por_defecto_de_la_configuracion_llega_al_producto(correo, administrador):
+def test_la_cantidad_por_defecto_se_pide_al_cerrar_y_el_producto_nace_sin_stock(
+    correo, administrador
+):
+    """B-01-016: la cantidad del borrador no es stock en la mano. Al cerrar la sesión
+    se le pide al proveedor y queda el pedido que se espera en «Pedidos por llegar»;
+    el producto, sin stock, pasa a reservarse contra ese pedido."""
+    from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor
+
     configuracion = ConfiguracionSistema.obtener()
     configuracion.stock_inicial_por_defecto = 4
     configuracion.save()
     borrador = borrador_de(correo, stock_inicial=configuracion.stock_inicial_por_defecto)
 
     producto = revisiones.confirmar(borrador, actor=administrador).producto
+    borrador.refresh_from_db()
+    revisiones.cerrar(borrador.sesion, actor=administrador)
 
-    assert producto.stock == 4
+    linea = LineaPedidoProveedor.objects.get()
+    assert (linea.producto_id, linea.cantidad_pedida) == (producto.pk, 4)
+    assert linea.pedido.origen == PedidoProveedor.REVISION
+    assert linea.pedido.sesion == borrador.sesion
+    producto.refresh_from_db()
+    assert (producto.stock, producto.estado) == (0, Producto.PRE_VENTA)
 
 
 @pytest.mark.django_db
-def test_una_carrera_contra_la_base_se_trata_como_duplicado(correo, administrador):
+def test_CO022_E7_el_tomo_confirmado_mientras_tanto_se_informa_como_duplicado(
+    correo, administrador
+):
     """La restricción de la base es la que **realmente** garantiza la unicidad.
 
-    Dos confirmaciones simultáneas del mismo tomo pueden pasar las dos el
-    chequeo previo y chocar recién al insertar. Eso no es un error del sistema:
-    es un duplicado, y tiene que informarse como tal en vez de reventar con un
-    500 después de haber creado el producto una vez.
+    Otra alta carga el mismo ISBN después del chequeo previo y antes del INSERT
+    (plan 00 de cierre de deuda, D1). Eso no es un error del sistema: es la
+    colisión de E7, con la ficha en conflicto, y el borrador sigue abierto.
     """
-    from django.db import IntegrityError
+    from apps.catalog import services
 
     borrador = borrador_de(correo)
+    buscar = services.buscar_duplicado
+    ganador = []
 
-    with patch("apps.catalog.revisiones._crear_producto", side_effect=IntegrityError("choque")):
+    def chequeo_que_llega_tarde(*argumentos, **opciones):
+        if not ganador:
+            ganador.append(ProductoFactory(titulo="Berserk (otra carga)", isbn=BERSERK))
+            return None
+        return buscar(*argumentos, **opciones)
+
+    with patch("apps.catalog.services.buscar_duplicado", side_effect=chequeo_que_llega_tarde):
         confirmacion = revisiones.confirmar(borrador, actor=administrador)
 
     assert not confirmacion
     assert confirmacion.motivo == revisiones.YA_EXISTE
+    assert confirmacion.producto_existente == ganador[0].pk
+    assert ProductoEditorial.objects.filter(isbn=BERSERK).count() == 1
     borrador.refresh_from_db()
     assert borrador.esta_abierto
+    assert borrador.producto is None
+
+
+@pytest.mark.django_db
+def test_un_error_de_integridad_sin_duplicado_no_se_disfraza(correo, administrador):
+    """Si nada choca, el error es nuestro: se deja subir, no se informa «ya existe»."""
+    from django.db import IntegrityError
+
+    borrador = borrador_de(correo)
+
+    with (
+        patch("apps.catalog.revisiones._crear_producto", side_effect=IntegrityError("otro")),
+        pytest.raises(IntegrityError),
+    ):
+        revisiones.confirmar(borrador, actor=administrador)
 
 
 @pytest.mark.django_db

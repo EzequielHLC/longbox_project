@@ -17,11 +17,14 @@ from decimal import Decimal
 from functools import cached_property
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from apps.accounts.models import Usuario
 from apps.catalog.models import Producto
 from apps.catalog.precio_visible import OfertasDelDia, precio_visible
+from apps.core.models import ConfiguracionSistema
+from apps.pedidos.models import LineaPedido, Pedido
 from apps.tienda.envio import estado_de_envio
 from apps.tienda.models import Carrito, LineaCarrito
 
@@ -90,14 +93,52 @@ def unidades_en(carrito):
 # ---------------------------------------------------------------------------
 
 
-def disponibilidad(producto, cantidad):
+def reservadas_en_pedidos(usuario, producto):
+    """Lo que el Cliente ya reservó de esta pre-venta en pedidos en curso.
+
+    Ni cancelados ni entregados: una línea que ya llegó dejó de ser reserva, y una
+    cancelada nunca lo fue. Un invitado no compra pre-ventas (`CU-TDA-INV`).
+    """
+    if usuario is None or not usuario.pk:
+        return 0
+    return (
+        LineaPedido.objects.filter(pedido__usuario=usuario, producto=producto)
+        .exclude(pedido__estado=Pedido.CANCELADO)
+        .exclude(estado__in=(LineaPedido.CANCELADO_REEMBOLSO, *LineaPedido.ENTREGADAS))
+        .aggregate(total=Sum("cantidad"))["total"]
+        or 0
+    )
+
+
+def maximo_de_reserva(usuario, producto):
+    """Cuántas unidades de esta pre-venta puede tener en el carrito. Nunca negativo.
+
+    Lo menor entre dos topes: lo que le queda al Cliente del máximo por reserva
+    (plan 00 de tope de reservas) y lo que queda del **cupo** del pedido a
+    proveedor, que nunca deja reservar lo que no se pidió (plan 00 del circuito
+    con los proveedores). El carrito no reserva cupo: se vuelve a contar al pagar.
+    """
+    from apps.suppliers import llegadas
+
+    maximo = ConfiguracionSistema.obtener().maximo_reserva_preventa
+    del_cliente = max(0, maximo - reservadas_en_pedidos(usuario, producto))
+    return min(del_cliente, llegadas.cupo(producto))
+
+
+def disponibilidad(producto, cantidad, *, maximo_reserva=None):
     """Disponible, Producto no disponible o Stock insuficiente.
 
     Se deriva en cada consulta y no se guarda (plan 07, amb. 2). Un Activo con
     stock cero se lee como no disponible, igual que en el catálogo público
     (plan 07, amb. 4): ofrecerle al Cliente «reducí a cero» no resuelve nada.
+
+    Una pre-venta no mira el stock sino el tope de la reserva: pasarse se lee
+    como una cantidad a ajustar, igual que el stock insuficiente, y el pago no
+    avanza hasta corregirla.
     """
     if producto.estado == Producto.PRE_VENTA:
+        if maximo_reserva is not None and cantidad > maximo_reserva:
+            return STOCK_INSUFICIENTE
         return DISPONIBLE
     if producto.estado in ESTADOS_NO_DISPONIBLES or producto.stock <= 0:
         return NO_DISPONIBLE
@@ -115,10 +156,13 @@ def se_puede_agregar(producto):
     )
 
 
-def _tope(producto, pedida):
-    """La cantidad que entra: sin tope en Pre-venta, hasta el stock si está Activo."""
+def _tope(producto, pedida, usuario=None):
+    """La cantidad que entra: hasta el stock si está Activo; en Pre-venta, hasta lo
+    que le queda de reserva al Cliente."""
     if producto.estado == Producto.ACTIVO and pedida > producto.stock:
         return producto.stock
+    if producto.estado == Producto.PRE_VENTA:
+        return min(pedida, maximo_de_reserva(usuario, producto))
     return pedida
 
 
@@ -133,6 +177,8 @@ class LineaConsultada:
     precio: Decimal
     disponibilidad: str
     oferta: object = None
+    # Sólo en Pre-venta: cuánto puede tener esta línea (plan 00 de tope de reservas).
+    maximo_reserva: int | None = None
 
     @property
     def producto(self):
@@ -149,6 +195,8 @@ class LineaConsultada:
 
     @property
     def maximo(self):
+        if self.maximo_reserva is not None:
+            return self.maximo_reserva
         return self.linea.producto.stock
 
     @property
@@ -202,16 +250,37 @@ def consultar(carrito):
         "producto", "producto__tipo", "producto__productoeditorial"
     ).order_by("agregada_en", "pk")
     del_dia = OfertasDelDia()
-    return CarritoConsultado(
-        [
+    consultadas = []
+    for linea in lineas:
+        tope = None
+        if linea.producto.estado == Producto.PRE_VENTA:
+            tope = maximo_de_reserva(carrito.usuario, linea.producto)
+        consultadas.append(
             LineaConsultada(
                 linea=linea,
                 precio=del_dia.precio(linea.producto),
-                disponibilidad=disponibilidad(linea.producto, linea.cantidad),
+                disponibilidad=disponibilidad(linea.producto, linea.cantidad, maximo_reserva=tope),
                 oferta=del_dia.aplicada(linea.producto),
+                maximo_reserva=tope,
             )
-            for linea in lineas
-        ]
+        )
+    return CarritoConsultado(consultadas)
+
+
+def _sin_reserva_disponible(producto, usuario):
+    """El rechazo cuando no queda nada por reservar: la pre-venta se llenó, o el
+    Cliente ya reservó el máximo en otros pedidos."""
+    from apps.suppliers import llegadas
+
+    if llegadas.cupo(producto) == 0:
+        return OperacionRechazada(
+            f"La pre-venta de «{producto.titulo}» está completa. Podés pedir que te "
+            "avisemos si llegan unidades de más."
+        )
+    maximo = ConfiguracionSistema.obtener().maximo_reserva_preventa
+    return OperacionRechazada(
+        f"Ya reservaste {reservadas_en_pedidos(usuario, producto)} unidades de "
+        f"«{producto.titulo}» y el máximo por Cliente es {maximo}."
     )
 
 
@@ -225,6 +294,8 @@ class ResultadoDeAgregado:
     linea: LineaCarrito
     pedida: int
     tope: int | None = None
+    # El tope vino del máximo por reserva y no del stock: cambia el aviso.
+    por_reserva: bool = False
 
 
 def agregar(carrito, producto, cantidad):
@@ -243,7 +314,9 @@ def agregar(carrito, producto, cantidad):
 
         linea = carrito.lineas.filter(producto=producto).first()
         pedida = (linea.cantidad if linea else 0) + cantidad
-        queda = _tope(producto, pedida)
+        queda = _tope(producto, pedida, carrito.usuario)
+        if queda < 1:
+            raise _sin_reserva_disponible(producto, carrito.usuario)
         precio = precio_visible(producto)
         if linea is None:
             linea = LineaCarrito.objects.create(
@@ -258,7 +331,13 @@ def agregar(carrito, producto, cantidad):
             linea.precio_vigente = linea.precio_visto = precio
             linea.save(update_fields=["cantidad", "precio_vigente", "precio_visto"])
         _tocar(carrito)
-    return ResultadoDeAgregado(linea, pedida, queda if queda < pedida else None)
+    recortada = queda < pedida
+    return ResultadoDeAgregado(
+        linea,
+        pedida,
+        queda if recortada else None,
+        por_reserva=recortada and producto.estado == Producto.PRE_VENTA,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +349,7 @@ def agregar(carrito, producto, cantidad):
 class ResultadoDeModificacion:
     linea: LineaCarrito
     tope: int | None = None
+    por_reserva: bool = False
 
 
 def modificar_cantidad(linea, cantidad):
@@ -290,13 +370,20 @@ def modificar_cantidad(linea, cantidad):
             raise OperacionRechazada(
                 "Este producto ya no está disponible: sólo se puede quitar del carrito."
             )
-        queda = _tope(producto, cantidad)
+        queda = _tope(producto, cantidad, linea.carrito.usuario)
+        if queda < 1:
+            raise _sin_reserva_disponible(producto, linea.carrito.usuario)
         precio = precio_visible(producto)
         linea.cantidad = queda
         linea.precio_vigente = linea.precio_visto = precio
         linea.save(update_fields=["cantidad", "precio_vigente", "precio_visto"])
         _tocar(linea.carrito)
-    return ResultadoDeModificacion(linea, queda if queda < cantidad else None)
+    recortada = queda < cantidad
+    return ResultadoDeModificacion(
+        linea,
+        queda if recortada else None,
+        por_reserva=recortada and producto.estado == Producto.PRE_VENTA,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -347,8 +434,8 @@ def fusionar(carrito_de_sesion, usuario):
                 )
                 continue
             suma = propia.cantidad + linea.cantidad
-            if linea.producto.stock > 0:
-                suma = _tope(linea.producto, suma)
+            if linea.producto.stock > 0 or linea.producto.estado == Producto.PRE_VENTA:
+                suma = max(1, _tope(linea.producto, suma, usuario))
             propia.cantidad = suma
             propia.save(update_fields=["cantidad"])
         sesion.delete()

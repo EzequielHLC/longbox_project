@@ -1,10 +1,20 @@
 from django.urls import path
 
-from apps.suppliers import views
+from apps.suppliers import views, views_pedidos
 
 app_name = "suppliers"
 
 urlpatterns = [
+    # Plan 00 del circuito: los pedidos a proveedores y su llegada.
+    path("pedidos/", views_pedidos.PedidoListaView.as_view(), name="pedido_lista"),
+    path("pedidos/nuevo/", views_pedidos.PedidoNuevoView.as_view(), name="pedido_nuevo"),
+    path("pedidos/<int:pk>/", views_pedidos.PedidoDetalleView.as_view(), name="pedido_detalle"),
+    path("pedidos/<int:pk>/llegada/", views_pedidos.LlegadaView.as_view(), name="pedido_llegada"),
+    path(
+        "pedidos/lineas/<int:pk>/cerrar/",
+        views_pedidos.CerrarLineaView.as_view(),
+        name="pedido_cerrar_linea",
+    ),
     # CU-PRV-CON — consulta. Es el punto de entrada del módulo.
     path("", views.ProveedorListaView.as_view(), name="proveedor_lista"),
     path("<int:pk>/", views.ProveedorDetalleView.as_view(), name="proveedor_detalle"),
@@ -22,6 +32,7 @@ urlpatterns = [
     # CU-PRV-COL — la cola de correos: la antesala del pipeline de CU-ALT-NOV,
     # donde cada mensaje espera la aprobación explícita.
     path("correos/", views.CorreoListaView.as_view(), name="correo_lista"),
+    path("correos/revisar/", views.RevisarCasillaView.as_view(), name="correo_revisar"),
     path("correos/<int:pk>/", views.CorreoDetalleView.as_view(), name="correo_detalle"),
     path("correos/<int:pk>/aprobar/", views.AprobarCorreoView.as_view(), name="correo_aprobar"),
     path(

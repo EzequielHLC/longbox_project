@@ -28,7 +28,7 @@ UMBRAL_MS = 2000
 
 def correr(usuarios, duracion):
     prefijo = SALIDA / f"escalon_{usuarios}"
-    subprocess.run(  # nosec B603 B607
+    subprocess.run(  # nosec B603 B607 - locust con argumentos fijos, sin shell
         [
             "locust",
             "-f",

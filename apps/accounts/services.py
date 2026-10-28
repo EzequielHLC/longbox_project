@@ -150,6 +150,17 @@ def invalidar_sesiones_de(usuario):
 # ---------------------------------------------------------------------------
 
 
+def correo_en_uso(email, *, salvo=None):
+    """¿Otra cuenta tiene este correo? En cualquier estado (I-10).
+
+    `salvo` es la cuenta que se está editando, que no choca consigo misma.
+    """
+    cuentas = Usuario.objects.filter(email__iexact=email.strip())
+    if salvo is not None and salvo.pk:
+        cuentas = cuentas.exclude(pk=salvo.pk)
+    return cuentas.exists()
+
+
 def username_disponible_para(email):
     """`username` interno de una cuenta nueva, derivado del correo.
 

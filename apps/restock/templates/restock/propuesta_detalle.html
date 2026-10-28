@@ -1,0 +1,97 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La ficha de una propuesta de restock (plan 00 del circuito, B-05-009): cada
+proveedor con lo que se le pidió o por qué se descartó, y los pedidos que
+salieron con lo que ya llegó. Sólo lee. La misma forma que «Restock»: cifras,
+el filtro y un bloque plegable por proveedor.
+{% endcomment %}
+
+{% block titulo %}{{ propuesta }} · Longbox{% endblock %}
+{% block seccion %}Restock{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'restock:propuesta_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Propuestas de restock" atras=1 %}</span>
+    <h1>{{ propuesta }}</h1>
+    <p>
+      <span class="marca-estado{% if propuesta.estado == 'pendiente' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ propuesta.get_estado_display }}</span>
+      · {{ propuesta.get_tipo_disparo_display }} · generada el {{ propuesta.fecha_generacion|date:"d/m/Y H:i" }}{% if propuesta.cerrada_en %} · cerrada el {{ propuesta.cerrada_en|date:"d/m/Y H:i" }}{% endif %}
+    </p>
+  </div>
+  {% if propuesta.estado == "pendiente" %}<a href="{% url 'restock:propuesta' %}" class="boton-primario">Trabajar la propuesta</a>{% endif %}
+</header>
+
+<div class="cifras">
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}Productos</span><span class="cifra__valor">{{ resumen.productos }}</span></div>
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Unidades</span><span class="cifra__valor">{{ resumen.unidades }}</span></div>
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="camion" %}Pedidos que salieron</span><span class="cifra__valor">{{ pedidos|length }}</span></div>
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="baja" %}Descartados</span><span class="cifra__valor">{{ resumen.descartados }}</span></div>
+</div>
+
+{% if pedidos %}
+  <section class="seccion" aria-labelledby="titulo-pedidos">
+    <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos que salieron</h2></div>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead><tr><th>Pedido</th><th>Proveedor</th><th>Llegada estimada</th><th class="numero">Faltan</th><th>Estado</th></tr></thead>
+        <tbody>
+          {% for pedido in pedidos %}
+            <tr>
+              <td class="celda-principal"><a href="{% url 'suppliers:pedido_detalle' pedido.pk %}" class="datos">#{{ pedido.pk }}</a></td>
+              <td>{{ pedido.nombre_proveedor }}</td>
+              <td class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</td>
+              <td class="numero">{{ pedido.unidades_pendientes }}</td>
+              <td><span class="marca-estado{% if pedido.vencido %} marca-estado--error{% elif pedido.estado == 'abierto' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+
+<div class="barra-de-herramientas">
+  <div class="campo campo--principal">
+    <label for="filtro-restock" class="etiqueta">Filtrar productos de la propuesta</label>
+    <input type="search" id="filtro-restock" autocomplete="off" placeholder="Título o número" data-filtro-restock>
+  </div>
+</div>
+
+{% for grupo in grupos %}
+  <details class="grupo-plegable" id="grupo-{{ grupo.clave }}"{% if grupos|length == 1 %} open{% endif %}>
+    <summary class="grupo-plegable__cabeza">
+      <span class="grupo-plegable__nombre">{{ grupo.nombre }}</span>
+      <span class="grupo-plegable__cuenta">{{ grupo.lineas|length }} producto{{ grupo.lineas|length|pluralize }} · {{ grupo.unidades }} unidad{{ grupo.unidades|pluralize:"es" }}</span>
+      <span class="marca-estado{% if grupo.estado == 'despachado' %} marca-estado--ok{% elif grupo.estado == 'descartado' %} marca-estado--apagado{% else %} marca-estado--dato{% endif %}">{% if grupo.estado == "despachado" %}Pedido{% elif grupo.estado == "descartado" %}Descartado{% else %}Pendiente{% endif %}</span>
+    </summary>
+    <div class="grupo-plegable__cuerpo pila-3">
+      {% with descartada=grupo.lineas.0 %}{% if grupo.estado == "descartado" and descartada.motivo_descarte %}<p class="texto-chico"><strong>Motivo del descarte:</strong> {{ descartada.motivo_descarte }}</p>{% endif %}{% endwith %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead><tr><th>Producto</th><th>Código</th><th class="numero">Cantidad</th></tr></thead>
+          <tbody>
+            {% for linea in grupo.lineas %}
+              <tr data-fila-restock="{{ linea.producto|lower }}">
+                <td class="celda-principal">
+                  <span class="fila-2">
+                    <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if linea.producto.portada %}<img src="{{ linea.producto.portada.url }}" alt="" loading="lazy">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                    <span>
+                      {{ linea.producto }}
+                      {% if linea.anadida_a_mano %}<br><span class="texto-chico secundario">Añadido manualmente</span>{% endif %}
+                    </span>
+                  </span>
+                </td>
+                <td class="datos sin-cortar">{{ linea.producto.codigo }}</td>
+                <td class="numero">{{ linea.cantidad_sugerida }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+{% endfor %}
+{% include "restock/_filtro_js.html" %}
+{% endblock %}

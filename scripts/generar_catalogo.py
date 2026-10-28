@@ -151,7 +151,7 @@ def leer_casos(ruta: Path) -> dict[str, list[str]]:
 def correr_suite(informe: Path) -> None:
     orden = [sys.executable, "-m", "pytest", "-q", "-n", "auto", "--no-cov"]
     orden += ["-p", "no:randomly", f"--junitxml={informe}"]
-    subprocess.call(orden, cwd=RAIZ)  # nosec B603
+    subprocess.call(orden, cwd=RAIZ)  # nosec B603 - pytest con argumentos fijos
 
 
 def leer_resultados(informe: Path) -> tuple[dict[tuple[str, str], str], float]:

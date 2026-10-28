@@ -74,6 +74,8 @@ def test_I13_el_sql_directo_tampoco_puede(entrada, sentencia):
 
 def test_I13_eliminar_la_cuenta_del_actor_conserva_la_entrada_con_el_correo():
     """El `SET_NULL` de la clave foránea es la única escritura que la base admite."""
+    # Otro Administrador queda activo: I-12 no deja borrar al último.
+    UsuarioFactory(rol=Usuario.ADMINISTRADOR)
     actor = UsuarioFactory(rol=Usuario.ADMINISTRADOR, email="se.va@longbox.test")
     registro = RegistroAuditoria.registrar(
         accion=RegistroAuditoria.ALTA_USUARIO, actor=actor, detalle="sigue intacta"

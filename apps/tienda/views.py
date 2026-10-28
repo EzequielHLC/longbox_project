@@ -16,8 +16,10 @@ from django.template.loader import render_to_string
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 
+from apps.core.models import ConfiguracionSistema
 from apps.core.templatetags.moneda import pesos
 from apps.core.views_tienda import visibles
+from apps.suppliers import llegadas
 from apps.tienda import carrito as servicio
 from apps.tienda.models import LineaCarrito
 
@@ -74,10 +76,7 @@ class AgregarView(CarritoMixin, View):
         else:
             if resultado.tope is not None:
                 nivel = "atencion"
-                mensaje = (
-                    f"Hay {resultado.tope} disponibles de «{producto.titulo}»: "
-                    f"el carrito quedó con {resultado.tope}."
-                )
+                mensaje = _aviso_de_tope(resultado, producto, "el carrito")
             else:
                 accion = "reservó" if resultado.linea.producto.estado == "pre_venta" else "agregó"
                 nivel, mensaje = "exito", f"Se {accion} «{producto.titulo}» en el carrito."
@@ -103,6 +102,25 @@ class AgregarView(CarritoMixin, View):
             request, mensaje
         )
         return redirect(volver or "tienda:carrito")
+
+
+def _aviso_de_tope(resultado, producto, donde):
+    """E1 de `CO-083` y `CO-084`: el máximo que entró, por stock o por reserva."""
+    if resultado.por_reserva and llegadas.cupo(producto) <= resultado.tope:
+        return (
+            f"Quedan {llegadas.cupo(producto)} lugares en la pre-venta de «{producto.titulo}»: "
+            f"{donde} quedó con {resultado.tope}."
+        )
+    if resultado.por_reserva:
+        maximo = ConfiguracionSistema.obtener().maximo_reserva_preventa
+        return (
+            f"Cada Cliente puede reservar hasta {maximo} unidades de «{producto.titulo}», "
+            f"contando sus pedidos: {donde} quedó con {resultado.tope}."
+        )
+    return (
+        f"Hay {resultado.tope} disponibles de «{producto.titulo}»: "
+        f"{donde} quedó con {resultado.tope}."
+    )
 
 
 def _responder(request, nivel, mensaje):
@@ -138,10 +156,7 @@ class CantidadView(CarritoMixin, View):
             return _responder(request, "error", str(rechazo))
         if resultado.tope is not None:
             return _responder(
-                request,
-                "atencion",
-                f"Hay {resultado.tope} disponibles de «{linea.producto.titulo}»: "
-                f"la línea quedó con {resultado.tope}.",
+                request, "atencion", _aviso_de_tope(resultado, linea.producto, "la línea")
             )
         subtotal = pesos(resultado.linea.precio_vigente * resultado.linea.cantidad)
         return _responder(

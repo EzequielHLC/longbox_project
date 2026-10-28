@@ -284,3 +284,96 @@ Nada: son defectos de construcción.
 
 **Qué habría que cambiar.**
 Nada.
+
+---
+
+### B-00-028 · Pantallas de error propias y la capa de carga en las dos superficies
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `identidad_visual.md` (estados de error, transición entre vistas), RNF-03
+**Estado:** Abierta — pedido del responsable el 2026-10-26 (plan 00 de tope de reservas y errores, B y C)
+
+**Qué apareció.**
+Con el sistema publicado, un error mostraba la página en blanco de Django («Server Error (500)»,
+«Not Found»), sin estilos ni salida; el rol equivocado veía «403 Forbidden» y un formulario vencido,
+el texto técnico de la protección CSRF. Además, la capa «Cargando…» del panel quedaba tapando la
+pantalla para siempre cuando el clic abría otra pestaña (Ctrl, Cmd, la rueda) o descargaba un
+archivo, y la tienda no tenía ninguna indicación entre pantallas.
+
+**Qué dice la especificación.**
+> «Estados vacíos y de error: directos, en la voz del sistema» (`identidad_visual.md`)
+
+Nada sobre las páginas de error del servidor ni sobre la capa de carga de la tienda.
+
+**Qué se hizo.**
+- **Cinco pantallas de error** con la identidad del sistema: no existe (404), sin acceso (403, con el
+  motivo que dio la pantalla), formulario vencido (CSRF), pedido inválido (400) y error del sistema
+  (500). Cada una dice qué pasó en la voz del sistema y ofrece volver; llevan el código en sticker y
+  un meme animado elegido por el responsable. La del 500 no consulta la base ni la sesión, porque
+  se dibuja cuando algo ya falló.
+- **La capa de carga** es la misma en el panel y en la tienda. Aparece recién si la navegación tarda
+  más de 300 ms, así que una navegación rápida no parpadea y la transición entre vistas de la tienda
+  sigue viéndose. No aparece con los clics que abren otra pestaña o descargan, y si un enlace no
+  llegó a navegar, se va sola a los 12 segundos.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: las pantallas de error (sticker con el código, explicación, salida, la imagen)
+y la capa de carga compartida, con su espera de 300 ms.
+
+---
+
+### B-00-029 · Las pantallas del circuito con los proveedores toman la forma de sus hermanas
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-REV`, «Pedidos por llegar», «Propuestas de restock» (B-05-010), `TOKENS_VISUALES.md`
+**Estado:** Abierta — pedida por el responsable el 2026-10-26
+
+**Qué apareció.**
+El responsable señaló que las pantallas nuevas se veían «muy simples» al lado del resto, y que el
+gestor de portada del borrador era el control nativo del navegador («Actualmente: … · Eliminar»),
+cuando la edición de producto tiene su gestor de imágenes. Además, el panel de la serie (B-01-020)
+había roto la grilla de la ficha del borrador: el formulario quedaba en una columna angosta.
+
+**Qué dice la especificación.**
+`Nada` sobre estas pantallas, que no tienen caso de uso con código todavía (C-23), y nada sobre la
+portada del borrador más allá de que no es bloqueante.
+
+**Qué se hizo.** Cada pantalla toma la composición de la que ya existía para lo mismo:
+- **Ficha del borrador** ↔ edición de producto: Identificación y Precio y llegada lado a lado, los
+  datos opcionales abajo con el **gestor de portada** (la casilla con «Elegir/Cambiar» y «Quitar» y
+  la zona para soltar, con las piezas del gestor de imágenes) y las etiquetas. El panel de la serie
+  va arriba y a todo el ancho.
+- **Pedidos por llegar** ↔ Pre-ventas por llegar: un bloque plegable por pedido con la llegada en
+  palabras («Llega en 12 días», «Atrasado 3 días»), abierto si está atrasado o llega esta semana.
+- **Ficha del pedido** ↔ ficha de un pedido de cliente: el estado arriba, un panel que dice en qué
+  está, «Proveedor y pedido» y «Avance» lado a lado, y los productos con su portada; «Llegó todo lo
+  que faltaba» completa los campos, como «Completar con lo reservado».
+- **Confirmar la llegada** ↔ Confirmar ingreso: una tabla con el resultado de cada producto dentro
+  de un panel.
+- **Ficha de la propuesta** ↔ Restock: cifras, el filtro y un bloque plegable por proveedor.
+- **Nuevo pedido**: grupos de campos como las altas y los renglones en una tabla numerada que crece
+  con «Agregar renglón». **No va a llegar**: el resumen de la línea y qué cambia, lado a lado.
+
+**Qué habría que cambiar.**
+`TOKENS_VISUALES.md`: el gestor de una sola portada como variante del gestor de imágenes.
+
+---
+
+### B-00-030 · La cuenta va arriba del menú lateral, y la operación debajo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-27 · **Alcance:** `CU-AVI-PEC`
+**Estado:** Abierta — pedido del responsable el 2026-10-27
+
+**Qué apareció.**
+El acceso a «Mi perfil» quedó como un botón suelto al pie del menú, entre los enlaces de operación.
+El responsable dijo que se veía feo y pidió los datos de la cuenta arriba, con un botón acorde.
+
+**Qué dice la especificación.**
+`Nada`.
+
+**Qué se hizo.**
+El menú lateral empieza por **la cuenta**: una tarjeta con el rol y el correo, y dos acciones compactas
+del mismo estilo, «Mi perfil» (resaltada cuando se está en el perfil) y «Salir». Debajo sigue
+«Operación». El correo del encabezado también lleva al perfil.
+
+**Qué habría que cambiar.**
+`Nada` en el documento de análisis. Los tokens visuales, si el responsable quiere fijar la tarjeta de
+la cuenta como componente.

@@ -27,7 +27,7 @@ from apps.core import llm
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import obtener_ip
-from apps.suppliers import extraccion, services
+from apps.suppliers import casilla, demoras, extraccion, services
 from apps.suppliers.forms import (
     DescarteDeCorreoForm,
     ProveedorForm,
@@ -431,7 +431,47 @@ class CorreoListaView(ProveedoresMixin, ListView):
         )
         contexto["estados"] = CorreoProveedor.ESTADO_CHOICES
         contexto["pendientes"] = CorreoProveedor.objects.pendientes().count()
+        contexto["casilla_configurada"] = casilla.configurada()
+        contexto["casilla_revisada_en"] = ConfiguracionSistema.obtener().casilla_revisada_en
+        contexto["proxima_revision"] = casilla.proxima_revision()
+        contexto["ahora"] = timezone.now()
         return contexto
+
+
+class RevisarCasillaView(ProveedoresMixin, View):
+    """`CO-016` en el momento, desde la cola (B-04-013).
+
+    El mismo ciclo del Temporizador, sin esperar la frecuencia de Parámetros:
+    deja en la cola lo que llegó y **no procesa nada**. La intención la lee el
+    modelo recién cuando el Administrador aprueba cada correo (`CO-017`).
+    """
+
+    http_method_names = ["post"]  # noqa: RUF012
+
+    def post(self, request):
+        resumen = casilla.ciclo(forzar=True)
+        if resumen.estado == "sin configurar":
+            messages.info(
+                request,
+                "La casilla de novedades no está configurada: faltan CASILLA_HOST y "
+                "CASILLA_USUARIO en el .env.",
+            )
+        elif resumen.estado != "revisada":
+            messages.error(
+                request,
+                "No se pudo conectar a la casilla de novedades. Se avisó a los "
+                "administradores; probá de nuevo en un rato.",
+            )
+        elif resumen.ingresados:
+            cantidad = len(resumen.ingresados)
+            messages.success(
+                request,
+                f"Se revisó la casilla: {cantidad} correo{'s' if cantidad != 1 else ''} "
+                f"nuevo{'s' if cantidad != 1 else ''} en la cola.",
+            )
+        else:
+            messages.info(request, "Se revisó la casilla: no hay correos nuevos.")
+        return redirect("suppliers:correo_lista")
 
 
 class CorreoDetalleView(ProveedoresMixin, DetailView):
@@ -473,6 +513,10 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
             .prefetch_related("confianzas")
             .all()
         )
+        # B-04-010: un aviso de demora propone registrarla en las pre-ventas
+        # del proveedor. Sólo propone: la demora se confirma en su pantalla.
+        if self.object.es_aviso_de_demora:
+            contexto["demora"] = demoras.proponer(self.object)
         return contexto
 
     def post(self, request, *args, **kwargs):
@@ -481,7 +525,7 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
         # Se vuelve a chequear acá y no solo escondiendo el botón: un correo ya
         # resuelto no puede volver a resolverse por un doble envío ni por un
         # POST directo (RNF-03).
-        if not self.object.esta_abierto:
+        if not self.object.puede_descartarse:
             messages.info(request, MENSAJE_CORREO_YA_RESUELTO)
             return redirect("suppliers:correo_detalle", pk=self.object.pk)
 
@@ -502,7 +546,14 @@ class CorreoDetalleView(ProveedoresMixin, DetailView):
                 detalle=f"«{asunto}» de {self.object.proveedor}: {motivo}",
             )
 
-        messages.success(request, "Se descartó el correo. No va a procesarse.")
+        messages.success(
+            request,
+            (
+                "Se descartó el correo."
+                if self.object.extraccion
+                else "Se descartó el correo. No va a procesarse."
+            ),
+        )
         return redirect("suppliers:correo_detalle", pk=self.object.pk)
 
 
@@ -546,6 +597,11 @@ class ProcesarCorreoView(ProveedoresMixin, View):
     def _resumen(resultado):
         generacion = resultado.generacion
         if generacion is None:
+            if resultado.extraccion.intencion == extraccion.DEMORA:
+                return (
+                    "Se procesó el correo: es un aviso de demora. Abajo están las "
+                    "pre-ventas del proveedor para registrarla."
+                )
             return "Se procesó el correo. No generó borradores."
         cuenta = generacion.resumen
         con_reparos = sum(1 for borrador in generacion.creados if borrador.reparos)

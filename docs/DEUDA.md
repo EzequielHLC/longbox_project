@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-22**.
+> **Tipo: Fotografía.** Tomada el **2026-10-28**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -38,6 +38,7 @@ al plan o a la sección donde está desarrollada.
 | C-15 | Filtros por acción y por rol en el log | Recomendación del plan, sin objeción: acciones agrupadas y rol actual | B-16-001, B-16-002 |
 | C-16 | Markdown de la FAQ | Recomendación del plan, sin objeción: sin HTML crudo | — |
 | C-22 | El cambio de producto: `CO-100` y `DevolucionFisica` frente a DME-12 y DME-16 | Mandan la ficha, el contrato y el diagrama de clases; los DME están desactualizados (2026-10-16) | R-09-001 |
+| C-23 | Los códigos de los tres casos de uso del circuito con los proveedores | **Aprobados el 2026-10-27**: `CU-RST-PRC` (consultar propuestas), `CU-RST-PDA` (pedido a mano) y `CU-RST-LLE` (llegada de un pedido). Faltan sus fichas y contratos en el documento | B-05-010 |
 | C-20 | ¿La portada de la tienda se ve sin iniciar sesión? | Sí, el 2026-10-05: la ve un invitado y cualquier rol, y la raíz del sitio lleva a ella | B-07-019 |
 
 ### Siguen abiertas
@@ -46,6 +47,7 @@ al plan o a la sección donde está desarrollada.
 | --- | --- | --- | --- |
 | C-19 | `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita. Construido así (B-03-003) | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
 | C-21 | El logo no admite SVG porque RNF-05 convierte toda imagen a WebP. ¿Se enmienda la guía de `CU-CFG-VIS` o se exceptúa el logo de RNF-05? | B-17-011 | La guía de formato del logo |
+| C-24 | ¿Se cargan borradores de material **no editorial** (figuras, TCG, merchandising) desde Telegram? Hoy el bot no crea nada y enlaza el alta de la web. Hacerlo exige que el borrador tenga rubro y marca, sin pre-venta, y que `CU-ALT-REV` confirme un producto no editorial | B-19-009 | La carga no editorial desde el chat |
 
 ---
 
@@ -59,7 +61,8 @@ al plan o a la sección donde está desarrollada.
 | MercadoPago sin probar contra su API | El adaptador está construido y probado contra respuestas declaradas (B-07-031). Falta cargar `MERCADOPAGO_ACCESS_TOKEN` de una cuenta de prueba y recorrer un pago real con el aviso llegando por el túnel | Mostrar un pago real en la demostración | 2026-10-09 |
 | Costo de envío por operador logístico | Hoy es un importe fijo de Parámetros (B-07-032). Cotizar con Correo Argentino (API MiCorreo o tabla por zona) exige una cuenta comercial y **el peso de cada producto**, que el modelo no tiene | Un costo de envío según peso y destino | 2026-10-09 |
 | ~~Cobros en curso abandonados~~ | **Resuelto el 2026-10-19**: el Temporizador los descarta y un pago tardío se reembolsa (B-07-039) | — | — |
-| Carreras de unicidad no ensayadas | El doble envío de un alta con datos únicos terminaba en 500 en catálogos y proveedores (B-17-016, B-04-006, corregidos). No se ensayaron el alta de productos (ISBN, código de barras, código interno), el registro de clientes (correo) ni el alta de personal | Que esas altas respondan con el aviso de duplicado y no con un 500 ante un doble clic | 2026-10-04 |
+| ~~Carreras de unicidad no ensayadas~~ | **Resuelto el 2026-10-23** ([plan 00 de cierre de deuda](planes/00-cierre-de-deuda.md), D1): el alta y la edición de productos, la confirmación de borradores, el registro de clientes y el alta y la edición de personal responden con el aviso de su contrato cuando otro pedido gana el valor único después de validarlo. Las cinco daban 500 | — | — |
+| ~~Supresiones de `bandit` sin justificación escrita~~ | **Resuelto el 2026-10-23** (plan 00 de cierre de deuda, D4): cada `# nosec` nombra su regla y su motivo | — | — |
 | `04_RESUMEN.md` | `MODELO_DE_DOMINIO.md` lo cita y el archivo no está en el repositorio | Saber cuáles son las «cuatro operaciones con contrato pausado» | 2026-09-14 |
 
 ---
@@ -91,7 +94,9 @@ dos son parámetros o una regla chica: cambiarlos no toca el diseño.
 
 ## Consistencia de la especificación consigo misma
 
-Resultado de `scripts/generar_contexto.py` del 2026-09-30. Compara el documento contra sí mismo y
+Resultado de `scripts/generar_contexto.py` del 2026-09-30, repetido con `--dry-run` el 2026-10-23
+con las mismas observaciones: 219 contratos, 103 casos de uso con apartado en el DSS, 10 archivos
+protegidos sin cambios. Compara el documento contra sí mismo y
 contra `dss/DSS.md`, **por nombre de operación**. Informa y no corrige. El inventario de
 operaciones ya no existe, y con él desaparecieron las observaciones que esta sección hacía sobre
 su numeración.
@@ -141,16 +146,24 @@ no tiene caso de uso; el concepto guarda la fecha para cuando exista.
 confirmación y el aviso de la pasarela (B-07-034). No es un concepto del dominio, como no lo es la
 sesión.
 
-**Tres conceptos construidos que el modelo todavía no declara**: `TransicionDePedido`, la línea de
+**Cinco conceptos construidos que el modelo todavía no declara**: `TransicionDePedido`, la línea de
 tiempo del pedido (B-08-001), `TokenCambioCorreo`, que `CO-109` pide como concepto propio
-(B-11-002), y `SolicitudDespacho`, el envío de stock almacenado (B-18-004). Los tres esperan su
-enmienda.
+(B-11-002), `SolicitudDespacho`, el envío de stock almacenado (B-18-004), y `PedidoProveedor` con
+`LineaPedidoProveedor`, lo pedido a un proveedor y su llegada (B-05-010). Esperan su enmienda.
 
-**RNF-05 está construido a medias.** `core/imagenes.py` convierte a WebP, acota el lado mayor y
-no conserva el original para los banners, el logo y el fondo de la tienda. **Las portadas de
-producto siguen sin procesarse**: `CU-ALT-NAC`, `IMP`, `REV`, `CU-CAT-ALT` y `EDI` guardan el
-archivo tal como llega. Es deuda del módulo 01. La calidad es un valor fijo y no un parámetro
-(B-17-012).
+**Tres conceptos del módulo 19** que el modelo tampoco declara: `VinculoTelegram`,
+`CodigoVinculacion` (B-19-003, con la confirmación de B-19-005) y `PreferenciaAviso` (B-19-002).
+`BorradorProducto` gana origen y quién lo cargó, y su correo y su proveedor pasan a 0..1 (B-19-006).
+`ConfiguracionSistema` gana la hora del resumen, el último día enviado y los problemas de salud
+avisados (B-19-011).
+`ConfiguracionSistema` declara la frecuencia de la casilla en horas y el sistema la usa en minutos
+(B-04-015).
+
+**RNF-05 está construido en todas las imágenes**: banners, logo, fondo de la tienda, imágenes
+adicionales y, desde el 2026-10-23, las portadas de producto por los cinco caminos y la que llega
+en el correo del proveedor (B-01-015). Las portadas guardadas antes quedan como estaban. Lo que
+falta es del documento: la calidad y las dimensiones son valores fijos y no parámetros, porque
+`ConfiguracionSistema` no los declara (B-17-012).
 
 ---
 
@@ -160,30 +173,27 @@ El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTUR
 
 **No falta ninguno: los 219 tienen prueba y están verificados** (2026-10-22, V1 y V2 del plan 00,
 y los planes 11 tercera parte y 15). `CO-089 registrarResultadoDePago` y `CO-087
-declararDireccionDeEnvio` están verificados en la compra online; los referencia también
-`CU-STK-DES`, que no existe.
+declararDireccionDeEnvio` están verificados en la compra online y también en `CU-STK-DES`, que
+los ejerce en `apps/almacen/tests/test_contratos_18_almacen.py`.
 
 ---
 
 ## Invariantes declaradas sin garantía en la base
 
-Relevadas el 2026-09-22. Las migraciones de esta sesión no agregan restricciones: un campo
-booleano en `Formato`, un entero en `ConfiguracionSistema` y tres tablas nuevas sin unicidades.
+Relevadas el 2026-09-22 y actualizadas el 2026-10-23, al llevar I-05, I-06, I-09 e I-12 a la
+base (plan 00 de cierre de deuda, D3). **Ninguna invariante declarada queda sin garantía en la
+base.**
 
 | Invariante | Dónde vive hoy | La respeta cualquier escritura |
 | --- | --- | --- |
 | I-01, I-03, I-04, I-07, I-08, I-10, I-15, I-16, I-17, I-19 (unicidades) | Restricciones en la base (I-19 desde el plan 09: `devoluciones_casodevolucion_linea_id_key`) | Sí |
 | I-13 | Disparador de PostgreSQL, además de `save()` y `delete()` (B-16-004). `TRUNCATE` queda fuera | Sí, salvo `TRUNCATE` |
 | I-02, I-14, I-11 | `save()`, `delete()` o el backend de autenticación | Sí |
-| **I-05** tipo del mismo rubro que el producto | `clean()` | **No** |
-| **I-06** no editorial sin Pre-venta ni Cancelado | `clean()` | **No** |
-| **I-09** ningún importe negativo, ningún precio cero | `MinValueValidator` | **No** |
-| **I-12** siempre un Administrador activo | Servicio de `accounts`, con bloqueo ordenado y prueba de concurrencia (B-13-006) | **No**: sólo las operaciones que pasan por el servicio |
+| I-05 tipo del mismo rubro que el producto | Disparadores `producto_tipo_del_rubro` y `tipo_conserva_su_rubro`, además de `clean()` (B-02-008) | Sí |
+| I-06 no editorial sin Pre-venta ni Cancelado | `producto_no_editorial_sin_preventa_ni_cancelado`, además de `clean()` (B-02-008) | Sí |
+| I-09 ningún importe negativo, ningún precio cero | `CheckConstraint` en la compra (2026-10-09) y, desde el 2026-10-23, en `Producto.precio`, `TablaPrecioReferencia.pvp`, `precio_base`, `costo_origen` (B-02-008) y los importes del lote (`lote_importes_no_negativos`) | Sí |
+| I-12 siempre un Administrador activo | Disparador `queda_un_administrador_activo_*`, además del servicio con su bloqueo ordenado (B-13-006, B-13-007). `TRUNCATE` queda fuera | Sí, salvo `TRUNCATE` |
 
-**I-09 vive en la base para los conceptos de la compra** (2026-10-09): `LineaPedido.precio_unitario`
-mayor que cero, y montos, costos de envío y compensaciones no negativos, como `CheckConstraint`.
-**`Producto.precio` sigue sin restricción en la base**: la propagación del plan 03 escribe precios con
-`update()` de queryset, que no pasa por los validadores.
 
 Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` y no figuran en
 `pg_constraint`. Buscarlas ahí da el falso negativo contra el que advierte `CLAUDE.md`.
@@ -197,6 +207,9 @@ Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` 
 | `apps/core/views.py::PanelAdministracionView` | Tablero de entrada del Administrador con cifras agregadas | Ningún contrato lo declara. `CO-219` está en camino y todavía no aparece en `.contexto-ia/` |
 | `apps/core/views.py::PoliticaPrivacidadView` | Publica la política que el registro obliga a aceptar | Ningún contrato declara su publicación ni qué pasa cuando cambia |
 | `apps/core/integraciones.py` | Única puerta HTTP, con caché, servicio en vivo y respaldo local | La degradación está declarada sólo para cotizaciones (`CO-155`) |
+| `apps/suppliers/views_pedidos.py`, `llegadas.py` | «Pedidos por llegar»: la ficha del pedido, la llegada en dos tiempos, el cierre de una línea sin recibir y el pedido a mano | `CU-RST-LLE` y `CU-RST-PDA` (C-23): faltan su ficha y sus contratos. Probado en `test_pedidos_a_proveedor.py` y `test_pantallas_pedidos.py` |
+| `apps/avisos` (módulo 19) | El perfil del Administrador, los canales de aviso, la vinculación con Telegram, el bot que resuelve correos, las consultas y la carga de borradores desde el chat | Las fichas y los contratos de los once casos de uso, de `CU-AVI-PEC` a `CU-AVI-INL` (B-19-001). Probado en `apps/avisos/tests/` |
+| `apps/restock/views.py::PropuestaListaView`, `PropuestaDetalleView` | Consultar las propuestas de restock, también las cerradas | `CU-RST-PRC` (C-23): faltan su ficha y su contrato |
 
 **Las dos pantallas públicas del contenido de la tienda** (la portada con el carrusel y la página
 de preguntas frecuentes) se construyeron dentro de `CU-CFG-BNC` y `CU-CFG-FAQ` por decisión del
@@ -205,7 +218,8 @@ responsable (C-06). Ningún caso de uso las declara todavía (B-17-013).
 ### Las tareas de consola quedan fuera del modelo de casos de uso
 
 Por R-01-002: `respaldar_base`, `sincronizar_georef`, `sincronizar_paises`, `ingerir_correos`,
-`extraer_novedades` y `crear_administrador_inicial`. La enmienda que declara ese límite en el
+`extraer_novedades`, `crear_administrador_inicial`, desde el 2026-10-26 `revisar_casilla`
+(B-04-012) y desde el 2026-10-27 `telegram` (estado, escuchar y webhook; B-19-003). La enmienda que declara ese límite en el
 alcance sigue pendiente.
 
 ---
@@ -216,26 +230,34 @@ alcance sigue pendiente.
 | --- | ---: | ---: | --- |
 | `bitacora/00-documentacion-de-pruebas.md` | 5 | 3 | 3 agregados, 2 correcciones |
 | `bitacora/00-estilo-preliminar.md` | 12 | 8 | 10 agregados, 2 desvíos |
-| `bitacora/00-pulido-de-interfaz.md` | 10 | 3 | 6 agregados, 4 correcciones |
-| `bitacora/01-alta-editorial.md` | 14 | 11 | 9 agregados, 3 correcciones, 1 desvío |
-| `bitacora/02-catalogo.md` | 7 | 5 | 4 agregados, 2 correcciones, 1 desvío |
-| `bitacora/03-pricing.md` | 13 | 11 | 10 agregados, 2 correcciones |
-| `bitacora/04-proveedores.md` | 9 | 3 | 7 agregados, 1 corrección, 1 desvío |
-| `bitacora/05-restock.md` | 8 | 8 | 7 agregados, 1 corrección |
+| `bitacora/00-pulido-de-interfaz.md` | 12 | 5 | 8 agregados, 4 correcciones |
+| `bitacora/01-alta-editorial.md` | 22 | 18 | 14 agregados, 6 correcciones, 2 desvíos |
+| `bitacora/02-catalogo.md` | 8 | 5 | 5 agregados, 2 correcciones, 1 desvío |
+| `bitacora/03-pricing.md` | 13 | 11 | 11 agregados, 2 correcciones |
+| `bitacora/04-proveedores.md` | 14 | 6 | 10 agregados, 3 correcciones, 1 desvío |
+| `bitacora/05-restock.md` | 10 | 9 | 9 agregados, 1 corrección |
 | `bitacora/06-ventas-presenciales.md` | 6 | 6 | 4 agregados, 2 correcciones |
-| `bitacora/07-tienda-online.md` | 40 | 32 | 34 agregados, 4 correcciones, 1 desvío |
+| `bitacora/07-tienda-online.md` | 42 | 34 | 35 agregados, 6 correcciones, 1 desvío |
 | `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
-| `bitacora/09-devoluciones.md` | 9 | 8 | 4 agregados, 4 correcciones |
-| `bitacora/10-puntos.md` | 12 | 11 | 7 agregados, 4 correcciones |
+| `bitacora/09-devoluciones.md` | 9 | 7 | 4 agregados, 5 correcciones |
+| `bitacora/10-puntos.md` | 12 | 11 | 7 agregados, 5 correcciones |
 | `bitacora/11-cuenta-de-cliente.md` | 10 | 7 | 8 agregados, 2 correcciones |
-| `bitacora/12-autenticacion.md` | 4 | 1 | 1 agregado, 1 corrección, 1 desvío |
-| `bitacora/13-gestion-de-usuarios.md` | 6 | 0 | 2 agregados, 2 correcciones, 2 desvíos |
+| `bitacora/12-autenticacion.md` | 4 | 1 | 2 agregados, 1 corrección, 1 desvío |
+| `bitacora/13-gestion-de-usuarios.md` | 7 | 0 | 3 agregados, 2 correcciones, 2 desvíos |
 | `bitacora/14-caja.md` | 3 | 3 | 2 agregados, 1 corrección |
 | `bitacora/15-reportes.md` | 1 | 1 | 1 agregado |
 | `bitacora/16-auditoria.md` | 4 | 3 | 3 agregados, 1 corrección |
 | `bitacora/17-configuracion-del-sistema.md` | 19 | 13 | 14 agregados, 4 correcciones, 1 desvío |
-| `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 4 correcciones |
-| **Total** | **211** | **154** | |
+| `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 5 correcciones |
+| `bitacora/19-perfil-y-avisos.md` | 4 | 4 | 4 agregados |
+| **Total** | **236** | **173** | |
+
+Recontada el 2026-10-26 sobre las entradas `B-`, leyendo el tipo y el estado de cada una; las
+`R-` no entran en la cuenta. El plan 00 del circuito de proveedores y lo que se ajustó después suman trece
+entradas (B-00-029, B-01-017 a B-01-022, B-04-011 a B-04-014, B-05-010, B-07-042), doce abiertas
+a la espera de su enmienda, y da por
+reemplazadas tres (B-01-016, B-04-010, B-05-009). El
+recuento corrigió el reparto por tipo de cuatro filas (03, 10, 12 y 18), que no sumaban su total.
 
 «Abierta» quiere decir que el código ya resolvió el punto y la enmienda del documento está
 pendiente, o que espera la respuesta a una consulta (C-19, C-21). Ninguna entrada abierta es
@@ -292,6 +314,26 @@ código sin terminar.
 | `CO-075`: el aviso se pide sobre un Agotado | B-05-002 |
 | `CU-RST-PRO`: proveedor de cada producto, ciclo diario con ventana semanal, valores por defecto | B-05-003, B-05-004 |
 | `CO-030`: reponer stock a mano vuelve el Agotado a Activo | B-05-006 |
+| **La reserva de pre-venta tiene un máximo por Cliente** (cambio del 2026-10-26): `CU-TDA-CRA` A1, `CU-TDA-CRM` A1, `CO-083`, `CO-084` y `CO-178`; `ConfiguracionSistema` y `CU-CFG-PAR` ganan el máximo de unidades por reserva | B-07-041 |
+| `identidad_visual.md`: las pantallas de error y la capa de carga compartida | B-00-028 |
+| **El circuito con los proveedores** (cambio del 2026-10-26): tres casos de uso nuevos en el módulo 05 —`CU-RST-PRC` consultar propuestas de restock, `CU-RST-LLE` registrar la llegada de un pedido a proveedor y `CU-RST-PDA` registrar un pedido a mano— con sus fichas y contratos; `CO-074` crea el pedido; `PedidoProveedor` y `LineaPedidoProveedor` en el modelo | B-05-010 |
+| El borrador declara la cantidad a pedir y el producto nace sin stock: `CO-017`, `CO-022`, `CO-003`, `CO-009`, `CO-013` | B-01-017 |
+| **El cupo de la pre-venta**: `CU-TDA-CRA` A1, `CU-TDA-CRM` A1, `CO-083`, `CO-084`, `CO-089`, `CO-075`; el margen del cupo en `CU-CFG-PAR` y `CO-130` | B-07-042 |
+| `CO-017` E4 sólo para lo clasificado como novedades; el descarte después de procesar (`CO-018`); `CU-ALT-DEM` desde el aviso de demora; `CU-ALT-TRA` E1 | B-04-011 |
+| `CU-PRV-COL`: «Revisar la casilla ahora» ejecuta `CO-016` desde la cola; `CO-016` gana esa referencia y al Administrador como actor | B-04-013 |
+| `CO-017`, Notas: el volumen dentro del título con marca explícita se separa | B-04-014 |
+| El precio de la tabla en la revisión: `CO-017` (sin precio, el de la tabla), `CO-022` y `CO-023` (apartarse de la tabla se confirma; el lote lo excluye), `CU-ALT-REV` pasos 3 y 4 | B-01-018 |
+| `CO-017` E7 y `CU-ALT-NOV` E7: la fecha con día y mes sin año se completa con su próxima ocurrencia, con reparo | B-01-019 |
+| `CO-017`: el borrador de una serie conocida hereda autor, sinopsis y «sólo para adultos»; `CU-ALT-REV` paso 2: los datos de la serie y el precio que sigue al formato | B-01-020 |
+| `BorradorProducto` → `Etiqueta` en el modelo; `CO-017` y `CO-022`: las etiquetas de la serie pasan al borrador y al producto | B-01-021 |
+| `TOKENS_VISUALES.md`: el gestor de una sola portada | B-00-029 |
+| **El módulo 19 Perfil y avisos** (cambio de alcance del 2026-10-27): el módulo, sus requerimientos, las fichas y contratos de `CU-AVI-PEC`, `CAM`, `TGA`, `TGB`, `COR`, `BOR` y `CON`; «notifica al Administrador» pasa a «por los canales que eligió» en cada paso que avisa; `CO-111` también para el personal; los tres conceptos nuevos; la confirmación del vínculo en el perfil; el borrador con origen propio y sin correo (`CU-ALT-REV`, la generación de borradores); las consultas de sólo lectura; el rechazo de borradores desde el chat (`CU-AVI-REB`), sin confirmación; la excepción del material no editorial; los parecidos y la editorial por la serie | B-19-001 a B-19-010 |
+| **La etapa 3 del bot**: las fichas de `CU-AVI-RES`, `CU-AVI-EST` y `CU-AVI-INL`; los tipos de aviso con su canal por defecto (`CU-AVI-CAM`); la hora del resumen en `CU-CFG-PAR` y `CO-130`; el reloj por minuto en P-05; el aviso de seguridad al Administrador en `CU-AUT-INI`, `CU-USR-ALT`, `CU-USR-MOD`, `CO-048` y `CO-053`; las fotos del reclamo por Telegram en `CU-DEV-SOL` paso 5 y en datos personales; la rutina de respaldo de la VM en `RESPALDOS.md` | B-19-011 a B-19-015 |
+| `CO-016`: también desde el chat (`/refresh`), y la frecuencia cuenta desde la última revisión, automática o a pedido | B-19-016 |
+| `CU-ALT-NOV` y la generación de borradores: el formato se reconoce sin mayúsculas, tildes ni signos | B-01-023 |
+| **La frecuencia de la casilla en minutos**: el modelo de dominio, `CU-CFG-PAR`, `CO-130`; `CO-016` corre cada minuto y respeta la frecuencia | B-04-015 |
+| La tarjeta de la cuenta arriba del menú lateral, si se fija como componente en `TOKENS_VISUALES.md` | B-00-030 |
+| **La demora de varios tomos** (desvío consultado del 2026-10-27): `CU-ALT-DEM` gana el flujo «varios tomos» con informe conjunto, exclusión de lo que no admite y un aviso por Cliente; `CO-014` y `CO-015` aceptan una lista; el DSS lo muestra | B-01-022 |
 
 ---
 
@@ -301,7 +343,7 @@ código sin terminar.
   entero. Por ejemplo, `CO-120` sigue diciendo «Activa o Pendiente», `CO-125` sigue citando I-14
   y los dos conceptos de enlace siguen `<<planificado>>`.
 - **El chequeo de consistencia compara nombres, no significados.**
-- **Las invariantes no se volvieron a relevar.** La única escritura nueva que pasa por fuera de
-  los validadores es la propagación de precios (`update()` y `bulk_update()`), y sus valores
-  salen de formularios que exigen precio mayor que cero y de la fórmula del margen.
+- **Las invariantes se relevaron contra la base el 2026-10-23** (`pg_constraint` y
+  `pg_trigger`), sólo las de la tabla. Ninguna otra escritura nueva por fuera de los
+  validadores se buscó.
 - **Las pantallas nuevas se probaron por la suite**, no a mano en un navegador.

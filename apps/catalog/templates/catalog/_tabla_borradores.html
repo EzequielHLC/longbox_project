@@ -20,7 +20,7 @@ dicen con su palabra; sólo el incompleto va en peso 600.
           <th>ISBN</th>
           <th>Proveedor</th>
           <th class="numero">Precio</th>
-          <th class="numero">Stock</th>
+          <th class="numero">A pedir</th>
           <th>Nace como</th>
           <th>Estado</th>
           <th class="derecha"><span class="sr-only">Acción</span></th>
@@ -46,7 +46,7 @@ dicen con su palabra; sólo el incompleto va en peso 600.
               {% if borrador.volumen %}<span class="datos secundario">#{{ borrador.volumen }}</span>{% endif %}
             </td>
             <td class="datos{% if not borrador.isbn %} secundario{% endif %}">{{ borrador.isbn|default:"—" }}</td>
-            <td class="secundario">{{ borrador.proveedor }}</td>
+            <td class="secundario">{{ borrador.proveedor|default:"" }}{% if not borrador.correo_id %}{% if borrador.proveedor %} · {% endif %}Telegram{% endif %}</td>
             <td class="numero">{% if borrador.precio != None %}{{ borrador.precio|pesos }}{% else %}<span class="estado estado--atencion">Falta</span>{% endif %}</td>
             <td class="numero">{{ borrador.stock_inicial }}</td>
             {# El estado lo derivó el sistema de la fecha anunciada: valor calculado. #}

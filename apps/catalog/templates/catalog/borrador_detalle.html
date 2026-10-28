@@ -1,4 +1,5 @@
 {% extends "base_operativo.html" %}
+{% load l10n moneda %}
 
 {% block titulo %}{{ borrador }} · Revisión · Longbox{% endblock %}
 {% block seccion %}Catálogo{% endblock %}
@@ -20,8 +21,12 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
       {% if borrador.volumen %}<span class="datos secundario">#{{ borrador.volumen }}</span>{% endif %}
     </h1>
     <p>
-      Propuesto por {{ borrador.proveedor }} ·
-      <a href="{% url 'suppliers:correo_detalle' borrador.correo_id %}">correo #{{ borrador.correo_id }}</a>
+      {% if borrador.correo_id %}
+        Propuesto por {{ borrador.proveedor }} ·
+        <a href="{% url 'suppliers:correo_detalle' borrador.correo_id %}">correo #{{ borrador.correo_id }}</a>
+      {% else %}
+        Cargado desde Telegram por {{ borrador.cargado_por.get_full_name|default:borrador.cargado_por.email|default:"un Administrador" }}{% if borrador.proveedor %} · {{ borrador.proveedor }}{% endif %}
+      {% endif %}
       · generado el <span class="datos">{{ borrador.creado_en|date:"d/m/Y H:i" }}</span>
     </p>
   </div>
@@ -81,56 +86,192 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
     </section>
   {% endif %}
 
-  <div class="dos-columnas dos-columnas--lateral-izquierda">
-    <div>
-      {% if borrador.portada %}
-        <img src="{{ borrador.portada.url }}" alt="Portada" class="portada">
-      {% else %}
-        <div class="portada-vacia"><span class="pila-2 centro">{% include "_iconos.html" with icono="imagen" %}<span class="texto-chico">Imagen pendiente</span></span></div>
-      {% endif %}
-    </div>
+  {% comment %}
+  B-01-020: la serie ya está en el catálogo. Lo vacío (autor, sinopsis, etiquetas)
+  ya viene completado con lo que se sabe de ella; lo que difiere de lo que leyó
+  el modelo se señala, y un botón lo toma todo. Nada se guarda hasta guardar o
+  confirmar. Va antes del formulario y a todo el ancho, como el aviso de
+  duplicado: es contexto para leer los campos.
+  {% endcomment %}
+  {% if serie %}
+    <section class="panel pila-3" data-serie aria-labelledby="titulo-serie">
+      <div class="fila fila-entre">
+        <h2 id="titulo-serie" class="fila-2">{% include "_iconos.html" with icono="libro" %}<span>Esta serie ya está en el catálogo</span></h2>
+        <button type="button" class="boton-seccion" data-usar-serie>{% include "_iconos.html" with icono="reactivar" %}<span>Usar los datos de la serie</span></button>
+      </div>
+      <p class="secundario">
+        <a href="{% url 'catalog:producto_detalle' serie.ultimo.pk %}">{{ serie.ultimo.titulo }}</a>:
+        <span class="datos">{{ serie.tomos }}</span> tomo{{ serie.tomos|pluralize }}, el último es el <span class="datos">#{{ serie.ultimo.volumen }}</span>.
+        {% if serie.autor or serie.sinopsis or serie.etiquetas %}Lo que el borrador no traía se completó con la serie.{% endif %}
+      </p>
+      <dl class="datos-de-ficha">
+        <dt>Tipo</dt>
+        <dd>{{ serie.tipo }}{% if borrador.tipo_id and borrador.tipo_id != serie.tipo.pk %} <span class="marca-estado marca-estado--atencion">El borrador dice {{ borrador.tipo }}</span>{% endif %}</dd>
+        <dt>Formato</dt>
+        <dd>{{ serie.formato|default:"—" }}{% if serie.formato and borrador.formato_id != serie.formato.pk %} <span class="marca-estado marca-estado--atencion">El borrador dice {{ borrador.formato|default:"ninguno" }}</span>{% endif %}</dd>
+        {% if serie.autor %}<dt>Autor</dt><dd>{{ serie.autor }}</dd>{% endif %}
+        {% if serie.etiquetas %}<dt>Etiquetas</dt><dd>{% for etiqueta in serie.etiquetas %}{{ etiqueta }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd>{% endif %}
+        {% if serie.solo_adultos %}<dt>Público</dt><dd>Sólo para adultos</dd>{% endif %}
+      </dl>
+      {{ serie_datos|json_script:"datos-de-la-serie" }}
+    </section>
+  {% endif %}
 
-    <form method="post" enctype="multipart/form-data" novalidate class="formulario">
-      {% csrf_token %}
+  {% comment %}
+  La misma forma que la edición de producto (`producto_formulario.html`):
+  Identificación y Precio y llegada lado a lado, y abajo los datos opcionales con
+  el gestor de portada y las etiquetas. La confianza va junto a cada campo.
+  {% endcomment %}
+  <form method="post" enctype="multipart/form-data" novalidate class="formulario">
+    {% csrf_token %}
 
-      <div class="rejilla-2">
-        <fieldset class="grupo-de-campos">
-          <legend>Identificación</legend>
-          {% include "catalog/_campo_con_confianza.html" with campo=form.titulo confianzas=confianzas nombre="titulo" %}
+    <div class="rejilla-2">
+      <fieldset class="grupo-de-campos">
+        <legend>Identificación</legend>
+        {% include "catalog/_campo_con_confianza.html" with campo=form.titulo confianzas=confianzas nombre="titulo" %}
+        <div class="rejilla-2">
           {% include "catalog/_campo_con_confianza.html" with campo=form.volumen confianzas=confianzas nombre="volumen" %}
           {% include "catalog/_campo_con_confianza.html" with campo=form.isbn confianzas=confianzas nombre="isbn" %}
-          {% include "_campo.html" with campo=form.editorial %}
+        </div>
+        {% include "_campo.html" with campo=form.editorial %}
+        <div class="rejilla-2">
           {% include "_campo.html" with campo=form.tipo %}
           {% include "catalog/_campo_con_confianza.html" with campo=form.formato confianzas=confianzas nombre="formato" %}
-        </fieldset>
-
-        <fieldset class="grupo-de-campos">
-          <legend>Precio y llegada</legend>
-          {% include "catalog/_campo_con_confianza.html" with campo=form.precio confianzas=confianzas nombre="precio" %}
-          {% include "_campo.html" with campo=form.estado_sugerido %}
-          {% include "catalog/_campo_con_confianza.html" with campo=form.fecha_llegada confianzas=confianzas nombre="fecha" %}
-          {% include "_campo.html" with campo=form.stock_inicial %}
-          {% include "_casilla.html" with campo=form.solo_adultos %}
-        </fieldset>
-      </div>
-
-      <fieldset class="grupo-de-campos">
-        <legend>Datos opcionales</legend>
-        <div class="rejilla-2">
-          {% include "_campo.html" with campo=form.autor %}
-          {% include "_campo.html" with campo=form.portada %}
         </div>
-        {% include "_campo.html" with campo=form.sinopsis %}
       </fieldset>
 
-      <div class="acciones">
-        <button type="submit" name="confirmar" value="1" class="boton-primario">
-          {% include "_iconos.html" with icono="listo" %}<span>Confirmar y agregar al catálogo</span>
-        </button>
-        <button type="submit" name="guardar" value="1" class="boton-seccion">Guardar sin confirmar</button>
-      </div>
-    </form>
-  </div>
+      <fieldset class="grupo-de-campos">
+        <legend>Precio y llegada</legend>
+        <div class="rejilla-2">
+          {% include "catalog/_campo_con_confianza.html" with campo=form.precio confianzas=confianzas nombre="precio" exenta=precio_es_el_de_la_tabla %}
+          {% include "_campo.html" with campo=form.stock_inicial %}
+        </div>
+        {% comment %}
+        B-01-018: el precio de la tabla de referencia para la combinación elegida,
+        consultado de nuevo si cambia la editorial, el tipo o el formato. Un precio
+        distinto rompe el vínculo y se confirma, como en CU-ALT-NAC A3; la casilla
+        se vuelve a exigir en el servidor.
+        {% endcomment %}
+        <div class="fila-2" data-precio-tabla data-url="{% url 'catalog:precio_referencia' %}" data-pvp="{{ precio_de_la_tabla.pvp|unlocalize|default:'' }}">
+          <p class="ayuda" data-referencia>{% if precio_de_la_tabla %}Tabla de referencia: <span class="datos">{{ precio_de_la_tabla.pvp|pesos }}</span>{% endif %}</p>
+          <button type="button" class="boton-texto texto-chico{% if not precio_de_la_tabla or precio_es_el_de_la_tabla %} hidden{% endif %}" data-usar-tabla>{% include "_iconos.html" with icono="precios" %}<span>Usar el de la tabla</span></button>
+        </div>
+        <div data-aviso-precio class="panel panel--atencion{% if not form.confirma_precio_manual.value and not form.precio.errors %} hidden{% endif %}">
+          <p class="texto-chico">Precio a mano: deja de actualizarse con la tabla de precios de referencia.</p>
+          {% include "_casilla.html" with campo=form.confirma_precio_manual critico=1 %}
+        </div>
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=form.estado_sugerido %}
+          {% include "catalog/_campo_con_confianza.html" with campo=form.fecha_llegada confianzas=confianzas nombre="fecha" %}
+        </div>
+      </fieldset>
+    </div>
+
+    <fieldset class="grupo-de-campos">
+      <legend>Datos opcionales</legend>
+      <div class="rejilla-2">{% include "_campo.html" with campo=form.autor %}</div>
+      {% include "catalog/_portada_gestor.html" with campo=form.portada actual=borrador.portada ayuda="Sin portada, el producto queda marcado como «Imagen pendiente»." %}
+      {% include "_campo.html" with campo=form.sinopsis %}
+      {% include "_casilla.html" with campo=form.solo_adultos %}
+      {% include "_etiquetas.html" with campo=form.etiquetas %}
+    </fieldset>
+
+    <div class="acciones">
+      <button type="submit" name="confirmar" value="1" class="boton-primario">
+        {% include "_iconos.html" with icono="listo" %}<span>Confirmar y agregar al catálogo</span>
+      </button>
+      <button type="submit" name="guardar" value="1" class="boton-seccion">Guardar sin confirmar</button>
+    </div>
+  </form>
+  {% comment %}Sin guion, el precio de la tabla se ve igual y el servidor exige la confirmación.{% endcomment %}
+  <script>
+    (function () {
+      const caja = document.querySelector("[data-precio-tabla]");
+      if (!caja) return;
+      const formulario = caja.closest("form");
+      const campo = (nombre) => formulario.querySelector(`[name="${nombre}"]`);
+      const precio = campo("precio");
+      const nota = caja.querySelector("[data-referencia]");
+      const usar = caja.querySelector("[data-usar-tabla]");
+      const aviso = formulario.querySelector("[data-aviso-precio]");
+      const casilla = campo("confirma_precio_manual");
+      const marca = formulario.querySelector('[data-confianza="precio"]');
+      const exenta = formulario.querySelector("[data-confianza-exenta]");
+      const cache = new Map();
+      // Lo que mostró el servidor; si la consulta falla, se conserva.
+      let pvp = caja.dataset.pvp || null;
+
+      async function consultar() {
+        const editorial = campo("editorial").value, tipo = campo("tipo").value, formato = campo("formato").value;
+        if (!(editorial && tipo && formato)) return null;
+        const clave = `${editorial}|${tipo}|${formato}`;
+        if (!cache.has(clave)) {
+          try {
+            const respuesta = await fetch(`${caja.dataset.url}?${new URLSearchParams({ editorial, tipo, formato })}`);
+            cache.set(clave, (await respuesta.json()).pvp);
+          } catch {
+            return undefined;
+          }
+        }
+        return cache.get(clave);
+      }
+
+      function pintar() {
+        const igual = Boolean(pvp) && precio.value !== "" && Math.abs(parseFloat(precio.value) - parseFloat(pvp)) < 0.5;
+        const aparte = Boolean(pvp) && precio.value !== "" && !igual;
+        nota.innerHTML = pvp ? `Tabla de referencia: <span class="datos">$ ${Number(pvp).toLocaleString("es-AR", { maximumFractionDigits: 2 })}</span>` : "Sin precio de referencia para esta combinación.";
+        usar.classList.toggle("hidden", !pvp || igual);
+        aviso.classList.toggle("hidden", !aparte);
+        if (!aparte && casilla) casilla.checked = false;
+        marca?.classList.toggle("hidden", igual);
+        exenta?.classList.toggle("hidden", !igual);
+      }
+
+      let turno = 0;
+      async function actualizar() {
+        const anterior = pvp;
+        const propio = ++turno;
+        const consultado = await consultar();
+        // Si mientras tanto cambió otro campo, manda la consulta más nueva.
+        if (propio !== turno) return;
+        if (consultado !== undefined) pvp = consultado;
+        // Sin precio, el de la tabla (B-01-018). Y si el precio era el de la
+        // combinación anterior —el modelo leyó B6 y era Tankoubon—, pasa al de la
+        // nueva (B-01-020). Un precio escrito a mano no se toca.
+        const eraDeLaTabla = Boolean(anterior) && precio.value !== "" && Math.abs(parseFloat(precio.value) - parseFloat(anterior)) < 0.5;
+        if (pvp && (precio.value === "" || eraDeLaTabla)) precio.value = pvp;
+        pintar();
+      }
+
+      // B-01-020: «Usar los datos de la serie» toma el tipo, el formato, el autor,
+      // la sinopsis y «sólo adultos» de la serie, y el precio sigue al formato.
+      const datosSerie = document.getElementById("datos-de-la-serie");
+      document.querySelector("[data-usar-serie]")?.addEventListener("click", () => {
+        const serie = JSON.parse(datosSerie.textContent);
+        for (const [nombre, valor] of [["tipo", serie.tipo], ["formato", serie.formato]]) {
+          const select = campo(nombre);
+          if (valor === "" || select.value === String(valor)) continue;
+          select.value = String(valor);
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        if (serie.autor) campo("autor").value = serie.autor;
+        if (serie.sinopsis) campo("sinopsis").value = serie.sinopsis;
+        if (serie.solo_adultos) campo("solo_adultos").checked = true;
+        const etiquetas = campo("etiquetas");
+        if (etiquetas && serie.etiquetas.length) {
+          for (const opcion of etiquetas.options) {
+            if (serie.etiquetas.includes(Number(opcion.value))) opcion.selected = true;
+          }
+          etiquetas.closest("[data-selector-etiquetas]")?.dispatchEvent(new CustomEvent("etiquetas:recargar"));
+        }
+      });
+
+      usar.addEventListener("click", () => { precio.value = pvp; pintar(); });
+      precio.addEventListener("input", pintar);
+      for (const nombre of ["editorial", "tipo", "formato"]) campo(nombre).addEventListener("change", actualizar);
+      actualizar();
+    })();
+  </script>
 
   {% comment %}
   El rechazo va en su propio formulario: descartar no tiene que arrastrar los

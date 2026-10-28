@@ -151,18 +151,109 @@ el sistema —«esto lo descarté porque no verifica»—: son cosas distintas.
           </tbody>
         </table>
       </div>
+    {% elif correo.demorados_extraidos %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr><th>Se atrasa</th><th>Vol.</th><th>ISBN</th><th>Nueva fecha</th></tr>
+          </thead>
+          <tbody>
+            {% for producto in correo.demorados_a_la_vista %}
+              <tr>
+                <td>{{ producto.titulo|default:"—" }}</td>
+                <td class="datos">{{ producto.volumen|default:"—" }}</td>
+                <td class="datos{% if not producto.isbn %} secundario{% endif %}">{{ producto.isbn|default:"—" }}</td>
+                <td class="datos">{{ producto.fecha|date:"d/m/Y"|default:"La del aviso" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     {% else %}
       <p class="mensaje">
         {% include "_iconos.html" with icono="info" %}
         <span>
           {% if correo.intencion == "novedades" %}
             Clasificado como novedades, sin productos identificados. Revise el contenido extraído.
+          {% elif correo.intencion == "demora" %}
+            Aviso de demora sin productos reconocidos. Elegí abajo a qué pre-venta corresponde.
           {% else %}
             No es un anuncio de novedades.
           {% endif %}
         </span>
       </p>
     {% endif %}
+  </section>
+{% endif %}
+
+{% comment %}
+B-04-010: un aviso de demora propone registrarla en las pre-ventas del
+proveedor. Lo que el modelo reconoció va primero, con la fecha que sugiere; nada
+se aplica desde acá: cada fila abre `CU-ALT-DEM` con la fecha cargada, y la
+demora se registra recién al confirmar su informe de impacto.
+{% endcomment %}
+{% if demora %}
+  <section class="seccion" aria-labelledby="titulo-demora">
+    <div class="seccion__titulo">
+      <h2 id="titulo-demora">{% include "_iconos.html" with icono="reloj" %}Registrar la demora</h2>
+    </div>
+    <p class="seccion__bajada">
+      Pre-ventas de {{ correo.proveedor }}. La fecha la propone el modelo: se revisa en la pantalla siguiente, antes de avisar a nadie.
+    </p>
+    <form method="get" action="{% url 'pedidos:demora_lote' %}" class="pila-3" data-sin-capa>
+    <input type="hidden" name="correo" value="{{ correo.pk }}">
+    {% if demora.mencionadas %}
+      {% include "suppliers/_filas_de_demora.html" with filas=demora.mencionadas %}
+    {% else %}
+      <p class="mensaje">
+        {% include "_iconos.html" with icono="info" %}
+        <span>El modelo no reconoció ninguna pre-venta de {{ correo.proveedor }} en el aviso. Elegí abajo a cuál corresponde.</span>
+      </p>
+    {% endif %}
+    {% if demora.otras %}
+      <details class="plegable"{% if not demora.mencionadas %} open{% endif %}>
+        <summary class="plegable__titulo">Otras pre-ventas de {{ correo.proveedor }} <span class="datos secundario">{{ demora.otras|length }}</span></summary>
+        <div class="campo campo--principal formulario--angosto">
+          <label for="filtro-demora" class="etiqueta">Buscar la pre-venta</label>
+          <input type="search" id="filtro-demora" autocomplete="off" placeholder="Título, número o código" data-filtro-demora>
+        </div>
+        {% include "suppliers/_filas_de_demora.html" with filas=demora.otras %}
+        <p class="texto-chico secundario" data-sin-resultados hidden>Ninguna pre-venta coincide con la búsqueda.</p>
+      </details>
+      {% comment %}Sin guion, el campo no filtra y la lista se ve entera.{% endcomment %}
+      <script>
+        (function () {
+          const campo = document.querySelector("[data-filtro-demora]");
+          if (!campo) return;
+          const vacio = document.querySelector("[data-sin-resultados]");
+          // Está dentro del formulario de la demora: Enter filtra, no lo envía.
+          campo.addEventListener("keydown", (evento) => { if (evento.key === "Enter") evento.preventDefault(); });
+          campo.addEventListener("input", function () {
+            const palabras = campo.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            let alguna = false;
+            for (const fila of campo.closest("details").querySelectorAll("[data-fila-demora]")) {
+              const coincide = palabras.every((p) => fila.dataset.filaDemora.includes(p));
+              fila.hidden = !coincide;
+              alguna = alguna || coincide;
+            }
+            vacio.hidden = alguna;
+          });
+        })();
+      </script>
+    {% endif %}
+    {% if demora.mencionadas or demora.otras %}
+      <div class="fila-5">
+        <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="reloj" %}<span>Registrar la demora de los elegidos</span></button>
+        <span class="texto-chico secundario">Un informe para todos, una confirmación, y un solo correo por cliente.</span>
+      </div>
+    {% endif %}
+    </form>
+    {% if demora.sin_admitir %}
+      <p class="texto-chico secundario">{{ demora.sin_admitir }} pre-venta{{ demora.sin_admitir|pluralize }} más no admite{{ demora.sin_admitir|pluralize:"n" }} demora: ya demorada{{ demora.sin_admitir|pluralize }} o con la llegada vencida.</p>
+    {% endif %}
+    {% for mencion in demora.sin_preventa %}
+      <p class="reparo"><strong>Sin pre-venta:</strong> el aviso nombra «{{ mencion.titulo|default:mencion.isbn }}{% if mencion.volumen %} #{{ mencion.volumen }}{% endif %}», que no está en pre-venta con este proveedor.</p>
+    {% endfor %}
   </section>
 {% endif %}
 

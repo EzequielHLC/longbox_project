@@ -1,0 +1,30 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La contraseña propia del Administrador, desde «Mi perfil» (`CU-AVI-PEC`). La misma
+regla que `CO-111` para el Cliente: con la actual, y se cierran las demás sesiones.
+{% endcomment %}
+
+{% block titulo %}Cambiar mi contraseña · Longbox{% endblock %}
+{% block seccion %}Mi perfil{% endblock %}
+
+{% block contenido %}
+{% url 'avisos:perfil' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Mi perfil" atras=1 %}</span>
+    <h1>Cambiar mi contraseña</h1>
+  </div>
+</header>
+
+<form method="post" novalidate class="formulario formulario--angosto">
+  {% csrf_token %}
+  {% include "_campo.html" with campo=form.old_password %}
+  {% include "_campo.html" with campo=form.new_password1 %}
+  {% include "_campo.html" with campo=form.new_password2 %}
+  <p class="texto-chico secundario">Se cierra tu sesión en los demás dispositivos.</p>
+  <div class="acciones fila-5">
+    <button type="submit" class="boton-primario">Cambiar la contraseña</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </div>
+</form>
+{% endblock %}

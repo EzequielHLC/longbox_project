@@ -5,6 +5,8 @@ lo mismo con datos distintos, y porque el alta tiene que poder probarse sin
 levantar un request.
 """
 
+import re
+import unicodedata
 from dataclasses import dataclass, field
 
 from django.db import IntegrityError, transaction
@@ -12,6 +14,8 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 
 from apps.catalog.models import (
+    BorradorProducto,
+    Etiqueta,
     LoteAlta,
     Producto,
     ProductoEditorial,
@@ -136,6 +140,158 @@ def buscar_parecidos_no_editoriales(titulo, tipo=None, tope=5):
     return parecidos.select_related("tipo")[:tope]
 
 
+def titulo_comparable(texto):
+    """Sin mayúsculas, tildes ni espacios de más: «Frieren: Más Allá» es «frieren: mas alla»."""
+    sin_tildes = unicodedata.normalize("NFKD", texto or "")
+    sin_tildes = "".join(c for c in sin_tildes if not unicodedata.combining(c))
+    return " ".join(sin_tildes.casefold().split())
+
+
+_SIN_LETRAS = re.compile(r"[^0-9a-z]+")
+# La vocal larga japonesa se escribe de cuatro maneras: «Tankōbon» (que la
+# normalización ya deja en «tankobon»), «Tankoubon», «Tankoobon», «Tankohbon».
+_VOCAL_LARGA = re.compile(r"(?<=[a-z])(ou|oo|oh|uu)(?![aeiou])")
+
+
+def nombre_comparable(texto):
+    """Un nombre de catálogo —formato, tipo, editorial— listo para compararlo con lo
+    que escribió una persona o copió el modelo (B-01-023).
+
+    Encima de `titulo_comparable` saca lo que no es letra ni número («Tapa-dura» es
+    «tapa dura», «B 6» es «B6») y junta las formas de escribir la vocal larga:
+    «Tankōbon», «Tankobon» y «Tankoubon» son el mismo formato. Sólo para nombres
+    de catálogo, que son pocos y cortos: un título se compara con `titulo_comparable`.
+    """
+    base = _VOCAL_LARGA.sub(lambda vocal: vocal.group(1)[0], titulo_comparable(texto))
+    return _SIN_LETRAS.sub("", base)
+
+
+def por_nombre(objetos, texto):
+    """El de `objetos` cuyo `nombre` es `texto` según `nombre_comparable`, o `None`."""
+    buscado = nombre_comparable(texto)
+    if not buscado:
+        return None
+    return next((objeto for objeto in objetos if nombre_comparable(objeto.nombre) == buscado), None)
+
+
+@dataclass
+class Serie:
+    """Lo que el catálogo ya sabe de una serie, para no volver a cargarlo (B-01-020)."""
+
+    ultimo: object
+    tomos: int
+    autor: str = ""
+    sinopsis: str = ""
+    solo_adultos: bool = False
+    etiquetas: list = field(default_factory=list)
+
+    @property
+    def tipo(self):
+        return self.ultimo.tipo
+
+    @property
+    def formato(self):
+        return self.ultimo.formato
+
+
+def serie_de(titulo, editorial):
+    """Los tomos que ya hay de esa serie en esa editorial, o `None`.
+
+    La serie es el mismo título en la misma editorial, comparado sin mayúsculas
+    ni tildes. El tipo y el formato son los del último tomo; el autor y la
+    sinopsis, los del último que los tenga; «sólo adultos», si alguno lo es.
+    """
+    buscado = titulo_comparable(titulo)
+    if not buscado or editorial is None:
+        return None
+    tomos = [
+        producto
+        for producto in ProductoEditorial.objects.filter(editorial=editorial)
+        .select_related("tipo", "formato")
+        .order_by("-volumen", "-pk")
+        if titulo_comparable(producto.titulo) == buscado
+    ]
+    if not tomos:
+        return None
+    return Serie(
+        ultimo=tomos[0],
+        tomos=len(tomos),
+        autor=next((p.autor for p in tomos if p.autor), ""),
+        sinopsis=next((p.descripcion for p in tomos if p.descripcion), ""),
+        solo_adultos=any(p.solo_adultos for p in tomos),
+        # Las activas de cualquiera de sus tomos: describen la serie, no el tomo.
+        etiquetas=list(
+            Etiqueta.objects.filter(productos__in=tomos, activa=True)
+            .select_related("grupo")
+            .distinct()
+            .order_by("grupo__nombre", "nombre")
+        ),
+    )
+
+
+@dataclass
+class Parecidos:
+    """Lo que ya existe y se parece a un borrador (B-19-010).
+
+    `producto` es el duplicado de verdad —el mismo ISBN, o la tupla completa de
+    `buscar_duplicado`—, el que la confirmación rechazaría. `productos` son el mismo
+    título y tomo en otra editorial, tipo o formato, comparados sin mayúsculas ni
+    tildes: pueden ser otra edición o el mismo tomo mal cargado. `borradores` son los
+    abiertos con el mismo título y tomo, o el mismo ISBN: el mismo producto que llegó
+    por correo y por el chat, o cargado dos veces.
+    """
+
+    producto: object = None
+    productos: list = field(default_factory=list)
+    borradores: list = field(default_factory=list)
+
+    def __bool__(self):
+        return bool(self.producto or self.productos or self.borradores)
+
+
+def parecidos_al_borrador(borrador, limite=3):
+    producto = buscar_duplicado(
+        borrador.titulo,
+        borrador.volumen,
+        borrador.tipo,
+        borrador.formato,
+        borrador.editorial,
+        isbn=borrador.isbn,
+    )
+    buscado = titulo_comparable(borrador.titulo)
+    productos = [
+        candidato
+        for candidato in ProductoEditorial.objects.filter(volumen=borrador.volumen)
+        .exclude(pk=getattr(producto, "pk", None))
+        .select_related("editorial", "formato")
+        .order_by("-pk")
+        if titulo_comparable(candidato.titulo) == buscado
+    ][:limite]
+    abiertos = BorradorProducto.objects.pendientes().exclude(pk=borrador.pk)
+    borradores = [
+        otro
+        for otro in abiertos.filter(volumen=borrador.volumen).order_by("-pk")
+        if titulo_comparable(otro.titulo) == buscado
+    ]
+    if borrador.isbn:
+        borradores += [o for o in abiertos.filter(isbn=borrador.isbn) if o not in borradores]
+    return Parecidos(producto=producto, productos=productos, borradores=borradores[:limite])
+
+
+def editoriales_de_la_serie(titulo):
+    """Las editoriales que ya tienen tomos con ese título (sin mayúsculas ni tildes)."""
+    buscado = titulo_comparable(titulo)
+    if not buscado:
+        return []
+    editoriales = {}
+    for producto in ProductoEditorial.objects.select_related("editorial").only(
+        "titulo", "editorial__nombre", "editorial__activa"
+    ):
+        if producto.editorial.activa and titulo_comparable(producto.titulo) == buscado:
+            editoriales[producto.editorial_id] = producto.editorial
+    return list(editoriales.values())
+
+
 def precio_de_referencia(editorial, tipo, formato):
     """La fila de la tabla de precios para esa combinación, o `None`.
 
@@ -207,6 +363,9 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
     alta entera de las novedades de la semana.
     """
     resultado = ResultadoLote(lote=lote)
+    # Plan 00 del circuito con los proveedores (B-01-016): una pre-venta nace sin
+    # stock; lo declarado es lo que se pidió, y entra con la llegada.
+    pedidas = []
 
     with transaction.atomic():
         lote.creado_por = actor
@@ -229,6 +388,9 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
             # muchos a muchos y no se pueden asignar hasta que el producto
             # exista. Se sacan del diccionario antes de crearlo.
             etiquetas = datos.pop("etiquetas", ())
+            pedida = 0
+            if datos.get("estado") == Producto.PRE_VENTA:
+                pedida, datos["stock"] = datos.get("stock") or 0, 0
 
             try:
                 # Punto de guardado propio: si la restricción de la base rechaza
@@ -265,9 +427,12 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
                 continue
 
             resultado.creados.append(producto)
+            if pedida:
+                pedidas.append((producto, pedida))
 
         lote.rechazados = resultado.rechazados
         lote.save(update_fields=["rechazados"])
+        _registrar_pedidos_del_lote(lote, pedidas, actor)
 
         # **Una sola** entrada por lote, no una por ítem (CU-ALT-NAC paso 8).
         RegistroAuditoria.registrar(
@@ -279,6 +444,28 @@ def registrar_lote(*, lote, items, actor=None, ip=None):
         )
 
     return resultado
+
+
+def _registrar_pedidos_del_lote(lote, pedidas, actor):
+    """El pedido de las pre-ventas del lote, uno por proveedor y fecha de llegada.
+
+    El pedido se hizo por fuera del sistema; el alta lo registra para que la
+    pre-venta tenga cupo. El proveedor es el de la editorial del producto, o
+    ninguno si no hay uno cargado (plan, ambigüedad 3).
+    """
+    from apps.suppliers import llegadas
+    from apps.suppliers.models import PedidoProveedor, Proveedor
+
+    grupos = {}
+    for producto, cantidad in pedidas:
+        proveedor = (
+            Proveedor.objects.filter(editorial_id=producto.editorial_id).order_by("pk").first()
+        )
+        grupos.setdefault((proveedor, producto.fecha_llegada), []).append((producto, cantidad))
+    for (proveedor, fecha), renglones in grupos.items():
+        llegadas.registrar(
+            proveedor, PedidoProveedor.LOTE, renglones, actor, fecha_estimada=fecha, lote=lote
+        )
 
 
 # ---------------------------------------------------------------------------

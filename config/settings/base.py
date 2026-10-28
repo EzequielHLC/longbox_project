@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.restock",
     "apps.devoluciones",
     "apps.reportes",
+    "apps.avisos",
 ]
 
 AUTH_USER_MODEL = "accounts.Usuario"
@@ -223,6 +224,15 @@ CASILLA_PUERTO = config("CASILLA_PUERTO", default=993, cast=int)
 CASILLA_USUARIO = config("CASILLA_USUARIO", default="")
 CASILLA_CLAVE = config("CASILLA_CLAVE", default="")
 CASILLA_CARPETA = config("CASILLA_CARPETA", default="INBOX")
+# IMAP con SSL siempre, salvo el correo de prueba de esta máquina
+# (`config/correo-de-prueba/`), que no tiene certificado. `casilla.abrir` rechaza
+# apagarlo para una casilla que no sea local: la clave viajaría en claro.
+CASILLA_SSL = config("CASILLA_SSL", default=True, cast=bool)
+
+# El bot de Telegram (módulo 19, plan 00 de Telegram). Vacío: el canal no existe y
+# todos los avisos salen por correo. El token es la llave del bot: vive acá, nunca en
+# la base ni en el log (`integraciones.para_el_log`).
+TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
 
 
 # Alta Editorial (Módulo 01 — CU-ALT-NAC, CU-ALT-IMP)
@@ -337,6 +347,8 @@ CACHES = {
 # de lo que ayuda; en un servidor conviene apuntarlo a otro disco, que es de lo
 # que protege un respaldo.
 RESPALDOS_DIR = config("RESPALDOS_DIR", default=str(BASE_DIR / "respaldos"))
+# Donde hay un respaldo diario programado (la VM), el bot avisa si falta (B-19-013).
+VIGILAR_RESPALDO = config("VIGILAR_RESPALDO", default=False, cast=bool)
 
 # ---------------------------------------------------------------------------
 # Pasarela de pago (plan 07, sexta parte; B-07-031)

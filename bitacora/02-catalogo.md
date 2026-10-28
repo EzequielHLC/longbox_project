@@ -285,3 +285,42 @@ dadas de baja». Reactivar el producto no la restituye.
 `CO-034`, postcondición (a)(b): «las ofertas que referenciaban exclusivamente este producto
 pasaron a Dada de baja (`CO-058`)».
 
+---
+
+### B-02-008 · I-05, I-06 e I-09 pasan a la base de datos
+
+**Tipo:** Agregado · **Fecha:** 2026-10-23 · **Alcance:** I-05, I-06, I-09, `Producto`, `ProductoEditorial`, `Tipo`, `TablaPrecioReferencia`
+**Estado:** Resuelta — decidido por el responsable al aprobar el plan 00 de cierre de deuda (2026-10-23): «puedes aplicar la seguridad como triggers en la BD»
+
+**Qué apareció.**
+Las tres invariantes vivían en la validación del formulario y del modelo. Una escritura que no
+pasara por ahí —la propagación de precios de la tabla y del margen, que actualiza en bloque; una
+sentencia SQL directa— podía dejar un producto con precio cero, una figura en Pre-venta o un tomo
+clasificado con un tipo no editorial. `DEUDA.md` lo listaba como invariantes «sin garantía en la
+base».
+
+**Qué dice la especificación.**
+> «Estas condiciones no son postcondiciones de ninguna operación: son verdaderas antes y después
+> de todas.» (Modelo de dominio, § 6) · I-05 «El tipo de un producto pertenece al mismo rubro que
+> el producto» · I-06 «El material no editorial no admite Pre-venta ni Cancelado por editorial» ·
+> I-09 «Ningún importe es negativo y ningún precio de venta es cero»
+
+Nada sobre dónde se garantizan.
+
+**Qué se hizo.**
+La base las rechaza por cualquier camino (`catalog.0024`):
+
+- **I-09**: el precio de venta del producto y el PVP de la tabla de referencia son mayores que
+  cero; el precio base y el costo en origen, no negativos.
+- **I-06**: un producto no editorial no puede estar en Pre-venta ni en Cancelado por editorial.
+- **I-05**: un producto no puede tomar un tipo del otro rubro, ni al darse de alta ni al cambiar
+  de tipo; y un tipo con productos no puede cambiar de rubro. Como el rubro del tipo vive en otra
+  tabla, lo cierran dos disparadores de PostgreSQL, como el de I-13 (B-16-004).
+
+Las tres se aplican al momento, no al cerrar la transacción. La base de desarrollo no tenía
+ninguna fila que las violara. Al ponerlas, apareció una prueba que armaba un tomo editorial con
+la categoría «Figura», que es no editorial: un dato que el sistema no puede producir, corregido
+en la prueba.
+
+**Qué habría que cambiar.**
+Nada en el documento.

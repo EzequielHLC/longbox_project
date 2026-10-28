@@ -101,6 +101,22 @@ GRUPOS_DE_ACCIONES = (
         "Exportaciones",
         ("exportacion_inventario", "exportacion_auditoria", "exportacion_reporte"),
     ),
+    (
+        "Restock y pedidos a proveedores",
+        (
+            "propuesta_restock",
+            "despacho_restock",
+            "descarte_restock",
+            "cierre_propuesta_restock",
+            "pedido_a_proveedor",
+            "llegada_pedido",
+            "cierre_sin_recibir",
+        ),
+    ),
+    (
+        "Perfil y avisos",
+        ("vinculo_telegram", "desvinculo_telegram", "canales_de_aviso"),
+    ),
 )
 
 

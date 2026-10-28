@@ -9,7 +9,7 @@ distlib==0.4.3
 Django==6.0.8
 factory_boy==3.3.3
 Faker==40.36.0
-filelock==3.32.2
+filelock==4.2.1
 freezegun==1.5.5
 identify==2.6.19
 iniconfig==2.3.0
@@ -39,5 +39,5 @@ six==1.17.0
 sqlparse==0.6.0
 stevedore==5.9.0
 tzdata==2026.3
-virtualenv==21.14.9
+virtualenv==21.14.10
 waitress==3.0.2

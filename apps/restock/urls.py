@@ -9,6 +9,9 @@ app_name = "restock"
 urlpatterns = [
     path("", views.PropuestaView.as_view(), name="propuesta"),
     path("generar/", views.GenerarView.as_view(), name="generar"),
+    # Plan 00 del circuito: las propuestas pasadas, sólo para leer.
+    path("propuestas/", views.PropuestaListaView.as_view(), name="propuesta_lista"),
+    path("propuestas/<int:pk>/", views.PropuestaDetalleView.as_view(), name="propuesta_detalle"),
     path("agregar/", views.AgregarView.as_view(), name="agregar"),
     path(
         "proveedores/<int:clave>/cantidades/",

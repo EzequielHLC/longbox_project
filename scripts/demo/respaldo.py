@@ -58,7 +58,7 @@ def main():
 
     DESTINO.mkdir(parents=True, exist_ok=True)
     inicio = time.perf_counter()
-    subprocess.run(  # nosec B603
+    subprocess.run(  # nosec B603 - manage.py con argumentos fijos, sin shell
         [
             sys.executable,
             str(RAIZ / "manage.py"),
@@ -79,12 +79,12 @@ def main():
     administracion = conectar("postgres")
     cursor = administracion.cursor()
     cursor.execute(f'DROP DATABASE IF EXISTS "{RESTAURADA}"')  # nosec B608 - nombre fijo
-    cursor.execute(f'CREATE DATABASE "{RESTAURADA}"')  # nosec B608
+    cursor.execute(f'CREATE DATABASE "{RESTAURADA}"')  # nosec B608 - nombre fijo
     print(f"2. Base vacía creada: {RESTAURADA}")
 
     inicio = time.perf_counter()
     pg_restore = ubicar("pg_restore")
-    subprocess.run(  # nosec B603
+    subprocess.run(  # nosec B603 - pg_restore resuelto por `ubicar`, sin shell
         [
             str(pg_restore),
             "--no-owner",
@@ -119,7 +119,7 @@ def main():
     ):
         print(f"   {tabla}: {original.get(tabla)} → {restaurada.get(tabla)}")
 
-    cursor.execute(f'DROP DATABASE IF EXISTS "{RESTAURADA}"')  # nosec B608
+    cursor.execute(f'DROP DATABASE IF EXISTS "{RESTAURADA}"')  # nosec B608 - nombre fijo
     administracion.close()
     print("Resultado:", "OK" if not distintas else "FALLA")
     return 0 if not distintas else 1

@@ -1,0 +1,100 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Un pedido a mano para productos que ya existen (plan 00 del circuito): una nueva
+tirada de un tomo, una reposición fuera de la propuesta de Restock. Sale con el
+correo de CO-074 y, si sale, queda registrado; lo agotado pasa a pre-venta.
+
+La misma forma que las altas: grupos de campos con su título, y los renglones en
+una tabla numerada que crece con «Agregar renglón», como los ítems de un lote.
+{% endcomment %}
+
+{% block titulo %}Nuevo pedido a proveedor · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'suppliers:pedido_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pedidos a proveedores" atras=1 %}</span>
+    <h1>Nuevo pedido a proveedor</h1>
+    <p>Se le manda el correo de pedido. Lo que esté agotado se ofrece en pre-venta contra estas unidades.</p>
+  </div>
+</header>
+
+<form method="post" novalidate class="formulario">
+  {% csrf_token %}
+  <fieldset class="grupo-de-campos">
+    <legend>Proveedor</legend>
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form.proveedor %}
+      {% include "_campo.html" with campo=form.fecha_estimada %}
+    </div>
+  </fieldset>
+
+  <fieldset class="grupo-de-campos" data-renglones>
+    <legend>Productos</legend>
+    {{ renglones.management_form }}
+    {% for error in renglones.non_form_errors %}<p class="error-de-campo" role="alert">Error: {{ error }}</p>{% endfor %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr><th class="numero">#</th><th>Código o ISBN</th><th class="numero">Cantidad</th></tr>
+        </thead>
+        <tbody data-cuerpo>
+          {% for renglon in renglones %}
+            <tr data-renglon>
+              <td class="numero secundario" data-numero>{{ forloop.counter }}</td>
+              <td>
+                <label class="sr-only" for="{{ renglon.producto.id_for_label }}">Código o ISBN del renglón {{ forloop.counter }}</label>
+                {{ renglon.producto }}
+                {% for error in renglon.producto.errors %}<p class="error-de-campo" role="alert">Error: {{ error }}</p>{% endfor %}
+              </td>
+              <td class="numero">
+                <label class="sr-only" for="{{ renglon.cantidad.id_for_label }}">Cantidad del renglón {{ forloop.counter }}</label>
+                {{ renglon.cantidad }}
+                {% for error in renglon.cantidad.errors %}<p class="error-de-campo" role="alert">Error: {{ error }}</p>{% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="fila-5">
+      <button type="button" class="boton-seccion boton-seccion--tenue" data-agregar-renglon>{% include "_iconos.html" with icono="agregar" %}<span>Agregar renglón</span></button>
+      <span class="texto-chico secundario">Los renglones vacíos se ignoran. Hasta {{ renglones.max_num }}.</span>
+    </div>
+  </fieldset>
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="correo" %}<span>Enviar el pedido</span></button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </div>
+</form>
+<script>
+  (function () {
+    const caja = document.querySelector("[data-renglones]");
+    const cuerpo = caja.querySelector("[data-cuerpo]");
+    const total = caja.querySelector('[name="renglon-TOTAL_FORMS"]');
+    const maximo = Number(caja.querySelector('[name="renglon-MAX_NUM_FORMS"]').value);
+    const boton = caja.querySelector("[data-agregar-renglon]");
+    boton.addEventListener("click", function () {
+      const indice = Number(total.value);
+      if (indice >= maximo) return;
+      const nuevo = cuerpo.querySelector("[data-renglon]").cloneNode(true);
+      for (const elemento of nuevo.querySelectorAll("[name], [id], [for]")) {
+        for (const atributo of ["name", "id", "for"]) {
+          const valor = elemento.getAttribute(atributo);
+          if (valor) elemento.setAttribute(atributo, valor.replace(/renglon-\d+-/, `renglon-${indice}-`));
+        }
+      }
+      for (const campo of nuevo.querySelectorAll("input")) campo.value = "";
+      for (const error of nuevo.querySelectorAll(".error-de-campo")) error.remove();
+      nuevo.querySelector("[data-numero]").textContent = indice + 1;
+      cuerpo.append(nuevo);
+      total.value = indice + 1;
+      boton.hidden = indice + 1 >= maximo;
+      nuevo.querySelector("input").focus();
+    });
+  })();
+</script>
+{% endblock %}

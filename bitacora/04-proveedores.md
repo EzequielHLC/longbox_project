@@ -319,3 +319,195 @@ Reactivarlo la quita sin tocar la propuesta.
 **Qué habría que cambiar.**
 `CU-PRV-REA`: anotar que el cambio de correo no lleva la confirmación de `CU-PRV-EDI` A1. `CO-064`,
 postcondición (c): «la advertencia se deriva del estado del proveedor mientras siga inactivo».
+
+---
+
+### B-04-010 · Un aviso de demora procesado termina como «Falló el procesamiento»
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV` E4, `CU-PRV-COL` E2, `CU-ALT-TRA` E1, `CU-ALT-DEM`, `CO-017`
+**Estado:** Resuelta — plan 00 del circuito de proveedores, aprobado el 2026-10-26; ver B-04-011
+
+**Qué apareció.**
+El modelo clasifica cada correo como «novedades», «demora» u «otro». Si se aprueba un aviso de
+demora (o una factura), el modelo lo clasifica bien, pero como no trae productos el correo pasa a
+**Falló el procesamiento**, con el mensaje «el modelo no identificó ningún producto… vuelva a
+procesarlo». Queda en la cola para siempre, invita a reprocesar algo que salió bien, y la demora
+que anunciaba no llega a ningún lado: hay que ir producto por producto a registrarla a mano.
+
+**Qué dice la especificación.**
+> «si la extracción falla (CU-ALT-NOV E4), el correo pasa a Falló el procesamiento y permanece en
+> la cola para su reprocesamiento» (`CU-PRV-COL` E2) · «el Administrador recibe aviso del proveedor
+> (directamente o a través de un borrador de PA-01) y marca el producto como demorado» (`CU-ALT-TRA`
+> E1)
+
+La primera trata como falla lo que no lo es. La segunda supone que un aviso de demora produce un
+borrador, y la extracción sólo arma borradores de novedades.
+
+**Qué se hizo.**
+Nada todavía.
+
+**Qué habría que cambiar.**
+`CO-017` y `CU-ALT-NOV` E4: un correo bien clasificado que no es de novedades no falla; queda con
+su clasificación y sale de la cola. Si es una demora, ofrece registrarla (`CU-ALT-DEM`) sobre las
+pre-ventas de ese proveedor, con el producto que el modelo haya reconocido como propuesta, nunca
+aplicada (regla 4). `CU-ALT-TRA` E1 pierde la mención al borrador.
+
+---
+
+### B-04-011 · Un aviso de demora o un correo «otro» bien clasificados quedan Procesados, y la demora se propone
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV` E4, `CU-PRV-COL` E2, `CU-ALT-DEM`, `CU-ALT-TRA` E1, `CO-017`, `CO-018`, `CO-019`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (plan 00 del circuito de proveedores); reemplaza a B-04-010
+
+**Qué apareció.**
+Lo de B-04-010: un aviso de demora o una factura, bien clasificados por el modelo, terminaban en
+«Falló el procesamiento», quedaban en la cola para siempre y la demora no llegaba a ningún lado.
+
+**Qué dice la especificación.**
+> «Si el servicio devuelve error, no responde dentro del tiempo configurado o no identifica ningún
+> producto (E4), no se generan borradores, el correo pasa a Falló el procesamiento y permanece en la
+> cola para reprocesamiento.» (`CO-017`, Excepciones)
+
+**Qué se hizo.**
+- Un correo que el modelo clasificó como **demora** u **otro** queda **Procesado**, sin borradores,
+  con el motivo a la vista («Es un aviso de demora…», «No anuncia novedades ni demoras…»). Sigue
+  fallando lo que sí es una falla: el modelo que no responde o lo que no se puede interpretar, y un
+  correo de **novedades** sin ningún producto.
+- La extracción de una demora lee **lo que se atrasa**: título, volumen, ISBN si lo trae, la fecha
+  nueva de cada producto si la da, y la fecha general del aviso. No son altas: van aparte de los
+  productos de una novedad.
+- La ficha del aviso **propone registrar la demora** sobre las pre-ventas del proveedor (las de su
+  editorial y las que tienen un pedido suyo en camino, para cubrir a una distribuidora). Las que el
+  aviso nombra van primero, reconocidas por ISBN o por título y volumen sin importar mayúsculas ni
+  tildes, con la fecha propuesta; las demás quedan plegadas por si el modelo no las reconoció. Lo que
+  `CU-ALT-DEM` no admite (ya demorada, llegada vencida) dice por qué en lugar del botón. Lo que el
+  aviso nombra y no es una pre-venta del proveedor se informa.
+- **Nada se aplica desde el correo** (regla 4): cada fila abre la pantalla de `CU-ALT-DEM` con la
+  fecha y una nota que citan el aviso, y la demora se registra recién al confirmar su informe de
+  impacto. Una fecha propuesta que ya pasó no se carga. Al confirmar, se vuelve al correo.
+- Un correo procesado que no era de novedades **se puede descartar después**, con motivo, para dejar
+  dicho que ya se atendió. Uno de novedades procesado no: sus borradores siguen en la revisión.
+
+**Qué habría que cambiar.**
+`CO-017`, Excepciones (E4): «no identifica ningún producto» vale para un correo clasificado como
+novedades; uno clasificado como demora u otro pasa a Procesado sin borradores. Postcondiciones: para
+una demora, la extracción del modelo guarda lo que se atrasa. `CU-ALT-NOV` E4 y `CU-PRV-COL` E2, lo
+mismo. `CU-PRV-COL` y `CO-018`: el descarte también desde Procesado, si no era de novedades.
+`CU-ALT-DEM`: un flujo alternativo que entra desde el aviso de demora con la fecha propuesta.
+`CU-ALT-TRA` E1 pierde la mención al borrador de PA-01.
+
+---
+
+### B-04-012 · La casilla se puede revisar a mano desde la consola, para la demostración
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV`, `CO-016`
+**Estado:** Resuelta — plan 00 del circuito de proveedores (H)
+
+**Qué apareció.**
+Para mostrar el circuito con el correo de prueba hay que esperar a que el Temporizador lea la
+casilla según la frecuencia de Parámetros, y no había forma de escribir un correo de proveedor a
+mano: sólo los generados al azar.
+
+**Qué dice la especificación.**
+`Nada.` `CO-016` lo dispara el Temporizador.
+
+**Qué se hizo.**
+`manage.py revisar_casilla` corre el mismo ciclo de `CO-016` en el momento, sin mirar la
+frecuencia: deja en la cola lo nuevo y no procesa nada. Fuera del sistema, una página local de la
+demostración (`scripts/demo/redactar_correo.py`) permite escribir el correo como lo escribiría una
+editorial —remitente, asunto, texto, tabla de productos con portadas— desde tres plantillas
+(novedades, demora, libre), mandarlo al correo de prueba o bajarlo como `.eml`.
+
+**Qué habría que cambiar.**
+`Nada`: son herramientas de operación y de demostración, no casos de uso.
+
+---
+
+### B-04-013 · El Administrador revisa la casilla desde la cola, sin esperar al Temporizador
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-PRV-COL`, `CU-ALT-NOV`, `CO-016`
+**Estado:** Abierta — pedida por el responsable el 2026-10-26
+
+**Qué apareció.**
+Probar el circuito de correos obligaba a ir a la consola a correr `revisar_casilla` (B-04-012) o
+a esperar la frecuencia de Parámetros cada vez que un proveedor mandaba algo.
+
+**Qué dice la especificación.**
+`Nada` sobre un disparo manual: `CO-016` lo ejecuta el Temporizador según la frecuencia
+configurada, y `CU-PRV-COL` empieza con los correos ya en la cola.
+
+**Qué se hizo.**
+La cola de correos gana el botón **«Revisar la casilla»**, sólo para el Administrador y sólo
+cuando la casilla está configurada. Corre el mismo ciclo de `CO-016` en el momento, sin mirar la
+frecuencia: deja en la cola lo nuevo, **Pendiente, sin procesar nada** —el modelo sigue leyendo
+cada correo recién cuando se aprueba (`CO-017`)— y dice cuántos entraron, que no había nada o que
+no se pudo conectar (con el mismo aviso a los administradores que da el Temporizador). La
+pantalla muestra cuándo se revisó la casilla por última vez. Revisarla dos veces seguidas no
+duplica nada (I-16).
+
+**Qué habría que cambiar.**
+`CU-PRV-COL`: un flujo alternativo «Revisar la casilla ahora», que ejecuta `CO-016` sin esperar la
+frecuencia. `CO-016`, Referencias Cruzadas: también `CU-PRV-COL`, con el Administrador como actor.
+El DSS de `CU-PRV-COL` muestra el evento.
+
+---
+
+### B-04-014 · El volumen pegado al título se separa, y la pre-venta elegida de la lista recibe la fecha del aviso
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV`, `CU-PRV-COL`, `CU-ALT-DEM`, `CO-017`
+**Estado:** Abierta — observada por el responsable el 2026-10-26, probando un aviso real
+
+**Qué apareció.**
+Un aviso de demora de «Ichi The Witch #1»: el modelo copió el título con el «#1» y dejó el
+volumen vacío, así que la propuesta no reconoció el tomo, que estaba en pre-venta. Al buscarlo a
+mano en la lista de las demás pre-ventas (41, sin buscador), la fila no traía la fecha que el
+aviso sí daba: había que escribirla de nuevo en la pantalla de la demora.
+
+**Qué dice la especificación.**
+`Nada` sobre el volumen escrito dentro del título. `CO-017` pide copiar los datos y no completarlos.
+
+**Qué se hizo.**
+- Si el modelo deja el volumen vacío y el título termina con una marca explícita —«#1», «vol. 5»,
+  «Tomo 24», «Nº 109»—, el número pasa al volumen y sale del título. Sin marca no se toca: en
+  «Kaiju No. 8», «Mono 3» o «Another 0» el número es parte del título. Vale para las novedades y
+  para las demoras, y el cruce con las pre-ventas lo aplica también a lo extraído antes. El prompt
+  pide además separarlos (versión 4).
+- La pre-venta que se elige de la lista recibe como propuesta la fecha general del aviso o, si el
+  aviso da una sola, esa. Con dos fechas distintas no se propone ninguna. Sigue sin aplicarse
+  nada hasta confirmar la demora.
+- La lista de las demás pre-ventas tiene un buscador por título, número o código.
+- La fecha de lo que se atrasa se muestra como el resto del sistema (dd/mm/aaaa).
+
+**Qué habría que cambiar.**
+`CO-017`, Notas: el volumen que el modelo deja dentro del título con una marca explícita se
+separa; sin marca, el título queda como vino.
+
+---
+
+### B-04-015 · La casilla se revisa cada pocos minutos, no cada horas
+
+**Tipo:** Corrección · **Fecha:** 2026-10-27 · **Alcance:** `CO-016`, `CO-130`, `CU-CFG-PAR`
+**Estado:** Abierta — pedido del responsable el 2026-10-27
+
+**Qué apareció.**
+Con los avisos por Telegram (B-19-004), un correo de un proveedor tiene que llegar al teléfono enseguida.
+La frecuencia de la casilla se medía en horas, el valor era de 24, y el Temporizador de la VM corre una
+vez por día: un correo podía esperar un día entero, y el aviso en el teléfono no servía de nada.
+
+**Qué dice la especificación.**
+> «frecuencia de monitoreo de la casilla (horas) : entero ≥ 1» (modelo de dominio, ConfiguracionSistema)
+
+**Qué se hizo.**
+- La frecuencia pasa a **minutos**, con 5 por defecto. Los valores guardados se convirtieron: el 24
+  de fábrica pasó a 5, y cualquier otro valor se multiplicó por 60.
+- En la VM, una tarea propia corre **cada minuto** y revisa la casilla **sólo si ya le toca** según
+  Parámetros. El Temporizador diario sigue haciendo lo suyo.
+- En la PC de desarrollo, el bot escuchando (`telegram escuchar`) revisa la casilla entre consulta y
+  consulta, con la misma frecuencia. El botón «Revisar la casilla» de la cola sigue revisando al
+  momento (B-04-013).
+- Revisar sigue siendo sólo encolar: el procesamiento lo dispara una persona (`CO-017`).
+
+**Qué habría que cambiar.**
+Modelo de dominio, ConfiguracionSistema: «frecuencia de monitoreo de la casilla (minutos) : entero ≥ 1».
+`CU-CFG-PAR` y `CO-130`: el parámetro en minutos. `CO-016`: el ciclo corre cada minuto y respeta la
+frecuencia, y no una vez por día junto con el Temporizador.

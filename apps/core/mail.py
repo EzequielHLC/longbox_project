@@ -35,6 +35,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.mail.backends.smtp import EmailBackend as BackendSMTP
 from django.template.loader import render_to_string
 
+from apps.core.consola import ascii_seguro
+
 # Límite de largo de línea de RFC 5322.
 LARGO_MAXIMO_DE_LINEA = 998
 
@@ -136,6 +138,12 @@ class CorreoConCopia(BackendSMTP):
         self._anotar("\n".join(lineas))
 
     def _anotar(self, texto):
+        # La copia va antes del envío: una consola en cp1252 que no puede
+        # escribir un carácter no puede dejar el correo sin salir. Se degrada a
+        # ASCII y se sigue.
         with self._candado_de_copia:
-            self.stream.write(texto + "\n")
+            try:
+                self.stream.write(texto + "\n")
+            except UnicodeEncodeError:
+                self.stream.write(ascii_seguro(texto) + "\n")
             self.stream.flush()

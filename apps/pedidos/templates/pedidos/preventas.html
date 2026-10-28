@@ -82,6 +82,8 @@ los mismos grupos; cada grupo es un bloque plegable, abierto si es cercano.
         <button type="submit" class="boton-seccion">Revisar ingreso</button>
         {# Plan 00 de interfaz, cuarta parte, E: el atajo del caso más común. #}
         <button type="button" class="boton-texto" data-completar>Completar con lo reservado</button>
+        {# B-01-022: la demora del grupo entero, con un informe y una confirmación. #}
+        <a href="{% url 'pedidos:demora_lote' %}?{% for fila in grupo.filas %}producto={{ fila.producto.pk }}{% if not forloop.last %}&amp;{% endif %}{% endfor %}" class="boton-texto">{% include "_iconos.html" with icono="reloj" %}<span>Demorar este grupo</span></a>
         <span class="texto-chico secundario">Vacío o 0: no llegó.</span>
       </div>
     </form>

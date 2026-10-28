@@ -15,6 +15,7 @@ CU-RST-PRO A1: generarla a mano (CO-068).
     <h1>Restock</h1>
     {% if propuesta %}<p>{{ propuesta }} · {{ propuesta.get_tipo_disparo_display }}</p>{% endif %}
   </div>
+  <a href="{% url 'restock:propuesta_lista' %}" class="boton-texto">Propuestas anteriores</a>
   {% if not propuesta %}
     <form method="post" action="{% url 'restock:generar' %}">
       {% csrf_token %}

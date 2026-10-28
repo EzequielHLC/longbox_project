@@ -8,6 +8,7 @@ El aviso de reposición es del Cliente, desde la ficha pública (`CO-075`,
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,6 +19,7 @@ from apps.catalog.models import Producto, ProductoEditorial
 from apps.core.mixins import RolRequeridoMixin
 from apps.restock import servicios
 from apps.restock.models import LineaPropuestaRestock, PropuestaRestock
+from apps.suppliers.views_pedidos import fecha_o_nada
 
 # ---------------------------------------------------------------------------
 # CU-RST-SUS — CO-075, CO-076, desde la ficha pública
@@ -83,6 +85,45 @@ class PropuestaView(RestockMixin, View):
                     "suscriptores": sum(g.suscriptores for g in grupos),
                 },
                 "ultima": PropuestaRestock.objects.filter(estado=PropuestaRestock.CERRADA).first(),
+            },
+        )
+
+
+class PropuestaListaView(RestockMixin, View):
+    """Todas las propuestas, abiertas y cerradas (plan 00 del circuito, B-05-009).
+
+    Sólo lee. La pendiente sigue trabajándose en «Restock»; desde acá se ve qué
+    se pidió antes, a quién, qué se descartó y qué llegó.
+    """
+
+    def get(self, request):
+        propuestas = PropuestaRestock.objects.prefetch_related("lineas", "pedidos").order_by(
+            "-fecha_generacion", "-pk"
+        )
+        pagina = Paginator(propuestas, 30).get_page(request.GET.get("pagina"))
+        return render(request, "restock/propuesta_lista.html", {"pagina": pagina})
+
+
+class PropuestaDetalleView(RestockMixin, View):
+    """La ficha de una propuesta: sus líneas por proveedor y los pedidos que salieron."""
+
+    def get(self, request, pk):
+        propuesta = get_object_or_404(PropuestaRestock, pk=pk)
+        grupos = servicios.agrupar(propuesta)
+        return render(
+            request,
+            "restock/propuesta_detalle.html",
+            {
+                "propuesta": propuesta,
+                "grupos": grupos,
+                "resumen": {
+                    "productos": sum(len(g.lineas) for g in grupos),
+                    "unidades": sum(g.unidades for g in grupos),
+                    "descartados": sum(1 for g in grupos if g.estado == "descartado"),
+                },
+                "pedidos": propuesta.pedidos.select_related("proveedor").prefetch_related(
+                    "lineas__producto"
+                ),
             },
         )
 
@@ -210,7 +251,12 @@ class ProveedorView(RestockMixin, View):
                 servicios.descartar(propuesta, clave, request.POST.get("motivo"), request.user)
                 messages.success(request, f"Se descartó el pedido a {grupo.nombre}.")
                 return redirect("restock:propuesta")
-            envio = servicios.despachar(propuesta, clave, request.user)
+            envio = servicios.despachar(
+                propuesta,
+                clave,
+                request.user,
+                fecha_estimada=fecha_o_nada(request.POST.get("fecha_estimada")),
+            )
         except servicios.OperacionRechazada as rechazo:
             messages.error(request, str(rechazo))
             return redirect("restock:proveedor", clave=clave)

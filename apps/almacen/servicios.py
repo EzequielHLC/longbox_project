@@ -405,6 +405,7 @@ def _generar_solicitud(usuario, ids, envio, costo, origen):
 def _avisar_solicitud(solicitud, articulos, origen):
     """`CU-STK-DES` paso 5: el Administrador recibe la solicitud."""
     avisos.avisar_administradores(
+        tipo="stock_local",
         asunto=f"Envío de stock almacenado {solicitud.numero}",
         rotulo="Stock en local",
         antetitulo="Solicitud de despacho",
@@ -654,6 +655,7 @@ def ciclo_de_vencimiento(hoy=None):
 
     if resumen.extendidos:
         avisos.avisar_administradores(
+            tipo="stock_local",
             asunto="Envíos de stock almacenado vencidos",
             rotulo="Stock en local",
             antetitulo="Stock en local",

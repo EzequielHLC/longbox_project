@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-22**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-10-28**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -10,6 +10,137 @@ enlazan a éste.
 ---
 
 ## Resumen
+
+Del 2026-10-28, después: **la etapa 3 del bot** ([plan](planes/00-bot-de-telegram-etapa-3.md),
+aprobado con las decisiones recomendadas). Tres casos de uso nuevos del módulo 19 (`CU-AVI-RES`,
+`CU-AVI-EST`, `CU-AVI-INL`) y cuatro tipos de aviso nuevos:
+
+- **Ventas online** al momento, con las reservas y el cupo agotado; **resumen de la mañana** a la hora
+  de Parámetros; **estado del sistema** con `/estado` y aviso de disco o respaldo. Los tres van sólo
+  por Telegram (B-19-011, B-19-013).
+- **Seguridad**, por correo y Telegram: bloqueos, IP nueva del personal, Administradores nuevos y
+  propagaciones de precios, escuchando el registro de auditoría (B-19-012).
+- El **reclamo de devolución con sus fotos** por Telegram (B-19-014) y el **modo inline** para
+  compartir un producto desde cualquier chat (B-19-015).
+- **El reloj por minuto** (`cada_minuto`, `longbox-reloj.timer`) reemplaza a la vigilancia de la
+  casilla, y la VM gana **un respaldo diario** (`longbox-respaldo.timer`). Las dos cosas se instalan con
+  la próxima subida.
+
+Del 2026-10-28: **los borradores en el chat**. Un caso de uso nuevo del módulo 19, `CU-AVI-REB`
+(código asignado con la autorización de B-19-001), y ajustes a `CU-AVI-BOR`:
+
+- `/borradores` muestra los abiertos con su portada en chico y **«Rechazar…»**, con motivo y auditado;
+  **confirmar no se puede desde el chat** (B-19-008).
+- Los nombres de formato, tipo y editorial se reconocen sin tildes ni romanizaciones: «Tankobon» es
+  «Tankōbon» (B-01-023). Vale también para los borradores que salen de un correo.
+- La ficha del borrador avisa el duplicado de verdad, el mismo tomo en otra edición y otro borrador
+  abierto igual; la editorial se deduce de la serie si está en una sola (B-19-010).
+- **Lo no editorial no se carga como borrador**: el bot lo explica y enlaza el alta de la web. Cargarlo
+  como borrador **espera una decisión del responsable** (B-19-009).
+
+Del 2026-10-27: **el perfil del Administrador y el bot de Telegram**, etapas 1 y 2 ([plan
+00](planes/00-bot-de-telegram.md), aprobado con sus decisiones). Un **módulo nuevo, `19` Perfil y
+avisos**, con siete casos de uso cuyos códigos se asignaron por autorización del responsable
+(B-19-001), **los siete construidos**. No entran en la cuenta de abajo hasta que el documento tenga
+sus fichas:
+
+- **Mi perfil**: los datos, la contraseña propia (como `CO-111`), los avisos y Telegram (B-19-003).
+- **Los avisos al Administrador por canal**: por tipo, correo y Telegram; sin elegir, por correo; si
+  Telegram no se puede, por correo (B-19-002).
+- **El bot** `@longbox_comiqueria_bot`: vincular con un enlace de un solo uso, desvincular con
+  `/salir`, y **cada correo nuevo de un proveedor con «Aprobar y procesar» y «Descartar»** (B-19-004).
+- La puerta HTTP **tapa el token del bot en el log**, que viaja en la dirección de la API.
+- **Vincular pide confirmar en el perfil** el número de seis cifras que da el bot, con cinco
+  intentos (B-19-005).
+- **Etapa 2**: comandos con `/` y `/ayuda`; consultas de sólo lectura (`/stock`, `/llega`,
+  `/pendientes`, `/caja`) o una pregunta con palabras que el modelo traduce a una de ellas
+  (B-19-007); **`/cargar` o una foto con epígrafe deja un borrador** de origen Telegram en la
+  revisión, nunca un producto (B-19-006).
+- **La casilla se revisa por minutos** (5 por defecto): el bot escuchando la vigila en la PC y
+  el reloj por minuto de la VM, hoy `longbox-reloj.timer` (B-04-015, B-19-011).
+- La cuenta va **arriba del menú lateral**, con «Mi perfil» y «Salir» (B-00-030).
+
+Del 2026-10-26, después: **el circuito con los proveedores** ([plan
+00](planes/00-circuito-de-proveedores.md), con las cuatro decisiones del responsable). Ningún caso
+de uso cambia de estado; **tres casos de uso nuevos esperan su código** (C-23):
+
+- **El pedido a proveedor queda registrado cuando sale** (B-05-010): al cerrar una revisión, al
+  despachar una propuesta de restock, en un pedido a mano y en el alta de un lote en pre-venta.
+  **«Pedidos por llegar»** confirma la llegada en dos tiempos: en Pre-venta cubre las reservas
+  (`CO-013`), sin reservas suma al stock y avisa (`CO-077`); la línea parcial sigue abierta, lo de
+  más se acepta y lo que no llega se cierra con motivo. **Las propuestas de restock se consultan**,
+  también las cerradas.
+- **El producto de una novedad o de un lote en pre-venta nace sin stock**: lo declarado es lo que se
+  pide (B-01-017). Corrige el doble conteo al llegar; una migración pasó las pre-ventas existentes a
+  un pedido con su stock o sus reservas.
+- **La pre-venta se reserva contra lo que viene en camino**, hasta un cupo: lo pendiente menos un
+  margen de Parámetros (10 %) menos lo reservado (B-07-042). Se abre sola sobre un pedido enviado y,
+  con stock, al agotarse. Completa, ofrece «Avisarme si llegan de más».
+- **Un aviso de demora o un «otro» bien clasificados ya no fallan** (B-04-011): quedan Procesados,
+  la demora se propone sobre las pre-ventas del proveedor y se confirma en `CU-ALT-DEM`, y el correo
+  se puede descartar después. El volumen que el modelo deja pegado al título se separa, y la pre-venta
+  elegida de la lista recibe la fecha del aviso (B-04-014).
+- **El precio de la tabla en la revisión de borradores** (B-01-018): sin precio, el borrador toma el
+  de la tabla; uno distinto se confirma como en `CU-ALT-NAC` A3, y el lote lo excluye. **Una fecha
+  sin año** («13/11») se toma como la próxima vez que cae, con su reparo (B-01-019, corrección de
+  `CO-017` E7 decidida por el responsable).
+- **El borrador de una serie conocida** nace con su autor, su sinopsis y «sólo para adultos»; la
+  ficha señala el tipo o el formato que difieren y los toma con un botón, y **el precio sigue al
+  formato** si era el de la tabla (B-01-020). Probado en Chrome sobre un borrador real.
+  Las **etiquetas** de la serie pasan al borrador y de ahí al producto (B-01-021).
+- **Coherencia visual** (B-00-029): la ficha del borrador toma la forma de la edición de producto,
+  con el gestor de portada; Pedidos por llegar, la ficha del pedido, la llegada, el pedido a mano y
+  la ficha de la propuesta toman la de Pre-ventas por llegar, la ficha de un pedido de cliente,
+  Confirmar ingreso y Restock.
+- **La base de presentación sin pre-ventas** (a pedido del responsable, con respaldo previo): por
+  los servicios del sistema, las 2 reservadas se cancelaron por la editorial (reembolso en puntos y
+  aviso) y las 60 líneas abiertas se cerraron sin recibir; quedan 0 pre-ventas y 0 pedidos abiertos.
+- **La demora de varios tomos a la vez** (B-01-022, desvío consultado de `CU-ALT-DEM`): desde el
+  aviso de demora y desde un grupo de «Pre-ventas por llegar», cada tomo con su fecha, un informe
+  conjunto y una confirmación; lo que no admite la demora queda afuera con su motivo, y cada Cliente
+  recibe un solo correo con todos sus tomos.
+- **«Revisar la casilla» desde la cola de correos** (B-04-013, a pedido del responsable): corre
+  `CO-016` en el momento y sólo encola; la pantalla dice cuándo se revisó por última vez.
+- **Para la demostración** (B-04-012): `manage.py revisar_casilla` y una página local para redactar
+  correos de proveedor (`scripts/demo/redactar_correo.py`). Al probarla apareció que la copia por
+  consola del correo de desarrollo, que se escribe antes del envío, frenaba el envío si la consola
+  no podía escribir un carácter: ahora se degrada a ASCII.
+- **La base de presentación**: sus 57 pre-ventas sin pedido recibieron uno por editorial y fecha,
+  como lo harán los generadores de datos de demostración (`poblar.py`, `presentacion_carga.py`).
+
+Del 2026-10-26: **tope de reservas, pantallas de error y capa de carga** ([plan
+00](planes/00-tope-de-reservas-y-errores.md)). Ningún caso de uso cambia de estado:
+
+- **La reserva de pre-venta tiene un máximo por Cliente** (B-07-041, corrección del documento):
+  un parámetro nuevo, 5 por defecto, que cuenta la línea del carrito más lo que el Cliente ya
+  reservó de ese tomo en pedidos en curso. Se aplica al agregar, al cambiar la cantidad, al
+  fusionar el carrito y en la consulta, que marca la línea y no deja pagar.
+- **Pantallas de error propias** para 400, 403, CSRF vencido, 404 y 500, con el meme del
+  responsable; la del 500 no consulta la base ni la sesión (B-00-028).
+- **La capa de carga** ya no queda pegada con los clics que abren otra pestaña o descargan, se
+  va sola a los 12 s si un enlace no navegó, aparece recién a los 300 ms, y también está en la
+  tienda (B-00-028).
+- **El resumen de un cierre de caja se abre de nuevo.** Su plantilla quedó rota en el commit
+  `da351ca` (2026-10-21): un reemplazo insertó el bloque nuevo entre cada carácter de la
+  original (50.228 líneas, sin el `extends` ni el `load`), y cerrar la caja terminaba en error.
+  Se rearmó con el encabezado original y el bloque que se quería poner. Ninguna prueba abría
+  esa pantalla; ahora `CO-126` la abre por su dirección real.
+
+Del 2026-10-23: **cierre de la deuda de código** ([plan 00 de cierre de
+deuda](planes/00-cierre-de-deuda.md)). Ningún caso de uso cambia de estado; los que toca cumplen
+ahora lo que sus contratos y las invariantes ya decían:
+
+- **Las carreras de unicidad responden con el aviso del contrato** y no con un 500: el alta y la
+  edición de productos (`CO-028` E3, `CO-030` E2), la confirmación de borradores (`CO-022` E7), el
+  registro de clientes (`CO-107` E1) y el alta y la edición de personal (`CO-120` E2, `CO-121`
+  E2). Las cinco daban 500. De paso, el choque de código interno o de barras ya enlaza la ficha en
+  conflicto, como piden `CO-028` E3 y `CO-030` E2: decía el mensaje genérico de unicidad.
+- **RNF-05 en las portadas**, por los cinco caminos y en la que llega con el correo (B-01-015).
+- **I-05, I-06, I-09 e I-12 en la base**, con restricciones y disparadores de PostgreSQL
+  (B-02-008, B-13-007). La base de desarrollo no tenía filas que las violaran.
+- **Cada `# nosec` dice su regla y su motivo.**
+- **La suite ya no escribe en `media/`**: cada prueba guarda sus archivos en una carpeta
+  temporal. Antes, cada corrida dejaba unas 160 portadas y correos sin referencia.
 
 Del 2026-10-22: **todos los casos de uso construidos tienen sus contratos verificados** (V1 y V2
 del plan 00). Escribir las pruebas desde los contratos encontró lo que faltaba y se completó:
@@ -117,19 +248,19 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-ALT-NAC` | Verificado | 9 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Todos sus contratos aplicables verificados** (`CO-001` a `CO-006`, V2 del plan 00): el precio a mano exige confirmación en el servidor y rompe el vínculo con la tabla (B-01-013, B-01-014). Alta al vuelo de editorial, tipo y formato (`CO-137`, `CO-141`, `CO-144`; B-17-009). `CO-077` no aplica: un producto nuevo no tiene suscriptores (B-05-001). |
-| `CU-ALT-IMP` | Verificado | 12 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. **Todos sus contratos aplicables verificados** (`CO-001`, `CO-002`, `CO-005` a `CO-010`, V2 del plan 00). Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`; `CO-031` desde `CU-CAT-EDI` A2. `CO-077` no aplica (B-05-001). |
-| `CU-ALT-NOV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `CO-017` y `CO-019` desde la ficha del correo; **`CO-016`, el monitoreo de la casilla, en el Temporizador** por IMAP, con la frecuencia de Parámetros, E1, E3 sin conexión e idempotencia (B-01-012). Plan 00, A1. |
-| `CU-ALT-REV` | Verificado | 9 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`. **Todos sus contratos aplicables verificados.** Completar un borrador incompleto lo pasa a Pendiente (`CO-020`); el cierre encadena `CO-074` con su entrada por proveedor (`CO-025`); la colisión dice su criterio (`CO-022` E7). `CO-077` no aplica (B-05-001). |
-| `CU-ALT-DEM` | Verificado | 3 / 3 | `apps/pedidos/preventa.py`, `views_preventa.py`. **Todos sus contratos verificados**: informe de impacto (A3), E1 con lo ingresado conservado, la cascada a pedidos con la ventana de decisión (B-08-004) y el correo con acceso directo, E2 con un pedido que falla, y volver sin registrar (`CO-156`). Desde la ficha del producto. Plan 01. |
-| `CU-ALT-TRA` | Verificado | 5 / 5 | **Todos sus contratos verificados.** «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` cubre reservas en orden (B-01-007), demora los faltantes vencidos (B-01-008), avisa a los suscriptores con lo que sobra (B-05-001) y deja retenido lo de despacho diferido (B-18-002); `CO-011` y `CO-012` en el Temporizador (B-01-009). Plan 01. |
+| `CU-ALT-NAC` | Verificado | 9 / 10 | `AltaLoteNacionalView`, `catalog/services.py`, `catalog/precios.py`. **Todos sus contratos aplicables verificados** (`CO-001` a `CO-006`, V2 del plan 00): el precio a mano exige confirmación en el servidor y rompe el vínculo con la tabla (B-01-013, B-01-014). Alta al vuelo de editorial, tipo y formato (`CO-137`, `CO-141`, `CO-144`; B-17-009). `CO-077` no aplica: un producto nuevo no tiene suscriptores (B-05-001). El ítem en pre-venta nace sin stock y su cantidad queda como pedido en camino (B-01-017). |
+| `CU-ALT-IMP` | Verificado | 12 / 13 | `AltaLoteImportadoView`, calculadora de envío y CRE en `LoteAlta`. **Todos sus contratos aplicables verificados** (`CO-001`, `CO-002`, `CO-005` a `CO-010`, V2 del plan 00). Alta al vuelo de los tres catálogos, como `CU-ALT-NAC`; `CO-031` desde `CU-CAT-EDI` A2. `CO-077` no aplica (B-05-001). El ítem en pre-venta nace sin stock y su cantidad queda como pedido en camino (B-01-017). |
+| `CU-ALT-NOV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `CO-017` y `CO-019` desde la ficha del correo; **`CO-016`, el monitoreo de la casilla, en el Temporizador** por IMAP, con la frecuencia de Parámetros, E1, E3 sin conexión e idempotencia (B-01-012). Plan 00, A1. `manage.py revisar_casilla` lo corre en el momento (B-04-012). Sin precio, el borrador toma el de la tabla (B-01-018); una fecha sin año se completa con su próxima ocurrencia (B-01-019). |
+| `CU-ALT-REV` | Verificado | 9 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`. **Todos sus contratos aplicables verificados.** Completar un borrador incompleto lo pasa a Pendiente (`CO-020`); el cierre encadena `CO-074` con su entrada por proveedor (`CO-025`); la colisión dice su criterio (`CO-022` E7). `CO-077` no aplica (B-05-001). El producto nace sin stock: lo declarado es la cantidad a pedir, y el cierre registra el pedido (B-01-017, B-05-010). El precio de la tabla se propone y apartarse de él se confirma (B-01-018); una serie conocida completa lo que falta y el precio sigue al formato (B-01-020). |
+| `CU-ALT-DEM` | Verificado | 3 / 3 | `apps/pedidos/preventa.py`, `views_preventa.py`. **Todos sus contratos verificados**: informe de impacto (A3), E1 con lo ingresado conservado, la cascada a pedidos con la ventana de decisión (B-08-004) y el correo con acceso directo, E2 con un pedido que falla, y volver sin registrar (`CO-156`). Desde la ficha del producto y, con la fecha propuesta, desde un aviso de demora (B-04-011). Plan 01. Varios tomos a la vez, con un aviso por Cliente (B-01-022, desvío consultado). |
+| `CU-ALT-TRA` | Verificado | 5 / 5 | **Todos sus contratos verificados.** «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` cubre reservas en orden (B-01-007), demora los faltantes vencidos (B-01-008), avisa a los suscriptores con lo que sobra (B-05-001) y deja retenido lo de despacho diferido (B-18-002); `CO-011` y `CO-012` en el Temporizador (B-01-009). Plan 01. Lo confirmado se descuenta de las líneas del pedido a proveedor, y la llegada también entra por «Pedidos por llegar» (B-05-010). |
 | `CU-ALT-CAN` | Verificado | 3 / 3 | **Todos sus contratos verificados**: informe por cliente con los puntos (B-01-010), atomicidad total (E1), un lote por cliente, el envío de los pedidos que se quedan vacíos (B-08-008) y volver sin efecto (`CO-156`). Plan 01. |
 
 ### `02` Catálogo
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CAT-ALT` | Verificado | 2 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. **Todos sus contratos verificados.** |
+| `CU-CAT-ALT` | Verificado | 2 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. **Todos sus contratos verificados.** E3 enlaza la ficha en conflicto, también cuando otra alta gana el código después de validarlo; la portada se guarda en WebP (B-01-015). |
 | `CU-CAT-EDI` | Verificado | 5 / 5 | `ProductoEdicionView`. **Todos sus contratos verificados.** La pantalla declara los inmutables: código, rubro y costo en origen del importado (`CO-161`). `CO-031` desde la ficha y desde la edición (B-03-005); el valor actual de editorial, tipo, formato y etiquetas aunque esté dado de baja (B-17-007). |
 | `CU-CAT-BAJ` | Verificado | 3 / 3 | `ProductoBajaView` y `services.confirmar_baja_de_producto`. **Todos sus contratos verificados.** El informe calcula las cuatro categorías y la baja las resuelve: suscripciones canceladas, oferta exclusiva eliminada, carritos avisados, pedidos intactos (B-02-006). |
 | `CU-CAT-REA` | Verificado | 3 / 3 | `ProductoReactivarView`. **Todos sus contratos verificados.** Rechaza el cancelado por editorial (E1), avisa la fecha de llegada vencida (E2) y registra el estado anterior y el nuevo. |
@@ -166,17 +297,28 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-PRV-CON` | Verificado | 2 / 2 | `ProveedorListaView` y `ProveedorDetalleView`. **Todos sus contratos verificados.** La ficha muestra el historial de pedidos al proveedor (B-04-008). |
 | `CU-PRV-REA` | Verificado | 3 / 3 | `ProveedorReactivarView`. **Todos sus contratos verificados.** La reactivación es la revisión: datos corregibles con el correo destacado y el procesamiento de novedades declarado (B-04-009). |
 | `CU-PRV-BAJ` | Verificado | 3 / 3 | `ProveedorBajaView` con informe de impacto (B-04-007). **Todos sus contratos verificados.** La propuesta de restock marca «Proveedor inactivo» (B-04-009). |
-| `CU-PRV-COL` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Aprobar (`AprobarCorreoView`) y reprocesar (`ReprocesarCorreoView`) desde la ficha, con la transición condicionada de E1 y la corrección de E4 a favor del contrato (B-04-004). |
+| `CU-PRV-COL` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Aprobar (`AprobarCorreoView`) y reprocesar (`ReprocesarCorreoView`) desde la ficha, con la transición condicionada de E1 y la corrección de E4 a favor del contrato (B-04-004). Una demora o un «otro» bien clasificados quedan Procesados, y se pueden descartar después (B-04-011). «Revisar la casilla» trae lo nuevo sin esperar al Temporizador (B-04-013). |
 
 ### `05` Restock
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-RST-PED` | Verificado | 3 / 3 | `suppliers/pedidos.py`: tres intentos y su registro (`CO-074`), E2 sin correo. Lo invocan `CU-ALT-REV` y `CU-RST-APR`. Plan 05. |
+| `CU-RST-PED` | Verificado | 3 / 3 | `suppliers/pedidos.py`: tres intentos y su registro (`CO-074`), E2 sin correo. Lo invocan `CU-ALT-REV` y `CU-RST-APR`. Plan 05. Con el envío exitoso queda registrado el pedido con sus líneas (B-05-010). |
 | `CU-RST-PRO` | Verificado | 2 / 2 | **Todos sus contratos verificados**: ciclo diario con la ventana de la semana (B-05-004), cantidad sugerida, grupos por proveedor (B-05-003), E1 a E4, disparo manual que omite el ciclo; I-21 en la base y la carrera entre el ciclo y el botón. Plan 05. |
-| `CU-RST-APR` | Verificado | 8 / 8 | **Todos sus contratos verificados**: propuesta por proveedor, ajustar, quitar, agregar al grupo correcto, despachar con correo (E2 vuelve a Pendiente), descartar con motivo y cierre automático; dos administradores a la vez. Plan 05. |
-| `CU-RST-SUS` | Verificado | 2 / 2 | `apps/restock`. **Todos sus contratos verificados**: aviso desde la ficha de un agotado (B-05-002), E1, E2, cancelar, sin auditoría; I-22 en la base y dos clics a la vez. Plan 05. |
+| `CU-RST-APR` | Verificado | 8 / 8 | **Todos sus contratos verificados**: propuesta por proveedor, ajustar, quitar, agregar al grupo correcto, despachar con correo (E2 vuelve a Pendiente), descartar con motivo y cierre automático; dos administradores a la vez. Plan 05. El despacho lleva la llegada estimada y registra el pedido (B-05-010). |
+| `CU-RST-SUS` | Verificado | 2 / 2 | `apps/restock`. **Todos sus contratos verificados**: aviso desde la ficha de un agotado (B-05-002), E1, E2, cancelar, sin auditoría; I-22 en la base y dos clics a la vez. Plan 05. También sobre una pre-venta completa (B-07-042). |
 | `CU-RST-NOT` | Verificado | 1 / 1 | **Verificado**: FIFO con `min(N, M)` en cada suba de stock (B-05-001), tres intentos y turno conservado (B-05-005), E2 sin ceder el cupo. Plan 05. |
+
+**Tres casos de uso con código y sin ficha en el documento todavía** (códigos aprobados por el
+responsable el 2026-10-27, C-23). Construidos y probados (`test_pedidos_a_proveedor.py`,
+`test_pantallas_pedidos.py`, con el rol equivocado por la dirección real); no entran en la cuenta de
+arriba ni en `COBERTURA.md` hasta que el documento tenga su ficha y sus contratos (B-05-010):
+
+| Caso de uso | Estado | Contratos | Observación |
+| --- | --- | --- | --- |
+| `CU-RST-PRC` | Construido, sin contrato | — | Consultar propuestas de restock: `PropuestaListaView` y `PropuestaDetalleView`, también las cerradas, con sus pedidos. |
+| `CU-RST-PDA` | Construido, sin contrato | — | Registrar un pedido a proveedor a mano: `PedidoNuevoView`, con el correo de `CO-074`. |
+| `CU-RST-LLE` | Construido, sin contrato | — | Registrar la llegada de un pedido a proveedor: «Pedidos por llegar», la llegada en dos tiempos y el cierre de una línea sin recibir como flujo alternativo (`views_pedidos.py`, `llegadas.py`). |
 
 ### `06` Ventas Presenciales
 
@@ -190,10 +332,10 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | --- | --- | --- | --- |
 | `CU-TDA-CAT` | Verificado | 2 / 2 | **Todos sus contratos verificados** (`CO-176`, `CO-177`). Catálogo público con filtros de varios valores, orden elegible, ficha con galería, precio con oferta y «Avisarme cuando haya stock» (`CU-RST-SUS`). Plan 07; cerrado en el plan 00, A6. |
 | `CU-TDA-CRC` | Verificado | 3 / 3 | `tienda/carrito.html`, `apps/tienda/carrito.py`. Líneas con el precio visible de hoy, aviso de precio cambiado con el importe anterior (B-07-003), disponibilidad derivada en tres valores (B-07-004) y total. «Ir a pagar» lleva al checkout; al invitado le ofrece iniciar sesión o comprar como invitado (B-07-006 resuelta). |
-| `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta reserva sin tope (A1). El personal no tiene carrito (B-07-005). |
-| `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2), sin tope en Pre-venta. La línea de otro carrito responde 404. |
+| `CU-TDA-CRA` | Verificado | 1 / 1 | Desde la ficha, con cantidad. Tope en el stock con aviso (E1); la Pre-venta no mira el stock y tiene como tope el máximo por reserva, contando los pedidos en curso del Cliente (A1, B-07-041), y el cupo de lo que viene en camino (B-07-042). El personal no tiene carrito (B-07-005). |
+| `CU-TDA-CRM` | Verificado | 1 / 1 | Tope en el stock (E1), mínimo uno (E2); en Pre-venta, el máximo por reserva (B-07-041) y el cupo (B-07-042). La línea de otro carrito responde 404. |
 | `CU-TDA-CRB` | Verificado | 1 / 1 | Sin confirmación. La línea de otro carrito responde 404. |
-| `CU-TDA-CMP` | Verificado | 6 / 6 | **Con el retiro en el local** (plan 07, octava parte; B-07-038): la modalidad en el checkout, el cobro y el pedido que nacen con ella, D4 en el servidor y en la base. `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). |
+| `CU-TDA-CMP` | Verificado | 6 / 6 | **Con el retiro en el local** (plan 07, octava parte; B-07-038): la modalidad en el checkout, el cobro y el pedido que nacen con ella, D4 en el servidor y en la base. `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). Con el producto bloqueado se vuelve a contar el cupo de la pre-venta, y si se llenó mientras se pagaba el cobro se reembolsa (B-07-042). |
 | `CU-TDA-INV` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Sin pre-ventas (precondición), sin puntos, pedido asociado al correo; la sugerencia de iniciar sesión aparece dos veces (B-07-036). Plan 07, sexta parte. |
 
 **Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera y cuarta parte;
@@ -241,11 +383,11 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CLI-ALT` | Verificado | 1 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. **Todos sus contratos verificados.** |
+| `CU-CLI-ALT` | Verificado | 1 / 1 | `RegistroClienteView`, pantalla pública, con autocompletado de localidad desde `core/georef.py`. **Todos sus contratos verificados.** E1 también cuando otro registro gana el correo después de validarlo. |
 | `CU-CLI-CON` | Verificado | 2 / 2 | **Todos sus contratos verificados.** El listado (`CO-194`) enlaza a la ficha de sólo lectura (`ClienteFichaView`, `CO-195`). |
 | `CU-CLI-DAT` | Verificado | 4 / 4 | `apps/accounts/views_cuenta.py`. **Todos sus contratos verificados.** Datos con las validaciones del registro; contraseña que cierra las otras sesiones; correo con `TokenCambioCorreo` de 24 h (B-11-002), confirmación por botón y aviso al correo anterior (B-11-005). Plan 11, segunda parte. |
 | `CU-CLI-HIS` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Pedidos activos, historial (despachados y cancelados), detalle con su línea de tiempo y acceso a la decisión ante una demora, y la sección Stock en Local (B-11-003 resuelta). Planes 11 y 18. |
-| `CU-CLI-BAJ` | Verificado | 3 / 3 | `BajaView` y `accounts/baja_cliente.py`. **Todos sus contratos verificados.** Informe de cuatro categorías con los bloqueos E1 y E2; la confirmación con contraseña invalida los puntos con un débito por lote, cancela suscripciones, vacía el carrito y cierra las sesiones; tres intentos bloquean la baja y no el ingreso (B-11-007). La vuelta por el Administrador queda en consulta (B-11-008). |
+| `CU-CLI-BAJ` | Verificado | 3 / 3 | `BajaView` y `accounts/baja_cliente.py`. **Todos sus contratos verificados.** Informe de cuatro categorías con los bloqueos E1 y E2; la confirmación con contraseña invalida los puntos con un débito por lote, cancela suscripciones, vacía el carrito y cierra las sesiones; tres intentos bloquean la baja y no el ingreso (B-11-007). La vuelta la da el Administrador, que reactiva la cuenta sin eliminarla (B-11-009, que resuelve B-11-008). |
 
 ### `12` Autenticación
 
@@ -260,7 +402,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-USR-ALT` | Verificado | 1 / 1 | **Todos sus contratos verificados.** |
+| `CU-USR-ALT` | Verificado | 1 / 1 | **Todos sus contratos verificados.** E2 también cuando otra alta gana el correo después de validarlo. |
 | `CU-USR-MOD` | Verificado | 3 / 3 | **Todos sus contratos verificados.** |
 | `CU-USR-BAJ` | Verificado | 3 / 3 | **Todos sus contratos verificados**, incluido `CO-156`: abandonar la confirmación no cambia la cuenta ni audita. |
 | `CU-USR-REA` | Verificado | 4 / 4 | **Todos sus contratos verificados**, incluido `CO-156`. |
@@ -279,7 +421,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-CFG-PAR` | Verificado | 3 / 3 | `ParametrosView`: **todas las secciones** — operación, Seguridad (B-12-004), Compra online (Logística, Comercial con los plazos de arrepentimiento y de garantía, Fidelización y pasarela), Proveedores (frecuencia de la casilla) y el modelo de lenguaje. **Todos sus contratos verificados**: `CO-130` con E1 y E2, `CO-207` y `CO-053` desde el enlace al margen (A1). Plan 00, A3. |
+| `CU-CFG-PAR` | Verificado | 3 / 3 | `ParametrosView`: **todas las secciones** — operación, Seguridad (B-12-004), Compra online (Logística, Comercial con los plazos de arrepentimiento y de garantía, Fidelización y pasarela), Proveedores (frecuencia de la casilla) y el modelo de lenguaje; el margen del cupo de pre-venta (B-07-042). **Todos sus contratos verificados**: `CO-130` con E1 y E2, `CO-207` y `CO-053` desde el enlace al margen (A1). Plan 00, A3. |
 | `CU-CFG-LLM` | Verificado | 3 / 3 | `DiagnosticoLLMView` y `core/llm.py`. **Todos sus contratos verificados.** El diagnóstico y la comprobación de disponibilidad quedan en el log sin la credencial (B-17-018). |
 | `CU-CFG-EDC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EditorialListaView`, pantalla propia: activas y dadas de baja, productos vinculados, filtro por estado. |
 | `CU-CFG-EDA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activa; la colisión enlaza la existente con su estado. Alta al vuelo con la misma auditoría. |
@@ -311,6 +453,25 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | `CU-STK-PLA` | Verificado | 2 / 2 | **Todos sus contratos verificados**: extender o acortar con motivo, E1, E2, aviso al Cliente. Sólo el Administrador. Plan 18. |
 | `CU-STK-VEN` | Verificado | 1 / 1 | **Verificado** en el Temporizador: aviso una vez por fecha (B-18-006), reintegro al stock sin reembolso, extensión de tres días cada vez que vence pendiente (B-18-005), doble corrida sin efecto. Plan 18. |
 
+### `19` Perfil y avisos
+
+Módulo nuevo, con once casos de uso y sin ficha en el documento todavía (B-19-001): no entra en
+la cuenta de 103.
+
+| Caso de uso | Estado | Contratos | Observación |
+| --- | --- | --- | --- |
+| `CU-AVI-PEC` | Construido, sin contrato | — | `apps/avisos`, `PerfilView` y `ContrasenaView`. Sus datos, su contraseña con la regla de `CO-111`, sus avisos y Telegram. Sólo el Administrador, por la dirección real (B-19-003). |
+| `CU-AVI-CAM` | Construido, sin contrato | — | `CanalesView` y `canales.py`: por tipo, correo y Telegram, auditado; sin chat, Telegram no se puede marcar; «Todo por Telegram» (B-19-002). |
+| `CU-AVI-TGA` | Construido, sin contrato | — | El enlace de un solo uso que vence a los 15 minutos y `/start` en el bot, que da un número; se vincula al escribirlo en el perfil, con cinco intentos (B-19-005); un chat por cuenta; auditado (B-19-003). |
+| `CU-AVI-TGB` | Construido, sin contrato | — | Desde el perfil o con `/salir`; borra el chat; auditado (B-19-003). |
+| `CU-AVI-COR` | Construido, sin contrato | — | `bot.py`: cada correo nuevo con sus botones; aprobar es `CO-017` y descartar `CO-018`, con motivos rápidos o escritos; firma por botón y autorización en cada acción (B-19-004). `/refresh` revisa la casilla en el momento y, como el botón de la cola, reinicia el reloj de la lectura automática (B-19-016). |
+| `CU-AVI-BOR` | Construido, sin contrato | — | `bot._cargar` y `borradores.desde_telegram`: `/cargar` o foto con epígrafe; el modelo lee el texto con la validación de las novedades; la foto es la portada; precio de la tabla y datos de la serie; aviso de duplicado; auditado; nunca un producto (B-19-006). |
+| `CU-AVI-REB` | Construido, sin contrato | — | `bot.mostrar_borrador`, `_borradores` y `_rechazar`: vista previa con la portada y «Rechazar…» con motivos; el rechazo de `CU-ALT-REV` con «(desde Telegram)»; ningún botón confirma (B-19-008). |
+| `CU-AVI-RES` | Construido, sin contrato | — | `resumen.py`: a la hora de Parámetros, una vez por día con bloqueo de fila; siempre, aunque esté en cero; lo dispara el reloj por minuto (B-19-011). |
+| `CU-AVI-EST` | Construido, sin contrato | — | `salud.py`: `/estado` sólo lee; disco y respaldo avisados una vez por día y por problema; el respaldo se vigila donde está programado (B-19-013). |
+| `CU-AVI-INL` | Construido, sin contrato | — | `bot._inline`: sólo a vinculados activos; lo que muestra la tienda, sin el stock en el mensaje compartido (B-19-015). Falta `/setinline` en @BotFather. |
+| `CU-AVI-CON` | Construido, sin contrato | — | `consultas.py` y `asistente.elegir_consulta`: `/stock`, `/llega`, `/pendientes`, `/caja` o una pregunta libre; sólo leen; Administrador activo en cada consulta (B-19-007). |
+
 ### Códigos retirados y a qué se repartieron
 
 | Retirado | Se repartió en | Qué se leyó en el código |
@@ -330,18 +491,80 @@ no tiene fila.
 
 ## Las siete puertas
 
-Medición del **2026-10-22**, al cerrar los planes 11 (tercera parte) y 15, con PostgreSQL
-levantado.
+Medición del **2026-10-26**, al cerrar el plan 00 del circuito con los proveedores, sobre el árbol
+de trabajo (39f1d8b más los cambios de los planes 00 del 23 y el 26, sin commitear), con
+PostgreSQL levantado.
 
 | Puerta | Resultado |
 | --- | --- |
-| Suite de pruebas | **3061 pasan**, 0 fallos, en paralelo y en orden aleatorio (4 min 4 s) |
+| Suite de pruebas | **3488 pasan**, 0 fallos, en paralelo y en orden aleatorio (3 min 34 s) |
 | **Contratos** | **219 de 219 verificados** |
-| Cobertura sobre código de aplicación | **97 %** (13083 sentencias, 441 sin cubrir) |
+| Cobertura sobre código de aplicación | **97 %** (15430 sentencias, 505 sin cubrir) |
 | Análisis estático | `ruff check .`: sin hallazgos |
-| Formato | `black --check .`: 378 archivos sin cambios |
-| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos. `pip-audit`: sin vulnerabilidades conocidas, después de pasar `virtualenv` a 21.14.9 (CVE-2026-113722) y `black` a 26.10.1 (CVE-2026-114134), que no cambia el formato de ningún archivo |
+| Formato | `black --check .`: sin cambios |
+| Auditoría de seguridad | `bandit -r apps config scripts`, sin pruebas ni migraciones: sin hallazgos, con 48 supresiones `# nosec`, **cada una con su regla y su motivo** en la línea. `pip-audit -r requirements.txt`: sin vulnerabilidades conocidas, después de pasar `virtualenv` a 21.14.10 (CVE-2026-113713) y `filelock` a 4.2.1 (CVE-2026-112907, severidad baja, sólo Windows); las dos son herramientas de desarrollo |
 | Configuración de despliegue | `check --deploy --fail-level WARNING` con la configuración de producción: **sin advertencias** |
+
+**Barrido de control de acceso (2026-10-23).** Las 181 rutas, por su dirección real, sin sesión,
+como Cliente y como Cajero. Sin sesión sólo responden las públicas (tienda, ingreso, registro,
+recuperación, activación, arrepentimiento, privacidad); el Cliente no abre ninguna del personal;
+el Cajero abre sólo el mostrador, la caja, el inventario y el stock en local, que son los casos de
+uso que lo declaran actor. Es una corrida manual, no una prueba de la suite.
+
+**Plan 00 de Telegram, verificaciones a mano (2026-10-27).** `avisos.0001` y `core.0046`
+aplicaron sobre la base de presentación; `makemigrations --check` no detecta cambios y
+`preferencia_aviso_unica` está en la base. `manage.py telegram estado` contestó con el token real:
+el bot es `@longbox_comiqueria_bot`. «Mi perfil» se revisó con una captura de Chrome sin interfaz.
+La vinculación y los botones se probaron contra un Telegram de mentira detrás de la puerta HTTP y,
+después, **a mano con el chat real** desde el teléfono del responsable (`telegram escuchar`): el
+vínculo y los avisos funcionaron. Etapa 2: `avisos.0002`, `catalog.0027` y `core.0047` aplicaron
+sobre la base de presentación, que quedó con la casilla cada 5 minutos. El menú lateral con la cuenta
+arriba se revisó con una captura. Los comandos de la etapa 2 se probaron contra el Telegram de
+mentira; **falta probarlos desde el chat real**, y en la VM falta subir el sistema y volver a correr
+`telegram webhook`. Etapa 3 (2026-10-28): `avisos.0003` y `core.0048` aplicaron sobre la base de
+presentación. «Mi perfil» con los tipos nuevos y Parámetros con la hora del resumen se revisaron con
+capturas. Lo demás se probó contra el Telegram de mentira: falta el chat real y `/setinline` en
+@BotFather. **Subido a la VM el 2026-10-28**: ver la última verificación de
+[DEMOSTRACION.md](despliegue/DEMOSTRACION.md).
+
+**Plan 00 del circuito con los proveedores, verificaciones a mano (2026-10-26).** `core.0045`,
+`suppliers.0006` y `suppliers.0007` aplicaron sobre la base de presentación, con un respaldo
+previo en `respaldos/`; `0007` armó el pedido de las 2 pre-ventas con reservas. Las 57 pre-ventas
+sin pedido recibieron uno por editorial y fecha (otro respaldo antes): 37 pedidos abiertos, 59
+líneas, ninguna pre-venta sin cupo. No queda ninguna migración sin aplicar y `makemigrations
+--check` no detecta cambios. En `pg_constraint` están `linea_pedido_proveedor_cerrada_con_motivo`
+y `linea_pedido_proveedor_pide_algo`. `catalog.0026` (las etiquetas del borrador) aplicó sobre la
+base de presentación. «Pedidos por llegar», la ficha del pedido, la llegada, el
+cierre sin recibir, el pedido a mano, las propuestas, la ficha pública de una pre-venta completa,
+el aviso de demora con su propuesta, la demora con la fecha cargada y la página de redacción se
+revisaron con capturas de Chrome sin interfaz. El circuito de la herramienta se recorrió contra el
+correo de prueba: el correo salió por SMTP, `revisar_casilla` lo dejó Pendiente en la cola con su
+asunto acentuado intacto, y queda ahí en la base de presentación.
+
+**Plan 00 de tope de reservas y errores, verificaciones a mano (2026-10-26).** `core.0044`
+aplicó sobre la base de desarrollo con el máximo en 5; `makemigrations --check` no detecta
+cambios. Las cuatro pantallas de error, la ficha de una pre-venta con reservas previas y el
+carrito con una línea que pasa el tope se revisaron con capturas de Chrome sin interfaz, en
+escritorio y en 390 px. El guion de la capa de carga se probó en Chrome con un arnés que dispara
+cada caso: aparece con un clic y con un envío, no se programa con Ctrl, Cmd, Mayúsculas, la
+rueda, `download`, `data-sin-capa`, otra pestaña ni un formulario de diálogo, no aparece si un
+guion resolvió el clic, y se va sola a los 12 s. Una corrida entera de la suite no dejó
+archivos en `media/` ni en `privado/`.
+
+**Plan 00 de cierre de deuda, verificaciones a mano (2026-10-23).** `catalog.0024`, `catalog.0025`
+y `accounts.0011` aplicaron sobre la base de desarrollo, sin ninguna fila que violara las
+invariantes (consultado antes sobre 3683 productos); no queda ninguna migración sin aplicar y
+`makemigrations --check` no detecta cambios. En `pg_constraint` están
+`producto_precio_positivo`, `producto_no_editorial_sin_preventa_ni_cancelado`,
+`producto_editorial_importes_no_negativos`, `precio_referencia_pvp_positivo` y
+`lote_importes_no_negativos`; en `pg_trigger`, `producto_tipo_del_rubro`,
+`tipo_conserva_su_rubro` y los dos `queda_un_administrador_activo_*`. La prueba de I-12 con
+escrituras cruzadas corrió tres veces seguidas sin fallos. El aviso de código ajeno en el alta y
+en la edición, y el rechazo de una portada GIF, se revisaron con capturas de Chrome sin
+interfaz, en escritorio y en 390 px. Una corrida entera de la suite no dejó ningún archivo en
+`media/` ni en `privado/`; se borraron los 488 que habían dejado las corridas anteriores del
+día, ninguno referenciado por la base. El barrido de acceso de arriba es previo al plan, que
+no agrega rutas.
 
 **Verificación de contratos, a mano (2026-10-22).** `catalog.0023`, `core.0040` a `0043` y
 `accounts.0010` aplicaron sobre la base de desarrollo; `producto_editorial_manual_sin_referencia` está en `pg_constraint`, y

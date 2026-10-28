@@ -189,7 +189,7 @@ def test_guardar_el_stock_por_defecto_lo_deja_vigente_y_auditado(client_admin, a
             "dias_aviso_preventa": "2",
             "cantidad_minima_restock": "3",
             "margen_stock_restock": "2",
-            "frecuencia_casilla_horas": "24",
+            "frecuencia_casilla_minutos": "5",
         },
     )
 

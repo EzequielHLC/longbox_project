@@ -1,0 +1,136 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+B-01-022 — la demora de varios tomos (desvío consultado de CU-ALT-DEM). Los mismos
+tres tiempos que la de un tomo (`demora.html`): elegir y fechar cada tomo, ver
+el impacto de todos juntos (CO-014) y confirmar (CO-015 por tomo). Lo que no
+admite la demora se muestra con su motivo y no se puede elegir. Los avisos salen
+uno por Cliente, con todos sus tomos.
+{% endcomment %}
+
+{% block titulo %}Registrar demora de varios tomos · Longbox{% endblock %}
+{% block seccion %}Pedidos{% endblock %}
+
+{% block contenido %}
+{% if correo %}
+  {% url 'suppliers:correo_detalle' correo.pk as volver %}
+{% else %}
+  {% url 'pedidos:preventas' as volver %}
+{% endif %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% if correo %}{% include "_boton_texto.html" with url=volver texto="Volver al correo" atras=1 %}{% else %}{% include "_boton_texto.html" with url=volver texto="Pre-ventas por llegar" atras=1 %}{% endif %}</span>
+    <h1>Registrar demora de varios tomos</h1>
+    <p>{% if correo %}Según el aviso «{{ correo.asunto|default:"sin asunto" }}» de {{ correo.proveedor }}.{% else %}Cada tomo con su nueva fecha estimada.{% endif %}</p>
+  </div>
+</header>
+
+{% if revision %}
+  {% comment %}El informe de impacto de todos juntos (CU-ALT-DEM paso 4), antes de confirmar.{% endcomment %}
+  <div class="panel panel--atencion pila-4">
+    <div class="cifras">
+      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}Tomos a demorar</span><span class="cifra__valor">{{ elegidos|length }}</span></div>
+      <div class="cifra{% if total_pedidos %} cifra--atencion{% endif %}"><span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Pedidos afectados</span><span class="cifra__valor">{{ total_pedidos }}</span></div>
+      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="correo" %}Clientes a notificar</span><span class="cifra__valor">{{ total_clientes }}</span></div>
+    </div>
+    <p class="texto-chico">Cada cliente recibe un solo correo con todos sus tomos demorados y el acceso a sus opciones.</p>
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead><tr><th>Tomo</th><th>Llegada actual</th><th>Nueva fecha</th><th class="numero">Pedidos</th><th class="numero">Clientes</th></tr></thead>
+        <tbody>
+          {% for fila in elegidos %}
+            <tr>
+              <td class="celda-principal">{{ fila.producto }}</td>
+              <td class="datos">{{ fila.producto.fecha_llegada|date:"d/m/Y"|default:"Sin fecha" }}</td>
+              <td class="datos">{% if fila.fecha %}{{ fila.fecha|date:"d/m/Y" }}{% else %}<span class="secundario">Sin fecha</span>{% endif %}</td>
+              <td class="numero">{{ fila.informe.pedidos }}</td>
+              <td class="numero">{{ fila.informe.clientes }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if nota %}<dl class="datos-de-ficha"><dt>Nota interna</dt><dd>{{ nota }}</dd></dl>{% endif %}
+    <form method="post" class="fila-5">
+      {% csrf_token %}
+      {% for fila in filas %}
+        <input type="hidden" name="producto" value="{{ fila.producto.pk }}">
+        {% if fila.incluido %}<input type="hidden" name="incluir" value="{{ fila.producto.pk }}">{% endif %}
+        <input type="hidden" name="fecha_{{ fila.producto.pk }}" value="{{ fila.fecha_texto }}">
+      {% endfor %}
+      <input type="hidden" name="nota" value="{{ nota }}">
+      <button type="submit" name="confirmar" value="1" class="boton-primario">Confirmar la demora</button>
+      <button type="submit" name="editar" value="1" class="boton-seccion boton-seccion--tenue">Cambiar</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </form>
+  </div>
+{% else %}
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <fieldset class="grupo-de-campos">
+      <legend>Los tomos</legend>
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th><span class="sr-only">Incluir</span></th>
+              <th>Tomo</th>
+              <th>Llegada actual</th>
+              <th class="numero">Pedidos</th>
+              <th class="numero">Clientes</th>
+              <th>Nueva fecha estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in filas %}
+              <tr>
+                <td>
+                  <input type="hidden" name="producto" value="{{ fila.producto.pk }}">
+                  {% if not fila.no_admite %}
+                    <label class="casilla">
+                      <input type="checkbox" name="incluir" value="{{ fila.producto.pk }}"{% if fila.incluido %} checked{% endif %}>
+                      <span class="sr-only">Demorar {{ fila.producto }}</span>
+                    </label>
+                  {% endif %}
+                </td>
+                <td class="celda-principal">
+                  <span class="fila-2">
+                    <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                    <span>
+                      <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a>
+                      {% if fila.no_admite %}<br><span class="texto-chico secundario">{{ fila.no_admite }}</span>{% endif %}
+                    </span>
+                  </span>
+                </td>
+                <td class="datos">{{ fila.producto.fecha_llegada|date:"d/m/Y"|default:"Sin fecha" }}</td>
+                <td class="numero">{{ fila.informe.pedidos }}</td>
+                <td class="numero">{{ fila.informe.clientes }}</td>
+                <td>
+                  {% if not fila.no_admite %}
+                    <label class="sr-only" for="fecha-{{ fila.producto.pk }}">Nueva fecha estimada de {{ fila.producto }}</label>
+                    <input type="date" id="fecha-{{ fila.producto.pk }}" name="fecha_{{ fila.producto.pk }}" value="{{ fila.fecha_texto }}"{% if fila.error %} aria-invalid="true"{% endif %}>
+                    {% if fila.error %}<p class="error-de-campo" role="alert">Error: {{ fila.error }}</p>{% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="texto-chico secundario">La fecha es opcional y tiene que ser posterior a hoy. {% if correo %}Viene la que propone el aviso: revisala.{% endif %}</p>
+    </fieldset>
+
+    <fieldset class="grupo-de-campos">
+      <legend>Nota interna</legend>
+      <div class="campo">
+        <label for="nota" class="etiqueta">Para el equipo, en todos los tomos</label>
+        <textarea id="nota" name="nota" rows="3" maxlength="1000">{% if nota %}{{ nota }}{% elif correo %}Aviso de {{ correo.proveedor }}: «{{ correo.asunto|default:"sin asunto" }}».{% endif %}</textarea>
+      </div>
+    </fieldset>
+
+    <div class="acciones">
+      <button type="submit" class="boton-primario">Revisar el impacto</button>
+      {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

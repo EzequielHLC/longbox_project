@@ -56,7 +56,7 @@ def copiar(cursor, *, desde, hacia):
     cortar_conexiones(cursor, desde)
     cortar_conexiones(cursor, hacia)
     cursor.execute(f'DROP DATABASE IF EXISTS "{hacia}"')  # nosec B608 - nombres fijos
-    cursor.execute(f'CREATE DATABASE "{hacia}" TEMPLATE "{desde}"')  # nosec B608
+    cursor.execute(f'CREATE DATABASE "{hacia}" TEMPLATE "{desde}"')  # nosec B608 - nombres fijos
 
 
 def main():
@@ -81,7 +81,7 @@ def main():
         if opciones.vaciar:
             cortar_conexiones(cursor, BASE)
             cursor.execute(f'DROP DATABASE IF EXISTS "{BASE}"')  # nosec B608 - nombre fijo
-            cursor.execute(f'CREATE DATABASE "{BASE}"')  # nosec B608
+            cursor.execute(f'CREATE DATABASE "{BASE}"')  # nosec B608 - nombre fijo
             shutil.rmtree(MEDIA, ignore_errors=True)
             accion = "Base vaciada"
         elif opciones.guardar:

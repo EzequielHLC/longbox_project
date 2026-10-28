@@ -220,6 +220,24 @@ def test_con_servidor_sale_por_smtp_y_deja_la_copia(settings):
     assert "Enviado por smtp.longbox.test a ana@longbox.test." in copia
 
 
+def test_una_consola_que_no_escribe_un_caracter_no_frena_el_envio(settings):
+    """La copia va antes del envío: en una consola cp1252 un carácter raro del
+    asunto dejaba el correo sin salir."""
+    settings.EMAIL_HOST = "smtp.longbox.test"
+    settings.EMAIL_USE_TLS = False
+    crudo = io.BytesIO()
+    consola = io.TextIOWrapper(crudo, encoding="cp1252")
+    correo = un_correo()
+    correo.subject = "Reprogramación � ☃"
+
+    with patch(SMTP) as smtp:
+        enviados = CorreoConCopia(stream=consola).send_messages([correo])
+
+    assert enviados == 1
+    smtp.return_value.sendmail.assert_called_once()
+    assert b"Asunto: Reprogramacion ? ?" in crudo.getvalue()
+
+
 def test_un_fallo_del_servidor_levanta_y_la_copia_igual_queda(settings):
     settings.EMAIL_HOST = "smtp.longbox.test"
     consola = io.StringIO()

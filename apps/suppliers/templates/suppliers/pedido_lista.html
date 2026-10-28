@@ -1,0 +1,106 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Los pedidos a proveedores (plan 00 del circuito con los proveedores): lo que se
+pidió y todavía puede llegar. Nacen cuando el pedido sale —el cierre de una
+revisión de novedades, el despacho de Restock, el alta de un lote en pre-venta o
+a mano— y se cierran cuando llega todo o lo que falta se da por perdido.
+{% endcomment %}
+
+{% block titulo %}Pedidos a proveedores · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Pedidos a proveedores</h1>
+    <p>Lo pedido que todavía puede llegar. Lo que está en pre-venta se reserva contra esto.</p>
+  </div>
+  <a href="{% url 'suppliers:pedido_nuevo' %}" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Nuevo pedido</span></a>
+</header>
+
+<div class="cifras">
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="proveedores" %}Por llegar</span><span class="cifra__valor">{{ por_llegar }}</span></div>
+  <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="lote" %}Unidades en camino</span><span class="cifra__valor">{{ unidades_por_llegar }}</span></div>
+  <div class="cifra{% if atrasados %} cifra--atencion{% endif %}">{% if atrasados %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasados</span><span class="cifra__valor">{{ atrasados }}</span></div>
+</div>
+
+<section class="seccion">
+  <form method="get" data-sin-capa class="barra-de-herramientas">
+    <div class="campo">
+      <label for="estado" class="etiqueta">Mostrar</label>
+      <select id="estado" name="estado">
+        {% for valor, etiqueta in filtros.items %}
+          <option value="{{ valor }}" {% if filtro == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="buscar" %}<span>Mostrar</span></button>
+  </form>
+
+  {% comment %}
+  Como «Pre-ventas por llegar»: cada pedido es un bloque plegable con su llegada
+  en palabras, abierto si está atrasado o llega esta semana. La llegada se
+  registra desde la ficha del pedido.
+  {% endcomment %}
+  {% if pagina.object_list %}
+    {% for pedido in pagina.object_list %}
+      <details class="grupo-plegable{% if pedido.vencido %} grupo-plegable--atencion{% endif %}" id="pedido-{{ pedido.pk }}"{% if pedido.cercano %} open{% endif %}>
+        <summary class="grupo-plegable__cabeza">
+          <span class="grupo-plegable__nombre"><span class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ pedido.nombre_proveedor }}</span>
+          <span class="grupo-plegable__cuenta">Pedido #{{ pedido.pk }} · {{ pedido.get_origen_display }} · {{ pedido.lineas.all|length }} producto{{ pedido.lineas.all|length|pluralize }}{% if pedido.estado == "abierto" %} · faltan {{ pedido.unidades_pendientes }}{% endif %}</span>
+          <span class="marca-estado{% if pedido.vencido %} marca-estado--error{% elif pedido.estado != 'abierto' %} marca-estado--apagado{% elif pedido.dias_para == 0 %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span>
+        </summary>
+        <div class="grupo-plegable__cuerpo pila-3">
+          <div class="tabla-desplazable">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Código</th>
+                  <th class="numero">Pedidas</th>
+                  <th class="numero">Llegaron</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for linea in pedido.lineas.all %}
+                  <tr>
+                    <td class="celda-principal">
+                      <span class="fila-2">
+                        <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if linea.producto.portada %}<img src="{{ linea.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                        <a href="{% url 'catalog:producto_detalle' linea.producto.pk %}">{{ linea.producto.especifico }}</a>
+                      </span>
+                    </td>
+                    <td class="datos sin-cortar">{{ linea.producto.codigo }}</td>
+                    <td class="numero">{{ linea.cantidad_pedida }}</td>
+                    <td class="numero">{{ linea.cantidad_recibida }}</td>
+                    <td>{% include "suppliers/_estado_linea.html" %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="fila-5">
+            <a href="{% url 'suppliers:pedido_detalle' pedido.pk %}" class="boton-seccion">{% if pedido.estado == "abierto" %}Registrar la llegada{% else %}Ver el pedido{% endif %}</a>
+            <span class="texto-chico secundario">Pedido el {{ pedido.creado_en|date:"d/m/Y" }}.</span>
+          </div>
+        </div>
+      </details>
+    {% endfor %}
+    {% if pagina.has_other_pages %}
+      <div class="paginacion">
+        <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        <span class="fila-5">
+          {% if pagina.has_previous %}<a href="?estado={{ filtro }}&amp;pagina={{ pagina.previous_page_number }}" class="boton-texto">Anterior</a>{% endif %}
+          {% if pagina.has_next %}<a href="?estado={{ filtro }}&amp;pagina={{ pagina.next_page_number }}" class="boton-texto">Siguiente</a>{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="vacio">
+      {% include "_iconos.html" with icono="proveedores" %}
+      <p>{% if filtro == "abiertos" %}No hay pedidos esperando mercadería.{% else %}No hay pedidos para mostrar.{% endif %}</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

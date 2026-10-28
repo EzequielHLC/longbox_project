@@ -1,0 +1,87 @@
+{% comment %}
+El gestor de una sola portada, con las piezas del gestor de imágenes del producto
+(`_galeria_campos.html`): la casilla con «Elegir» o «Cambiar» y «Quitar», y la
+zona para soltar. Lo usa el borrador, que tiene portada y no imágenes
+adicionales: pantallas de la misma naturaleza, el mismo control.
+
+    {% include "catalog/_portada_gestor.html" with campo=form.portada actual=borrador.portada ayuda="…" %}
+
+Nada se guarda hasta guardar. Sin guion, la casilla y «Quitar» funcionan igual;
+se pierden la vista previa y el soltar.
+{% endcomment %}
+<div class="gestor-imagenes" data-portada-gestor>
+  <div class="gestor-imagenes__cabeza">
+    <p class="etiqueta">Portada</p>
+    {% if ayuda %}<p class="texto-chico secundario">{{ ayuda }}</p>{% endif %}
+  </div>
+
+  <ol class="gestor-imagenes__grilla">
+    <li class="gestor-imagenes__item gestor-imagenes__item--portada">
+      <div class="gestor-imagenes__marco">
+        {% if actual %}
+          <img src="{{ actual.url }}" alt="Portada actual" data-portada-actual>
+        {% else %}
+          <img alt="" data-portada-actual hidden>
+          <span class="gestor-imagenes__vacio" data-portada-vacia>{% include "_iconos.html" with icono="imagen" %}<span>Imagen pendiente</span></span>
+        {% endif %}
+        <span class="gestor-imagenes__rotulo">Portada</span>
+      </div>
+      <div class="gestor-imagenes__acciones">
+        <label class="ficha-accion">
+          <input type="file" id="{{ campo.id_for_label }}" name="{{ campo.html_name }}" accept="image/jpeg,image/png,image/webp" class="sr-only" data-portada-archivo data-vista-propia>
+          {% include "_iconos.html" with icono="imagen" %}<span data-portada-texto>{% if actual %}Cambiar{% else %}Elegir{% endif %}</span>
+        </label>
+        {% if actual %}
+          <label class="ficha-accion ficha-accion--critica">
+            <input type="checkbox" name="{{ campo.html_name }}-clear" class="sr-only">
+            {% include "_iconos.html" with icono="baja" %}<span>Quitar</span>
+          </label>
+        {% endif %}
+      </div>
+    </li>
+  </ol>
+
+  <label class="gestor-imagenes__soltar" for="{{ campo.id_for_label }}" data-soltar>
+    {% include "_iconos.html" with icono="agregar" %}
+    <span><strong>{% if actual %}Reemplazar la portada{% else %}Agregar la portada{% endif %}</strong> · soltala acá o tocá para elegir</span>
+    <span class="texto-chico secundario">JPG, PNG o WebP. Se guarda en WebP.</span>
+  </label>
+
+  {% for error in campo.errors %}<p class="error-de-campo" role="alert">Error: {{ error }}</p>{% endfor %}
+</div>
+<script>
+  (function () {
+    const gestor = document.currentScript.previousElementSibling;
+    if (!gestor || !gestor.matches("[data-portada-gestor]")) return;
+    const archivo = gestor.querySelector("[data-portada-archivo]");
+    const imagen = gestor.querySelector("[data-portada-actual]");
+    const zona = gestor.querySelector("[data-soltar]");
+
+    function mostrar() {
+      const elegido = archivo.files[0];
+      if (!elegido) return;
+      imagen.src = URL.createObjectURL(elegido);
+      imagen.hidden = false;
+      gestor.querySelector("[data-portada-vacia]")?.remove();
+      gestor.querySelector("[data-portada-texto]").textContent = "Cambiar";
+    }
+    archivo.addEventListener("change", mostrar);
+
+    zona.addEventListener("dragover", function (evento) {
+      if (![...evento.dataTransfer.types].includes("Files")) return;
+      evento.preventDefault();
+      zona.classList.add("gestor-imagenes__soltar--encima");
+    });
+    zona.addEventListener("dragleave", () => zona.classList.remove("gestor-imagenes__soltar--encima"));
+    zona.addEventListener("drop", function (evento) {
+      evento.preventDefault();
+      zona.classList.remove("gestor-imagenes__soltar--encima");
+      const imagenes = [...evento.dataTransfer.files].filter((f) => f.type.startsWith("image/"));
+      if (!imagenes.length) return;
+      const transferencia = new DataTransfer();
+      transferencia.items.add(imagenes[0]);
+      archivo.files = transferencia.files;
+      mostrar();
+    });
+  })();
+</script>

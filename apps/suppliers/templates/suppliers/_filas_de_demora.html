@@ -1,0 +1,41 @@
+{% comment %}
+Las pre-ventas que un aviso de demora propone demorar (B-04-010). Cada fila abre
+`CU-ALT-DEM` con la fecha sugerida; la que no la admite dice por qué.
+{% endcomment %}
+<div class="tabla-desplazable">
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th><span class="sr-only">Elegir</span></th>
+        <th>Pre-venta</th>
+        <th>Llegada actual</th>
+        <th class="numero">Reservadas</th>
+        <th>Fecha propuesta</th>
+        <th class="derecha"><span class="sr-only">Acción</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in filas %}
+        <tr data-fila-demora="{{ fila.producto.titulo|lower }} {{ fila.producto.volumen }} {{ fila.producto.codigo|lower }}">
+          <td>
+            {% if not fila.no_admite %}
+              {# B-01-022: se eligen para demorar juntos; lo que el aviso nombra viene marcado. #}
+              <label class="casilla"><input type="checkbox" name="producto" value="{{ fila.producto.pk }}"{% if fila.mencionado %} checked{% endif %}><span class="sr-only">Elegir {{ fila.producto }}</span></label>
+            {% endif %}
+          </td>
+          <td class="celda-principal"><a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a></td>
+          <td class="datos">{% firstof fila.producto.fecha_estimada|date:"d/m/Y" fila.producto.fecha_llegada|date:"d/m/Y" "Sin fecha" %}</td>
+          <td class="numero">{{ fila.reservado }}</td>
+          <td class="datos">{% if fila.fecha_propuesta %}{{ fila.fecha_propuesta|date:"d/m/Y" }}{% elif fila.mencionado %}Sin fecha{% else %}<span class="secundario">—</span>{% endif %}</td>
+          <td class="derecha">
+            {% if fila.no_admite %}
+              <span class="texto-chico secundario">{{ fila.no_admite }}</span>
+            {% else %}
+              <a href="{% url 'pedidos:demora' fila.producto.pk %}?correo={{ correo.pk }}" class="{% if fila.mencionado %}boton-seccion{% else %}boton-texto{% endif %}">Registrar demora</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

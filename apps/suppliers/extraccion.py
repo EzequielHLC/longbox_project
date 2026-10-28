@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Se guarda junto a cada extracción. Subirla cuando cambie el prompt o el
 # esquema de forma que el resultado deje de ser comparable con el anterior.
-VERSION_PROMPT = "2"
+VERSION_PROMPT = "4"
 
 # Las tres que reconoce el pipeline. `otro` no es un cajón de sastre: es la
 # respuesta correcta para una factura o un saludo, y es lo que justifica que la
@@ -86,6 +86,27 @@ _ISO = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
 _DIA_MES_ANIO = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
 _MES_ANIO_EN_NUMEROS = re.compile(r"(?<!\d)(\d{1,2})/(\d{4})")
 _MES_ANIO_EN_LETRAS = re.compile(r"([a-záéíóú]+)\s+(?:de\s+)?(\d{4})")
+# Un volumen pegado al final del título con una marca explícita: «#5», «vol. 5»,
+# «Tomo 5», «Nº 5». Sin marca no se separa: «20th Century Boys» o «Another 0» son
+# títulos, y adivinar ahí sería inventar un dato.
+_VOLUMEN_PEGADO = re.compile(
+    r"^(?P<titulo>.*?\S)[\s,.:-]*(?:#|\b(?:vol\.?|volumen|tomo|n[º°]\.?))\s*(?P<numero>\d+)\s*$",
+    re.IGNORECASE,
+)
+
+
+def separar_volumen(titulo):
+    """`(título, volumen)` si el volumen vino pegado al título; si no, `(título, None)`.
+
+    El modelo a veces copia «Ichi The Witch #1» en el título y deja el volumen
+    vacío, aunque el prompt le pida separarlos. Sin esto, el cruce con el
+    catálogo no reconoce el tomo y el borrador nace sin volumen.
+    """
+    titulo = " ".join(str(titulo or "").split())
+    encontrado = _VOLUMEN_PEGADO.match(titulo)
+    if not encontrado:
+        return titulo, None
+    return encontrado.group("titulo"), int(encontrado.group("numero"))
 
 
 def interpretar_fecha(texto):
@@ -136,6 +157,27 @@ def interpretar_fecha(texto):
     return None
 
 
+_DIA_MES = re.compile(r"(?<![\d/])(\d{1,2})/(\d{1,2})(?![\d/])")
+
+
+def fecha_sin_anio(texto, desde):
+    """«13/11» sin año: la próxima vez que cae, contando desde `desde` (B-01-019).
+
+    Decisión del responsable: un correo de novedades que anuncia «13/11» habla
+    del próximo 13 de noviembre, no del que pasó. Se deduce y **se anota**: quien
+    llama deja un reparo con la fecha tomada, para que se revise. Un mes sin día
+    ni año («marzo») sigue sin interpretarse. `None` si no hay día y mes.
+    """
+    encontrado = _DIA_MES.search(" ".join(str(texto or "").split()))
+    if not encontrado:
+        return None
+    dia, mes = (int(parte) for parte in encontrado.groups())
+    fecha = _fecha_valida(desde.year, mes, dia)
+    if fecha is not None and fecha < desde:
+        fecha = _fecha_valida(desde.year + 1, mes, dia)
+    return fecha
+
+
 def _fecha_valida(anio, mes, dia):
     """`None` en vez de reventar: un 31 de febrero es un dato malo, no un fallo."""
     try:
@@ -164,9 +206,12 @@ Tu trabajo tiene tres partes.
 
 2. Si es "novedades", copiar el período que el correo anuncia, tal como está escrito y en una \
 sola línea. Suele estar en el texto de alrededor de la tabla, no dentro de ella: "Novedades de \
-marzo 2026", "Lanzamientos: 15/04/2026". Si el correo no anuncia ningún período, dejalo vacío.
+marzo 2026", "Lanzamientos: 15/04/2026". Si es "demora", copiar la nueva fecha que el aviso da \
+para todo lo que se atrasa: "se reprograma para mayo 2026". Si no anuncia ninguna, dejalo vacío.
 
-3. Si es "novedades", extraer un objeto por cada producto anunciado.
+3. Si es "novedades", extraer un objeto por cada producto anunciado. Si es "demora", un objeto \
+por cada producto que se atrasa, con su título, su volumen, su ISBN si lo trae y su nueva fecha \
+si el aviso la da para ese producto; el precio, el formato y la portada quedan vacíos.
 
 Reglas que no podés romper:
 
@@ -181,6 +226,8 @@ de peso ni separadores de miles.
 [imagen:...] de la fila de ese producto. Si la fila no tiene ninguno, dejalo \
 vacío. Nunca uses el de otra fila.
 - Las filas de encabezado de una tabla no son productos.
+- El volumen va en su campo y no en el título: «Berserk Deluxe #5» o «Berserk Deluxe vol. 5» son \
+título «Berserk Deluxe» y volumen «5».
 - La fecha de un producto se copia **solo si la fila la trae**. La del período general no se \
 repite en cada producto: para eso está el campo de arriba. Si la fila no dice ninguna fecha, \
 dejala vacía.
@@ -264,6 +311,10 @@ class Extraccion:
 
     intencion: str = OTRO
     productos: list = field(default_factory=list)
+    # Lo que un aviso de demora dice que se atrasa (B-04-010). No son productos
+    # a dar de alta: son referencias para proponer `CU-ALT-DEM` sobre una
+    # pre-venta que ya existe, que el Administrador confirma o no (regla 4).
+    demorados: list = field(default_factory=list)
     # El período que el correo anuncia ("Novedades de marzo 2026"), que es de
     # donde los borradores heredan la fecha cuando la fila no trae una propia.
     # Se guardan las dos cosas: lo que el modelo copió y lo que se pudo
@@ -319,6 +370,16 @@ class Extraccion:
             "periodo_texto": self.periodo_texto,
             "periodo": self.periodo.isoformat() if self.periodo else "",
             "reparos": self.reparos,
+            "demorados": [
+                {
+                    "titulo": producto.titulo,
+                    "volumen": producto.volumen,
+                    "isbn": producto.isbn,
+                    "fecha": producto.fecha.isoformat() if producto.fecha else "",
+                    "reparos": producto.reparos,
+                }
+                for producto in self.demorados
+            ],
             "productos": [
                 {
                     "titulo": producto.titulo,
@@ -336,7 +397,7 @@ class Extraccion:
         }
 
 
-def extraer(contenido, *, cids=()):
+def extraer(contenido, *, cids=(), recibido=None):
     """Lee un correo ya extraído a texto y devuelve lo que el modelo entendió.
 
     `cids` son los identificadores de las portadas que el correo trae de verdad.
@@ -347,6 +408,8 @@ def extraer(contenido, *, cids=()):
     Nunca levanta. Un correo raro no puede tumbar la lectura de la casilla
     entera, que es lo que piden E2 y E3 de CU-ALT-NOV.
     """
+    # Desde cuándo se cuenta una fecha sin año: el día del correo, o hoy.
+    recibido = recibido or date.today()
     respuesta = llm.pedir_json(SISTEMA, contenido, formato=ESQUEMA)
     if not respuesta:
         return Extraccion(
@@ -360,29 +423,43 @@ def extraer(contenido, *, cids=()):
     if intencion not in INTENCIONES:
         intencion = OTRO
 
-    # Solo se leen productos de un correo de novedades. Si el modelo clasificó
-    # "demora" y devolvió productos igual, se ignoran: mezclar las dos cosas es
-    # exactamente el error que la clasificación viene a evitar.
-    productos = []
-    if intencion == NOVEDADES:
-        productos = [
-            _producto(crudo, cids)
-            for crudo in datos.get("productos", [])
-            if isinstance(crudo, dict)
-        ]
+    # Los productos de un correo de novedades son altas; los de una demora, lo
+    # que se atrasa. Se leen igual pero van a listas distintas: mezclar las dos
+    # cosas es exactamente el error que la clasificación viene a evitar. De un
+    # "otro" no se lee nada.
+    leidos = [
+        _producto(crudo, cids, recibido)
+        for crudo in datos.get("productos", [])
+        if isinstance(crudo, dict)
+    ]
+    productos = leidos if intencion == NOVEDADES else []
+    demorados = [p for p in leidos if p.titulo or p.isbn] if intencion == DEMORA else []
 
     periodo_texto = " ".join(str(datos.get("periodo", "")).split())
-    periodo = interpretar_fecha(periodo_texto) if intencion == NOVEDADES else None
+    con_periodo = intencion in (NOVEDADES, DEMORA)
+    periodo = interpretar_fecha(periodo_texto) if con_periodo else None
     reparos = []
-    if intencion == NOVEDADES and periodo_texto and periodo is None:
+    if con_periodo and periodo_texto and periodo is None:
+        periodo = fecha_sin_anio(periodo_texto, recibido)
+        if periodo is not None:
+            reparos.append(_reparo_sin_anio(periodo_texto, periodo))
+    if con_periodo and periodo_texto and periodo is None:
         # Que no se entienda no invalida el correo, pero tiene que quedar
         # anotado: sin la fecha, todos sus borradores nacen Activos, y esa es
         # exactamente la clase de cosa que no da ningún síntoma.
-        reparos.append(f"Período ilegible: «{periodo_texto}». Los borradores nacen sin fecha.")
+        reparos.append(
+            f"Período ilegible: «{periodo_texto}». "
+            + (
+                "Los borradores nacen sin fecha."
+                if intencion == NOVEDADES
+                else "La demora se propone sin fecha nueva."
+            )
+        )
 
     return Extraccion(
         intencion=intencion,
         productos=productos,
+        demorados=demorados,
         periodo_texto=periodo_texto,
         periodo=periodo,
         reparos=reparos,
@@ -392,7 +469,7 @@ def extraer(contenido, *, cids=()):
     )
 
 
-def _producto(crudo, cids):
+def _producto(crudo, cids, recibido):
     """Limpia un producto y anota lo que hubo que corregirle."""
     producto = ProductoExtraido(
         titulo=" ".join(str(crudo.get("titulo", "")).split()),
@@ -400,9 +477,11 @@ def _producto(crudo, cids):
         confianza=_confianza(crudo.get("confianza")),
     )
     producto.volumen = _volumen(crudo.get("volumen"), producto)
+    if producto.volumen is None:
+        producto.titulo, producto.volumen = separar_volumen(producto.titulo)
     producto.isbn = _isbn(crudo.get("isbn"), producto)
     producto.precio = _precio(crudo.get("precio"), producto)
-    producto.fecha = _fecha_de_fila(crudo.get("fecha"), producto)
+    producto.fecha = _fecha_de_fila(crudo.get("fecha"), producto, recibido)
     producto.imagen = _imagen(crudo.get("imagen"), cids, producto)
 
     if not producto.titulo:
@@ -472,7 +551,11 @@ def _precio(crudo, producto):
     return precio
 
 
-def _fecha_de_fila(crudo, producto):
+def _reparo_sin_anio(texto, fecha):
+    return f"Fecha sin año: «{texto}». Se tomó el {fecha:%d/%m/%Y}: revisala."
+
+
+def _fecha_de_fila(crudo, producto, recibido):
     """La fecha propia de un producto, cuando la fila la trae.
 
     Que venga vacía es el caso normal y **no deja reparo**: la fecha la anuncia
@@ -483,6 +566,10 @@ def _fecha_de_fila(crudo, producto):
     if not texto:
         return None
     fecha = interpretar_fecha(texto)
+    if fecha is None:
+        fecha = fecha_sin_anio(texto, recibido)
+        if fecha is not None:
+            producto.reparos.append(_reparo_sin_anio(texto, fecha))
     if fecha is None:
         producto.reparos.append(f"Fecha ilegible: «{texto}».")
     return fecha

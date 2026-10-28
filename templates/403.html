@@ -1,0 +1,12 @@
+{% extends "_pagina_de_error.html" %}
+{% comment %}
+RNF-03: el rol equivocado llega acá por la dirección real. `exception` es el
+motivo que dio la vista («Tu rol no tiene acceso a esta sección.»), si lo dio.
+{% endcomment %}
+{% block titulo %}Sin acceso{% endblock %}
+{% block codigo %}¡403!{% endblock %}
+{% block encabezado %}No tenés acceso a esta pantalla{% endblock %}
+{% block explicacion %}
+  {% if exception %}<p>{{ exception }}</p>{% endif %}
+  <p>Si creés que deberías poder entrar, pedíselo a quien administra el sistema.</p>
+{% endblock %}

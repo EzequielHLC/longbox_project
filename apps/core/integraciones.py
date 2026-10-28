@@ -35,6 +35,8 @@ escriben a mano. La fuente de verdad sigue siendo la API, el archivo es su
 
 import json
 import logging
+import re
+import secrets
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -65,6 +67,16 @@ CABECERA_JSON = {"Content-Type": "application/json"}
 # Lo único que la puerta abre. `urlopen` soporta `file://` y `ftp://`, y ninguno
 # de los dos tiene nada que hacer en una integración de este sistema.
 ESQUEMAS_PERMITIDOS = ("http://", "https://")
+
+# Lo que no puede quedar escrito en el log aunque viaje en la dirección: la API
+# de Telegram lleva el token del bot en la ruta (`/bot<token>/sendMessage`).
+_SECRETO_EN_LA_RUTA = re.compile(r"/bot[^/]+/")
+
+
+def para_el_log(url):
+    """La dirección sin los secretos que viajan en ella (plan 00 de Telegram)."""
+    return _SECRETO_EN_LA_RUTA.sub("/bot***/", url)
+
 
 # Cuando la API falla se cachea igual el resultado del respaldo, pero por poco
 # rato: si el servicio vuelve en cinco minutos, no queremos seguir un día
@@ -119,7 +131,7 @@ class Respuesta:
         return self.estado_http == 402
 
 
-def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
+def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None, archivos=None):
     """Un pedido HTTP que devuelve JSON, o `None` si no se pudo.
 
     **Es el único lugar del proyecto que abre una conexión**, y por eso acepta
@@ -135,6 +147,10 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
 
     Usa `urlopen` de la biblioteca estándar: no hace falta sumar `requests` al
     proyecto para un puñado de pedidos.
+
+    `archivos` (`{campo: (nombre, bytes, tipo)}`) manda el cuerpo como formulario
+    multiparte en vez de JSON: es la portada de un borrador que se muestra por
+    Telegram (B-19-008). Los campos de `cuerpo` que no son texto van en JSON.
     """
     # `urlopen` abre también `file://`, y desde que la dirección del modelo de
     # lenguaje se configura desde una pantalla, una de las URL que llegan acá es
@@ -142,12 +158,15 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
     # esquemas raros, pero la puerta no puede depender de que quien la use haya
     # validado antes: es el único punto por el que sale todo.
     if not url.lower().startswith(ESQUEMAS_PERMITIDOS):
-        logger.warning("Esquema no permitido en %s", url)
+        logger.warning("Esquema no permitido en %s", para_el_log(url))
         return Respuesta(motivo=SIN_CONEXION, detalle="La dirección no es http ni https.")
 
     datos = None
     propias = dict(cabeceras or {})
-    if cuerpo is not None:
+    if archivos:
+        datos, tipo = _multiparte(cuerpo or {}, archivos)
+        propias = {"Content-Type": tipo, **propias}
+    elif cuerpo is not None:
         datos = json.dumps(cuerpo).encode("utf-8")
         propias = {**CABECERA_JSON, **propias}
     pedido = Request(  # nosec B310 - el esquema se validó arriba
@@ -157,7 +176,7 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
         headers={**CABECERAS, **propias},
     )
     try:
-        with urlopen(pedido, timeout=timeout) as respuesta:  # nosec B310
+        with urlopen(pedido, timeout=timeout) as respuesta:  # nosec B310 - mismo pedido
             return Respuesta(datos=json.loads(respuesta.read()))
     except HTTPError as error:
         # El servicio **contestó**, y contestó que no. Es el caso que antes se
@@ -165,21 +184,66 @@ def pedir(url, *, timeout, metodo="GET", cuerpo=None, cabeceras=None):
         # El cuerpo del error suele traer el motivo en texto, y es lo único que
         # explica un 400 de un proveedor remoto.
         cuerpo_del_error = _texto_del_error(error)
-        logger.warning("El servicio externo rechazó el pedido (%s): %s", url, error)
+        logger.warning("El servicio externo rechazó el pedido (%s): %s", para_el_log(url), error)
         return Respuesta(
             motivo=RECHAZADO,
             estado_http=error.code,
             detalle=cuerpo_del_error or f"{error.code} {error.reason}",
         )
     except (URLError, TimeoutError, OSError) as error:
-        logger.warning("El servicio externo no respondió (%s): %s", url, error)
+        logger.warning("El servicio externo no respondió (%s): %s", para_el_log(url), error)
         return Respuesta(motivo=SIN_CONEXION, detalle=str(error))
     except ValueError as error:
         # Contestó, pero no con JSON. Pasa cuando una dirección apunta a algo
         # que no es la API que se cree —una página de error de un proxy, por
         # ejemplo— y es un problema de configuración, no de red.
-        logger.warning("El servicio externo devolvió algo ilegible (%s): %s", url, error)
+        logger.warning(
+            "El servicio externo devolvió algo ilegible (%s): %s", para_el_log(url), error
+        )
         return Respuesta(motivo=ILEGIBLE, detalle=str(error))
+
+
+def _multiparte(campos, archivos):
+    """El cuerpo `multipart/form-data` y su `Content-Type`, con un separador al azar."""
+    separador = f"longbox-{secrets.token_hex(12)}"
+    fin = b"\r\n"
+    partes = []
+    for nombre, valor in campos.items():
+        texto = valor if isinstance(valor, str) else json.dumps(valor)
+        cabecera = f'--{separador}\r\nContent-Disposition: form-data; name="{nombre}"\r\n\r\n'
+        partes.append(cabecera.encode() + texto.encode("utf-8") + fin)
+    for nombre, (archivo, contenido, tipo) in archivos.items():
+        cabecera = (
+            f"--{separador}\r\nContent-Disposition: form-data; "
+            f'name="{nombre}"; filename="{archivo}"\r\nContent-Type: {tipo}\r\n\r\n'
+        )
+        partes.append(cabecera.encode() + contenido + fin)
+    partes.append(f"--{separador}--\r\n".encode())
+    return b"".join(partes), f"multipart/form-data; boundary={separador}"
+
+
+def descargar(url, *, timeout, tope):
+    """Los bytes de un archivo, o `None` si no se pudo o pesa más que `tope`.
+
+    La otra mitad de la única puerta (B-19-006): la foto de un borrador cargado
+    desde Telegram. Devuelve bytes y no JSON, y nunca propaga la excepción. Lee un
+    byte más que el tope para saber si se pasó sin bajar el archivo entero.
+    """
+    if not url.lower().startswith(ESQUEMAS_PERMITIDOS):
+        logger.warning("Esquema no permitido en %s", para_el_log(url))
+        return None
+    try:
+        with urlopen(
+            Request(url, headers=CABECERAS), timeout=timeout
+        ) as respuesta:  # nosec B310 - esquema validado arriba
+            datos = respuesta.read(tope + 1)
+    except (HTTPError, URLError, TimeoutError, OSError) as error:
+        logger.warning("No se pudo descargar (%s): %s", para_el_log(url), error)
+        return None
+    if len(datos) > tope:
+        logger.warning("La descarga pasa el tope de %s bytes (%s)", tope, para_el_log(url))
+        return None
+    return datos
 
 
 def _texto_del_error(error):

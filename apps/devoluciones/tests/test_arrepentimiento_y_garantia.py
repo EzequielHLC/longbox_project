@@ -324,6 +324,8 @@ def test_el_plazo_de_garantia_se_configura_en_parametros(client_admin):
         "porcentaje_puntos": "10",
         "caducidad_puntos_meses": "12",
         "dias_aviso_caducidad_puntos": "3",
+        "maximo_reserva_preventa": "5",
+        "margen_cupo_preventa": "10",
         "pasarela": ConfiguracionSistema.PASARELA_PRUEBA,
     }
 

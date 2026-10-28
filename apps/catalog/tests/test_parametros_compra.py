@@ -28,6 +28,8 @@ VALIDOS = {
     "porcentaje_puntos": "3",
     "caducidad_puntos_meses": "6",
     "dias_aviso_caducidad_puntos": "3",
+    "maximo_reserva_preventa": "5",
+    "margen_cupo_preventa": "10",
     "pasarela": ConfiguracionSistema.PASARELA_MERCADOPAGO,
 }
 
@@ -87,6 +89,8 @@ def test_CO130_guardar_sin_cambios_no_deja_entradas(client_admin):
             "porcentaje_puntos": "5",
             "caducidad_puntos_meses": "12",
             "dias_aviso_caducidad_puntos": "3",
+            "maximo_reserva_preventa": "5",
+            "margen_cupo_preventa": "10",
             "pasarela": ConfiguracionSistema.PASARELA_PRUEBA,
         },
     )
@@ -160,3 +164,41 @@ def test_la_pantalla_muestra_que_significan_los_dos_numeros(client_admin):
     assert "% de cada compra" in contenido
     # 5 % de $10.000 = $500, a $10 el punto: 50 puntos.
     assert '<span class="datos">50</span> puntos' in contenido
+
+
+def test_CO130_el_maximo_por_reserva_pasa_al_declarado_y_se_audita(client_admin):
+    """Plan 00 de tope de reservas: el parámetro nuevo, en Comercial."""
+    assert ConfiguracionSistema.obtener().maximo_reserva_preventa == 5
+
+    client_admin.post(URL, {**VALIDOS, "maximo_reserva_preventa": "3"})
+
+    assert ConfiguracionSistema.obtener().maximo_reserva_preventa == 3
+    assert RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
+        detalle="máximo por reserva (unidades): 5 → 3",
+    ).exists()
+
+
+def test_CO130_E1_el_maximo_por_reserva_es_al_menos_uno(client_admin):
+    respuesta = client_admin.post(URL, {**VALIDOS, "maximo_reserva_preventa": "0"})
+
+    assert respuesta.status_code == 200
+    assert ConfiguracionSistema.obtener().maximo_reserva_preventa == 5
+
+
+def test_CO130_el_margen_del_cupo_pasa_al_declarado_y_se_audita(client_admin):
+    """Plan 00 del circuito, decisión 2: el margen global del cupo de pre-venta."""
+    client_admin.post(URL, {**VALIDOS, "margen_cupo_preventa": "15"})
+
+    assert ConfiguracionSistema.obtener().margen_cupo_preventa == 15
+    assert RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
+        detalle="margen del cupo de pre-venta (%): 10 → 15",
+    ).exists()
+
+
+def test_CO130_E1_el_margen_del_cupo_no_pasa_del_50(client_admin):
+    respuesta = client_admin.post(URL, {**VALIDOS, "margen_cupo_preventa": "80"})
+
+    assert respuesta.status_code == 200
+    assert ConfiguracionSistema.obtener().margen_cupo_preventa == 10

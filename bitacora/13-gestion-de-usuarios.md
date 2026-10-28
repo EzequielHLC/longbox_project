@@ -359,3 +359,37 @@ de la corrección y fallaba con el 500.
 
 **Qué habría que cambiar.**
 Nada en el documento.
+
+---
+
+### B-13-007 · Siempre un Administrador activo, también en la base
+
+**Tipo:** Agregado · **Fecha:** 2026-10-23 · **Alcance:** I-12, `CO-121`, `CO-123`, `Usuario`
+**Estado:** Resuelta — decidido por el responsable al aprobar el plan 00 de cierre de deuda (2026-10-23): «puedes aplicar la seguridad como triggers en la BD»
+
+**Qué apareció.**
+El resguardo del último Administrador (B-13-003, B-13-006) vive en el servicio de cuentas, y lo
+cumplen sólo las operaciones que pasan por él. Una actualización en bloque o una sentencia SQL
+directa podían sacarle el rol, darlo de baja o borrar al único Administrador activo, y el sistema
+quedaba sin nadie que pudiera administrarlo.
+
+**Qué dice la especificación.**
+> «Debe existir siempre al menos un Administrador activo» (I-12) · «Estas condiciones […] son
+> verdaderas antes y después de todas [las operaciones].» (Modelo de dominio, § 6)
+
+Nada sobre dónde se garantiza.
+
+**Qué se hizo.**
+Un disparador de PostgreSQL (`accounts.0011`) rechaza, con el mismo mensaje que la pantalla
+(«Debe existir al menos un Administrador activo en el sistema»), cualquier escritura que deje sin
+Administrador activo: quitar el rol, dar de baja o borrar. Sólo mira el rol y el estado: el resto
+de la cuenta del único Administrador se sigue modificando con normalidad. Bajo concurrencia, si
+dos escrituras por fuera del servicio les sacan el rol a dos Administradores a la vez, una espera
+a la otra y se rechaza; por el servicio, el bloqueo ordenado lo resuelve antes y el usuario ve el
+mensaje de siempre.
+
+**Límite conocido:** como en I-13, `TRUNCATE` no lo detiene. Lo usa Django para vaciar la base
+entre pruebas, y exige ser el dueño de la tabla.
+
+**Qué habría que cambiar.**
+Nada en el documento.

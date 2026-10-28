@@ -1,3 +1,4 @@
+from datetime import time
 from decimal import Decimal
 
 from django.conf import settings
@@ -172,14 +173,31 @@ class ConfiguracionSistema(models.Model):
     # Proveedores (CU-CFG-PAR; CO-016, plan 00, A1)
     # ------------------------------------------------------------------
 
-    frecuencia_casilla_horas = models.PositiveIntegerField(
-        "frecuencia de monitoreo de la casilla (horas)",
-        default=24,
+    # En minutos desde el 2026-10-27 (B-04-015): con el aviso por Telegram, leer la
+    # casilla una vez por día no sirve; el documento la declaraba en horas.
+    frecuencia_casilla_minutos = models.PositiveIntegerField(
+        "frecuencia de monitoreo de la casilla (minutos)",
+        default=5,
         validators=[MinValueValidator(1)],
-        help_text="Cada cuántas horas el Temporizador lee la casilla de novedades.",
+        help_text="Cada cuántos minutos se lee la casilla de novedades.",
     )
-    # Cuándo la leyó por última vez: el Temporizador corre más seguido que eso.
+    # Cuándo la leyó por última vez: el vigilante corre más seguido que eso.
     casilla_revisada_en = models.DateTimeField("casilla revisada el", null=True, blank=True)
+
+    # ------------------------------------------------------------------
+    # El bot de Telegram, etapa 3 (B-19-011)
+    # ------------------------------------------------------------------
+
+    hora_resumen = models.TimeField(
+        "hora del resumen de la mañana",
+        default=time(9, 0),
+        help_text="A qué hora sale el resumen del día a los Administradores que lo eligieron.",
+    )
+    # El día que ya salió: el reloj por minuto lo mira para no mandarlo dos veces.
+    resumen_enviado_el = models.DateField("resumen enviado el", null=True, blank=True)
+    # Qué problema de salud se avisó y qué día (`{"disco": "2026-10-28"}`): uno por
+    # día y por problema, mientras siga.
+    salud_avisada = models.JSONField("problemas de salud avisados", default=dict, blank=True)
 
     # ------------------------------------------------------------------
     # Tienda (CU-CFG-PAR, sección Tienda; B-17-003)
@@ -253,6 +271,22 @@ class ConfiguracionSistema(models.Model):
         default=90,
         validators=[MinValueValidator(PISO_LEGAL_DEVOLUCION)],
         help_text="Para reclamar un defecto de fabricación o un error de imprenta.",
+    )
+    # Plan 00 de tope de reservas: cuenta la línea del carrito más lo que el
+    # Cliente ya tiene reservado de ese tomo en pedidos en curso.
+    maximo_reserva_preventa = models.PositiveIntegerField(
+        "máximo de unidades por reserva",
+        default=5,
+        validators=[MinValueValidator(1)],
+        help_text="Cuántas unidades de una misma pre-venta puede reservar un Cliente en total.",
+    )
+    # Plan 00 del circuito con los proveedores, decisión 2: el cupo de una pre-venta es
+    # lo pedido menos este margen, por fallados y cancelaciones del proveedor.
+    margen_cupo_preventa = models.PositiveIntegerField(
+        "margen del cupo de pre-venta (%)",
+        default=10,
+        validators=[MaxValueValidator(50)],
+        help_text="Qué parte de lo pedido no se ofrece en pre-venta, por si llega menos.",
     )
 
     # ------------------------------------------------------------------
@@ -487,6 +521,13 @@ class RegistroAuditoria(models.Model):
     DESCARTE_RESTOCK = "descarte_restock"
     CIERRE_PROPUESTA_RESTOCK = "cierre_propuesta_restock"
     PEDIDO_A_PROVEEDOR = "pedido_a_proveedor"
+    # Plan 00 del circuito con los proveedores: la llegada de lo pedido.
+    LLEGADA_PEDIDO = "llegada_pedido"
+    CIERRE_SIN_RECIBIR = "cierre_sin_recibir"
+    # Módulo 19 · Perfil y avisos (plan 00 de Telegram).
+    VINCULO_TELEGRAM = "vinculo_telegram"
+    DESVINCULO_TELEGRAM = "desvinculo_telegram"
+    CANALES_DE_AVISO = "canales_de_aviso"
     NOTIFICACION_REPOSICION = "notificacion_reposicion"
     NOTIFICACION_FALLIDA = "notificacion_fallida"
     # Plan 09: devoluciones.
@@ -584,6 +625,11 @@ class RegistroAuditoria(models.Model):
         (DESCARTE_RESTOCK, "Descarte de proveedor en propuesta de restock"),
         (CIERRE_PROPUESTA_RESTOCK, "Cierre de propuesta de restock"),
         (PEDIDO_A_PROVEEDOR, "Correo de pedido a proveedor"),
+        (LLEGADA_PEDIDO, "Llegada de un pedido a proveedor"),
+        (CIERRE_SIN_RECIBIR, "Línea de pedido cerrada sin recibir"),
+        (VINCULO_TELEGRAM, "Vínculo con Telegram"),
+        (DESVINCULO_TELEGRAM, "Desvínculo de Telegram"),
+        (CANALES_DE_AVISO, "Cambio de los canales de aviso"),
         (NOTIFICACION_REPOSICION, "Notificación de reposición"),
         (NOTIFICACION_FALLIDA, "Notificación fallida"),
         (APERTURA_DEVOLUCION, "Apertura de caso de devolución"),

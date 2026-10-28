@@ -407,7 +407,7 @@ def test_el_intervalo_del_carrusel_nace_en_10_y_se_edita_en_parametros(client_ad
             "dias_aviso_preventa": "2",
             "cantidad_minima_restock": "3",
             "margen_stock_restock": "2",
-            "frecuencia_casilla_horas": "24",
+            "frecuencia_casilla_minutos": "24",
         },
     )
 
@@ -423,7 +423,7 @@ def test_el_intervalo_no_puede_ser_cero(client_admin):
             "dias_aviso_preventa": "2",
             "cantidad_minima_restock": "3",
             "margen_stock_restock": "2",
-            "frecuencia_casilla_horas": "24",
+            "frecuencia_casilla_minutos": "24",
         },
     )
 

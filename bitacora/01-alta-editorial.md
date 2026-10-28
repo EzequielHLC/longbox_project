@@ -469,3 +469,304 @@ Restaurar el precio calculado (`CO-031`) vuelve a asociarlo, como ya hacía.
 
 **Qué habría que cambiar.**
 `Nada`: la especificación ya lo decía.
+
+---
+
+### B-01-015 · Las portadas se guardan en WebP, también la que llega en el correo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-23 · **Alcance:** RNF-05, `CU-ALT-NAC`, `CU-ALT-IMP`, `CU-ALT-NOV`, `CU-ALT-REV`, `CU-CAT-ALT`, `CU-CAT-EDI`, `CO-003`, `CO-009`, `CO-020`, `CO-028`, `CO-030`
+**Estado:** Abierta — decidida por el responsable al aprobar el plan 00 de cierre de deuda (2026-10-23)
+
+**Qué apareció.**
+La portada de un producto se guardaba tal como llegaba, en cualquier formato que la biblioteca de
+imágenes supiera leer y del tamaño que tuviera, mientras que las imágenes adicionales del mismo
+producto ya se guardaban en WebP de 800 px. Al llevar el procesamiento a la portada aparecieron
+tres puntos que el requisito no resuelve: la portada que trae el correo del proveedor no la sube el
+Administrador; las portadas que ya estaban guardadas; y qué formatos se aceptan.
+
+**Qué dice la especificación.**
+> «El backend del sistema debe procesar automáticamente toda imagen que suba el Administrador
+> —portadas, imágenes de producto, identidad visual y banners— […] El archivo original en su
+> formato y resolución de origen no debe conservarse en el almacenamiento del servidor.»
+> (RNF-05) · «Una imagen subida en formato PNG o JPG de resolución superior a 800px debe
+> almacenarse en el servidor únicamente en su versión procesada en WebP…» (RNF-05, condición de
+> verificación)
+
+Nada sobre las imágenes que no sube el Administrador, sobre las ya guardadas ni sobre otros
+formatos.
+
+**Qué se hizo.**
+Toda portada nueva se guarda en WebP, con 800 px en el lado mayor y sin el original, por los cinco
+caminos: el ítem del lote nacional e importado, el alta no editorial, la edición y la edición del
+borrador. La del correo se procesa **al adjuntarla al borrador**, así la revisión ve la misma
+imagen que se va a guardar con el producto; un adjunto que no es JPG, PNG ni WebP deja el mismo
+reparo que uno ilegible y el borrador sigue. Las portadas que ya estaban guardadas quedan como
+están. Un GIF o un BMP se rechazan con el problema específico, igual que en las imágenes
+adicionales.
+
+**Qué habría que cambiar.**
+RNF-05: «toda imagen que suba el Administrador **o que llegue en el correo de un proveedor**»;
+los formatos admitidos (JPG, PNG y WebP); y que rige para lo que se sube desde que está en
+marcha, no para lo ya guardado.
+
+---
+
+### B-01-016 · El stock inicial de una novedad se cuenta dos veces cuando llega
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-REV`, `CU-ALT-TRA`, `CO-022`, `CO-013`, `CO-074`
+**Estado:** Resuelta — plan 00 del circuito de proveedores, aprobado el 2026-10-26; ver B-01-017
+
+**Qué apareció.**
+Un producto que nace de una novedad confirmada queda con el «stock inicial» del borrador: las
+unidades que se le van a pedir al proveedor al cerrar la sesión de revisión. Cuando esas unidades
+llegan y se confirma el ingreso de la pre-venta, se suman otra vez. Probado el 2026-10-26: un tomo
+en Pre-venta que nació con 2 unidades pedidas quedó con 4 al llegar esas 2. Un producto que nace
+Activo, sin pre-venta, se puede vender desde el primer día con unidades que todavía no llegaron.
+
+**Qué dice la especificación.**
+> «Cada borrador confirmado ha generado un producto en el catálogo con su estado y stock inicial.»
+> (`CU-ALT-REV`, postcondiciones) · «p.stock pasó de su valor anterior a ese valor más las unidades
+> recibidas.» (`CO-013`, postcondiciones)
+
+Las dos frases juntas cuentan dos veces las mismas unidades: el stock inicial de una novedad no son
+unidades en la mano, son las que se piden.
+
+**Qué se hizo.**
+Nada todavía: es un cambio en lo que el sistema registra y se consulta.
+
+**Qué habría que cambiar.**
+`CU-ALT-REV` y `CO-022`: el producto de una novedad nace con stock cero, y el «stock inicial» del
+borrador pasa a ser la **cantidad a pedir** al proveedor. Las unidades entran con el ingreso
+(`CO-013` en una pre-venta; el ingreso de un pedido a proveedor en lo demás, ver B-05-009).
+
+---
+
+### B-01-017 · El producto de una novedad o de un lote en pre-venta nace sin stock: lo declarado es lo pedido
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-REV`, `CU-ALT-NAC`, `CU-ALT-IMP`, `CU-ALT-TRA`, `CO-022`, `CO-003`, `CO-009`, `CO-013`, `CO-074`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (plan 00 del circuito de proveedores); reemplaza a B-01-016
+
+**Qué apareció.**
+Lo de B-01-016: la cantidad que se declaraba al confirmar una novedad, o al cargar un lote en
+pre-venta, quedaba como stock del producto, y al llegar se volvía a sumar. Era la cantidad que se le
+pedía al proveedor, no la que había en el local.
+
+**Qué dice la especificación.**
+> «b.stock inicial quedó con ConfiguracionSistema.stock inicial por defecto» (`CO-017`) y el
+> borrador confirmado crea el producto con ese stock (`CO-022`); `CO-013` suma lo recibido al stock
+> del producto.
+
+**Qué se hizo.**
+- El producto que nace de una novedad confirmada nace con **stock cero**. Lo que el borrador
+  declaraba pasa a llamarse **«Cantidad a pedir»** y es la cantidad de la línea del pedido que sale al
+  cerrar la sesión de revisión.
+- El ítem en pre-venta de un lote nacional o importado también nace con stock cero, y su cantidad
+  queda registrada como **pedido en camino** del proveedor de la editorial, uno por fecha de llegada.
+  Si la editorial no tiene proveedor cargado, el pedido se registra sin proveedor: se hizo por fuera
+  del sistema y la pre-venta lo necesita para su cupo (B-07-042).
+- Al llegar, lo recibido entra una sola vez, por el pedido (B-05-010). La pantalla de «Pre-ventas
+  por llegar» descuenta de esas mismas líneas lo que confirma.
+- Las pre-ventas que ya existían se pasaron a ese esquema con una migración: cada una recibió un
+  pedido «anterior al registro de pedidos» por su stock o sus reservas, lo que fuera mayor, y quedó
+  con stock cero.
+
+**Qué habría que cambiar.**
+`CO-017` y `CO-022`: el borrador declara la **cantidad a pedir**, no un stock inicial, y el producto
+nace con stock cero. `CO-003` y `CO-009`: el ítem en pre-venta nace con stock cero y su cantidad se
+registra como pedido a proveedor (B-05-010). `CO-013`: lo recibido se registra contra la línea del
+pedido. `BorradorProducto.stock inicial` en el modelo de dominio pasa a «cantidad a pedir».
+
+---
+
+### B-01-018 · El borrador propone el precio de la tabla de referencia, y apartarse de ella se confirma
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV`, `CU-ALT-REV`, `CO-017`, `CO-020`, `CO-022`, `CO-023`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26
+
+**Qué apareció.**
+Un borrador de «Undead Unluck #13» llegó sin precio: el correo no lo traía y había que escribirlo
+a mano, aunque la tabla de referencia ya tenía el de Ivrea · Manga · B6. Además, al confirmar, un
+precio distinto del de la tabla dejaba el producto como «precio a mano» **sin avisar**: en el alta
+de lote nacional (`CU-ALT-NAC` A3) eso exige una confirmación explícita, validada en el servidor.
+
+**Qué dice la especificación.**
+> «p.precio, p.titulo, p.volumen, p.ISBN y demás quedaron con los valores del borrador.»
+> (`CO-022`, postcondiciones)
+
+Nada sobre la tabla de referencia en la revisión.
+
+**Qué se hizo.** Con las decisiones del responsable:
+- **Sin precio en el correo, el borrador toma el de la tabla** para su editorial, tipo y formato, y
+  deja de nacer en Extracción incompleta por ese dato. Un precio que el correo sí trae se respeta.
+- La ficha del borrador muestra el precio de la tabla al lado del campo, lo vuelve a consultar si
+  cambia la editorial, el tipo o el formato, y ofrece «Usar el de la tabla».
+- **Un precio distinto del de la tabla se confirma** con la advertencia de `CU-ALT-NAC` A3 al
+  confirmar el borrador (no al guardarlo), y el servidor lo exige. En la confirmación en lote no hay
+  forma de confirmarlo: el borrador se excluye con ese motivo y queda para la revisión individual.
+- **Si el precio es el de la tabla, la confianza baja que el modelo declaró sobre el precio no exige
+  revisión**: el dato ya no sale del modelo. Con otro precio, la regla sigue igual.
+
+**Qué habría que cambiar.**
+`CO-017`, postcondiciones: si el correo no trae precio y la combinación tiene fila en la tabla,
+b.precio queda con el de la tabla. `CO-022`: un precio distinto del de la tabla exige la
+confirmación de `CU-ALT-NAC` A3 y deja el producto con precio a mano; uno igual lo vincula a la
+fila. `CO-023` y `CU-ALT-REV` paso 4: el lote excluye el borrador con precio a mano sin confirmar.
+`CU-ALT-REV` paso 3: la confianza del precio no se revisa cuando el precio es el de la tabla.
+
+---
+
+### B-01-019 · Una fecha sin año se toma como la próxima vez que cae, y queda el reparo
+
+**Tipo:** Corrección · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV` E7, `CO-017` E7
+**Estado:** Abierta — decidida por el responsable el 2026-10-26
+
+**Qué apareció.**
+El correo de Ivrea anunciaba «13/11», sin año. El borrador quedaba con el reparo «Fecha ilegible» y
+sin fecha, aunque es obvio para cualquiera que se trata del próximo 13 de noviembre: había que
+cargarla a mano en cada borrador.
+
+**Qué dice la especificación.**
+> «Si el período de lanzamiento no puede interpretarse de forma inequívoca (E7), no se completa por
+> inferencia: los borradores nacen en estado sugerido Activo sin fecha y el reparo se registra en
+> cada uno.» (`CO-017`, Excepciones)
+
+**Qué se hizo.**
+Por decisión del responsable, una fecha con día y mes y sin año —en la fila o en el período— se
+toma como **la próxima vez que cae** desde el día del correo, y el borrador lleva el reparo «Fecha
+sin año: «13/11». Se tomó el 13/11/2026: revisala.». Un mes sin día ni año («marzo») sigue sin
+interpretarse, y lo que no es una fecha válida («31/02») sigue siendo ilegible.
+
+**Qué habría que cambiar.**
+`CO-017` E7 y `CU-ALT-NOV` E7: una fecha con día y mes y sin año se completa con el año de su
+próxima ocurrencia desde la fecha del correo, y se registra el reparo; lo demás que no se pueda
+interpretar sigue sin completarse.
+
+---
+
+### B-01-020 · El borrador de una serie que ya está en el catálogo se completa con lo que se sabe de ella, y el precio sigue al formato
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV`, `CU-ALT-REV`, `CO-017`, `CO-020`
+**Estado:** Abierta — pedida por el responsable el 2026-10-26
+
+**Qué apareció.**
+Revisando borradores, el responsable señaló dos cargas que el sistema podía ahorrar. Si el modelo
+lee B6 y el tomo es Tankōbon, corregir el formato dejaba el precio de B6 y había que buscar el de
+la tabla a mano. Y un tomo nuevo de una serie que ya está en el catálogo llegaba sin autor ni
+sinopsis, que el catálogo ya tiene de los tomos anteriores.
+
+**Qué dice la especificación.**
+`Nada.` `CO-017` arma el borrador sólo con lo que trae el correo y lo que hereda del proveedor.
+
+**Qué se hizo.**
+- **El precio sigue al formato** (y al tipo y la editorial): si el precio era el de la tabla para
+  la combinación anterior, o estaba vacío, pasa al de la nueva. Un precio escrito a mano no se
+  toca: se muestra el de la tabla y la advertencia de B-01-018.
+- **La serie**: el mismo título en la misma editorial, sin distinguir mayúsculas ni tildes. Si ya
+  hay tomos en el catálogo, el borrador nace con el **autor y la sinopsis** de la serie cuando no los
+  trae, y **«sólo para adultos»** encendido si la serie lo es (un tomo nuevo de una serie para
+  adultos no puede quedar a la vista de todos por omisión). El tipo y el formato no se cambian solos.
+- La ficha del borrador lo dice («Esta serie ya está en el catálogo», cuántos tomos, el último),
+  **señala el tipo o el formato que difieren** de los de la serie, y un botón «Usar los datos de la
+  serie» toma tipo, formato, autor, sinopsis y «sólo para adultos», con el precio siguiendo al
+  formato. Nada se guarda hasta guardar o confirmar el borrador.
+
+**Qué habría que cambiar.**
+`CO-017`, postcondiciones: si la serie ya está en el catálogo de esa editorial, b.autor y
+b.sinopsis quedan con los de la serie cuando el correo no los trae, y b.solo para adultos con sí si
+la serie lo es. `CU-ALT-REV` paso 2: la ficha ofrece los datos de la serie y el precio de la tabla
+sigue a la combinación elegida.
+
+---
+
+### B-01-021 · Las etiquetas de la serie pasan al borrador y de ahí al producto
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-ALT-NOV`, `CU-ALT-REV`, `CO-017`, `CO-020`, `CO-022`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (extiende B-01-020)
+
+**Qué apareció.**
+Con B-01-020 el borrador de una serie conocida heredaba autor y sinopsis, pero no las etiquetas
+(demografía, género, colección, estado de la serie), que son las que ordenan el catálogo público.
+El borrador no tenía dónde guardarlas, así que cada tomo nuevo nacía sin etiquetas.
+
+**Qué dice la especificación.**
+`Nada`. `CO-022` crea el producto «con los valores del borrador» y el borrador no declara etiquetas.
+
+**Qué se hizo.**
+El borrador gana **etiquetas**, con el mismo selector que el alta y la edición de producto. Al
+generarse, si la serie ya está en el catálogo, recibe las etiquetas activas de sus tomos; en la
+ficha se pueden agregar o quitar, y «Usar los datos de la serie» las vuelve a tomar. **Al
+confirmarse, el producto nace con las etiquetas del borrador.**
+
+**Qué habría que cambiar.**
+Modelo de dominio: `BorradorProducto` → `Etiqueta` (0..*). `CO-017`: el borrador de una serie
+conocida recibe sus etiquetas. `CO-022`, postcondiciones: se forma p → Etiqueta por cada etiqueta
+del borrador. `CU-ALT-REV` paso 2: las etiquetas se revisan como el resto de los datos.
+
+---
+
+### B-01-022 · La demora se registra sobre varios tomos a la vez, con un solo aviso por cliente
+
+**Tipo:** Desvío · **Fecha:** 2026-10-27 · **Alcance:** `CU-ALT-DEM`, `CO-014`, `CO-015`, `CU-ALT-TRA`
+**Estado:** Abierta — consultada y decidida por el responsable el 2026-10-27, antes de construirla
+
+**Qué apareció.**
+Un aviso de demora de un proveedor suele atrasar varios tomos a la vez («los siguientes títulos se
+reprograman para…»). Con la demora de a un tomo, cinco tomos son cinco recorridos completos
+—formulario, informe de impacto, confirmación—, y un Cliente que reservó tres de ellos recibe tres
+correos distintos con el mismo mensaje.
+
+**Qué dice la especificación.**
+> «El Administrador accede a la ficha del producto en Pre-venta desde el módulo de inventario y
+> selecciona "Registrar Demora".» (`CU-ALT-DEM` paso 1) · «envía a cada Cliente afectado la
+> notificación estructurada con las tres opciones de RF-15» (paso 6 (c)) ·
+> `confirmarRegistroDeDemora(producto)` (`CO-015`)
+
+El caso de uso y su contrato son de un producto por vez, y el aviso sale por cada producto.
+
+**Qué se hizo.** Con las decisiones del responsable:
+- **Varios tomos en una operación**: desde el aviso de demora (casillas en cada pre-venta que la
+  admite) y desde «Pre-ventas por llegar» («Demorar este grupo», con el grupo elegido de antemano).
+- **Cada tomo con su fecha nueva**, precargada con la que propone el aviso, y una nota común.
+- **Un informe de impacto que junta todos** (`CO-014` por tomo, con los totales y los clientes
+  distintos) y **una sola confirmación**.
+- Por dentro es **`CO-015` aplicado a cada tomo**, con sus postcondiciones y su entrada de
+  auditoría. **Si uno no se puede demorar** (otro Administrador lo demoró mientras tanto, la llegada
+  ya venció), **se registran los demás y se informa cuál quedó afuera y por qué**, como la
+  confirmación en lote de borradores.
+- **Un correo por Cliente** con todos sus tomos demorados de esa operación, cada uno con su pedido,
+  su llegada prevista y su fecha nueva, y el acceso a sus opciones (el pedido, si es uno; «Mis
+  pedidos», si son varios). La demora de un solo tomo sigue igual, desde la ficha del producto.
+
+**Qué habría que cambiar.**
+`CU-ALT-DEM`: un flujo alternativo «varios tomos», con el informe de impacto conjunto, la exclusión
+de los que no admiten demora y el aviso agrupado por Cliente en el paso 6 (c). `CO-014` y `CO-015`:
+aceptan una lista de productos (cada uno con su fecha nueva); las postcondiciones valen por
+producto, y la notificación es una por Cliente. El DSS de `CU-ALT-DEM` muestra la variante.
+
+---
+
+### B-01-023 · Los nombres de formato se reconocen sin tildes ni romanizaciones
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-ALT-NOV`, `CU-AVI-BOR`
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El responsable cargó «Sakamoto Days 24» desde Telegram con el formato «Tankobon». El catálogo lo tiene
+como «Tankōbon», con la o larga. El sistema comparaba los nombres sólo sin distinguir mayúsculas, así que
+el formato se descartó con el reparo «no existe o no se ofrece para Manga». Lo mismo le pasaba a un
+correo de proveedor que escribiera el nombre de otra manera.
+
+**Qué dice la especificación.**
+`Nada` sobre cómo se compara el nombre de formato que copia el modelo con el del catálogo.
+
+**Qué se hizo.**
+Los nombres de catálogo que llegan escritos por una persona o copiados por el modelo (formato, tipo,
+editorial) se comparan **sin mayúsculas, sin tildes ni signos y con la vocal larga japonesa unificada**.
+«Tankobon», «Tankoubon», «Tanko-bon» y «Tankōbon» son el mismo formato, «Rustica» es «Rústica» y
+«b 6» es «B6». La regla de que el formato tiene que ofrecerse para el tipo sigue igual. **No cambia la
+unicidad del catálogo**: dos formatos siguen siendo distintos según su nombre exacto; esto sólo decide a
+cuál se refiere un texto.
+
+**Qué habría que cambiar.**
+`CU-ALT-NOV` y la generación de borradores, Notas: el formato se reconoce por su nombre comparado sin
+mayúsculas, tildes ni signos.

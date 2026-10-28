@@ -1,0 +1,22 @@
+#cloud-config
+# Lo que la VM de Azure hace sola en su primer arranque (`crear_vm_azure.ps1`).
+#
+# Sólo lo que no depende del proyecto: el intercambio, la zona horaria y las
+# actualizaciones de seguridad. PostgreSQL, Caddy y el sistema se instalan
+# después, por SSH, con lo que dice `docs/despliegue/DEMOSTRACION.md`.
+
+# La B2ats_v2 tiene 1 GiB de memoria: sin intercambio, PostgreSQL y waitress
+# juntos rozan el límite y el kernel empieza a matar procesos.
+swap:
+  filename: /swapfile
+  size: 2G
+  maxsize: 2G
+
+# Las fechas del sistema (cierres de caja, vencimientos, el Temporizador) se
+# leen en la hora del negocio.
+timezone: America/Argentina/Buenos_Aires
+
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades

@@ -37,6 +37,7 @@ from apps.pedidos.models import LineaPedido, Pedido, TransaccionPago
 from apps.pedidos.servicios import registrar_transicion
 from apps.puntos import servicios as puntos
 from apps.puntos.models import LotePuntos
+from apps.suppliers import llegadas
 from apps.tienda import carrito as servicio_carrito
 from apps.tienda.envio import costo_de_envio, estado_de_envio
 from apps.tienda.models import Carrito, CobroEnCurso, LineaCarrito
@@ -522,6 +523,7 @@ def registrar_resultado(referencia, *, referencia_pago, monto, pasarela=None):
         else:
             if pedido is not None:
                 despues_del_commit(_avisar_confirmacion, pedido, cobro.origen)
+                despues_del_commit(_avisar_venta, pedido)
 
     if fallo is not None and referencia_pago:
         if pasarela is not None:
@@ -597,6 +599,10 @@ def _materializar(cobro, referencia_pago):
             raise FalloDeMaterializacion("Un producto del pedido dejó de estar a la venta.")
         if producto.estado == Producto.ACTIVO and producto.stock < linea["cantidad"]:
             raise FalloDeMaterializacion(f"Ya no hay stock suficiente de «{producto.titulo}».")
+        # Plan 00 del circuito: el cupo se vuelve a contar con el producto bloqueado.
+        # Dos clientes que pagan el último lugar a la vez: el segundo se reembolsa.
+        if producto.estado == Producto.PRE_VENTA and llegadas.cupo(producto) < linea["cantidad"]:
+            raise FalloDeMaterializacion(f"Se completó la pre-venta de «{producto.titulo}».")
 
     con_pre_venta = any(
         productos[linea["producto"]].estado == Producto.PRE_VENTA for linea in cobro.lineas
@@ -651,6 +657,9 @@ def _materializar(cobro, referencia_pago):
                 estado=Producto.AGOTADO if queda == 0 else Producto.ACTIVO,
                 actualizado_en=ahora,
             )
+            if queda == 0:
+                # Decisión 4: se agotó lo del local; si hay pedido en camino, se reserva.
+                llegadas.al_agotarse(producto)
 
     # (a)(b)(c) La transacción de pago. Sin pasarela (A2), no hay.
     if referencia_pago:
@@ -726,6 +735,16 @@ def _avisar_confirmacion(pedido, origen=""):
         )
     except Exception:  # noqa: BLE001 - el pedido ya existe: un correo caído no lo deshace
         logger.exception("No se pudo enviar la confirmación del pedido %s.", pedido.numero)
+
+
+def _avisar_venta(pedido):
+    """B-19-011: el aviso de venta al Administrador. Si falla, el pedido queda."""
+    from apps.avisos import ventas
+
+    try:
+        ventas.avisar_venta(pedido)
+    except Exception:  # noqa: BLE001 - un aviso caído no deshace la venta
+        logger.exception("No se pudo avisar la venta del pedido %s.", pedido.numero)
 
 
 def _avisar_fallo(cobro):

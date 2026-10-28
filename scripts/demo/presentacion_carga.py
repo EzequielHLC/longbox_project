@@ -416,6 +416,7 @@ def cargar(origen):
         tipo_por_defecto=tipos["Manga"],
         procesa_novedades=True,
     )
+    preventas = carga.pedidos_de_las_preventas({ivrea.pk: proveedor})
     for indice in range(3):
         correo = armar(
             proveedor.correo_comercial,
@@ -472,6 +473,7 @@ def cargar(origen):
     print(
         f"Cargado: {Usuario.objects.count()} cuentas, {len(series)} series, {len(altas)} tomos "
         f"de Ivrea ({len(procesadas)} con portada propia), "
+        f"{preventas} pre-ventas con su pedido en camino, "
         f"{Oferta.objects.count()} ofertas, {Banner.objects.count()} banners, "
         f"{FilaPortada.objects.count()} filas de portada"
     )

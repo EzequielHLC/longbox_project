@@ -102,7 +102,7 @@ def main():
         paquete = io.BytesIO()
         with tarfile.open(fileobj=paquete, mode="w") as tar:
             tar.add(copia, arcname=".", filter=_sin_git)
-        resultado = subprocess.run(  # nosec B603 B607
+        resultado = subprocess.run(  # nosec B603 B607 - docker con argumentos fijos
             [
                 "docker",
                 "run",
@@ -130,9 +130,9 @@ def main():
         )
         salida = (resultado.stdout + resultado.stderr).decode("utf-8", "replace")
     finally:
-        subprocess.run(
+        subprocess.run(  # nosec B603 B607 - git con argumentos fijos, sin shell
             ["git", "worktree", "remove", "--force", str(copia)], cwd=RAIZ, capture_output=True
-        )  # nosec
+        )
         shutil.rmtree(copia.parent, ignore_errors=True)
     destino = SALIDA / f"mutacion_{cual}.txt"
     destino.write_text(salida, encoding="utf-8")

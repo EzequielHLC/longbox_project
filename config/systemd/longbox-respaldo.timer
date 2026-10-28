@@ -1,0 +1,11 @@
+# Una vez por día, de madrugada. Si la VM estaba apagada a esa hora, corre al
+# arrancar (`Persistent`).
+[Unit]
+Description=Longbox: respaldo diario
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -44,6 +44,7 @@ CONFIANZA_SIN_REVISAR = "confianza_sin_revisar"
 YA_EXISTE = "ya_existe"
 NO_ESTA_ABIERTO = "no_esta_abierto"
 CATALOGO_DADO_DE_BAJA = "catalogo_dado_de_baja"
+PRECIO_APARTE_DE_LA_TABLA = "precio_aparte_de_la_tabla"
 
 MOTIVOS = {
     BLOQUEANTES_VACIOS: "Le faltan campos obligatorios",
@@ -51,6 +52,7 @@ MOTIVOS = {
     YA_EXISTE: "Mientras tanto se cargó al catálogo",
     NO_ESTA_ABIERTO: "Ya estaba resuelto",
     CATALOGO_DADO_DE_BAJA: "Tiene una editorial, un tipo o un formato dados de baja",
+    PRECIO_APARTE_DE_LA_TABLA: "Su precio no es el de la tabla de referencia y hay que confirmarlo",
 }
 
 
@@ -125,7 +127,7 @@ def completar(borrador):
 # ---------------------------------------------------------------------------
 
 
-def confirmar(borrador, *, actor, ip=None, en_lote=False):
+def confirmar(borrador, *, actor, ip=None, en_lote=False, confirma_precio_manual=False):
     """Convierte un borrador en un producto del catálogo (CU-ALT-REV paso 3).
 
     `en_lote` cambia **una** cosa: en lote, un borrador con confianza baja sin
@@ -157,6 +159,11 @@ def confirmar(borrador, *, actor, ip=None, en_lote=False):
         if en_lote and actual.confianzas_bajas_sin_revisar:
             return Confirmacion(borrador=actual, motivo=CONFIANZA_SIN_REVISAR)
 
+        # B-01-018, como CU-ALT-NAC A3: un precio distinto del de la tabla rompe el
+        # vínculo y se confirma uno por uno. En lote nunca está confirmado: se excluye.
+        if _precio_aparte_de_la_tabla(actual) and not confirma_precio_manual:
+            return Confirmacion(borrador=actual, motivo=PRECIO_APARTE_DE_LA_TABLA)
+
         # El duplicado se vuelve a chequear: entre la generación del borrador y
         # este momento pueden haber pasado días, y el producto pudo cargarse a
         # mano desde el alta en lote.
@@ -172,11 +179,17 @@ def confirmar(borrador, *, actor, ip=None, en_lote=False):
             return Confirmacion(borrador=actual, motivo=YA_EXISTE, producto_existente=existente.pk)
 
         try:
-            producto = _crear_producto(actual)
+            # Punto de guardado propio: sin él, el choque deja la transacción
+            # entera abortada y la consulta de abajo ya no se puede hacer.
+            with transaction.atomic():
+                producto = _crear_producto(actual)
         except IntegrityError:
             # Carrera contra otra alta: la restricción de la base es la que
             # realmente garantiza la unicidad, y acá se la trata como lo que es
-            # —un duplicado— y no como un error de sistema.
+            # —un duplicado— y no como un error de sistema. **Sólo si de verdad
+            # hay uno** (plan 00 de cierre de deuda, D1): un error de integridad
+            # sin producto que choque es un defecto y tiene que salir, como en
+            # `services.registrar_lote`.
             existente = services.buscar_duplicado(
                 actual.titulo,
                 actual.volumen,
@@ -185,11 +198,9 @@ def confirmar(borrador, *, actor, ip=None, en_lote=False):
                 actual.editorial,
                 actual.isbn,
             )
-            return Confirmacion(
-                borrador=actual,
-                motivo=YA_EXISTE,
-                producto_existente=existente.pk if existente else None,
-            )
+            if existente is None:
+                raise
+            return Confirmacion(borrador=actual, motivo=YA_EXISTE, producto_existente=existente.pk)
 
         sesion = abrir_o_seguir(actor)
         actual.estado = BorradorProducto.CONFIRMADO
@@ -209,11 +220,24 @@ def confirmar(borrador, *, actor, ip=None, en_lote=False):
         objetivo=producto,
         detalle=(
             f"«{producto}» desde el borrador #{actual.pk} "
-            f"(correo #{actual.correo_id}, {actual.proveedor}); "
-            f"stock inicial {actual.stock_inicial}"
+            + (
+                f"(correo #{actual.correo_id}, {actual.proveedor}); "
+                if actual.correo_id
+                else f"(cargado desde Telegram por {actual.cargado_por}); "
+            )
+            + f"stock inicial {actual.stock_inicial}"
         ),
     )
     return Confirmacion(borrador=actual, producto=producto)
+
+
+def _precio_aparte_de_la_tabla(borrador):
+    fila = borrador.precio_de_la_tabla
+    return (
+        fila is not None
+        and borrador.precio is not None
+        and precios.redondear_a_peso(fila.pvp) != precios.redondear_a_peso(borrador.precio)
+    )
 
 
 def _crear_producto(borrador):
@@ -233,7 +257,7 @@ def _crear_producto(borrador):
     # marca no aplica.
     manual = referencia is not None and precios.redondear_a_peso(referencia.pvp) != precio
 
-    return ProductoEditorial.objects.create(
+    producto = ProductoEditorial.objects.create(
         titulo=borrador.titulo,
         volumen=borrador.volumen,
         isbn=borrador.isbn,
@@ -248,7 +272,9 @@ def _crear_producto(borrador):
         precio_referencia=None if manual else referencia,
         precio_manual=manual,
         fecha_llegada=borrador.fecha_llegada,
-        stock=borrador.stock_inicial,
+        # B-01-016: lo del borrador es lo que se le pide al proveedor al cerrar la
+        # sesión, no unidades en la mano. Entran con la llegada.
+        stock=0,
         descripcion=borrador.sinopsis,
         autor=borrador.autor,
         solo_adultos=borrador.solo_adultos,
@@ -258,6 +284,9 @@ def _crear_producto(borrador):
         # lo piden.
         proveedor=borrador.proveedor,
     )
+    # B-01-020: las etiquetas del borrador, que son las de la serie si ya estaba.
+    producto.etiquetas.set(borrador.etiquetas.all())
+    return producto
 
 
 def confirmar_en_lote(borradores, *, actor, ip=None):
@@ -282,12 +311,14 @@ def confirmar_en_lote(borradores, *, actor, ip=None):
 # ---------------------------------------------------------------------------
 
 
-def rechazar(borrador, *, actor, motivo, ip=None):
+def rechazar(borrador, *, actor, motivo, ip=None, desde=""):
     """Descarta un borrador. **El motivo es obligatorio** (CU-ALT-REV).
 
     Es el mismo criterio con el que el descarte de un correo lo exige: una cola
     llena de rechazos sin explicación no sirve para entender nada después, ni
     para decidir a qué proveedores conviene dejarles el procesamiento prendido.
+
+    `desde` nombra el canal en la auditoría cuando no es la web (B-19-008).
     """
     motivo = (motivo or "").strip()
     if not motivo:
@@ -319,7 +350,7 @@ def rechazar(borrador, *, actor, motivo, ip=None):
         actor=actor,
         ip=ip,
         objetivo=actual,
-        detalle=f"«{actual}» — {motivo}",
+        detalle=f"«{actual}» — {motivo}" + (f" (desde {desde})" if desde else ""),
     )
     return actual
 
@@ -346,8 +377,10 @@ def cerrar(sesion, *, actor, ip=None):
     )
 
     envios = [
-        _pedir_a(proveedor, borradores, actor)
+        _pedir_a(proveedor, borradores, actor, sesion)
         for proveedor, borradores in _por_proveedor(confirmados).items()
+        # Un borrador cargado desde Telegram sin proveedor no tiene a quién pedirle.
+        if proveedor is not None
     ]
 
     sesion.estado = SesionRevision.CERRADA
@@ -367,18 +400,30 @@ def _por_proveedor(borradores):
     return grupos
 
 
-def _pedir_a(proveedor, borradores, actor):
-    """`CO-074` completo, encadenado por `CO-025`: el envío y su entrada en el log."""
+def _pedir_a(proveedor, borradores, actor, sesion):
+    """`CO-074` completo, encadenado por `CO-025`: el envío, su entrada en el log y,
+    si sale, el pedido registrado que espera la llegada."""
+    from apps.suppliers.models import PedidoProveedor
+
     lineas = [
         pedidos.LineaDePedido(
             titulo=borrador.titulo,
             volumen=borrador.volumen,
             isbn=borrador.isbn,
             cantidad=borrador.stock_inicial,
+            producto=borrador.producto,
         )
         for borrador in borradores
     ]
-    return pedidos.enviar_y_registrar(proveedor, lineas, actor)
+    fechas = [borrador.fecha_llegada for borrador in borradores if borrador.fecha_llegada]
+    return pedidos.enviar_y_registrar(
+        proveedor,
+        lineas,
+        actor,
+        origen=PedidoProveedor.REVISION,
+        sesion=sesion,
+        fecha_estimada=min(fechas) if fechas else None,
+    )
 
 
 def _auditar_cierre(sesion, confirmados, envios, *, actor, ip):

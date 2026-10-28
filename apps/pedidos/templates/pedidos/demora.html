@@ -8,14 +8,25 @@ CU-ALT-DEM — pasos 2 y 3 (formulario), 4 (informe de impacto, CO-014) y 5
 {% block seccion %}Catálogo{% endblock %}
 
 {% block contenido %}
-{% url 'catalog:producto_detalle' producto.pk as volver %}
+{% if correo %}
+  {% url 'suppliers:correo_detalle' correo.pk as volver %}
+{% else %}
+  {% url 'catalog:producto_detalle' producto.pk as volver %}
+{% endif %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
-    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}</span>
+    <span class="miga">{% if correo %}{% include "_boton_texto.html" with url=volver texto="Volver al correo" atras=1 %}{% else %}{% include "_boton_texto.html" with url=volver texto="Ficha del producto" atras=1 %}{% endif %}</span>
     <h1>Registrar demora</h1>
     <p>{{ producto }} · {{ producto.editorial }} · llegada {{ producto.fecha_llegada|date:"d/m/Y"|default:"sin fecha" }}</p>
   </div>
 </header>
+
+{% if correo and not informe %}
+  <p class="mensaje formulario--angosto">
+    {% include "_iconos.html" with icono="modelo" %}
+    <span>La fecha y la nota las propone el aviso «{{ correo.asunto|default:"sin asunto" }}». Revisalas: nada se registra hasta confirmar.</span>
+  </p>
+{% endif %}
 
 {% if informe %}
   <div class="panel panel--atencion formulario--angosto pila-4">

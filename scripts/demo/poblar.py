@@ -487,6 +487,11 @@ class Poblador:
                     tipo_por_defecto=self.tipos["Manga"],
                 )
             )
+        self.proveedor_por_editorial = {
+            p.editorial_id: p
+            for p in proveedores
+            if p.editorial_id and p.estado == Proveedor.ACTIVO
+        }
         validos = [p for p in proveedores if p.estado == Proveedor.ACTIVO and p.procesa_novedades]
         for indice in range(TOTAL_CORREOS):
             proveedor = self.azar.choice(validos)
@@ -518,6 +523,36 @@ class Poblador:
                 cambios["motivo"] = "El modelo de lenguaje no respondió a tiempo."
             CorreoProveedor.objects.filter(pk__in=tramo).update(**cambios)
         return len(ids)
+
+    # -------------------------------------------------------------------
+    def pedidos_de_las_preventas(self, proveedores=None):
+        """Cada pre-venta se reserva contra lo que viene en camino (plan 00 del
+        circuito con los proveedores): sin pedido, su cupo es cero y la tienda la
+        muestra completa. Un pedido por editorial y fecha, como lo haría el alta
+        de un lote; `proveedores` va de editorial a proveedor."""
+        from apps.catalog.models import Producto, ProductoEditorial
+        from apps.suppliers import llegadas
+        from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor
+
+        proveedores = proveedores or {}
+        en_camino = LineaPedidoProveedor.objects.filter(
+            estado__in=LineaPedidoProveedor.ABIERTAS
+        ).values("producto_id")
+        grupos = {}
+        for producto in (
+            ProductoEditorial.objects.filter(estado=Producto.PRE_VENTA)
+            .exclude(pk__in=en_camino)
+            .order_by("pk")
+        ):
+            grupos.setdefault((producto.editorial_id, producto.fecha_llegada), []).append(producto)
+        for (editorial, fecha), productos in grupos.items():
+            llegadas.registrar(
+                proveedores.get(editorial),
+                PedidoProveedor.LOTE,
+                [(p, self.azar.choice([6, 8, 10, 12, 15, 20])) for p in productos],
+                fecha_estimada=fecha,
+            )
+        return sum(len(productos) for productos in grupos.values())
 
     # -------------------------------------------------------------------
     def auditoria(self):
@@ -617,6 +652,10 @@ def main():
     )
     poblador.medir("no editoriales", poblador.no_editoriales)
     poblador.medir("proveedores y correos", lambda: poblador.proveedores_y_correos(series))
+    poblador.medir(
+        "pedidos de las pre-ventas",
+        lambda: poblador.pedidos_de_las_preventas(poblador.proveedor_por_editorial),
+    )
     poblador.medir("auditoría", poblador.auditoria)
     poblador.medir("tienda", poblador.tienda)
 

@@ -22,6 +22,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import MaxValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models.functions import Lower
@@ -102,6 +103,27 @@ NOMBRE_MINIMO = 2
 # 5 MB. Una portada es una tapa, no un escaneo de imprenta; el tope evita que
 # alguien suba un archivo de 40 MB y deje la pantalla colgada subiéndolo.
 PORTADA_MAXIMA_BYTES = 5 * 1024 * 1024
+
+# Lo que el selector de archivos ofrece: los mismos formatos que `core.imagenes`
+# admite, así no se elige un GIF que después se rechaza.
+FORMATOS_DE_IMAGEN = "image/jpeg,image/png,image/webp"
+
+
+def portada_procesada(archivo):
+    """RNF-05 en la portada, como en las imágenes adicionales (plan 00 de cierre de
+    deuda, D2): lo que se guarda es el WebP de 800 px y el original no llega al
+    almacenamiento.
+
+    Sólo se procesa lo recién subido. Lo demás pasa como llegó: `None` (no se
+    subió nada), `False` («Quitar» en la edición) o la portada que ya estaba.
+    """
+    if not isinstance(archivo, UploadedFile):
+        return archivo
+    try:
+        return imagenes_util.procesar(archivo)
+    except imagenes_util.ImagenInvalida as error:
+        raise forms.ValidationError(str(error)) from error
+
 
 # Estados con los que puede *nacer* un producto. Los otros tres del modelo
 # —agotado, cancelado por editorial, descatalogado— son consecuencia de algo que
@@ -514,7 +536,7 @@ class ItemLoteForm(forms.Form):
     portada = forms.ImageField(
         label="Portada",
         required=False,
-        widget=forms.ClearableFileInput(attrs={"accept": "image/*"}),
+        widget=forms.ClearableFileInput(attrs={"accept": FORMATOS_DE_IMAGEN}),
     )
 
     def __init__(self, *args, cabecera=None, **kwargs):
@@ -592,7 +614,7 @@ class ItemLoteForm(forms.Form):
                 f"La imagen pesa {portada.size // 1024 // 1024} MB y el máximo es "
                 f"{PORTADA_MAXIMA_BYTES // 1024 // 1024} MB."
             )
-        return portada
+        return portada_procesada(portada)
 
     def clean(self):
         datos = super().clean()
@@ -940,6 +962,37 @@ CHOQUE_DE_EDICION = (
     "producto existente."
 )
 
+# `CO-028` E3 y `CO-030` E2: el código identifica, así que el choque bloquea y
+# enlaza la ficha en conflicto. Sin esto el campo decía el genérico de Django
+# («Ya existe Producto con este Código de barras»), sin enlace ni producto.
+CODIGO_AJENO = "El {criterio} ya pertenece a «{producto}» ({codigo})."
+
+
+class CodigosQueIdentificanMixin:
+    """El código interno y el de barras de otro producto bloquean, con enlace.
+
+    `conflicto` queda con el producto y el criterio para que la pantalla dibuje el
+    enlace; el mensaje del campo dice lo mismo para quien no lo vea. Un campo que
+    ya tiene un error (un formato inválido) no se compara.
+    """
+
+    CODIGOS_QUE_IDENTIFICAN = (("codigo", "código interno"), ("codigo_barras", "código de barras"))
+
+    conflicto = None
+
+    def _revisar_codigos(self, datos):
+        for campo, criterio in self.CODIGOS_QUE_IDENTIFICAN:
+            valor = datos.get(campo)
+            if campo not in self.fields or campo in self.errors or not valor:
+                continue
+            otro = Producto.objects.filter(**{campo: valor}).exclude(pk=self.instance.pk).first()
+            if otro is None:
+                continue
+            self.conflicto = {"producto": otro, "criterio": criterio}
+            self.add_error(
+                campo, CODIGO_AJENO.format(criterio=criterio, producto=otro, codigo=otro.codigo)
+            )
+
 
 class VariasImagenesWidget(forms.ClearableFileInput):
     """Un `input[type=file]` que acepta varios archivos de una vez."""
@@ -989,9 +1042,7 @@ class GaleriaFormMixin:
                 required=False, widget=forms.HiddenInput
             )
             if "portada" in self.fields:
-                self.fields["portada"].widget = PortadaWidget(
-                    attrs={"accept": "image/jpeg,image/png,image/webp"}
-                )
+                self.fields["portada"].widget = PortadaWidget(attrs={"accept": FORMATOS_DE_IMAGEN})
                 self.fields["portada"].label = "Reemplazar la portada"
             self.fields["nueva_portada"] = forms.ModelChoiceField(
                 label="Usar como portada",
@@ -1007,7 +1058,12 @@ class GaleriaFormMixin:
                 "detalles. JPG, PNG o WebP; se guardan en WebP."
             ),
         )
-        self.fields["imagenes_nuevas"].widget.attrs["accept"] = "image/jpeg,image/png,image/webp"
+        self.fields["imagenes_nuevas"].widget.attrs["accept"] = FORMATOS_DE_IMAGEN
+        if "portada" in self.fields:
+            self.fields["portada"].widget.attrs["accept"] = FORMATOS_DE_IMAGEN
+
+    def clean_portada(self):
+        return portada_procesada(self.cleaned_data.get("portada"))
 
     def clean_orden_imagenes(self):
         texto = self.cleaned_data.get("orden_imagenes") or ""
@@ -1075,7 +1131,7 @@ class GaleriaFormMixin:
         return procesadas
 
 
-class ProductoNoEditorialForm(GaleriaFormMixin, forms.ModelForm):
+class ProductoNoEditorialForm(CodigosQueIdentificanMixin, GaleriaFormMixin, forms.ModelForm):
     """Alta de TCG, figura, merchandising o insumo (CU-CAT-ALT).
 
     **Es de a uno, no por lote**, a diferencia del alta editorial. No es una
@@ -1198,10 +1254,11 @@ class ProductoNoEditorialForm(GaleriaFormMixin, forms.ModelForm):
                 "titulo",
                 ADVERTENCIA_DUPLICADO.format(producto=self.duplicado),
             )
+        self._revisar_codigos(datos)
         return datos
 
 
-class ProductoEditorialForm(GaleriaFormMixin, forms.ModelForm):
+class ProductoEditorialForm(CodigosQueIdentificanMixin, GaleriaFormMixin, forms.ModelForm):
     """Edición de un tomo ya cargado (CU-CAT-EDI).
 
     **No existe un alta editorial de a uno**: el material editorial entra por
@@ -1338,6 +1395,7 @@ class ProductoEditorialForm(GaleriaFormMixin, forms.ModelForm):
         )
         if self.duplicado:
             self.add_error("titulo", CHOQUE_DE_EDICION.format(producto=self.duplicado))
+        self._revisar_codigos(datos)
 
         self._revisar_precio(datos)
         return datos
@@ -1940,8 +1998,12 @@ class ConfiguracionForm(forms.ModelForm):
             "dias_aviso_preventa",
             "cantidad_minima_restock",
             "margen_stock_restock",
-            "frecuencia_casilla_horas",
+            "frecuencia_casilla_minutos",
+            "hora_resumen",
         ]
+        widgets = {
+            "hora_resumen": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")
+        }  # noqa: RUF012
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1956,9 +2018,14 @@ class ConfiguracionForm(forms.ModelForm):
         self.fields["margen_stock_restock"].widget.attrs.update(
             {"inputmode": "numeric", "min": "0"}
         )
-        self.fields["frecuencia_casilla_horas"].widget.attrs.update(
+        self.fields["frecuencia_casilla_minutos"].widget.attrs.update(
             {"inputmode": "numeric", "min": "1"}
         )
+        # Sin hora, queda la que estaba: la sección no obliga a tocarla.
+        self.fields["hora_resumen"].required = False
+
+    def clean_hora_resumen(self):
+        return self.cleaned_data.get("hora_resumen") or self.instance.hora_resumen
 
     def clean_stock_inicial_por_defecto(self):
         stock = self.cleaned_data["stock_inicial_por_defecto"]
@@ -1999,6 +2066,8 @@ class CompraOnlineForm(forms.ModelForm):
             "dias_aviso_retencion",
             "plazo_devolucion_dias",
             "plazo_garantia_dias",
+            "maximo_reserva_preventa",
+            "margen_cupo_preventa",
             "equivalencia_puntos",
             "porcentaje_puntos",
             "caducidad_puntos_meses",
@@ -2023,8 +2092,12 @@ class CompraOnlineForm(forms.ModelForm):
             "ventana_decision_horas",
             "plazo_retencion_meses",
             "dias_aviso_retencion",
+            "maximo_reserva_preventa",
         ):
             self.fields[campo].widget.attrs.update({"inputmode": "numeric", "min": "1"})
+        self.fields["margen_cupo_preventa"].widget.attrs.update(
+            {"inputmode": "numeric", "min": "0", "max": "50"}
+        )
         for campo in ("plazo_devolucion_dias", "plazo_garantia_dias"):
             self.fields[campo].widget.attrs.update(
                 {"inputmode": "numeric", "min": str(ConfiguracionSistema.PISO_LEGAL_DEVOLUCION)}
@@ -2042,6 +2115,12 @@ class CompraOnlineForm(forms.ModelForm):
 
 
 class BorradorForm(forms.ModelForm):
+    etiquetas = _campo_etiquetas(
+        "Etiquetas",
+        "Si el catálogo ya tiene tomos de la serie, vienen las suyas. "
+        "El producto las recibe al confirmarse.",
+    )
+
     """Edición de un borrador antes de confirmarlo (CU-ALT-REV paso 2).
 
     Es un `ModelForm` y no el `ItemLoteForm` del alta manual aunque los campos se
@@ -2072,10 +2151,12 @@ class BorradorForm(forms.ModelForm):
             "autor",
             "sinopsis",
             "portada",
+            "etiquetas",
         ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, confirmando=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.confirmando = confirmando
 
         # Los catálogos activos, más el que el borrador ya trae aunque esté dado
         # de baja: así se ve cuál es, y el reparo explica por qué no se puede
@@ -2087,21 +2168,54 @@ class BorradorForm(forms.ModelForm):
         self.fields["tipo"].queryset = con_el_actual(tipos_activos(), borrador.tipo_id)
         self.fields["formato"].queryset = con_el_actual(formatos_activos(), borrador.formato_id)
         mostrar_medidas(self.fields["formato"])
+        actuales = list(borrador.etiquetas.values_list("pk", flat=True)) if borrador.pk else []
+        self.fields["etiquetas"].queryset = (
+            etiquetas_activas() | Etiqueta.objects.filter(pk__in=actuales)
+        ).distinct()
 
         self.fields["volumen"].validators.append(MaxValueValidator(VOLUMEN_MAXIMO))
         self.fields["stock_inicial"].validators.append(MaxValueValidator(STOCK_MAXIMO))
+        self.fields["portada"].widget.attrs["accept"] = FORMATOS_DE_IMAGEN
+        # B-01-016: no es stock en la mano; el producto nace sin stock y esto se pide.
+        self.fields["stock_inicial"].label = "Cantidad a pedir"
         self.fields["stock_inicial"].help_text = (
-            "Las unidades que se le van a pedir al proveedor al cerrar la revisión."
+            "Las unidades que se le van a pedir al proveedor al cerrar la revisión. "
+            "El producto nace sin stock: entran cuando llegan."
         )
         self.fields["isbn"].required = False
         self.fields["fecha_llegada"].widget = forms.DateInput(
             attrs={"type": "date"}, format="%Y-%m-%d"
         )
+        # B-01-018: sin precio, el borrador arranca con el de la tabla de
+        # referencia. Es una propuesta del sistema: se guarda al guardar o confirmar.
+        fila = borrador.precio_de_la_tabla
+        if not self.is_bound and borrador.precio is None and fila is not None:
+            self.initial["precio"] = fila.pvp
+        # B-01-020: lo vacío, con lo que el catálogo ya sabe de la serie.
+        serie = services.serie_de(borrador.titulo, borrador.editorial)
+        if not self.is_bound and serie is not None:
+            if not borrador.autor:
+                self.initial["autor"] = serie.autor
+            if not borrador.sinopsis:
+                self.initial["sinopsis"] = serie.sinopsis
+            if serie.solo_adultos:
+                self.initial["solo_adultos"] = True
+            if not borrador.etiquetas.exists():
+                self.initial["etiquetas"] = [etiqueta.pk for etiqueta in serie.etiquetas]
+
+    # CU-ALT-NAC A3 aplicado a la revisión (B-01-018): un precio distinto del de la
+    # tabla rompe el vínculo, y se confirma. Se exige sólo al confirmar el borrador.
+    confirma_precio_manual = forms.BooleanField(
+        label="Confirmo la edición del precio", required=False
+    )
 
     def clean_titulo(self):
         # Mismo criterio que el alta: sin normalizar, "Akira  vol" y "Akira vol"
         # serían dos productos distintos para cualquiera que compare sin hacerlo.
         return " ".join((self.cleaned_data.get("titulo") or "").split())
+
+    def clean_portada(self):
+        return portada_procesada(self.cleaned_data.get("portada"))
 
     def clean_isbn(self):
         """Se normaliza y **se verifica el dígito de control** (A19).
@@ -2145,6 +2259,18 @@ class BorradorForm(forms.ModelForm):
         if precio is not None and precio > IMPORTE_MAXIMO:
             self.add_error("precio", f"El máximo es ${IMPORTE_MAXIMO}.")
 
+        fila = precio_de_referencia(datos.get("editorial"), tipo, formato)
+        datos["precio_aparte_de_la_tabla"] = (
+            fila is not None
+            and precio is not None
+            and precios.redondear_a_peso(fila.pvp) != precios.redondear_a_peso(precio)
+        )
+        if (
+            self.confirmando
+            and datos["precio_aparte_de_la_tabla"]
+            and not datos.get("confirma_precio_manual")
+        ):
+            self.add_error("precio", ADVERTENCIA_PRECIO_MANUAL_NACIONAL)
         return datos
 
 

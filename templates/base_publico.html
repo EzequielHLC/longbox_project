@@ -24,6 +24,10 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
 
 {% block clase_body %}modo-publico superficie-noche{% endblock %}
 
+{% block cuerpo_inicio %}
+{% include "_capa_carga.html" %}
+{% endblock %}
+
 {% block encabezado %}
 {% with actual=request.resolver_match.view_name %}
 {% comment %}

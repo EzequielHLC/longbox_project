@@ -15,7 +15,11 @@ from django.utils import timezone
 
 from apps.accounts.tests.factories import UsuarioFactory
 from apps.catalog.models import Producto
-from apps.catalog.tests.factories import ProductoFactory, TipoFactory
+from apps.catalog.tests.factories import (
+    ProductoFactory,
+    ProductoNoEditorialFactory,
+    TipoFactory,
+)
 from apps.core.models import RegistroAuditoria
 from apps.pedidos.models import LineaPedido, Pedido
 from apps.pedidos.tests.util import crear_pedido
@@ -153,7 +157,9 @@ def test_CO204_solicitudes_de_reposicion_en_espera_del_rango(client_admin):
     agotado = ProductoFactory(
         titulo="Akira", codigo="AKI-1", tipo=manga, stock=0, estado=Producto.AGOTADO
     )
-    otro = ProductoFactory(
+    # «Figura» es la categoría no editorial que siembra la migración: su producto
+    # es del mismo rubro (I-05, en la base desde el plan 00 de cierre de deuda).
+    otro = ProductoNoEditorialFactory(
         titulo="Gojo", codigo="GOJ-1", tipo=figura, stock=0, estado=Producto.AGOTADO
     )
     for _ in range(2):

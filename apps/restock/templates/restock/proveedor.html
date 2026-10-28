@@ -27,11 +27,18 @@ Volver no registra nada.
       {% endfor %}
     </ul>
     {% if grupo.despachable %}
-      <form method="post" class="fila-5">
+      <form method="post" class="pila-3">
         {% csrf_token %}
         <input type="hidden" name="accion" value="despachar">
+        <div class="campo">
+          <label for="fecha-estimada" class="etiqueta">Llegada estimada</label>
+          <input type="date" id="fecha-estimada" name="fecha_estimada" aria-describedby="ayuda-fecha-estimada">
+          <p id="ayuda-fecha-estimada" class="ayuda">Opcional. Lo que está agotado se ofrece en pre-venta con esta fecha.</p>
+        </div>
+        <div class="fila-5">
         <button type="submit" class="boton-primario">Enviar el pedido</button>
         {% include "_boton_texto.html" with url=volver texto="Volver" %}
+        </div>
       </form>
     {% endif %}
   </section>

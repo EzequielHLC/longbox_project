@@ -1,0 +1,23 @@
+# El sistema en la VM (docs/despliegue/DEMOSTRACION.md, ruta VM): waitress en
+# 127.0.0.1:8000, detrás de Caddy. Lo instala `scripts/despliegue/instalar_en_vm.sh`.
+[Unit]
+Description=Longbox (waitress)
+After=network-online.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=longbox
+Group=longbox
+WorkingDirectory=/srv/longbox
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+Environment=PYTHONUNBUFFERED=1
+# Cuatro hilos y no los ocho de Windows: la máquina tiene 1 GiB.
+ExecStart=/srv/longbox/venv/bin/python manage.py servir --hilos 4
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

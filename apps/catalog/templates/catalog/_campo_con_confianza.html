@@ -25,13 +25,17 @@ Tres niveles, tres tratamientos:
   {% for clave, dato in confianzas.items %}
     {% if clave == nombre %}
       {% if dato.nivel == "baja" %}
-        <label class="casilla casilla--critica reparo">
+        <label class="casilla casilla--critica reparo{% if exenta %} hidden{% endif %}" data-confianza="{{ dato.campo }}">
           <input type="checkbox" name="revisado" value="{{ dato.campo }}" {% if dato.revisado %}checked{% endif %}>
           <span>
             El modelo declaró confianza baja en este dato.
             Márquelo como revisado para poder confirmar.
           </span>
         </label>
+        {% if dato.campo == "precio" %}
+          {% comment %}B-01-018: el precio de la tabla no sale del modelo; su confianza no cuenta.{% endcomment %}
+          <p class="ayuda{% if not exenta %} hidden{% endif %}" data-confianza-exenta>Es el precio de la tabla de referencia: no hace falta revisarlo.</p>
+        {% endif %}
       {% elif dato.nivel == "media" %}
         <p class="ayuda">El modelo tuvo que interpretarlo (confianza media).</p>
       {% endif %}

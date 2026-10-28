@@ -36,6 +36,9 @@ class LineaDePedido:
     volumen: int | None
     isbn: str
     cantidad: int
+    # El producto del catálogo, para registrar el pedido cuando sale (plan 00 del
+    # circuito con los proveedores). El correo no lo usa.
+    producto: object = None
 
     def como_texto(self):
         """Una línea del cuerpo del correo, legible por una persona.
@@ -59,6 +62,8 @@ class ResultadoDeEnvio:
     enviado: bool = False
     intentos: int = 0
     error: str = ""
+    # El pedido registrado, si salió y sus líneas traían producto.
+    pedido: object = None
 
     def __bool__(self):
         return self.enviado
@@ -165,11 +170,14 @@ def enviar_pedido(proveedor, lineas):
     return resultado
 
 
-def enviar_y_registrar(proveedor, lineas, actor=None):
+def enviar_y_registrar(proveedor, lineas, actor=None, *, origen=None, **referencias):
     """`CO-074` completo: el envío, su entrada en el log y E2.
 
     Sin correo registrado no se intenta (E2). Lo invocan `CU-ALT-REV` al cerrar
-    la sesión y `CU-RST-APR` al despachar; cada uno decide cómo seguir.
+    la sesión, `CU-RST-APR` al despachar y el pedido a mano; cada uno decide cómo
+    seguir. **Si sale**, queda registrado como pedido a proveedor con su `origen`
+    y sus `referencias` (`propuesta`, `sesion`, `fecha_estimada`): es lo que da
+    cupo a la pre-venta y lo que se espera en «Pedidos por llegar».
     """
     from apps.core.models import RegistroAuditoria
 
@@ -194,4 +202,14 @@ def enviar_y_registrar(proveedor, lineas, actor=None):
             )
         ),
     )
+    if resultado.enviado and origen:
+        from apps.suppliers import llegadas
+
+        resultado.pedido = llegadas.registrar(
+            proveedor,
+            origen,
+            [(linea.producto, linea.cantidad) for linea in resultado.lineas if linea.producto],
+            actor,
+            **referencias,
+        )
     return resultado

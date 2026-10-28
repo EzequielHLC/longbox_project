@@ -45,9 +45,9 @@ def correr(*argumentos, base):
         "DJANGO_SETTINGS_MODULE": "config.settings.development",
         "PYTHONIOENCODING": "utf-8",
     }
-    subprocess.run(
+    subprocess.run(  # nosec B603 - manage.py y el cargador, sin shell
         [sys.executable, *map(str, argumentos)], cwd=RAIZ, env=entorno, check=True
-    )  # nosec B603
+    )
 
 
 def main():

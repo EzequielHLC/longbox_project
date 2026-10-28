@@ -154,13 +154,15 @@ def test_el_contenido_del_correo_va_separado_de_las_instrucciones():
 
 
 def test_un_aviso_de_demora_no_produce_productos():
-    """Si el modelo clasificó "demora" y devolvió productos igual, se ignoran:
-    mezclar las dos cosas es el error que la clasificación viene a evitar."""
+    """Lo que trae un aviso de demora no son altas: va a `demorados`, nunca a
+    `productos`. Mezclar las dos cosas es el error que la clasificación viene a
+    evitar (B-04-010)."""
     with contestando(respuesta(intencion=extraccion.DEMORA, productos=[producto()])):
         resultado = extraccion.extraer("Berserk se reprograma para mayo")
 
     assert resultado.intencion == extraccion.DEMORA
     assert resultado.productos == []
+    assert [p.titulo for p in resultado.demorados] == [producto()["titulo"]]
 
 
 def test_una_intencion_inventada_se_toma_como_otro():
@@ -454,8 +456,9 @@ def test_una_extraccion_exitosa_deja_el_correo_procesado(correo):
 def test_un_correo_sin_productos_identificados_queda_fallido(correo):
     """`CO-017` E4: «no identifica ningún producto» es un fallo, y el correo
     queda en la cola para reprocesarlo. Hasta el 2026-09-30 quedaba Procesado;
-    se corrigió a favor del contrato (B-04-004)."""
-    with contestando(respuesta(intencion=extraccion.OTRO)):
+    se corrigió a favor del contrato (B-04-004). Vale para lo clasificado como
+    novedades: una demora o un «otro» bien clasificados no fallan (B-04-010)."""
+    with contestando(respuesta(intencion=extraccion.NOVEDADES)):
         services.extraer_novedades(correo)
 
     correo.refresh_from_db()

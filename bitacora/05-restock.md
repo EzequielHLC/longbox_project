@@ -181,3 +181,97 @@ ninguna. La propuesta se puede filtrar por título.
 **Qué habría que cambiar.**
 `CU-RST-APR` paso de ajuste: «el Administrador ajusta las cantidades de un proveedor y las guarda
 juntas».
+
+---
+
+### B-05-009 · Las propuestas cerradas no se ven y lo pedido por restock no tiene ingreso
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-RST-APR`, `CU-RST-NOT`, `CU-ALT-TRA`, `CO-013`, `CO-072`, `CO-077`, `PropuestaRestock`, `LineaPropuestaRestock`
+**Estado:** Resuelta — plan 00 del circuito de proveedores, aprobado el 2026-10-26; ver B-05-010. Los códigos de los casos de uso nuevos los asigna el responsable
+
+**Qué apareció.**
+Probando el restock con el correo de prueba, el responsable quiso volver a ver las propuestas que
+ya había despachado y registrar la llegada de lo pedido. Ninguna de las dos cosas se puede hacer:
+una propuesta cerrada desaparece de la pantalla, y cuando la mercadería llega, la única forma de
+sumarla es editar el stock de cada producto a mano (B-05-006). Esa edición no deja rastro de a qué
+pedido corresponde, ni distingue si llegó todo, una parte o nada.
+
+**Qué dice la especificación.**
+> «El Administrador accede al panel de propuestas de restock y selecciona la propuesta activa.»
+> (`CU-RST-APR` paso 1) · «El evento es disparado por la finalización exitosa del alta de unidades
+> en CU-ALT-NAC, CU-ALT-IMP, CU-ALT-TRA o CU-ALT-REV, según el canal de ingreso.» (`CU-RST-NOT`
+> paso 1) · «El lote existe y contiene productos en estado Pre-venta.» (`CO-013`, precondiciones)
+
+Ningún caso de uso consulta las propuestas cerradas. Los cuatro canales de ingreso de
+`CU-RST-NOT` dan de alta productos nuevos o confirman pre-ventas; ninguno recibe lo pedido por
+restock de un producto que ya existe. `CO-013`, el que más se parece, exige productos en Pre-venta
+y resuelve reservas y demoras que una reposición no tiene.
+
+**Qué se hizo.**
+Nada todavía. Por `CLAUDE.md`, un caso de uso que no existe no se inventa: se consulta.
+
+**Qué habría que cambiar.**
+Dos casos de uso nuevos en el módulo 05, con los códigos que asigne el responsable:
+
+- **Consultar propuestas de restock**: el listado de las propuestas, abiertas y cerradas, con su
+  fecha, su disparo y su resumen por proveedor, y la ficha de cada una con sus líneas, su estado de
+  despacho y, si se aprueba el siguiente, su estado de recepción.
+- **Registrar el ingreso de un pedido de restock**: las líneas despachadas pendientes de recibir,
+  agrupadas por proveedor y pedido, con la misma mecánica que «Pre-ventas por llegar» de
+  `CU-ALT-TRA` (lista, revisión de lo recibido, confirmación). Al confirmar, el stock de cada
+  producto sube en lo recibido, un Agotado vuelve a Activo (B-05-006), se dispara `CO-077` y queda la
+  auditoría. Requiere un contrato propio: `CO-013` no aplica fuera de la Pre-venta.
+
+Y en el modelo de dominio, `LineaPropuestaRestock` gana el estado de recepción, la cantidad
+recibida y la fecha.
+
+---
+
+### B-05-010 · Los pedidos a proveedor quedan registrados, su llegada se confirma en «Pedidos por llegar» y las propuestas se consultan
+
+**Tipo:** Agregado · **Fecha:** 2026-10-26 · **Alcance:** `CU-RST-PED`, `CU-RST-APR`, `CU-RST-NOT`, `CU-ALT-REV`, `CU-ALT-TRA`, `CO-013`, `CO-025`, `CO-072`, `CO-074`, `CO-077`
+**Estado:** Abierta — decidida por el responsable el 2026-10-26 (plan 00 del circuito de proveedores); reemplaza a B-05-009. **Los códigos de los casos de uso nuevos los asigna el responsable**
+
+**Qué apareció.**
+Lo de B-05-009, y algo más que apareció al recorrer el circuito: la pre-venta y la reposición son
+lo mismo visto desde el proveedor —pedí tanto, llega tanto—, pero vivían en dos circuitos que no se
+hablaban. Lo pedido no quedaba registrado en ningún lado, así que la pre-venta no podía saber
+cuánto venía en camino (B-07-042) y la llegada de una reposición no tenía dónde confirmarse.
+
+**Qué dice la especificación.**
+`Nada` sobre un registro del pedido: `CO-074` envía el correo y registra el resultado del envío,
+pero no lo pedido como algo que va a llegar. Ningún caso de uso consulta las propuestas cerradas ni
+recibe lo pedido por restock (B-05-009).
+
+**Qué se hizo.**
+- **El pedido a proveedor queda registrado cuando sale**, con una línea por producto y cantidad: el
+  correo exitoso de `CO-074` (al cerrar una sesión de revisión, al despachar una propuesta de
+  restock, o un pedido a mano) y el alta de un lote en pre-venta, cuyo pedido se hizo por fuera. Si
+  el correo falla, no queda nada registrado. Lleva la llegada estimada, que en el despacho de
+  restock y en el pedido a mano se puede indicar.
+- **«Pedidos por llegar»** (Proveedores, sólo el Administrador): los pedidos abiertos con lo que
+  falta y los atrasados. En la ficha de un pedido se carga cuánto llegó de cada producto; la
+  pantalla siguiente muestra qué va a pasar —cuántas reservas cubre, cuánto queda a la venta, cuánto
+  sigue pendiente, si llegó de más— y recién al confirmar se registra. En un producto en Pre-venta
+  lo recibido pasa por `CO-013`; en uno sin reservas suma al stock, lo vuelve Activo y dispara
+  `CO-077`. Una línea que llegó en parte queda abierta con lo que falta; lo que llega de más se
+  acepta y queda en la auditoría.
+- **Lo que no va a llegar se cierra con motivo**, sin tocar el stock. Si el producto estaba en
+  Pre-venta sólo por esa línea y nadie lo reservó, deja de estarlo; si tiene reservas, sigue en
+  Pre-venta y se avisa que hay que registrar la demora o cancelar la pre-venta.
+- **Nuevo pedido a mano**: proveedor, llegada estimada y renglones por código o ISBN de productos que
+  ya existen. Sale el mismo correo de `CO-074`.
+- **Consultar propuestas de restock**: el listado de todas, también las cerradas, con su fecha, su
+  disparo, su estado y lo que se pidió, y la ficha de cada una con sus líneas y el pedido que
+  generó cada proveedor.
+- La auditoría gana dos acciones: la llegada de un pedido y el cierre de una línea sin recibir.
+
+**Qué habría que cambiar.**
+Tres casos de uso nuevos en el módulo 05, con los códigos que asigne el responsable:
+**Consultar propuestas de restock**, **Registrar la llegada de un pedido a proveedor** (generaliza
+«Pre-ventas por llegar» de `CU-ALT-TRA`, con el cierre de una línea sin recibir como flujo
+alternativo) y **Registrar un pedido a proveedor a mano**; cada uno con sus contratos. `CO-074`,
+postcondiciones: con el envío exitoso se crea el pedido y sus líneas. `CO-003`/`CO-009` en pre-venta:
+también lo crean (B-01-017). En el modelo de dominio, **PedidoProveedor** (proveedor, origen, estado,
+llegada estimada, enlace a la propuesta, la sesión o el lote) y **LineaPedidoProveedor** (producto,
+cantidad pedida y recibida, estado, motivo de cierre).

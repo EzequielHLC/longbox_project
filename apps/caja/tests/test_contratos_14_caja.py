@@ -119,6 +119,19 @@ def test_CO126_a_se_crea_el_cierre(caja, jornada):
     assert respuesta.url == reverse("caja:cierre", args=[cierre.pk])
 
 
+def test_CO126_el_resumen_del_cierre_se_abre_con_sus_totales_y_sus_ventas(caja, jornada):
+    """CU-CAJ-CIE paso 7. Ninguna prueba abría esta pantalla, y su plantilla estuvo
+    rota desde el 2026-10-21 sin que la suite lo viera."""
+    respuesta = caja.post(URL_CERRAR, follow=True)
+
+    assert respuesta.status_code == 200
+    contenido = respuesta.content.decode()
+    assert "$ 7.500" in contenido
+    assert "Por medio de pago" in contenido
+    assert "Ventas del cierre" in contenido
+    assert reverse("caja:exportar", args=[CierreDeCaja.objects.get().pk]) in contenido
+
+
 def test_CO126_b_el_cierre_queda_asociado_a_las_transacciones_incluidas(caja, jornada):
     caja.post(URL_CERRAR)
 

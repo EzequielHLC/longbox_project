@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 from django.core.management import call_command
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.catalog.tests.factories import EditorialFactory
@@ -120,7 +121,7 @@ def test_CO016_E3_sin_conexion_avisa_al_administrador_y_no_encola(
 def test_CO016_respeta_la_frecuencia_configurada(ivrea, configurada):
     ConfiguracionSistema.obtener()
     ConfiguracionSistema.objects.update(
-        frecuencia_casilla_horas=24, casilla_revisada_en=timezone.now() - timedelta(hours=2)
+        frecuencia_casilla_minutos=60, casilla_revisada_en=timezone.now() - timedelta(minutes=20)
     )
     falsa, parche = _con(ejemplo.correo_de_novedades())
 
@@ -145,3 +146,165 @@ def test_CO016_corre_en_el_temporizador(ivrea, configurada):
 
     assert "casilla: 1 a la cola" in salida.getvalue()
     assert CorreoProveedor.objects.count() == 1
+
+
+# ---------------------------------------------------------------------------
+# `manage.py revisar_casilla` (plan 00 del circuito, H)
+# ---------------------------------------------------------------------------
+
+
+def test_CO016_revisar_casilla_saltea_la_frecuencia(ivrea, configurada):
+    ConfiguracionSistema.obtener()
+    ConfiguracionSistema.objects.update(
+        frecuencia_casilla_minutos=60, casilla_revisada_en=timezone.now() - timedelta(minutes=20)
+    )
+    _, parche = _con(ejemplo.correo_de_novedades())
+    salida = StringIO()
+
+    with parche:
+        call_command("revisar_casilla", stdout=salida)
+
+    assert "1 a la cola" in salida.getvalue()
+    correo = CorreoProveedor.objects.get()
+    # Sólo encola: el procesamiento lo dispara una persona (CO-017).
+    assert correo.estado == CorreoProveedor.PENDIENTE
+
+
+def test_CO016_revisar_casilla_si_corresponde_respeta_la_frecuencia(ivrea, configurada):
+    """B-04-015: respeta la frecuencia, como el reloj por minuto de la VM."""
+    ConfiguracionSistema.obtener()
+    ConfiguracionSistema.objects.update(
+        frecuencia_casilla_minutos=5, casilla_revisada_en=timezone.now() - timedelta(minutes=2)
+    )
+    falsa, parche = _con(ejemplo.correo_de_novedades())
+    salida = StringIO()
+
+    with parche:
+        call_command("revisar_casilla", "--si-corresponde", stdout=salida)
+
+    assert "no corresponde" in salida.getvalue()
+    assert falsa.leidos == [] and not CorreoProveedor.objects.exists()
+
+    ConfiguracionSistema.objects.update(casilla_revisada_en=timezone.now() - timedelta(minutes=6))
+    with parche:
+        call_command("revisar_casilla", "--si-corresponde", stdout=salida)
+
+    assert CorreoProveedor.objects.count() == 1
+
+
+def test_CO016_escuchar_al_bot_vigila_la_casilla(ivrea, configurada, settings):
+    """B-04-015: en esta PC, `telegram escuchar` revisa la casilla entre consulta y consulta."""
+    from apps.avisos.tests.telegram_falso import TOKEN, telegram_falso
+
+    settings.TELEGRAM_BOT_TOKEN = TOKEN
+    _, casilla_falsa = _con(ejemplo.correo_de_novedades())
+    falso, red = telegram_falso()
+    salida = StringIO()
+
+    with casilla_falsa, red:
+        call_command("telegram", "escuchar", "--una-vez", stdout=salida)
+
+    assert "1 correo(s) nuevo(s)" in salida.getvalue()
+    assert CorreoProveedor.objects.get().estado == CorreoProveedor.PENDIENTE
+
+
+def test_escuchar_sigue_aunque_la_casilla_falle(ivrea, configurada, settings):
+    from apps.avisos.tests.telegram_falso import TOKEN, telegram_falso
+
+    settings.TELEGRAM_BOT_TOKEN = TOKEN
+    falso, red = telegram_falso()
+    salida = StringIO()
+
+    with red, patch.object(casilla, "ciclo", side_effect=RuntimeError("rota")):
+        call_command("telegram", "escuchar", "--una-vez", stdout=salida)
+
+    # El reloj sigue con las otras tareas: el resumen y la salud corren igual.
+    assert "casilla: fall" in salida.getvalue()
+
+
+def test_revisar_casilla_sin_configurar_lo_dice(ivrea):
+    salida = StringIO()
+
+    call_command("revisar_casilla", stdout=salida)
+
+    assert "sin configurar" in salida.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# «Revisar la casilla» desde la cola (B-04-013)
+# ---------------------------------------------------------------------------
+
+URL_REVISAR = "/proveedores/correos/revisar/"
+
+
+def test_CO016_el_boton_de_la_cola_encola_sin_esperar_la_frecuencia(
+    client_admin, ivrea, configurada
+):
+    ConfiguracionSistema.obtener()
+    ConfiguracionSistema.objects.update(
+        frecuencia_casilla_minutos=60, casilla_revisada_en=timezone.now() - timedelta(minutes=20)
+    )
+    _, parche = _con(ejemplo.correo_de_novedades())
+
+    with parche:
+        respuesta = client_admin.post(reverse("suppliers:correo_revisar"), follow=True)
+
+    correo = CorreoProveedor.objects.get()
+    assert correo.estado == CorreoProveedor.PENDIENTE  # sólo encola (CO-017 lo decide una persona)
+    assert "1 correo nuevo en la cola" in respuesta.content.decode()
+    assert ConfiguracionSistema.obtener().casilla_revisada_en > timezone.now() - timedelta(
+        minutes=1
+    )
+
+
+def test_el_boton_sin_correos_nuevos_lo_dice(client_admin, ivrea, configurada):
+    _, parche = _con()
+
+    with parche:
+        respuesta = client_admin.post(reverse("suppliers:correo_revisar"), follow=True)
+
+    assert "no hay correos nuevos" in respuesta.content.decode()
+
+
+def test_el_boton_sin_conexion_avisa_y_no_encola(client_admin, ivrea, configurada):
+    respuesta = client_admin.post(reverse("suppliers:correo_revisar"), follow=True)
+
+    assert "No se pudo conectar a la casilla" in respuesta.content.decode()
+    assert not CorreoProveedor.objects.exists()
+
+
+def test_sin_casilla_configurada_la_cola_no_ofrece_el_boton(client_admin, ivrea):
+    html = client_admin.get(reverse("suppliers:correo_lista")).content.decode()
+    respuesta = client_admin.post(reverse("suppliers:correo_revisar"), follow=True)
+
+    assert reverse("suppliers:correo_revisar") not in html
+    assert "no está configurada" in respuesta.content.decode()
+
+
+def test_con_casilla_configurada_la_cola_ofrece_el_boton(client_admin, ivrea, configurada):
+    html = client_admin.get(reverse("suppliers:correo_lista")).content.decode()
+
+    assert reverse("suppliers:correo_revisar") in html
+    assert "Revisar la casilla" in html
+
+
+def test_el_cajero_no_revisa_la_casilla_por_la_direccion_real(client, cajero, ivrea, configurada):
+    client.force_login(cajero)
+    falsa, parche = _con(ejemplo.correo_de_novedades())
+
+    with parche:
+        respuesta = client.post(URL_REVISAR)
+
+    assert respuesta.status_code == 403
+    assert falsa.leidos == []
+    assert not CorreoProveedor.objects.exists()
+
+
+def test_revisar_la_casilla_no_se_hace_con_get(client_admin, ivrea, configurada):
+    falsa, parche = _con(ejemplo.correo_de_novedades())
+
+    with parche:
+        respuesta = client_admin.get(reverse("suppliers:correo_revisar"))
+
+    assert respuesta.status_code == 405
+    assert falsa.leidos == []

@@ -1,0 +1,54 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Lo que no va a llegar: la línea se cierra con su motivo y el stock no cambia
+(plan 00 del circuito). Si tiene reservas, la pre-venta sigue y se avisa.
+{% endcomment %}
+
+{% block titulo %}No va a llegar · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'suppliers:pedido_detalle' linea.pedido_id as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Volver al pedido" atras=1 %}</span>
+    <h1>No va a llegar</h1>
+    <p>{{ linea.producto.especifico }} · faltan <span class="datos">{{ linea.pendiente }}</span> de {{ linea.cantidad_pedida }}</p>
+  </div>
+</header>
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-linea">
+    <div class="seccion__titulo"><h2 id="titulo-linea">La línea</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Producto</dt><dd><a href="{% url 'catalog:producto_detalle' linea.producto.pk %}">{{ linea.producto.especifico }}</a></dd>
+      <dt>Pedido</dt><dd><a href="{{ volver }}">#{{ linea.pedido_id }}</a> · {{ linea.pedido.nombre_proveedor }}</dd>
+      <dt>Pedidas</dt><dd class="datos">{{ linea.cantidad_pedida }}</dd>
+      <dt>Llegaron</dt><dd class="datos">{{ linea.cantidad_recibida }}</dd>
+      <dt>No van a llegar</dt><dd class="datos fuerte">{{ linea.pendiente }}</dd>
+    </dl>
+  </section>
+  <section class="seccion pila-3" aria-labelledby="titulo-efecto">
+    <div class="seccion__titulo"><h2 id="titulo-efecto">Qué cambia</h2></div>
+    <p class="secundario">El stock no se toca. Si el producto estaba en pre-venta sólo por esta línea y nadie lo reservó, deja de estarlo.</p>
+    {% if reservado %}
+    <div class="panel panel--atencion">
+      <p>Tiene <span class="datos">{{ reservado }}</span> unidad{{ reservado|pluralize:"es" }} reservada{{ reservado|pluralize }} sin cubrir. Cerrar la línea no las cancela: después registrá la demora o cancelá la pre-venta desde la ficha del producto.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<form method="post" class="formulario formulario--angosto pila-3">
+  {% csrf_token %}
+  <div class="campo">
+    <label for="motivo" class="etiqueta">Motivo<span class="obligatorio" aria-hidden="true"> *</span></label>
+    <textarea id="motivo" name="motivo" rows="3" maxlength="500" required aria-describedby="ayuda-motivo"></textarea>
+    <p id="ayuda-motivo" class="ayuda">Por ejemplo: la editorial no lo reimprime, o el proveedor no tiene stock.</p>
+  </div>
+  <div class="acciones">
+    <button type="submit" class="boton-seccion boton-seccion--critico">Cerrar sin recibir</button>
+    {% include "_boton_texto.html" with url=volver texto="Volver" %}
+  </div>
+</form>
+{% endblock %}

@@ -32,11 +32,29 @@ def configurada():
     return bool(settings.CASILLA_HOST and settings.CASILLA_USUARIO)
 
 
+HOSTS_LOCALES = ("127.0.0.1", "localhost", "::1")
+
+
+class CasillaSinCifrar(ValueError):
+    """`CASILLA_SSL` apagado para una casilla que no está en esta máquina."""
+
+
 def abrir():
-    """La conexión a la casilla, ya autenticada y en la carpeta configurada."""
-    conexion = imaplib.IMAP4_SSL(
-        settings.CASILLA_HOST, settings.CASILLA_PUERTO, timeout=TIEMPO_DE_ESPERA
-    )
+    """La conexión a la casilla, ya autenticada y en la carpeta configurada.
+
+    Sin SSL sólo para el correo de prueba de esta máquina (`config/correo-de-prueba/`):
+    con una casilla de afuera, la clave viajaría en claro.
+    """
+    if settings.CASILLA_SSL:
+        clase = imaplib.IMAP4_SSL
+    elif settings.CASILLA_HOST in HOSTS_LOCALES:
+        clase = imaplib.IMAP4
+    else:
+        raise CasillaSinCifrar(
+            "CASILLA_SSL apagado sólo se admite con una casilla local, "
+            f"no con {settings.CASILLA_HOST}."
+        )
+    conexion = clase(settings.CASILLA_HOST, settings.CASILLA_PUERTO, timeout=TIEMPO_DE_ESPERA)
     conexion.login(settings.CASILLA_USUARIO, settings.CASILLA_CLAVE)
     conexion.select(settings.CASILLA_CARPETA)
     return conexion
@@ -60,14 +78,19 @@ class ResumenCasilla:
     descartados: int = 0
 
 
-def ciclo(ahora=None):
-    """Una vuelta del monitoreo. Correrlo dos veces no encola dos veces (I-16)."""
+def ciclo(ahora=None, *, forzar=False):
+    """Una vuelta del monitoreo. Correrlo dos veces no encola dos veces (I-16).
+
+    `forzar` saltea la frecuencia de Parámetros: es `manage.py revisar_casilla`,
+    para no esperar al Temporizador en una demostración (plan 00 del circuito, H).
+    """
     ahora = ahora or timezone.now()
     if not configurada():
         return ResumenCasilla(estado="sin configurar")
     configuracion = ConfiguracionSistema.obtener()
     ultima = configuracion.casilla_revisada_en
-    if ultima and ahora - ultima < timedelta(hours=configuracion.frecuencia_casilla_horas):
+    frecuencia = timedelta(minutes=configuracion.frecuencia_casilla_minutos)
+    if not forzar and ultima and ahora - ultima < frecuencia:
         return ResumenCasilla(estado="no corresponde todavía")
 
     resumen = ResumenCasilla()
@@ -99,12 +122,30 @@ def ciclo(ahora=None):
     return resumen
 
 
+def proxima_revision():
+    """Cuándo le toca a la lectura automática, o `None` si nunca se revisó.
+
+    La frecuencia cuenta desde la última revisión, sea automática o a pedido —el
+    botón de la cola o `/refresh` en el bot—: revisar a mano reinicia el reloj.
+    """
+    configuracion = ConfiguracionSistema.obtener()
+    if configuracion.casilla_revisada_en is None:
+        return None
+    return configuracion.casilla_revisada_en + timedelta(
+        minutes=configuracion.frecuencia_casilla_minutos
+    )
+
+
 def _enlace(nombre_url):
     return settings.URL_PUBLICA + reverse(nombre_url) if settings.URL_PUBLICA else ""
 
 
 def _avisar_nuevos(correos):
-    avisos.avisar_administradores(
+    # Módulo 19: por correo, el resumen; por Telegram, cada correo con sus botones.
+    from apps.avisos import canales
+
+    canales.avisar_correos_nuevos(
+        correos,
         asunto=f"{len(correos)} correo(s) de novedades en la cola",
         rotulo="Proveedores",
         antetitulo="Casilla de novedades",
@@ -118,6 +159,7 @@ def _avisar_nuevos(correos):
 
 def _avisar_sin_conexion(error):
     avisos.avisar_administradores(
+        tipo="correos",
         asunto="No se pudo leer la casilla de novedades",
         rotulo="Proveedores",
         antetitulo="Casilla de novedades",

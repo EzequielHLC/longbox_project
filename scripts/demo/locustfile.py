@@ -29,7 +29,7 @@ from entorno import AUTORIDAD_LOCAL  # noqa: E402
 
 CONTRASENA = "Demo-2026!"  # nosec B105 - cuentas de demostración
 # Elige páginas y productos para simular la carga; no es criptografía.
-azar = random.Random()  # nosec B311
+azar = random.Random()  # nosec B311 - simula carga, no es criptografía
 BUSQUEDAS = ["one", "dragon", "akira", "berserk", "noche", "figura", "fundas", "manga", "a", "z"]
 _clientes = itertools.count(1)
 _cajeros = itertools.count(1)

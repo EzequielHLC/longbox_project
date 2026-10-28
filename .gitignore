@@ -17,3 +17,5 @@ coverage.xml
 # Demostración: datos raspados de Ivrea, sólo para la clase (plan 00, decisión 7)
 /scripts/demo/datos/
 /scripts/demo/salida/
+# El machete de comandos del responsable: sólo para esta máquina
+/.machete.md

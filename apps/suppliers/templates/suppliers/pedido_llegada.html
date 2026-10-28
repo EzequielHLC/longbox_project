@@ -1,0 +1,75 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+El segundo tiempo de la llegada: lo que va a pasar con cada producto antes de
+registrarlo. Volver no deja nada (plan 00 del circuito, como CO-013).
+{% endcomment %}
+
+{% block titulo %}Confirmar la llegada · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'suppliers:pedido_detalle' pedido.pk as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Volver al pedido" atras=1 %}</span>
+    <h1>Confirmar la llegada</h1>
+    <p>{{ pedido.nombre_proveedor }} · pedido #{{ pedido.pk }}</p>
+  </div>
+</header>
+
+{% comment %}
+La misma forma que «Confirmar ingreso» de las pre-ventas: una tabla con lo que
+le va a pasar a cada producto, dentro de un panel, y la confirmación debajo.
+{% endcomment %}
+<div class="panel pila-4">
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="numero">Llegan</th>
+          <th class="numero">Reservas cubiertas</th>
+          <th class="numero">A la venta</th>
+          <th class="numero">Siguen faltando</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in filas %}
+          <tr>
+            <td class="celda-principal">
+              <span class="fila-2">
+                <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                {{ fila.producto.especifico }}
+              </span>
+            </td>
+            <td class="numero">{{ fila.unidades }}</td>
+            <td class="numero">{{ fila.cubre }}</td>
+            <td class="numero">{{ fila.a_la_venta }}</td>
+            <td class="numero">{{ fila.quedan_pendientes }}</td>
+            <td>
+              {% if fila.de_mas %}
+                <span class="marca-estado marca-estado--atencion">Llegan de más</span>
+                <span class="texto-chico secundario">· {{ fila.de_mas }} sobre lo pedido, queda en la auditoría</span>
+              {% elif fila.quedan_pendientes %}
+                <span class="marca-estado marca-estado--atencion">Llegada parcial</span>
+                <span class="texto-chico secundario">· la línea sigue abierta</span>
+              {% else %}
+                <span class="marca-estado marca-estado--ok">Completa</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="{% url 'suppliers:pedido_llegada' pedido.pk %}" class="fila-5">
+    {% csrf_token %}
+    <input type="hidden" name="confirmar" value="1">
+    {% for fila in filas %}<input type="hidden" name="llegaron_{{ fila.linea.pk }}" value="{{ fila.unidades }}">{% endfor %}
+    <button type="submit" class="boton-primario">Confirmar la llegada</button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

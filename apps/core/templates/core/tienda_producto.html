@@ -55,7 +55,8 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
 
         {% include "_mensajes.html" %}
         <div class="pila-2">
-          {% if producto.estado_publico == "agotado" %}
+          {% if producto.estado_publico == "agotado" or reserva.completa %}
+            {% if reserva.completa %}<p class="texto-chico">La pre-venta está completa: ya se reservó todo lo que se pidió.</p>{% endif %}
             {% if aviso.puede_pedir %}
               <form method="post" action="{% url 'restock:aviso' producto.pk %}" class="fila">
                 {% csrf_token %}
@@ -64,24 +65,29 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
                   <input type="hidden" name="accion" value="cancelar">
                   <button type="submit" class="boton-seccion boton-seccion--tenue">Cancelar aviso</button>
                 {% else %}
-                  <button type="submit" class="boton-seccion">Avisarme cuando haya stock</button>
+                  <button type="submit" class="boton-seccion">{% if reserva.completa %}Avisarme si llegan de más{% else %}Avisarme cuando haya stock{% endif %}</button>
                 {% endif %}
               </form>
             {% endif %}
             {% if aviso.en_espera %}<p class="texto-chico secundario">{{ aviso.en_espera }} {% if aviso.en_espera == 1 %}persona espera{% else %}personas esperan{% endif %} este producto.</p>{% endif %}
           {% elif unidades_en_carrito is None %}
             <p class="texto-chico secundario">La compra es para cuentas de cliente.</p>
+          {% elif reserva and not reserva.quedan %}
+            <p class="texto-chico">Ya tenés reservado el máximo por Cliente: <span class="datos">{{ reserva.maximo }}</span> unidades, contando tus pedidos.</p>
           {% else %}
             <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="fila-2 fila-abajo">
               {% csrf_token %}
               <input type="hidden" name="volver" value="{{ request.get_full_path }}">
               {% if producto.estado_publico == "disponible" %}
                 {% include "_cantidad.html" with id="cantidad" valor=1 maximo=producto.stock %}
+              {% elif reserva %}
+                {% include "_cantidad.html" with id="cantidad" valor=1 maximo=reserva.quedan %}
               {% else %}
                 {% include "_cantidad.html" with id="cantidad" valor=1 %}
               {% endif %}
               <button type="submit" class="boton-primario">{% if producto.estado_publico == "pre_venta" %}Reservar{% else %}Agregar al carrito{% endif %}</button>
             </form>
+            {% if reserva %}<p class="texto-chico secundario">Hasta <span class="datos">{{ reserva.maximo }}</span> unidades por Cliente.</p>{% endif %}
             {% if producto.estado_publico == "pre_venta" %}
               {% if editorial.fecha_llegada %}<p>Llegada estimada: <span class="datos">{{ editorial.fecha_llegada|date:"d/m/Y" }}</span></p>{% endif %}
               <p class="texto-chico secundario">Se envía cuando llegue.</p>

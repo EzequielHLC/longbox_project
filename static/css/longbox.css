@@ -415,17 +415,44 @@ em, i { font-style: normal; }
 }
 .menu-grupo[open] > .menu-titulo::after { transform: rotate(90deg); }
 
+/* La cuenta, arriba del menú (B-00-030): quién, con su rol, y sus dos acciones. */
 .menu-cuenta {
   display: flex;
   flex-direction: column;
-  gap: var(--esp-1);
-  margin: var(--esp-5) var(--esp-4) 0;
-  padding-top: var(--esp-4);
-  border-top: var(--trazo) var(--linea);
-  font-size: var(--op-chico);
-  overflow-wrap: anywhere;
+  gap: var(--esp-3);
+  margin: 0 var(--esp-4) var(--esp-4);
+  padding-bottom: var(--esp-4);
+  border-bottom: var(--trazo) var(--linea);
 }
-.menu-lateral nav > .menu-cuenta { margin-top: auto; }
+.menu-cuenta__quien { display: flex; align-items: center; gap: var(--esp-3); min-width: 0; }
+.menu-cuenta__icono {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: var(--trazo) var(--borde-control);
+  clip-path: var(--forma-corte-chico);
+  color: var(--acento);
+}
+.menu-cuenta__datos { display: flex; flex-direction: column; min-width: 0; }
+.menu-cuenta__rol {
+  font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+}
+.menu-cuenta__correo {
+  overflow: hidden;
+  font-size: var(--op-chico);
+  color: var(--texto-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-cuenta__acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--esp-2); }
+.menu-cuenta__acciones form { display: contents; }
+.menu-cuenta__acciones .ficha-accion { text-decoration: none; }
+.menu-cuenta__acciones .ficha-accion--actual { border-color: var(--acento); color: var(--acento-texto); }
 
 /* ---------------------------------------------------------------------
    Cáscara del modo público · Escaparate
@@ -1934,6 +1961,33 @@ a.cifra:hover .cifra__rotulo { color: var(--texto); }
 }
 .vacio .icono { width: 32px; height: 32px; color: var(--acento); }
 .vacio p { max-width: var(--ancho-lectura); }
+
+/* Pantallas de error (templates/_pagina_de_error.html): una columna sobre la
+   trama, el código en sticker y el meme con el borde y la sombra de las portadas. */
+.pagina-error {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--esp-7) var(--esp-5);
+  background: var(--trama-puntos), var(--fondo);
+}
+.pagina-error__cuerpo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-6);
+  max-width: calc(var(--ancho-lectura) + var(--esp-7));
+}
+.pagina-error__meme {
+  /* El giro y la sombra suman ancho: sin el margen, en 390 px se sale del borde.
+     Y alto: girada, la imagen invade el espacio del texto y del botón. */
+  width: min(360px, calc(100% - var(--esp-4)));
+  margin-block: var(--esp-3);
+  height: auto;
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  box-shadow: var(--sombra-golpe-3);
+  transform: rotate(var(--giro-sticker));
+}
 
 /* El diálogo nativo: hoja con trazo fuerte y sombra dura. */
 .dialogo {
@@ -4115,3 +4169,17 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 
 /* Un ícono que cambia con el estado del botón (Pausar / Reanudar). */
 .icono-de-estado { display: inline-flex; }
+
+/* Un bloque que se abre a pedido: lo secundario de una lista larga (B-04-010). */
+.plegable { border-top: var(--trazo) var(--linea); padding-top: var(--esp-3); }
+.plegable__titulo {
+  display: inline-flex; align-items: center; gap: var(--esp-2);
+  font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo); text-transform: uppercase;
+  color: var(--texto-2); list-style: none; cursor: pointer;
+}
+.plegable__titulo::-webkit-details-marker { display: none; }
+.plegable__titulo::before { content: "\203A"; font-size: 1.4em; line-height: 1; transition: transform var(--dur-1) var(--curva-golpe); }
+.plegable[open] > .plegable__titulo::before { transform: rotate(90deg); }
+.plegable__titulo:hover { color: var(--texto-fuerte); }
+.plegable[open] > .plegable__titulo { margin-bottom: var(--esp-3); }

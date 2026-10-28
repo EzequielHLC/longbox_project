@@ -4,7 +4,9 @@ La decisión sobre un correo de la cola (CU-PRV-COL):
 - *Pendiente de aprobación*: aprobarlo (`CO-017`), que dispara la extracción, o
   descartarlo con motivo (`CO-018`). Son dos caminos de igual peso.
 - *Procesado* o *Falló el procesamiento*: reprocesarlo (`CO-019`), que reemplaza
-  sólo los borradores que siguen abiertos.
+  sólo los borradores que siguen abiertos. Uno procesado que no era de novedades
+  (una demora, una factura) también se puede descartar, para dejar dicho que ya
+  se atendió (B-04-010).
 - *Descartado* o *En proceso*: nada que decidir; se muestra cómo se resolvió.
 
 La extracción puede tardar: el botón de aprobar lo dice, y la capa de carga de
@@ -58,17 +60,32 @@ la cáscara queda visible mientras tanto.
     </dl>
 
     {% if correo.estado == 'procesado' or correo.estado == 'fallido' %}
-      <div class="panel formulario--angosto">
-        <h3 class="fila-2">{% include "_iconos.html" with icono="reactivar" %}<span>Volver a procesar</span></h3>
-        <p class="secundario">
-          Reemplaza los borradores abiertos de este correo.
-        </p>
-        <form method="post" action="{% url 'suppliers:correo_reprocesar' correo.pk %}" class="acciones">
-          {% csrf_token %}
-          <button type="submit" class="boton-seccion">
-            {% include "_iconos.html" with icono="reactivar" %}<span>Reprocesar correo</span>
-          </button>
-        </form>
+      <div class="{% if correo.puede_descartarse %}rejilla-2{% else %}formulario--angosto{% endif %}">
+        <div class="panel">
+          <h3 class="fila-2">{% include "_iconos.html" with icono="reactivar" %}<span>Volver a procesar</span></h3>
+          <p class="secundario">
+            Reemplaza los borradores abiertos de este correo.
+          </p>
+          <form method="post" action="{% url 'suppliers:correo_reprocesar' correo.pk %}" class="acciones">
+            {% csrf_token %}
+            <button type="submit" class="boton-seccion">
+              {% include "_iconos.html" with icono="reactivar" %}<span>Reprocesar correo</span>
+            </button>
+          </form>
+        </div>
+        {% if correo.puede_descartarse %}
+          <div class="panel">
+            <h3 class="fila-2">{% include "_iconos.html" with icono="baja" %}<span>Descartar</span></h3>
+            <p class="secundario">No era de novedades. Descartarlo deja dicho que ya se atendió.</p>
+            <form method="post" novalidate class="formulario">
+              {% csrf_token %}
+              {% include "_campo.html" with campo=form.motivo %}
+              <div class="acciones">
+                <button type="submit" class="boton-primario">Descartar correo</button>
+              </div>
+            </form>
+          </div>
+        {% endif %}
       </div>
     {% endif %}
   {% endif %}

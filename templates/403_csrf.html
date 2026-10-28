@@ -1,0 +1,12 @@
+{% extends "_pagina_de_error.html" %}
+{% comment %}
+La falla de CSRF: casi siempre, un formulario que quedó abierto más que la sesión
+o que se envió desde otra pestaña. El motivo técnico (`reason`) no se muestra.
+{% endcomment %}
+{% block titulo %}El formulario venció{% endblock %}
+{% block codigo %}¡UPS!{% endblock %}
+{% block encabezado %}El formulario venció{% endblock %}
+{% block explicacion %}
+  <p>Pasó demasiado tiempo desde que se abrió, o se envió desde otra pestaña. No se guardó nada.</p>
+  <p>Volvé a la pantalla, recargala y enviá los datos de nuevo.</p>
+{% endblock %}

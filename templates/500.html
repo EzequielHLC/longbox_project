@@ -1,0 +1,11 @@
+{% extends "_pagina_de_error.html" %}
+{% comment %}
+Django la dibuja sin contexto: acá no hay `request`, ni usuario, ni mensajes.
+{% endcomment %}
+{% block titulo %}Error del sistema{% endblock %}
+{% block codigo %}¡500!{% endblock %}
+{% block encabezado %}Algo falló de nuestro lado{% endblock %}
+{% block explicacion %}
+  <p>No fue nada que hayas hecho. El error quedó registrado para revisarlo.</p>
+  <p>Probá de nuevo en un rato. Si estabas guardando algo, revisá si quedó guardado antes de repetirlo.</p>
+{% endblock %}

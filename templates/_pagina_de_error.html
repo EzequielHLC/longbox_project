@@ -1,0 +1,40 @@
+{% load static estaticos %}<!DOCTYPE html>
+{% comment %}
+Base de las pantallas de error: 400, 403, 403_csrf, 404 y 500 (plan 00 de tope de
+reservas y errores).
+
+**No extiende `base.html` a propósito.** La del 500 se dibuja cuando algo ya
+falló, y Django la dibuja sin el pedido: sin sesión, sin usuario y sin los
+procesadores de contexto. Esta base no consulta la base de datos ni lee la
+sesión, así que se dibuja igual aunque lo que falló sea justamente eso. Por la
+misma razón no carga guiones: la página tiene que verse completa sin ninguno.
+
+Cada pantalla llena `codigo`, `titulo`, `explicacion` y, si quiere, `acciones`.
+{% endcomment %}
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block titulo %}Error{% endblock %} · Longbox</title>
+  <link rel="preload" href="{% static 'fuentes/archivo-variable.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% estatico 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/longbox.css' %}">
+</head>
+<body class="modo-publico superficie-noche">
+  <main class="pagina-error">
+    <div class="pagina-error__cuerpo">
+      <span class="sticker">{% block codigo %}¡ERROR!{% endblock %}</span>
+      <h1 class="titulo-1">{% block encabezado %}Algo salió mal{% endblock %}</h1>
+      <div class="pila-3 parrafo">{% block explicacion %}{% endblock %}</div>
+      <img class="pagina-error__meme" src="{% static 'img/error.webp' %}" width="360" height="270"
+           alt="Un robot con un pañuelo naranja mira de reojo y dice «To be honest…».">
+      <div class="fila">
+        {% block acciones %}
+          <a href="/" class="boton-primario">Volver al inicio</a>
+        {% endblock %}
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -24,11 +24,15 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 
 def dos_administradores():
-    Usuario.objects.all().delete()
-    return (
-        UsuarioFactory(rol=Usuario.ADMINISTRADOR, email="a@longbox.test", username="a"),
-        UsuarioFactory(rol=Usuario.ADMINISTRADOR, email="b@longbox.test", username="b"),
+    """Dos Administradores y nadie más. Los de la repetición anterior se borran
+    **después** de crear los nuevos: I-12 vive en la base y no deja borrar al
+    último Administrador activo."""
+    nuevos = (
+        UsuarioFactory(rol=Usuario.ADMINISTRADOR),
+        UsuarioFactory(rol=Usuario.ADMINISTRADOR),
     )
+    Usuario.objects.exclude(pk__in=[usuario.pk for usuario in nuevos]).delete()
+    return nuevos
 
 
 def activos():

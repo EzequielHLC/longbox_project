@@ -14,6 +14,42 @@ from apps.accounts.tests.factories import UsuarioFactory
 
 
 @pytest.fixture(autouse=True)
+def archivos_aparte(settings, tmp_path):
+    """Lo que un test guarda en disco va a su carpeta temporal, no a `media/`.
+
+    Sin esto, cada corrida de la suite dejaba en el `media/` de desarrollo unas
+    160 portadas de borradores y correos de prueba que nadie referenciaba (plan 00
+    de cierre de deuda). Un test que necesita una carpeta propia la sigue
+    pisando con la suya; las fotos de devoluciones ya tenían la suya.
+    """
+    settings.MEDIA_ROOT = tmp_path / "media"
+    settings.EVIDENCIA_ROOT = tmp_path / "privado"
+
+
+@pytest.fixture(autouse=True)
+def casilla_sin_configurar(settings):
+    """La casilla del `.env` de quien corre las pruebas no entra en ellas.
+
+    Con el correo de prueba levantado (`config/correo-de-prueba/`), el `.env` la
+    tiene configurada, y cada prueba que corre el Temporizador intentaba leerla.
+    Las que prueban la casilla la configuran con su propia fixture.
+    """
+    settings.CASILLA_HOST = ""
+    settings.CASILLA_USUARIO = ""
+    settings.CASILLA_SSL = True
+
+
+@pytest.fixture(autouse=True)
+def telegram_sin_configurar(settings):
+    """El token del bot del `.env` de quien corre las pruebas no entra en ellas.
+
+    Sin token el canal no existe y todo aviso sale por correo. Las pruebas del
+    módulo 19 lo configuran con su propia fixture; la red sigue cortada igual.
+    """
+    settings.TELEGRAM_BOT_TOKEN = ""  # nosec B105 - vacío a propósito: en las pruebas no hay bot
+
+
+@pytest.fixture(autouse=True)
 def avisos_en_el_acto(settings):
     """Los avisos corren en el acto: el buzón de prueba se lee apenas vuelve la
     operación, sin esperar a un hilo (`apps/core/segundo_plano.py`)."""
@@ -60,6 +96,9 @@ def sin_red(request):
 
     with (
         patch.object(integraciones, "pedir", return_value=sin_conexion),
+        # La descarga binaria (la foto de un borrador desde Telegram) es la otra
+        # mitad de la misma puerta, y se corta igual.
+        patch.object(integraciones, "descargar", return_value=None),
         patch.object(casilla, "abrir", side_effect=casilla_cortada),
     ):
         yield

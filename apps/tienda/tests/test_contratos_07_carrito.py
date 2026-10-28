@@ -21,7 +21,7 @@ from apps.catalog import tabla_de_precios
 from apps.catalog.models import Producto
 from apps.catalog.tests.factories import PrecioReferenciaFactory, ProductoFactory
 from apps.catalog.tests.test_contratos_03_pricing import fijar_margen, importado, vinculado
-from apps.core.models import RegistroAuditoria
+from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.tienda.carrito import CLAVE_DE_SESION
 from apps.tienda.models import Carrito, LineaCarrito
 
@@ -119,10 +119,19 @@ def test_CO083_E1_la_cantidad_no_pasa_del_stock_y_se_informa_el_maximo(client, d
     assert "Hay 5 disponibles de «Akira»: el carrito quedó con 5." in mensajes(respuesta)
 
 
-def test_CO083_A1_la_pre_venta_se_reserva_sin_tope_de_stock(client, en_pre_venta):
-    agregar(client, en_pre_venta, 30)
+def test_CO083_A1_la_pre_venta_se_reserva_sin_mirar_el_stock(client, en_pre_venta):
+    """Sin stock (cero) y hasta el máximo por reserva: el stock no la limita."""
+    agregar(client, en_pre_venta, 4)
 
-    assert LineaCarrito.objects.get().cantidad == 30
+    assert LineaCarrito.objects.get().cantidad == 4
+
+
+def test_CO083_A1_la_reserva_queda_en_el_maximo_por_cliente_y_se_avisa(client, en_pre_venta):
+    """Plan 00 de tope de reservas: el máximo por reserva de Parámetros (5)."""
+    respuesta = agregar(client, en_pre_venta, 30)
+
+    assert LineaCarrito.objects.get().cantidad == 5
+    assert "hasta 5 unidades" in mensajes(client.get(respuesta.url))[0]
 
 
 @pytest.mark.parametrize("cantidad", ["0", "-2", "dos"])
@@ -202,7 +211,18 @@ def test_CO084_E2_menos_de_uno_se_rechaza_y_la_linea_no_cambia(client, disponibl
     assert linea.cantidad == 2
 
 
-def test_CO084_A1_en_pre_venta_no_hay_tope(client, en_pre_venta):
+def test_CO084_A1_en_pre_venta_el_tope_es_el_maximo_por_reserva(client, en_pre_venta):
+    agregar(client, en_pre_venta, 1)
+
+    cambiar(client, LineaCarrito.objects.get(), 12)
+
+    assert LineaCarrito.objects.get().cantidad == 5
+
+
+def test_CO084_A1_el_maximo_sale_de_parametros(client, en_pre_venta):
+    configuracion = ConfiguracionSistema.obtener()
+    configuracion.maximo_reserva_preventa = 12
+    configuracion.save()
     agregar(client, en_pre_venta, 1)
 
     cambiar(client, LineaCarrito.objects.get(), 12)
@@ -408,8 +428,9 @@ def test_CO086_con_carrito_propio_suma_con_tope_y_elimina_el_de_sesion(
 
     assert not Carrito.objects.filter(pk=de_sesion.pk).exists()
     cantidades = dict(persistido.lineas.values_list("producto__titulo", "cantidad"))
-    # 4 + 3 = 7 con tope en el stock de 5; la pre-venta suma sin tope.
-    assert cantidades == {"Akira": 5, "Berserk 42": 8, "Monster": 1}
+    # 4 + 3 = 7 con tope en el stock de 5; la pre-venta, 3 + 5 = 8 con tope en el
+    # máximo por reserva (5).
+    assert cantidades == {"Akira": 5, "Berserk 42": 5, "Monster": 1}
 
 
 def test_CO086_el_personal_que_inicia_sesion_descarta_el_carrito_de_invitado(

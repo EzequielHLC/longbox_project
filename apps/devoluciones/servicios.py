@@ -452,6 +452,7 @@ def _avisar_apertura(casos, origen):
     codigos = ", ".join(caso.numero for caso in casos)
     filas = [(caso.numero, f"{caso.unidades} × {nombre(caso.linea.producto)}") for caso in casos]
     avisos.avisar_administradores(
+        tipo="devoluciones",
         asunto=f"Nuevo reclamo {codigos}",
         rotulo="Devoluciones",
         antetitulo="Caso de devolución",
@@ -460,6 +461,9 @@ def _avisar_apertura(casos, origen):
         filas=filas,
         enlace=_enlace(origen, "devoluciones:detalle", primero.pk),
         texto_enlace="Revisar el caso",
+        # B-19-014: por Telegram, con sus fotos achicadas (ambigüedad 6 del plan
+        # de la etapa 3, aprobada): sólo a los Administradores vinculados.
+        fotos=[evidencia.imagen for caso in casos for evidencia in caso.evidencias.all()],
     )
     if primero.es_arrepentimiento:
         siguiente = (

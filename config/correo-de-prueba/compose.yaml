@@ -1,0 +1,32 @@
+# El correo de prueba: un servidor que recibe todo lo que el sistema manda y hace
+# de casilla de novedades de los proveedores (docs/despliegue/DEMOSTRACION.md,
+# «El correo de prueba»). Sólo para esta máquina, nunca para producción.
+#
+#   docker compose -f config/correo-de-prueba/compose.yaml up -d
+#
+# - Bandeja web:  http://127.0.0.1:5000  — todo lo que salió y todo lo que entró.
+# - SMTP:         127.0.0.1:2525 — donde el sistema manda (EMAIL_HOST/EMAIL_PORT) y
+#                 donde `enviar_novedades.py` deja las novedades de una editorial.
+# - IMAP:         127.0.0.1:1143 — lo que lee el Temporizador como casilla (CO-016).
+#
+# Acepta cualquier remitente, destinatario, usuario y contraseña, y no reenvía nada
+# a internet: un pedido a un proveedor o una activación de cliente se quedan acá.
+# Escucha sólo en la máquina local, sin TLS: no sale de este equipo.
+services:
+  correo:
+    image: rnwood/smtp4dev:3.15.0
+    container_name: longbox-correo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:80"
+      - "127.0.0.1:2525:25"
+      - "127.0.0.1:1143:143"
+    environment:
+      # Los mensajes sobreviven a un reinicio del contenedor; se vacían desde la web.
+      ServerOptions__Database: /smtp4dev/correo.db
+      ServerOptions__NumberOfMessagesToKeep: 500
+    volumes:
+      - correo:/smtp4dev
+
+volumes:
+  correo:

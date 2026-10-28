@@ -67,7 +67,7 @@ SABOTAJES = {
 
 
 def git(*argumentos, cwd=RAIZ):
-    return subprocess.run(  # nosec B603 B607
+    return subprocess.run(  # nosec B603 B607 - git con argumentos fijos, sin shell
         ["git", *argumentos],
         cwd=cwd,
         capture_output=True,
@@ -111,7 +111,7 @@ def correr_pruebas(destino, pruebas):
     # Su propia base de pruebas: no choca con otra suite que esté corriendo.
     entorno["DB_NAME"] = "longbox_sabotaje"
     entorno["PYTHONIOENCODING"] = "utf-8"
-    resultado = subprocess.run(  # nosec B603
+    resultado = subprocess.run(  # nosec B603 - pytest con argumentos fijos, sin shell
         [
             sys.executable,
             "-m",
@@ -150,7 +150,7 @@ def sabotear(nombre):
         aplicar(destino, sabotaje)
         salida = correr_pruebas(destino, sabotaje["pruebas"])
     finally:
-        subprocess.run(  # nosec B603 B607
+        subprocess.run(  # nosec B603 B607 - git con argumentos fijos, sin shell
             ["git", "worktree", "remove", "--force", str(destino)], cwd=RAIZ, capture_output=True
         )
         shutil.rmtree(destino.parent, ignore_errors=True)

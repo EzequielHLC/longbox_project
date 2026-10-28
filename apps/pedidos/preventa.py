@@ -327,6 +327,7 @@ def ciclo_de_vigilancia(hoy=None):
     ]
     if resumen.proximas or resumen.de_hoy:
         avisos.avisar_administradores(
+            tipo="preventas",
             asunto="Pre-ventas por llegar",
             antetitulo="Pre-ventas",
             titulo="Por llegar",
@@ -338,6 +339,7 @@ def ciclo_de_vigilancia(hoy=None):
         )
     if resumen.escaladas:
         avisos.avisar_administradores(
+            tipo="preventas",
             asunto="Pre-ventas sin resolver",
             antetitulo="Pre-ventas",
             titulo="Sin resolver",
@@ -368,6 +370,29 @@ class ResumenDemora:
     pedidos: list = field(default_factory=list)
     clientes: set = field(default_factory=set)
     errores: list = field(default_factory=list)
+    # B-01-022: en la demora de varios tomos, los avisos se juntan por Cliente
+    # en vez de salir uno por producto. Cada uno es `(pedido, líneas, producto)`.
+    avisos: list = field(default_factory=list)
+
+
+@dataclass
+class ResumenDemoras:
+    """B-01-022: la demora de varios tomos. Cada tomo es un `CO-015` propio."""
+
+    demorados: list = field(default_factory=list)  # ResumenDemora
+    excluidos: list = field(default_factory=list)  # (producto, motivo)
+
+    @property
+    def pedidos(self):
+        return {pedido.pk for resumen in self.demorados for pedido in resumen.pedidos}
+
+    @property
+    def clientes(self):
+        return set().union(*(resumen.clientes for resumen in self.demorados))
+
+    @property
+    def errores(self):
+        return [numero for resumen in self.demorados for numero in resumen.errores]
 
 
 def validar_demora(producto, fecha_estimada=None):
@@ -410,7 +435,117 @@ def registrar_demora(producto, actor, *, fecha_estimada=None, nota="", origen=""
         )
 
 
-def _aplicar_demora(p, actor, momento, *, fecha_estimada=None, nota="", origen="", lineas=None):
+def informe_de_demoras(productos):
+    """B-01-022: `CO-014` de cada tomo y los clientes distintos entre todos."""
+    informes = [informe_de_demora(producto) for producto in productos]
+    clientes = (
+        reservas_pendientes_de(productos)
+        .filter(estado=LineaPedido.RESERVADO)
+        .values("pedido__usuario")
+        .distinct()
+        .count()
+    )
+    return informes, clientes
+
+
+def reservas_pendientes_de(productos):
+    return LineaPedido.objects.filter(
+        producto_id__in=[producto.pk for producto in productos], estado__in=PENDIENTES
+    )
+
+
+def registrar_demoras(fechas, actor, *, nota="", origen=""):
+    """B-01-022: `CO-015` sobre varios tomos, con un solo aviso por Cliente.
+
+    `fechas` va de producto a su nueva fecha estimada (o `None`). Cada tomo va en
+    su propia transacción: el que ya no admite la demora —otro Administrador la
+    registró mientras tanto, la llegada venció— queda afuera con su motivo y los
+    demás se registran igual, como la confirmación en lote de borradores.
+    """
+    resumen = ResumenDemoras()
+    for producto, fecha_estimada in fechas.items():
+        try:
+            with transaction.atomic():
+                p = ProductoEditorial.objects.select_for_update().get(pk=producto.pk)
+                validar_demora(p, fecha_estimada)
+                resumen.demorados.append(
+                    _aplicar_demora(
+                        p,
+                        actor,
+                        timezone.now(),
+                        fecha_estimada=fecha_estimada,
+                        nota=nota,
+                        origen=origen,
+                        agrupar_avisos=True,
+                    )
+                )
+        except OperacionRechazada as rechazo:
+            resumen.excluidos.append((producto, str(rechazo)))
+
+    por_cliente = defaultdict(list)
+    for demorado in resumen.demorados:
+        for pedido, lineas, producto in demorado.avisos:
+            por_cliente[pedido.correo_de_contacto].append((pedido, lineas, producto))
+    for destinatario, avisos_del_cliente in por_cliente.items():
+        despues_del_commit(_avisar_demoras, destinatario, avisos_del_cliente, origen)
+    return resumen
+
+
+def _avisar_demoras(destinatario, avisos_del_cliente, origen):
+    """B-01-022: un correo con todos los tomos demorados del Cliente en esta operación."""
+    if len(avisos_del_cliente) == 1:
+        pedido, lineas, producto = avisos_del_cliente[0]
+        _avisar_demora(pedido, lineas, producto, origen)
+        return
+    pedidos = {pedido.numero: pedido for pedido, _, _ in avisos_del_cliente}
+    vence = min(
+        timezone.localtime(lineas[0].decision_vence_en) for _, lineas, _ in avisos_del_cliente
+    )
+    filas = []
+    for pedido, lineas, producto in avisos_del_cliente:
+        for linea in lineas:
+            detalle = f"pedido {pedido.numero} · llegaba el {fecha(linea.fecha_llegada_original)}"
+            if producto.fecha_estimada:
+                detalle += f" · nueva fecha {fecha(producto.fecha_estimada)}"
+            filas.append((nombre(linea.producto), detalle))
+    if len(pedidos) == 1:
+        unico = next(iter(pedidos.values()))
+        enlace, asunto = (
+            _enlace_al_pedido(origen, unico),
+            f"Tu pedido {unico.numero}: artículos demorados",
+        )
+    else:
+        cuenta = next(iter(pedidos.values())).usuario_id
+        enlace = origen + reverse("cuenta:pedidos") if origen and cuenta else ""
+        asunto = "Tus pedidos: artículos demorados"
+    avisos.avisar(
+        [destinatario],
+        asunto=asunto,
+        antetitulo="Pre-venta",
+        titulo="Artículos demorados",
+        parrafos=[
+            f"{len(filas)} artículos que reservaste no llegan en la fecha prevista.",
+            "Por cada uno podés esperar el pedido completo, recibir ahora lo disponible o "
+            "cancelar el artículo con reembolso en puntos. Tenés tiempo hasta el "
+            f"{vence:%d/%m/%Y %H:%M}.",
+        ],
+        filas=filas,
+        enlace=enlace,
+        texto_enlace="Elegir qué hacer" if len(pedidos) == 1 else "Ver mis pedidos",
+    )
+
+
+def _aplicar_demora(
+    p,
+    actor,
+    momento,
+    *,
+    fecha_estimada=None,
+    nota="",
+    origen="",
+    lineas=None,
+    agrupar_avisos=False,
+):
     """Las postcondiciones de `CO-015` sobre un producto ya bloqueado.
 
     `lineas` son las reservas a demorar; por omisión, todas las que esperan.
@@ -450,7 +585,10 @@ def _aplicar_demora(p, actor, momento, *, fecha_estimada=None, nota="", origen="
             continue
         resumen.pedidos.append(pedido)
         resumen.clientes.add(pedido.correo_de_contacto)
-        despues_del_commit(_avisar_demora, pedido, suyas, p, origen)
+        if agrupar_avisos:
+            resumen.avisos.append((pedido, suyas, p))
+        else:
+            despues_del_commit(_avisar_demora, pedido, suyas, p, origen)
 
     RegistroAuditoria.registrar(
         accion=RegistroAuditoria.REGISTRO_DEMORA,
@@ -468,6 +606,7 @@ def _aplicar_demora(p, actor, momento, *, fecha_estimada=None, nota="", origen="
     if resumen.errores:
         despues_del_commit(
             avisos.avisar_administradores,
+            tipo="preventas",
             asunto=f"Demora de {p}: pedidos sin actualizar",
             antetitulo="Demora",
             titulo="Pedidos sin actualizar",
@@ -607,6 +746,11 @@ def confirmar_ingreso(unidades, actor, *, origen=""):
             with transaction.atomic():
                 if unidades[pk] > 0:
                     _ingresar(pk, unidades[pk], actor, origen, parcial)
+                    # Plan 00 del circuito: lo que llegó se descuenta de lo pedido,
+                    # así «Pedidos por llegar» no lo vuelve a esperar.
+                    from apps.suppliers import llegadas
+
+                    llegadas.descontar(Producto(pk=pk), unidades[pk])
                 else:
                     _faltante(pk, actor, origen, parcial)
         except (
@@ -630,6 +774,7 @@ def confirmar_ingreso(unidades, actor, *, origen=""):
     if resumen.errores:
         despues_del_commit(
             avisos.avisar_administradores,
+            tipo="preventas",
             asunto="Ingreso de pre-ventas con errores",
             antetitulo="Ingreso",
             titulo="Productos sin confirmar",

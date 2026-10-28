@@ -47,7 +47,12 @@ class YaHayStock(OperacionRechazada):
 
 
 def admite_aviso(producto):
-    """B-05-002: Agotado, o Activo sin stock."""
+    """B-05-002: Agotado, o Activo sin stock. Y la pre-venta completa (plan 00 del
+    circuito, ambigüedad 5): la lista de espera se avisa si llega de más."""
+    from apps.suppliers import llegadas
+
+    if producto.estado == Producto.PRE_VENTA:
+        return llegadas.cupo(producto) == 0
     return producto.estado == Producto.AGOTADO or (
         producto.estado == Producto.ACTIVO and producto.stock == 0
     )
@@ -381,6 +386,7 @@ def _registrar_sin_propuesta(disparo, actor, ahora, texto, clave):
     )
     if clave == "pendiente":
         avisos.avisar_administradores(
+            tipo="restock",
             rotulo="Restock",
             asunto="Propuesta de restock pendiente",
             antetitulo="Restock",
@@ -393,6 +399,7 @@ def _avisar_propuesta(propuesta):
     grupos = agrupar(propuesta)
     lineas = [linea for g in grupos for linea in g.lineas]
     avisos.avisar_administradores(
+        tipo="restock",
         rotulo="Restock",
         asunto="Nueva propuesta de restock",
         antetitulo="Restock",
@@ -589,8 +596,12 @@ def _lineas_del_grupo(propuesta, clave):
     return propuesta, grupo, lineas
 
 
-def despachar(propuesta, clave, actor):
-    """`CO-072`, con el correo de `CO-074`. Si falla (E2), el grupo sigue Pendiente."""
+def despachar(propuesta, clave, actor, *, fecha_estimada=None):
+    """`CO-072`, con el correo de `CO-074`. Si falla (E2), el grupo sigue Pendiente.
+
+    Si sale, queda el pedido a proveedor que se espera en «Pedidos por llegar», con
+    la llegada estimada si el Administrador la indicó (plan 00 del circuito).
+    """
     with transaction.atomic():
         propuesta, grupo, lineas = _lineas_del_grupo(propuesta, clave)
         if grupo.proveedor is None:
@@ -598,7 +609,9 @@ def despachar(propuesta, clave, actor):
                 "Estos productos no tienen proveedor: asígnele la editorial a un proveedor o "
                 "descarte el grupo."
             )
-        envio = enviar_pedido_consolidado(grupo.proveedor, lineas, actor)
+        envio = enviar_pedido_consolidado(
+            grupo.proveedor, lineas, actor, propuesta=propuesta, fecha_estimada=fecha_estimada
+        )
         if not envio.enviado:
             despues_del_commit(_avisar_fallo_de_pedido, grupo.proveedor, envio.error)
             return envio
@@ -662,22 +675,34 @@ def _cerrar_si_corresponde(propuesta, actor):
 # ---------------------------------------------------------------------------
 
 
-def enviar_pedido_consolidado(proveedor, lineas, actor):
-    """`CO-074` desde la propuesta: el correo de `suppliers/pedidos.py` y su registro."""
+def enviar_pedido_consolidado(proveedor, lineas, actor, *, propuesta=None, fecha_estimada=None):
+    """`CO-074` desde la propuesta: el correo de `suppliers/pedidos.py`, su registro
+    y, si sale, el pedido a proveedor."""
+    from apps.suppliers.models import PedidoProveedor
+
     renglones = [
         pedidos_a_proveedor.LineaDePedido(
             titulo=linea.producto.titulo,
             volumen=linea.producto.volumen,
             isbn=linea.producto.isbn,
             cantidad=linea.cantidad_sugerida,
+            producto=linea.producto,
         )
         for linea in lineas
     ]
-    return pedidos_a_proveedor.enviar_y_registrar(proveedor, renglones, actor)
+    return pedidos_a_proveedor.enviar_y_registrar(
+        proveedor,
+        renglones,
+        actor,
+        origen=PedidoProveedor.RESTOCK,
+        propuesta=propuesta,
+        fecha_estimada=fecha_estimada,
+    )
 
 
 def _avisar_fallo_de_pedido(proveedor, error):
     avisos.avisar_administradores(
+        tipo="restock",
         rotulo="Restock",
         asunto=f"No salió el pedido a {proveedor.razon_social}",
         antetitulo="Restock",

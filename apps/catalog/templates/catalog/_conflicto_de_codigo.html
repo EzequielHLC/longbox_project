@@ -1,0 +1,20 @@
+{% comment %}
+`CO-028` E3 y `CO-030` E2: un código que ya tiene otro producto bloquea, con
+enlace a la ficha en conflicto y el criterio. A diferencia del homónimo, no hay
+nada que confirmar: el código identifica.
+
+    {% include "catalog/_conflicto_de_codigo.html" %}
+
+Lee `conflicto` del contexto: `{"producto": ..., "criterio": "código de barras"}`.
+{% endcomment %}
+{% if conflicto %}
+  <div class="panel panel--atencion">
+    <h2 class="fila-2">{% include "_iconos.html" with icono="atencion" %}<span>Ese {{ conflicto.criterio }} ya es de otro producto</span></h2>
+    <p>
+      Lo tiene <a href="{% url 'catalog:producto_detalle' conflicto.producto.pk %}">{{ conflicto.producto }}</a>
+      <span class="datos secundario">({{ conflicto.producto.codigo }})</span>.
+      El código identifica al producto: corrija el dato o
+      <a href="{% url 'catalog:producto_editar' conflicto.producto.pk %}">edite el existente</a>.
+    </p>
+  </div>
+{% endif %}

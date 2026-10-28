@@ -1,0 +1,13 @@
+# Una corrida del Temporizador (P-05): la dispara `longbox-temporizador.timer`.
+[Unit]
+Description=Longbox: Temporizador
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=longbox
+Group=longbox
+WorkingDirectory=/srv/longbox
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=/srv/longbox/venv/bin/python manage.py ejecutar_temporizador

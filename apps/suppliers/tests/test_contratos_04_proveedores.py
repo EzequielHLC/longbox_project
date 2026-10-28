@@ -204,11 +204,26 @@ def test_CO017_E4_si_el_servicio_no_responde_el_correo_falla_y_queda_en_la_cola(
 
 
 def test_CO017_E4_si_no_identifica_ningun_producto_el_correo_falla(client_admin, correo):
-    with contestando(respuesta([], intencion=extraccion.OTRO)):
+    with contestando(respuesta([], intencion=extraccion.NOVEDADES)):
         client_admin.post(url_aprobar(correo))
 
     correo.refresh_from_db()
     assert correo.estado == CorreoProveedor.FALLIDO
+    assert not BorradorProducto.objects.exists()
+
+
+@pytest.mark.parametrize("intencion", [extraccion.DEMORA, extraccion.OTRO])
+def test_CO017_E4_un_correo_bien_clasificado_que_no_es_de_novedades_no_falla(
+    client_admin, correo, intencion
+):
+    """B-04-010: una demora o una factura no son una falla del procesamiento."""
+    with contestando(respuesta([], intencion=intencion)):
+        client_admin.post(url_aprobar(correo))
+
+    correo.refresh_from_db()
+    assert correo.estado == CorreoProveedor.PROCESADO
+    assert correo.intencion == intencion
+    assert correo.motivo
     assert not BorradorProducto.objects.exists()
 
 

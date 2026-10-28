@@ -7,8 +7,9 @@ dirección comercial de un proveedor no llegan sólo novedades: llegan facturas,
 promociones y avisos de demora. Acá cada correo espera una decisión antes de que
 se gaste un solo ciclo en procesarlo.
 
-Sin acción principal: en esta pantalla no se crea nada. Lo que se hace con un
-correo se decide en su ficha, mirando lo que se extrajo.
+En esta pantalla no se crea nada: lo que se hace con un correo se decide en su
+ficha, mirando lo que se extrajo. La única acción es revisar la casilla en el
+momento (`CO-016`, B-04-013), que sólo trae lo nuevo a la cola.
 {% endcomment %}
 
 {% block titulo %}Correos de proveedores · Longbox{% endblock %}
@@ -18,7 +19,19 @@ correo se decide en su ficha, mirando lo que se extrajo.
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
     <h1>Correos de proveedores</h1>
+    {% if casilla_configurada %}
+      <p>Casilla revisada {% if casilla_revisada_en %}el <span class="datos">{{ casilla_revisada_en|date:"d/m/Y H:i" }}</span>{% else %}nunca{% endif %}.
+        {% if proxima_revision %}La próxima, automática, {% if proxima_revision > ahora %}a las <span class="datos">{{ proxima_revision|date:"H:i" }}</span>{% else %}en el próximo minuto{% endif %}: revisar ahora reinicia la cuenta.{% endif %}</p>
+    {% else %}
+      <p class="secundario">La casilla de novedades no está configurada: los correos entran sólo cargando el .eml.</p>
+    {% endif %}
   </div>
+  {% if casilla_configurada %}
+    <form method="post" action="{% url 'suppliers:correo_revisar' %}">
+      {% csrf_token %}
+      <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="reactivar" %}<span>Revisar la casilla</span></button>
+    </form>
+  {% endif %}
 </header>
 
 {% comment %}

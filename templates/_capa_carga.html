@@ -1,0 +1,81 @@
+{% comment %}
+La capa de carga entre pantallas, del panel y de la tienda (plan 00 de tope de
+reservas y errores, C).
+
+    {% include "_capa_carga.html" %}
+
+Sólo aparece si el guion la activa, mientras se navega a otra pantalla o se envía
+un formulario. Si el guion falla, nunca queda tapando la pantalla.
+
+- **Aparece a los 300 ms**: una navegación rápida no parpadea, y en la tienda no
+  tapa la transición entre vistas.
+- **Para entonces ya se sabe si hubo navegación**: un clic o un envío que resolvió
+  un guion (un diálogo, el carrito lateral) quedó con `defaultPrevented` y la capa
+  no aparece.
+- **No se activa** con un clic que abre otra pestaña (Ctrl, Cmd, Mayúsculas, la
+  rueda), con un enlace que descarga (`download`), que apunta a otra ventana o
+  que pide `data-sin-capa`, ni con un formulario de diálogo o con `data-sin-capa`.
+- **Un enlace no la deja más de 12 segundos**: si la página sigue ahí, la
+  navegación no ocurrió (una descarga que el servidor mandó como adjunto) y la
+  capa se va. Un formulario no tiene ese límite: el procesamiento de un correo
+  tarda minutos y el botón ya dice «Procesando…».
+{% endcomment %}
+<div id="capa-carga" class="capa-carga">
+  {% include "_loader.html" %}
+</div>
+
+<script>
+  (function () {
+    const capa = document.getElementById("capa-carga");
+    const ESPERA = 300;
+    const SALVAVIDAS = 12000;
+    let espera = null;
+    let salvavidas = null;
+
+    function ocultar() {
+      window.clearTimeout(espera);
+      window.clearTimeout(salvavidas);
+      capa.classList.remove("capa-carga--fija");
+    }
+
+    function mostrar(evento, conSalvavidas) {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(function () {
+        if (evento.defaultPrevented) return;
+        capa.classList.add("capa-carga--fija");
+        if (conSalvavidas) salvavidas = window.setTimeout(ocultar, SALVAVIDAS);
+      }, ESPERA);
+    }
+
+    document.addEventListener("click", function (evento) {
+      if (evento.button !== 0 || evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+      const enlace = evento.target.closest("a[href]");
+      if (!enlace || enlace.hasAttribute("download") || enlace.hasAttribute("data-sin-capa")) return;
+      if (enlace.target && enlace.target !== "_self") return;
+
+      const destino = new URL(enlace.href, location.href);
+      const esLaMismaPantalla =
+        destino.pathname === location.pathname && destino.search === location.search;
+      if (destino.origin !== location.origin || esLaMismaPantalla) return;
+
+      mostrar(evento, true);
+    });
+
+    document.addEventListener("submit", function (evento) {
+      // El buscador de la tabla trae su propio indicador; las descargas no
+      // navegan a ninguna pantalla nueva.
+      const formulario = evento.target;
+      if (
+        formulario.hasAttribute("data-sin-capa") ||
+        formulario.getAttribute("method") === "dialog" ||
+        (formulario.target && formulario.target !== "_self")
+      ) return;
+      mostrar(evento, false);
+    });
+
+    // Al volver con «atrás» el navegador restaura la pantalla tal como estaba.
+    window.addEventListener("pageshow", function (evento) {
+      if (evento.persisted) ocultar();
+    });
+  })();
+</script>

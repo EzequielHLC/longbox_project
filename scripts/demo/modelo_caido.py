@@ -66,7 +66,7 @@ def main():
 
         for modo in ("roto", "inventado"):
             print(f"{2 if modo == 'roto' else 3}. Modelo que responde «{modo}»")
-            servidor = subprocess.Popen(  # nosec B603
+            servidor = subprocess.Popen(  # nosec B603 - el modelo falso, sin shell
                 [sys.executable, str(AQUI / "llm_falso.py"), modo],
                 env=entorno_para_subproceso(),
                 stdout=subprocess.DEVNULL,

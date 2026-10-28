@@ -22,9 +22,12 @@ La segunda y la tercera son las que fijan casi todas las reglas de este archivo.
 que llega antes de que el pipeline gaste un solo ciclo en procesarlo.
 """
 
+import datetime
+
 from django.conf import settings
 from django.db import models
 from django.db.models.functions import Lower
+from django.utils import timezone
 
 
 class ProveedorQuerySet(models.QuerySet):
@@ -357,3 +360,230 @@ class CorreoProveedor(models.Model):
     @property
     def intencion(self):
         return (self.extraccion or {}).get("intencion", "")
+
+    @property
+    def demorados_extraidos(self):
+        """Lo que un aviso de demora dice que se atrasa (B-04-010)."""
+        return (self.extraccion or {}).get("demorados", [])
+
+    @property
+    def demorados_a_la_vista(self):
+        """Lo mismo, con la fecha como fecha: la pantalla la muestra como todas (dd/mm/aaaa)."""
+        vista = []
+        for mencion in self.demorados_extraidos:
+            try:
+                fecha = datetime.date.fromisoformat(mencion.get("fecha") or "")
+            except ValueError:
+                fecha = None
+            vista.append({**mencion, "fecha": fecha})
+        return vista
+
+    @property
+    def es_aviso_de_demora(self):
+        return self.estado == self.PROCESADO and self.intencion == "demora"
+
+    @property
+    def puede_descartarse(self):
+        """Pendiente, o ya procesado sin ser de novedades (B-04-010).
+
+        Un aviso de demora o una factura procesados no tienen borradores que
+        perder: descartarlos después deja dicho que ya se atendieron. Uno de
+        novedades no, porque sus borradores siguen en la revisión.
+        """
+        return self.estado == self.PENDIENTE or (
+            self.estado == self.PROCESADO and self.intencion not in ("", "novedades")
+        )
+
+
+# ---------------------------------------------------------------------------
+# El pedido a proveedor (plan 00 del circuito con los proveedores)
+# ---------------------------------------------------------------------------
+
+
+class PedidoProveedor(models.Model):
+    """Lo que se le pidió a un proveedor y todavía puede llegar.
+
+    **Nace sólo cuando el pedido sale** (decisión 1 del plan): el correo de
+    `CO-074` exitoso, o el alta de un lote en pre-venta, cuyo pedido se hizo por
+    fuera del sistema. Sus líneas pendientes son el **cupo** de la pre-venta: un
+    producto se reserva contra lo que viene en camino, nunca contra lo que no se
+    pidió. Su llegada se registra en «Pedidos por llegar».
+    """
+
+    REVISION = "revision"
+    RESTOCK = "restock"
+    LOTE = "lote"
+    MANUAL = "manual"
+    MIGRACION = "migracion"
+    ORIGEN_CHOICES = [  # noqa: RUF012
+        (REVISION, "Novedades revisadas"),
+        (RESTOCK, "Restock"),
+        (LOTE, "Alta de lote en pre-venta"),
+        (MANUAL, "Pedido a mano"),
+        (MIGRACION, "Pre-venta anterior al registro de pedidos"),
+    ]
+
+    ABIERTO = "abierto"
+    CERRADO = "cerrado"
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (ABIERTO, "Por llegar"),
+        (CERRADO, "Cerrado"),
+    ]
+
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+        help_text="Vacío en un lote en pre-venta de una editorial sin proveedor cargado.",
+    )
+    origen = models.CharField("origen", max_length=12, choices=ORIGEN_CHOICES)
+    estado = models.CharField("estado", max_length=10, choices=ESTADO_CHOICES, default=ABIERTO)
+    fecha_estimada = models.DateField("llegada estimada", null=True, blank=True)
+    creado_en = models.DateTimeField("pedido el", auto_now_add=True)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pedidos_a_proveedor",
+    )
+    cerrado_en = models.DateTimeField("cerrado el", null=True, blank=True)
+    # De dónde salió, para enlazarlo. Uno solo, según el origen.
+    propuesta = models.ForeignKey(
+        "restock.PropuestaRestock",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+    )
+    sesion = models.ForeignKey(
+        "catalog.SesionRevision",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+    )
+    lote = models.ForeignKey(
+        "catalog.LoteAlta",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+    )
+
+    class Meta:
+        verbose_name = "pedido a proveedor"
+        verbose_name_plural = "pedidos a proveedores"
+        ordering = ["-creado_en", "-pk"]
+
+    def __str__(self):
+        quien = self.proveedor.razon_social if self.proveedor else "sin proveedor"
+        return f"Pedido #{self.pk} · {quien}"
+
+    @property
+    def nombre_proveedor(self):
+        return self.proveedor.razon_social if self.proveedor else "Sin proveedor cargado"
+
+    @property
+    def unidades_pendientes(self):
+        """Lo que todavía puede llegar, sumando sus líneas abiertas."""
+        return sum(linea.pendiente for linea in self.lineas.all())
+
+    @property
+    def unidades_pedidas(self):
+        return sum(linea.cantidad_pedida for linea in self.lineas.all())
+
+    @property
+    def unidades_recibidas(self):
+        return sum(linea.cantidad_recibida for linea in self.lineas.all())
+
+    # Las mismas palabras que «Pre-ventas por llegar» (`GrupoDeLlegada`): las dos
+    # pantallas hablan de lo mismo visto desde dos lados.
+    @property
+    def dias_para(self):
+        if self.estado != self.ABIERTO or self.fecha_estimada is None:
+            return None
+        return (self.fecha_estimada - timezone.localdate()).days
+
+    @property
+    def vencido(self):
+        return self.dias_para is not None and self.dias_para < 0
+
+    @property
+    def cercano(self):
+        """Lo atrasado y lo de la próxima semana se muestra abierto."""
+        return self.dias_para is not None and self.dias_para <= 7
+
+    @property
+    def cuando(self):
+        if self.estado != self.ABIERTO:
+            return "Cerrado"
+        dias = self.dias_para
+        if dias is None:
+            return "Sin fecha"
+        if dias < 0:
+            return f"Atrasado {-dias} día{'s' if dias != -1 else ''}"
+        if dias == 0:
+            return "Llega hoy"
+        if dias == 1:
+            return "Llega mañana"
+        return f"Llega en {dias} días"
+
+
+class LineaPedidoProveedor(models.Model):
+    """Un producto del pedido: cuánto se pidió, cuánto llegó y si se sigue esperando.
+
+    **Queda abierta mientras falte algo** (plan, decisión sobre las parciales): una
+    llegada parcial suma lo recibido y deja el resto pendiente. Se cierra cuando
+    llega todo —o más, que se acepta— o a mano, sin recibir, con motivo.
+    """
+
+    PENDIENTE = "pendiente"
+    PARCIAL = "parcial"
+    RECIBIDA = "recibida"
+    SIN_RECIBIR = "sin_recibir"
+    ESTADO_CHOICES = [  # noqa: RUF012
+        (PENDIENTE, "Por llegar"),
+        (PARCIAL, "Llegó una parte"),
+        (RECIBIDA, "Recibida"),
+        (SIN_RECIBIR, "Cerrada sin recibir"),
+    ]
+    ABIERTAS = (PENDIENTE, PARCIAL)
+
+    pedido = models.ForeignKey(PedidoProveedor, on_delete=models.CASCADE, related_name="lineas")
+    producto = models.ForeignKey(
+        "catalog.Producto", on_delete=models.PROTECT, related_name="pedidos_a_proveedor"
+    )
+    cantidad_pedida = models.PositiveIntegerField("pedida")
+    cantidad_recibida = models.PositiveIntegerField("recibida", default=0)
+    estado = models.CharField("estado", max_length=12, choices=ESTADO_CHOICES, default=PENDIENTE)
+    recibida_en = models.DateTimeField("última llegada", null=True, blank=True)
+    motivo_cierre = models.TextField("motivo del cierre sin recibir", blank=True)
+
+    class Meta:
+        verbose_name = "línea de pedido a proveedor"
+        verbose_name_plural = "líneas de pedidos a proveedores"
+        ordering = ["pedido", "pk"]
+        constraints = [  # noqa: RUF012
+            # Cerrar sin recibir exige decir por qué (plan, como el descarte de CO-073).
+            models.CheckConstraint(
+                condition=~models.Q(estado="sin_recibir") | ~models.Q(motivo_cierre=""),
+                name="linea_pedido_proveedor_cerrada_con_motivo",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(cantidad_pedida__gte=1),
+                name="linea_pedido_proveedor_pide_algo",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.producto} × {self.cantidad_pedida}"
+
+    @property
+    def pendiente(self):
+        """Lo que todavía puede llegar. Cero en una línea cerrada."""
+        if self.estado not in self.ABIERTAS:
+            return 0
+        return max(0, self.cantidad_pedida - self.cantidad_recibida)

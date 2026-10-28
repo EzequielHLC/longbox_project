@@ -30,6 +30,7 @@ from django.utils import timezone
 
 from apps.catalog import services
 from apps.catalog.models import BorradorProducto, ConfianzaCampo, Formato, Producto
+from apps.core import imagenes
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,7 @@ def generar(correo, *, portadas=None, actor=None, ip=None):
                 stock=configuracion.stock_inicial_por_defecto,
             )
             borrador.save()
+            borrador.etiquetas.set(getattr(borrador, "etiquetas_de_la_serie", []))
             _guardar_confianzas(
                 borrador,
                 crudo.get("confianza") or {},
@@ -237,7 +239,8 @@ def _resolver_formato(nombre, tipo):
     nombre = " ".join(str(nombre or "").split())
     if not nombre or not tipo or not tipo.usa_formato:
         return None
-    candidato = Formato.objects.filter(nombre__iexact=nombre, activo=True).first()
+    # Sin tildes ni signos (B-01-023): «Tankobon» es el «Tankōbon» del catálogo.
+    candidato = services.por_nombre(Formato.objects.filter(activo=True), nombre)
     if candidato and candidato.aplica_a(tipo):
         return candidato
     return None
@@ -248,7 +251,7 @@ def _resolver_formato(nombre, tipo):
 # ---------------------------------------------------------------------------
 
 
-def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock):
+def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock, proveedor=None):
     """El borrador todavía sin guardar, con todo lo derivado ya resuelto."""
     formato = _resolver_formato(crudo.get("formato"), tipo)
     fecha_propia = _fecha_desde_iso(crudo.get("fecha"))
@@ -264,14 +267,15 @@ def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock
 
     borrador = BorradorProducto(
         correo=correo,
-        proveedor=correo.proveedor,
+        proveedor=correo.proveedor if correo else proveedor,
         titulo=" ".join((crudo.get("titulo") or "").split()),
         volumen=crudo.get("volumen"),
         isbn=(crudo.get("isbn") or "").strip(),
         editorial=editorial,
         tipo=tipo,
         formato=formato,
-        precio=_precio_desde_texto(crudo.get("precio")),
+        precio=_precio_desde_texto(crudo.get("precio"))
+        or _precio_de_la_tabla(editorial, tipo, formato),
         fecha_llegada=fecha_llegada,
         estado_sugerido=estado_sugerido,
         stock_inicial=stock,
@@ -281,12 +285,44 @@ def _armar(crudo, *, correo, editorial, tipo, periodo, reparos_del_correo, stock
     # `incompleto` no es un estado peor: es el indicador "Extracción incompleta"
     # que CU-ALT-NOV pide para los productos que el modelo identificó pero no pudo
     # completar. Van a la **misma** cola que los demás.
+    _completar_con_la_serie(borrador)
     borrador.estado = (
         BorradorProducto.INCOMPLETO
         if borrador.campos_bloqueantes_vacios
         else BorradorProducto.PENDIENTE
     )
     return borrador
+
+
+def _completar_con_la_serie(borrador):
+    """B-01-020: si la serie ya está en el catálogo, lo que el correo no trae.
+
+    Sólo lo vacío —autor y sinopsis, que el correo nunca trae— y «sólo
+    adultos», que únicamente se enciende: un tomo nuevo de una serie para adultos
+    no puede nacer a la vista de todos por omisión. El tipo y el formato no se
+    tocan: los leyó el modelo, y si difieren de los de la serie la ficha lo
+    señala para que decida una persona.
+    """
+    serie = services.serie_de(borrador.titulo, borrador.editorial)
+    if serie is None:
+        return
+    borrador.autor = borrador.autor or serie.autor
+    borrador.sinopsis = borrador.sinopsis or serie.sinopsis
+    borrador.solo_adultos = borrador.solo_adultos or serie.solo_adultos
+    # Las etiquetas son una relación: se asignan después de guardar el borrador.
+    borrador.etiquetas_de_la_serie = serie.etiquetas
+
+
+def _precio_de_la_tabla(editorial, tipo, formato):
+    """B-01-018: si el correo no trae precio, el de la tabla de referencia.
+
+    Es lo que el Administrador pondría a mano, y el borrador deja de nacer
+    incompleto por un dato que el sistema ya tiene. Un precio que el correo sí
+    trae se respeta, aunque no coincida: la pantalla muestra el de la tabla al
+    lado.
+    """
+    fila = services.precio_de_referencia(editorial, tipo, formato)
+    return fila.pvp if fila else None
 
 
 def _estado_por_fecha(fecha):
@@ -400,19 +436,86 @@ def _adjuntar_portada(borrador, portadas):
 
     Que falte no interrumpe nada (CU-ALT-NOV): el borrador queda con la portada
     pendiente y se adjunta a mano después.
+
+    **Se procesa con RNF-05 al adjuntarla** (plan 00 de cierre de deuda, D2): la
+    revisión ve la misma imagen que se va a guardar con el producto, y el
+    adjunto original no llega al almacenamiento. Uno que no es JPG, PNG o WebP
+    deja el mismo reparo que uno ilegible.
     """
     imagen = portadas.get(borrador.cid_portada) if borrador.cid_portada else None
     if not imagen:
         return
-    nombre = f"borrador-{borrador.pk}-{imagen.nombre or 'portada'}"
     try:
-        borrador.portada.save(nombre, ContentFile(imagen.contenido), save=True)
-    except OSError:
+        procesada = imagenes.procesar(ContentFile(imagen.contenido, name=imagen.nombre or ""))
+        borrador.portada.save(f"borrador-{borrador.pk}-{procesada.name}", procesada, save=True)
+    except (imagenes.ImagenInvalida, OSError):
         # Una portada ilegible no puede tumbar el procesamiento del correo
         # entero. Queda el reparo, que es lo que se mira en la revisión.
         logger.warning("No se pudo guardar la portada del borrador %s", borrador.pk)
         borrador.reparos.append("La portada del correo no se pudo guardar.")
         borrador.save(update_fields=["reparos"])
+
+
+# ---------------------------------------------------------------------------
+# B-19-006 · `CU-AVI-BOR`: un borrador cargado desde Telegram
+# ---------------------------------------------------------------------------
+
+
+def desde_telegram(crudo, *, editorial, usuario, portada=None, reparos=(), tipo=None):
+    """Un borrador con lo que el modelo leyó del mensaje: el mismo armado que el de un
+    correo —precio de la tabla, datos de la serie, estado por la fecha, confianzas—,
+    sin correo de origen. El proveedor es el de la editorial, si hay uno cargado.
+    El tipo es el que dijo el mensaje; si no dijo, el del proveedor o el de la serie.
+
+    `crudo` tiene la forma de un producto de `Extraccion.como_json()`. `portada`
+    son los bytes de la foto, si vino una. Nunca crea un producto (regla 4).
+    """
+    from apps.suppliers.models import Proveedor
+
+    proveedor = (
+        Proveedor.objects.activos().filter(editorial=editorial).order_by("pk").first()
+        if editorial
+        else None
+    )
+    if tipo is None and proveedor is not None:
+        tipo = proveedor.tipo_por_defecto
+    if tipo is None and editorial is not None:
+        serie = services.serie_de(crudo.get("titulo"), editorial)
+        tipo = serie.tipo if serie else None
+    with transaction.atomic():
+        borrador = _armar(
+            crudo,
+            correo=None,
+            editorial=editorial,
+            tipo=tipo,
+            periodo=None,
+            reparos_del_correo=list(reparos),
+            stock=ConfiguracionSistema.obtener().stock_inicial_por_defecto,
+            proveedor=proveedor,
+        )
+        borrador.origen = BorradorProducto.TELEGRAM
+        borrador.cargado_por = usuario
+        borrador.save()
+        borrador.etiquetas.set(getattr(borrador, "etiquetas_de_la_serie", []))
+        _guardar_confianzas(
+            borrador,
+            crudo.get("confianza") or {},
+            fecha_propia=bool(_fecha_desde_iso(crudo.get("fecha"))),
+        )
+    if portada:
+        try:
+            procesada = imagenes.procesar(ContentFile(portada, name="telegram.jpg"))
+            borrador.portada.save(f"borrador-{borrador.pk}-{procesada.name}", procesada, save=True)
+        except (imagenes.ImagenInvalida, OSError):
+            borrador.reparos.append("La foto que llegó por Telegram no se pudo guardar.")
+            borrador.save(update_fields=["reparos"])
+    RegistroAuditoria.registrar(
+        accion=RegistroAuditoria.BORRADORES_GENERADOS,
+        actor=usuario,
+        objetivo=borrador,
+        detalle=f"«{borrador}» cargado desde Telegram: un borrador para revisar.",
+    )
+    return borrador
 
 
 # ---------------------------------------------------------------------------

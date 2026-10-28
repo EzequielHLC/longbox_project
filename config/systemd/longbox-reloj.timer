@@ -1,0 +1,12 @@
+# Cada minuto: cada tarea del reloj decide si le toca (B-19-011). Así un correo de
+# un proveedor llega al chat de Telegram en minutos, no al día siguiente.
+[Unit]
+Description=Longbox: reloj por minuto
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=10s
+Persistent=false
+
+[Install]
+WantedBy=timers.target

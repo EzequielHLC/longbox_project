@@ -29,6 +29,8 @@ total salen siempre del servidor.
               {% if item.pre_venta %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
               {% if item.disponibilidad == "no_disponible" %}
                 <span class="marca-estado marca-estado--error">Producto no disponible</span>
+              {% elif item.disponibilidad == "stock_insuficiente" and item.pre_venta %}
+                <span class="marca-estado marca-estado--error">Pasa el máximo por reserva · podés tener {{ item.maximo }}</span>
               {% elif item.disponibilidad == "stock_insuficiente" %}
                 <span class="marca-estado marca-estado--error">Stock insuficiente · máximo {{ item.maximo }}</span>
               {% endif %}

@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -232,6 +232,32 @@ class AltaLoteImportadoView(AltaLoteView):
         return contexto
 
 
+def choque_tras_validar(form, *, alta, portada_guardada=""):
+    """¿El guardado chocó con otro producto que se confirmó mientras éste se validaba?
+
+    Entre la validación y el INSERT otro pedido se quedó con el código, el ISBN o
+    la edición (plan 00 de cierre de deuda, D1). Se vuelve a validar: la segunda
+    pasada ya ve la fila ganadora y deja el mismo aviso —con el enlace y el
+    criterio— que si hubiera llegado antes. Si vuelve a pasar, el error de
+    integridad es otro y no se disfraza de duplicado: devuelve `False`.
+
+    La portada de este envío se escribe al almacenamiento antes del INSERT; si no
+    es la que el producto ya tenía, nadie la referencia y se borra. En un alta, la
+    fila del padre pudo llegar a insertarse antes de que chocara la de la hija: la
+    transacción la deshizo, pero la instancia se quedó con su clave y tiene que
+    volver a ser nueva para que la segunda validación no se excluya a sí misma.
+    """
+    portada = form.instance.portada
+    if portada and portada.name and portada.name != portada_guardada:
+        portada.storage.delete(portada.name)
+    if alta:
+        form.instance.pk = None
+        form.instance.id = None
+        form.instance._state.adding = True
+    form.full_clean()
+    return bool(form.errors)
+
+
 class PrecioDeReferenciaView(CatalogoAdminMixin, View):
     """El PVP de una combinación editorial + tipo + formato.
 
@@ -276,28 +302,35 @@ class ProductoNoEditorialAltaView(CatalogoAdminMixin, CreateView):
         # El choque exacto, para poder enlazar la ficha existente al volver del
         # error. E2 del CU pide el enlace, no solo el aviso.
         contexto["duplicado"] = getattr(contexto["form"], "duplicado", None)
+        contexto["conflicto"] = getattr(contexto["form"], "conflicto", None)
         contexto["hay_categorias"] = Tipo.objects.filter(activo=True, clase=NO_EDITORIAL).exists()
         return contexto
 
     def form_valid(self, form):
-        with transaction.atomic():
-            producto = form.save()
-            agregadas, _ = galeria.actualizar(
-                producto, nuevas=form.cleaned_data.get("imagenes_nuevas") or []
-            )
-            detalle = (
-                f"«{producto.titulo}» ({producto.tipo}) · código {producto.codigo} · "
-                f"${producto.precio} · stock inicial {producto.stock}"
-            )
-            if agregadas:
-                detalle += f" · {galeria.describir(agregadas, 0)}"
-            RegistroAuditoria.registrar(
-                RegistroAuditoria.ALTA_PRODUCTO_NO_EDITORIAL,
-                actor=self.request.user,
-                ip=obtener_ip(self.request),
-                objetivo=producto,
-                detalle=detalle,
-            )
+        try:
+            with transaction.atomic():
+                producto = form.save()
+                agregadas, _ = galeria.actualizar(
+                    producto, nuevas=form.cleaned_data.get("imagenes_nuevas") or []
+                )
+                detalle = (
+                    f"«{producto.titulo}» ({producto.tipo}) · código {producto.codigo} · "
+                    f"${producto.precio} · stock inicial {producto.stock}"
+                )
+                if agregadas:
+                    detalle += f" · {galeria.describir(agregadas, 0)}"
+                RegistroAuditoria.registrar(
+                    RegistroAuditoria.ALTA_PRODUCTO_NO_EDITORIAL,
+                    actor=self.request.user,
+                    ip=obtener_ip(self.request),
+                    objetivo=producto,
+                    detalle=detalle,
+                )
+        except IntegrityError:
+            # `CO-028` E3 cuando otra alta ganó el código después de validarlo.
+            if not choque_tras_validar(form, alta=True):
+                raise
+            return self.form_invalid(form)
 
         self.object = producto
         messages.success(self.request, f"«{producto.titulo}» se agregó al catálogo.")
@@ -479,6 +512,8 @@ class ParametrosView(CatalogoAdminMixin, View):
         "porcentaje_puntos": "reintegro en puntos (%)",
         "plazo_devolucion_dias": "plazo de arrepentimiento (días)",
         "plazo_garantia_dias": "plazo de garantía (días)",
+        "maximo_reserva_preventa": "máximo por reserva (unidades)",
+        "margen_cupo_preventa": "margen del cupo de pre-venta (%)",
         "expiracion_sesion_minutos": "expiración de la sesión (min)",
         "bloqueo_intentos_minutos": "bloqueo tras intentos fallidos (min)",
     }
@@ -1134,6 +1169,22 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
             # cortesía que CU-ALT-NAC E1 le da a los duplicados del alta en lote,
             # enlace a la ficha existente incluido.
             "duplicado": self._duplicado_de(borrador),
+            # B-01-020: la serie, si ya está en el catálogo, con lo que difiere.
+            "serie": (serie := services.serie_de(borrador.titulo, borrador.editorial)),
+            "serie_datos": serie
+            and {
+                "tipo": serie.tipo.pk,
+                "formato": serie.formato.pk if serie.formato else "",
+                "autor": serie.autor,
+                "sinopsis": serie.sinopsis,
+                "solo_adultos": serie.solo_adultos,
+                "etiquetas": [etiqueta.pk for etiqueta in serie.etiquetas],
+            },
+            # B-01-018: la fila de la tabla para lo que el borrador tiene guardado.
+            # La pantalla la vuelve a consultar si se cambia la combinación.
+            "precio_de_la_tabla": borrador.precio_de_la_tabla,
+            "precio_es_el_de_la_tabla": borrador.precio_es_el_de_la_tabla
+            or (borrador.precio is None and borrador.precio_de_la_tabla is not None),
         }
         contexto.update(extra)
         return contexto
@@ -1174,7 +1225,12 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
         return redirect("catalog:borrador_lista")
 
     def _guardar_o_confirmar(self, request, borrador):
-        formulario = BorradorForm(request.POST, request.FILES, instance=borrador)
+        formulario = BorradorForm(
+            request.POST,
+            request.FILES,
+            instance=borrador,
+            confirmando="confirmar" in request.POST,
+        )
         if not formulario.is_valid():
             return render(request, self.template_name, self._contexto(borrador, form=formulario))
 
@@ -1188,12 +1244,17 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
 
         # Se relee la confianza después de haberla marcado: si el Administrador
         # tildó las casillas en este mismo envío, tienen que contar.
-        sin_revisar = [c.campo for c in borrador.confianzas.all() if c.exige_revision]
+        sin_revisar = [c.campo for c in borrador.confianzas_bajas_sin_revisar]
         if sin_revisar:
             messages.error(request, MENSAJE_CONFIANZA_SIN_REVISAR.format(", ".join(sin_revisar)))
             return redirect("catalog:borrador_detalle", pk=borrador.pk)
 
-        confirmacion = revisiones.confirmar(borrador, actor=request.user, ip=obtener_ip(request))
+        confirmacion = revisiones.confirmar(
+            borrador,
+            actor=request.user,
+            ip=obtener_ip(request),
+            confirma_precio_manual=formulario.cleaned_data.get("confirma_precio_manual", False),
+        )
         if not confirmacion:
             messages.error(request, f"No se pudo confirmar: {confirmacion.motivo_legible.lower()}.")
             return redirect("catalog:borrador_detalle", pk=borrador.pk)
@@ -1337,6 +1398,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["duplicado"] = getattr(contexto["form"], "duplicado", None)
+        contexto["conflicto"] = getattr(contexto["form"], "conflicto", None)
         contexto["es_editorial"] = self.object.clase == Producto.EDITORIAL
         if contexto["es_editorial"]:
             contexto["restauracion"] = tabla_de_precios.restauracion_de(self.object)
@@ -1351,6 +1413,29 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
         anterior = type(self.object).objects.get(pk=self.object.pk)
         antes = {etiqueta: leer(anterior) for etiqueta, leer in campos.items()}
 
+        try:
+            producto, partes = self._guardar(form, campos, anterior, antes)
+        except IntegrityError:
+            # `CO-030` E2 cuando otro producto ganó el código de barras, el ISBN o
+            # la edición después de validarlos.
+            if not choque_tras_validar(
+                form, alta=False, portada_guardada=anterior.portada.name or ""
+            ):
+                raise
+            return self.form_invalid(form)
+
+        self.object = producto
+        if partes:
+            messages.success(self.request, f"Se actualizó «{producto.titulo}».")
+        else:
+            # Guardar sin haber tocado nada no es un error, pero decir "se
+            # actualizó" sería afirmar algo que el historial de la ficha
+            # desmiente: no va a mostrar ninguna entrada nueva.
+            messages.info(self.request, "No había cambios para guardar.")
+        return redirect("catalog:producto_detalle", pk=producto.pk)
+
+    def _guardar(self, form, campos, anterior, antes):
+        """El guardado de la edición con su historial, en una transacción."""
         with transaction.atomic():
             producto = form.save()
             # Antes de medir los cambios: «Usar como portada» cambia la portada.
@@ -1394,16 +1479,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                     objetivo=producto,
                     detalle=f"{producto.codigo} · " + "; ".join(partes),
                 )
-
-        self.object = producto
-        if partes:
-            messages.success(self.request, f"Se actualizó «{producto.titulo}».")
-        else:
-            # Guardar sin haber tocado nada no es un error, pero decir "se
-            # actualizó" sería afirmar algo que el historial de la ficha
-            # desmiente: no va a mostrar ninguna entrada nueva.
-            messages.info(self.request, "No había cambios para guardar.")
-        return redirect("catalog:producto_detalle", pk=producto.pk)
+        return producto, partes
 
     @staticmethod
     def _campos_auditados(producto):

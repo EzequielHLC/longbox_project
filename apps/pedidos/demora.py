@@ -274,6 +274,7 @@ def _cancelar(pedido, linea, usuario):
 def avisar_fallo_de_cancelacion(pedido, linea):
     """`CO-098` E1: el Administrador se entera con el pedido y el artículo."""
     avisos.avisar_administradores(
+        tipo="pedidos",
         asunto=f"Pedido {pedido.numero}: falló una cancelación",
         rotulo="Pedido",
         antetitulo="Demora",
@@ -357,6 +358,7 @@ def ciclo_de_ventanas(ahora=None):
             cerradas.append(linea)
     if cerradas:
         avisos.avisar_administradores(
+            tipo="pedidos",
             asunto="Demoras sin respuesta del Cliente",
             rotulo="Pedido",
             antetitulo="Demora",

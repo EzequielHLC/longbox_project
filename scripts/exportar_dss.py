@@ -190,7 +190,7 @@ def _get(base: str, fmt: str, source: str, timeout: int) -> bytes:
         raise RenderError("URL_TOO_LONG")
     try:
         # `exigir_esquema_http` de arriba acota el esquema a http/https.
-        with urllib.request.urlopen(url, timeout=timeout) as response:  # nosec B310
+        with urllib.request.urlopen(url, timeout=timeout) as response:  # nosec B310 - http(s)
             data = response.read()
     except urllib.error.HTTPError as exc:
         if exc.code in (413, 414):
@@ -213,7 +213,7 @@ def _post(base: str, fmt: str, source: str, timeout: int) -> bytes:
     )
     try:
         # `exigir_esquema_http` de arriba acota el esquema a http/https.
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310 - http(s)
             data = response.read()
     except urllib.error.HTTPError as exc:
         raise RenderError(f"HTTP {exc.code} en POST: {exc.reason}") from exc

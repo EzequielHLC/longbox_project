@@ -1,0 +1,11 @@
+{% extends "_pagina_de_error.html" %}
+{% block titulo %}Página no encontrada{% endblock %}
+{% block codigo %}¡404!{% endblock %}
+{% block encabezado %}Esta página no existe{% endblock %}
+{% block explicacion %}
+  <p>Puede que el enlace esté mal escrito, o que lo que buscabas ya no esté publicado.</p>
+{% endblock %}
+{% block acciones %}
+  <a href="/" class="boton-primario">Volver al inicio</a>
+  <a href="{% url 'core:tienda_catalogo' %}" class="boton-seccion">Ver el catálogo</a>
+{% endblock %}

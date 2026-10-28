@@ -1,0 +1,133 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+La ficha de un pedido a proveedor y su llegada (plan 00 del circuito). La misma
+forma que la ficha de un pedido de cliente: el estado arriba, un panel que dice
+en qué está, los datos y el avance lado a lado, y los productos. Cada línea
+abierta pide cuántas unidades llegaron; vacío es «todavía nada». Lo que llega se
+confirma en la pantalla siguiente, con lo que va a pasar a la vista.
+{% endcomment %}
+
+{% block titulo %}Pedido #{{ pedido.pk }} · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    {% url 'suppliers:pedido_lista' as volver %}
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Pedidos a proveedores" atras=1 %}</span>
+    <h1>Pedido <span class="datos">#{{ pedido.pk }}</span> · {{ pedido.nombre_proveedor }}</h1>
+    <p>
+      <span class="marca-estado{% if pedido.vencido %} marca-estado--error{% elif pedido.estado == 'abierto' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span>
+      · {{ pedido.get_origen_display }} · pedido el {{ pedido.creado_en|date:"d/m/Y H:i" }}
+    </p>
+  </div>
+</header>
+
+{% if pedido.estado == "abierto" %}
+  <div class="panel{% if pedido.vencido %} panel--atencion{% endif %}" role="note">
+    <p>
+      Faltan <strong class="datos">{{ pedido.unidades_pendientes }}</strong> unidad{{ pedido.unidades_pendientes|pluralize:"es" }}.
+      {% if pedido.vencido %}La llegada estimada ya pasó: registrá lo que llegó, o cerrá lo que no va a llegar.
+      {% elif pedido.fecha_estimada %}Se esperan para el {{ pedido.fecha_estimada|date:"d/m/Y" }}.
+      {% else %}El pedido no tiene fecha estimada.{% endif %}
+    </p>
+  </div>
+{% else %}
+  <div class="panel" role="note"><p>Pedido cerrado el {{ pedido.cerrado_en|date:"d/m/Y H:i" }}: no espera más mercadería.</p></div>
+{% endif %}
+
+<div class="rejilla-2">
+  <section class="seccion" aria-labelledby="titulo-datos">
+    <div class="seccion__titulo"><h2 id="titulo-datos">Proveedor y pedido</h2></div>
+    <dl class="datos-de-ficha">
+      <dt>Proveedor</dt>
+      <dd>{% if pedido.proveedor %}<a href="{% url 'suppliers:proveedor_detalle' pedido.proveedor.pk %}">{{ pedido.proveedor.razon_social }}</a>{% else %}Sin proveedor cargado{% endif %}</dd>
+      <dt>Origen</dt>
+      <dd>
+        {{ pedido.get_origen_display }}
+        {% if pedido.propuesta %}· <a href="{% url 'restock:propuesta_detalle' pedido.propuesta.pk %}">propuesta del {{ pedido.propuesta.fecha_generacion|date:"d/m/Y" }}</a>{% endif %}
+      </dd>
+      <dt>Pedido por</dt>
+      <dd>{% if pedido.creado_por %}{{ pedido.creado_por.get_full_name|default:pedido.creado_por.email }}{% else %}El sistema{% endif %}</dd>
+      <dt>Llegada estimada</dt>
+      <dd class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</dd>
+    </dl>
+  </section>
+
+  <section class="seccion" aria-labelledby="titulo-avance">
+    <div class="seccion__titulo"><h2 id="titulo-avance">Avance</h2></div>
+    <div class="cifras">
+      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="lote" %}Pedidas</span><span class="cifra__valor">{{ pedido.unidades_pedidas }}</span></div>
+      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="listo" %}Llegaron</span><span class="cifra__valor">{{ pedido.unidades_recibidas }}</span></div>
+      <div class="cifra{% if pedido.vencido %} cifra--atencion{% endif %}"><span class="cifra__rotulo">{% include "_iconos.html" with icono="reloj" %}Faltan</span><span class="cifra__valor">{{ pedido.unidades_pendientes }}</span></div>
+    </div>
+  </section>
+</div>
+
+<section class="seccion" aria-labelledby="titulo-lineas">
+  <div class="seccion__titulo"><h2 id="titulo-lineas">Productos</h2></div>
+  <form method="post" action="{% url 'suppliers:pedido_llegada' pedido.pk %}" class="pila-3">
+    {% csrf_token %}
+    <div class="tabla-desplazable">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="numero">Pedidas</th>
+            <th class="numero">Llegaron</th>
+            <th class="numero">Reservadas</th>
+            <th>Estado</th>
+            {% if pedido.estado == "abierto" %}<th class="numero">Llegan ahora</th><th class="derecha"><span class="sr-only">Acción</span></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in filas %}
+            {% with linea=fila.linea %}
+            <tr>
+              <td class="celda-principal">
+                <span class="fila-2">
+                  <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                  <span>
+                    <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto.especifico }}</a>
+                    <br><span class="texto-chico datos secundario">{{ fila.producto.codigo }}</span>
+                    {% if fila.en_preventa %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
+                  </span>
+                </span>
+              </td>
+              <td class="numero">{{ linea.cantidad_pedida }}</td>
+              <td class="numero">{{ linea.cantidad_recibida }}</td>
+              <td class="numero">{{ fila.reservado }}</td>
+              <td>{% include "suppliers/_estado_linea.html" %}{% if linea.estado == "sin_recibir" %}<br><span class="texto-chico secundario">{{ linea.motivo_cierre }}</span>{% endif %}</td>
+              {% if pedido.estado == "abierto" %}
+                <td class="numero">
+                  {% if linea.pendiente %}
+                    <label class="sr-only" for="llegaron-{{ linea.pk }}">Unidades de {{ fila.producto.especifico }} que llegaron</label>
+                    <input type="number" id="llegaron-{{ linea.pk }}" name="llegaron_{{ linea.pk }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra" data-pendiente="{{ linea.pendiente }}">
+                  {% endif %}
+                </td>
+                <td class="derecha">
+                  {% if linea.pendiente %}<a href="{% url 'suppliers:pedido_cerrar_linea' linea.pk %}" class="boton-icono boton-icono--critico" aria-label="{{ fila.producto.especifico }} no va a llegar" title="No va a llegar">{% include "_iconos.html" with icono="baja" %}</a>{% endif %}
+                </td>
+              {% endif %}
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pedido.estado == "abierto" %}
+      <div class="fila-5">
+        <button type="submit" class="boton-primario">Revisar la llegada</button>
+        {# El atajo del caso más común, como «Completar con lo reservado» en las pre-ventas. #}
+        <button type="button" class="boton-texto" data-completar>Llegó todo lo que faltaba</button>
+        <span class="texto-chico secundario">Vacío o 0: no llegó todavía.</span>
+      </div>
+    {% endif %}
+  </form>
+</section>
+<script>
+  document.querySelector("[data-completar]")?.addEventListener("click", function () {
+    for (const campo of document.querySelectorAll("[data-pendiente]")) campo.value = campo.dataset.pendiente;
+  });
+</script>
+{% endblock %}
