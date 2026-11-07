@@ -1,7 +1,7 @@
-"""El calendario de las pre-ventas por llegar (plan 00 de interfaz, tercera parte, 22).
+"""El calendario de lo que está por llegar (plan 00 de interfaz, tercera parte, 22).
 
-Se arma con los mismos grupos que la lista: lo que dice el calendario no puede
-ser distinto de lo que se ingresa abajo.
+Se arma con los mismos grupos que la lista de «Por llegar» (B-05-017): lo que dice
+el calendario no puede ser distinto de lo que se carga abajo.
 """
 
 from datetime import date, timedelta
@@ -11,12 +11,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.tests.factories import UsuarioFactory
-from apps.pedidos import calendario, preventa
+from apps.pedidos import calendario
 from apps.pedidos.tests.util import crear_preventa, reservar
+from apps.suppliers import recepcion
 
 pytestmark = pytest.mark.django_db
 
-URL = reverse("pedidos:preventas")
+URL = reverse("suppliers:por_llegar")
 
 
 def test_el_mes_pedido_se_entiende_y_lo_ilegible_es_el_actual():
@@ -36,7 +37,7 @@ def test_el_mes_empieza_en_lunes_y_completa_sus_semanas():
 
 def test_cada_llegada_cae_en_su_dia_con_los_grupos_de_la_lista():
     llega = crear_preventa(dias=3)
-    grupos = preventa.por_llegar()
+    grupos = recepcion.por_llegar()
 
     mes = calendario.mes_de(llega.llegada_vigente.replace(day=1), grupos)
 
@@ -45,16 +46,23 @@ def test_cada_llegada_cae_en_su_dia_con_los_grupos_de_la_lista():
     assert dia in mes.dias_con_llegadas
 
 
-def test_las_cifras_cuentan_productos_reservas_semana_y_atrasos():
+def test_las_cifras_cuentan_lineas_reservas_semana_y_atrasos():
     cliente = UsuarioFactory(rol="cliente")
     atrasado = crear_preventa(dias=-2)
     reservar(cliente, atrasado, cantidad=3)
     crear_preventa(dias=4)
     crear_preventa(dias=30)
 
-    resumen = calendario.resumen(preventa.por_llegar())
+    resumen = recepcion.resumen(recepcion.por_llegar())
 
-    assert resumen == {"productos": 3, "reservadas": 3, "esta_semana": 1, "atrasados": 1}
+    # La fábrica le da a cada pre-venta un pedido en camino de 100 unidades.
+    assert resumen == {
+        "lineas": 3,
+        "unidades": 300,
+        "reservadas": 3,
+        "esta_semana": 1,
+        "atrasados": 1,
+    }
 
 
 @pytest.mark.parametrize(
@@ -64,7 +72,7 @@ def test_las_cifras_cuentan_productos_reservas_semana_y_atrasos():
 def test_cada_grupo_dice_cuando_llega_con_palabras(dias, cuando):
     crear_preventa(dias=dias)
 
-    (grupo,) = preventa.por_llegar()
+    (grupo,) = recepcion.por_llegar()
 
     assert grupo.cuando == cuando
     assert grupo.cercano is (dias <= 7)
@@ -113,14 +121,14 @@ def test_cambiar_de_mes_pide_solo_el_calendario(client_admin):
 
     contenido = respuesta.content.decode()
     assert '<table class="calendario">' in contenido
-    assert "Pre-ventas por llegar" not in contenido
+    assert "<h1>Por llegar</h1>" not in contenido
     assert "<html" not in contenido
     assert "data-mes" in contenido
 
 
 def test_cada_llegada_abre_su_grupo_y_la_cercana_se_distingue(client_admin):
     crear_preventa(dias=2)
-    grupo = preventa.por_llegar()[0]
+    grupo = recepcion.por_llegar()[0]
 
     contenido = client_admin.get(URL).content.decode()
 
@@ -128,7 +136,7 @@ def test_cada_llegada_abre_su_grupo_y_la_cercana_se_distingue(client_admin):
     assert "calendario__llegada--cercana" in contenido
 
 
-def test_cada_grupo_ofrece_completar_con_lo_reservado(client_admin):
+def test_cada_grupo_ofrece_completar_con_lo_esperado(client_admin):
     cliente = UsuarioFactory(rol="cliente")
     producto = crear_preventa(dias=2)
     reservar(cliente, producto, cantidad=3)
@@ -136,4 +144,5 @@ def test_cada_grupo_ofrece_completar_con_lo_reservado(client_admin):
     contenido = client_admin.get(URL).content.decode()
 
     assert "data-completar" in contenido
-    assert 'data-reservadas="3"' in contenido
+    # Lo que falta del pedido en camino (la fábrica pide 100), no las reservas.
+    assert 'data-esperadas="100"' in contenido

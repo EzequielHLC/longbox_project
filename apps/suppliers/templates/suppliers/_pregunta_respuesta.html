@@ -1,0 +1,40 @@
+{% comment %}
+La respuesta del proveedor en la ficha del pedido (plan 00 de la respuesta simple).
+Mientras algo espera respuesta, una pregunta con tres respuestas, como en Telegram;
+cada una abre su pantalla como diálogo (`enlaces` los arma la vista). Cuando todo
+tiene respuesta, se achica a una línea con lo que contestó y cuándo llega.
+{% endcomment %}
+{% with r=pedido.respuesta_resumida %}
+<section class="seccion" aria-labelledby="titulo-respuesta" id="respuesta-{{ pedido.pk }}">
+  <div class="seccion__titulo">
+    <h2 id="titulo-respuesta">Respuesta del proveedor</h2>
+    <span class="marca-estado{% if r.clave == 'esperando' %} marca-estado--atencion{% elif r.clave == 'no_puede' %} marca-estado--apagado{% else %} marca-estado--ok{% endif %}">{{ r.texto }}</span>
+  </div>
+  {% if r.esperando %}
+    <div class="panel pregunta-respuesta">
+      <p class="pregunta-respuesta__pregunta">¿Qué contestó {{ pedido.nombre_proveedor }}?</p>
+      <div class="pregunta-respuesta__opciones">
+        <a href="{{ enlaces.todo }}" class="boton-seccion" data-dialogo>{% include "_iconos.html" with icono="listo" %}<span>Confirmó todo</span></a>
+        <a href="{{ enlaces.cambios }}" class="boton-seccion boton-seccion--tenue" data-dialogo>{% include "_iconos.html" with icono="editar" %}<span>Confirmó con cambios</span></a>
+        <a href="{{ enlaces.no_puede }}" class="boton-seccion boton-seccion--critico" data-dialogo>{% include "_iconos.html" with icono="baja" %}<span>No puede abastecer</span></a>
+      </div>
+      <p class="texto-chico secundario">
+        {% if r.confirmadas or r.con_otra_cantidad or r.no_disponibles %}Falta la respuesta de {{ r.esperando }} producto{{ r.esperando|pluralize }}.{% else %}Ningún producto tiene respuesta todavía.{% endif %}
+        <a href="{{ enlaces.fecha }}" class="boton-texto" data-dialogo>Sólo anotar la fecha</a>
+      </p>
+    </div>
+  {% else %}
+    <p class="resumen-respuesta">
+      {% if r.ultima %}Respondió el {{ r.ultima|date:"d/m" }}:{% endif %}
+      {% if r.confirmadas %}{{ r.confirmadas }} confirmado{{ r.confirmadas|pluralize }}{% endif %}{% if r.con_otra_cantidad %}{% if r.confirmadas %}, {% endif %}{{ r.con_otra_cantidad }} con menos unidades{% endif %}{% if r.no_disponibles %}{% if r.confirmadas or r.con_otra_cantidad %}, {% endif %}{{ r.no_disponibles }} no disponible{{ r.no_disponibles|pluralize }}{% endif %}
+      · {% if pedido.fecha_estimada %}llega el <span class="datos">{{ pedido.fecha_estimada|date:"d/m/Y" }}</span>{% else %}sin fecha{% endif %}.
+    </p>
+    {% if pedido.unidades_pendientes %}
+      <p class="fila-5">
+        <a href="{{ enlaces.cambios }}" class="boton-texto" data-dialogo>Cambiar la respuesta</a>
+        <a href="{{ enlaces.fecha }}" class="boton-texto" data-dialogo>Cambiar la fecha</a>
+      </p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endwith %}

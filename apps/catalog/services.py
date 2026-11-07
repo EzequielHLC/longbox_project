@@ -65,8 +65,12 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn="", excluir
     `excluir` es la clave del producto que se está editando (CU-CAT-EDI). Sin eso,
     guardar una ficha sin tocarle la identidad la haría chocar consigo misma y
     ningún producto se podría editar dos veces.
+
+    **Una edición retirada no cuenta** (B-01-026): la cancelación por la editorial
+    liberó su identidad, y un tomo igual es el mismo título que vuelve, con código
+    nuevo. Para avisarlo está `buscar_retirada`.
     """
-    candidatos = ProductoEditorial.objects.all()
+    candidatos = ProductoEditorial.objects.filter(edicion_retirada=False)
     if excluir is not None:
         candidatos = candidatos.exclude(pk=excluir)
 
@@ -86,6 +90,25 @@ def buscar_duplicado(titulo, volumen, tipo, formato, editorial, isbn="", excluir
         )
         .first()
     )
+
+
+def buscar_retirada(titulo, volumen, tipo, formato, editorial, isbn=""):
+    """La edición cancelada por la editorial con esa identidad, o `None` (B-01-026).
+
+    No bloquea nada: alimenta el aviso de que el tomo vuelve a anunciarse, y el
+    producto nuevo queda enlazado a ella al crearse.
+    """
+    if volumen is None or tipo is None or editorial is None:
+        return None
+    probe = ProductoEditorial(
+        titulo=titulo or "",
+        volumen=volumen,
+        tipo=tipo,
+        formato=formato,
+        editorial=editorial,
+        isbn=isbn or "",
+    )
+    return probe.edicion_retirada_igual()
 
 
 def buscar_duplicado_no_editorial(titulo, tipo, excluir=None):
@@ -194,12 +217,13 @@ class Serie:
         return self.ultimo.formato
 
 
-def serie_de(titulo, editorial):
+def serie_de(titulo, editorial, *, excluir=None):
     """Los tomos que ya hay de esa serie en esa editorial, o `None`.
 
     La serie es el mismo título en la misma editorial, comparado sin mayúsculas
     ni tildes. El tipo y el formato son los del último tomo; el autor y la
     sinopsis, los del último que los tenga; «sólo adultos», si alguno lo es.
+    `excluir` deja afuera un tomo: el que se está editando no es «la serie» (B-01-024).
     """
     buscado = titulo_comparable(titulo)
     if not buscado or editorial is None:
@@ -207,6 +231,7 @@ def serie_de(titulo, editorial):
     tomos = [
         producto
         for producto in ProductoEditorial.objects.filter(editorial=editorial)
+        .exclude(pk=excluir)
         .select_related("tipo", "formato")
         .order_by("-volumen", "-pk")
         if titulo_comparable(producto.titulo) == buscado
@@ -261,7 +286,9 @@ def parecidos_al_borrador(borrador, limite=3):
     buscado = titulo_comparable(borrador.titulo)
     productos = [
         candidato
-        for candidato in ProductoEditorial.objects.filter(volumen=borrador.volumen)
+        for candidato in ProductoEditorial.objects.filter(
+            volumen=borrador.volumen, edicion_retirada=False
+        )
         .exclude(pk=getattr(producto, "pk", None))
         .select_related("editorial", "formato")
         .order_by("-pk")
@@ -276,6 +303,46 @@ def parecidos_al_borrador(borrador, limite=3):
     if borrador.isbn:
         borradores += [o for o in abiertos.filter(isbn=borrador.isbn) if o not in borradores]
     return Parecidos(producto=producto, productos=productos, borradores=borradores[:limite])
+
+
+def tomos_de_la_serie(titulo, editorial, *, excluir=None):
+    """Los tomos con ese título en esa editorial, comparado sin mayúsculas ni tildes."""
+    buscado = titulo_comparable(titulo)
+    if not buscado or editorial is None:
+        return []
+    return [
+        tomo
+        for tomo in ProductoEditorial.objects.filter(editorial=editorial).exclude(pk=excluir)
+        if titulo_comparable(tomo.titulo) == buscado
+    ]
+
+
+def aplicar_a_la_serie(producto, agregadas, quitadas):
+    """B-01-025: lo que cambió en un tomo en las etiquetas de los grupos «de serie»,
+    a los otros tomos de su serie. Sólo ese cambio: lo propio de cada tomo queda.
+    Devuelve a cuántos tomos llegó."""
+    de_serie = set(Etiqueta.objects.filter(grupo__de_serie=True).values_list("pk", flat=True))
+    agregadas, quitadas = set(agregadas) & de_serie, set(quitadas) & de_serie
+    if not agregadas and not quitadas:
+        return 0
+    tomos = tomos_de_la_serie(producto.titulo, producto.editorial, excluir=producto.pk)
+    if not tomos:
+        return 0
+    relacion = Producto.etiquetas.through
+    pks = [tomo.pk for tomo in tomos]
+    relacion.objects.filter(producto_id__in=pks, etiqueta_id__in=quitadas).delete()
+    ya_tienen = set(
+        relacion.objects.filter(producto_id__in=pks, etiqueta_id__in=agregadas).values_list(
+            "producto_id", "etiqueta_id"
+        )
+    )
+    relacion.objects.bulk_create(
+        relacion(producto_id=pk, etiqueta_id=etiqueta)
+        for pk in pks
+        for etiqueta in agregadas
+        if (pk, etiqueta) not in ya_tienen
+    )
+    return len(tomos)
 
 
 def editoriales_de_la_serie(titulo):

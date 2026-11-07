@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.generic import TemplateView
 
-from apps.core import georef, views_tienda
+from apps.core import georef, tablero, views_tienda
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import Banner, ConfiguracionSistema, RegistroAuditoria
 from apps.pedidos import preventa
@@ -123,6 +123,8 @@ class PanelAdministracionView(RolRequeridoMixin, TemplateView):
         # Plan 01: lo atrasado, lo de hoy y lo de los próximos días (B-01-009).
         contexto["preventas"] = preventa.proximas_para_el_panel()
         contexto["dias_aviso"] = ConfiguracionSistema.obtener().dias_aviso_preventa
+        # B-00-032: las ventas en gráficos.
+        contexto["tablero"] = tablero.armar()
         # `select_related` evita una consulta por fila al mostrar el actor.
         contexto["actividad"] = RegistroAuditoria.objects.select_related("actor")[:12]
         return contexto

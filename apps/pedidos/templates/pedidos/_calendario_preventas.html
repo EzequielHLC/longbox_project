@@ -3,6 +3,10 @@ El calendario de pre-ventas (plan 00 de interfaz, 22; cuarta parte, E; B-00-026)
 La vista lo devuelve solo con `?parcial=calendario`, para cambiar de mes sin
 recargar la pantalla; sin guion, los enlaces recargan como siempre. «Hoy» vuelve
 al mes actual. Cada llegada enlaza su grupo, que es donde se confirma (CO-013).
+
+B-00-033: las celdas entran en diagonal, de arriba a la izquierda hacia abajo a la
+derecha; las llegadas se pegan después, como figuritas. El escalonado lo pone el
+guion de la pantalla, que es quien sabe en qué semana y qué día cae cada celda.
 {% endcomment %}
 <div class="calendario-cabeza">
   <h2 id="titulo-calendario" class="calendario-cabeza__mes">{{ mes.nombre }}</h2>
@@ -23,7 +27,7 @@ al mes actual. Cada llegada enlaza su grupo, que es donde se confirma (CO-013).
     {% for semana in mes.semanas %}
       <tr>
         {% for dia in semana %}
-          <td class="calendario__dia{% if not dia.del_mes %} calendario__dia--otro-mes{% endif %}{% if dia.es_hoy %} calendario__dia--hoy{% endif %}{% if dia.fin_de_semana %} calendario__dia--finde{% endif %}"{% if dia.es_hoy %} aria-current="date" tabindex="-1"{% endif %}>
+          <td class="calendario__dia{% if not dia.del_mes %} calendario__dia--otro-mes{% endif %}{% if dia.es_hoy %} calendario__dia--hoy{% endif %}{% if dia.fin_de_semana %} calendario__dia--finde{% endif %}{% if dia.grupos %} calendario__dia--con-llegadas{% endif %}"{% if dia.es_hoy %} aria-current="date" tabindex="-1"{% endif %}>
             <span class="calendario__numero">{{ dia.fecha.day }}</span>
             {% for grupo in dia.grupos %}
               <a href="#grupo-{{ grupo.clave }}" class="calendario__llegada{% if grupo.vencido %} calendario__llegada--atrasada{% elif grupo.cercano %} calendario__llegada--cercana{% endif %}" data-llegada="grupo-{{ grupo.clave }}" title="{{ grupo.editorial }}: {{ grupo.filas|length }} producto{{ grupo.filas|length|pluralize }}">

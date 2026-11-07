@@ -242,7 +242,7 @@ def test_un_correo_nuevo_llega_por_telegram_con_sus_dos_botones(
     [enviado] = falso.mensajes(CHAT)
     assert correo.asunto in enviado["text"]
     textos = [b[0]["text"] for b in enviado["reply_markup"]["inline_keyboard"]]
-    assert textos == ["Aprobar y procesar", "Descartar"]
+    assert textos == ["✅ Aprobar y procesar", "🗑 Descartar"]
     assert mailoutbox == []  # eligió sólo Telegram
 
 

@@ -153,3 +153,24 @@ def como_venta_de_mostrador(pedido):
     )
     pedido.refresh_from_db()
     return pedido
+
+
+def datos_de_llegada(unidades):
+    """El formulario de un grupo de «Por llegar» (B-05-017), como lo manda la pantalla.
+
+    `unidades` va de producto a lo que se escribe en su campo (`""` es vacío). Cada
+    producto entra por su línea abierta de un pedido enviado; el que no tiene ninguna,
+    como pre-venta sin pedido.
+    """
+    from apps.suppliers.llegadas import lineas_abiertas
+
+    datos = {"fila": []}
+    for producto, valor in unidades.items():
+        linea = lineas_abiertas(producto).order_by("pk").first()
+        campo = f"l{linea.pk}" if linea else f"p{producto.pk}"
+        datos["fila"].append(campo)
+        datos[f"llegaron_{campo}"] = str(valor)
+        if linea:
+            # Lo que la revisión le habría mostrado: lo recibido hasta ahora.
+            datos[f"vista_{campo}"] = str(linea.cantidad_recibida)
+    return datos

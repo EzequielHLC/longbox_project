@@ -25,6 +25,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from apps.avisos import tarjetas
 from apps.avisos.canales import avisar_administradores, enlace
 from apps.avisos.models import SEGURIDAD
 from apps.core.models import RegistroAuditoria
@@ -77,6 +78,16 @@ def revisar(registro_pk):
             ],
             enlace=enlace("core:auditoria"),
             texto_enlace="Ver la auditoría",
+            tarjeta={
+                "titulo": "¡Ojo!",
+                "bajada": titulo,
+                "cifras": [
+                    ("IP", registro.ip or "sin dato"),
+                    ("Cuándo", timezone.localtime(registro.ocurrido_en).strftime("%d/%m %H:%M")),
+                ],
+                "gesto": tarjetas.ALERTA,
+                "tono": "alarma",
+            },
         )
 
 

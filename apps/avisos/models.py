@@ -32,6 +32,8 @@ VENTAS = "ventas"
 SEGURIDAD = "seguridad"
 SISTEMA = "sistema"
 RESUMEN = "resumen"
+# Plan 00 de últimos cambios, A: el modelo que falla seguido.
+MODELO = "modelo"
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,12 @@ TIPOS = [
         "Seguridad",
         "Bloqueos por intentos, ingresos desde una IP nueva, Administradores nuevos, "
         "cambios masivos de precios",
+        por_telegram=True,
+    ),
+    TipoDeAviso(
+        MODELO,
+        "Modelo de lenguaje",
+        "Falla seguido, y el pedido de pasar al modelo de respaldo",
         por_telegram=True,
     ),
     TipoDeAviso(

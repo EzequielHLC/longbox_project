@@ -89,6 +89,12 @@ def ciclo_de_cobros():
     return f"cobros abandonados: {compra.descartar_abandonados()} descartados"
 
 
+def ciclo_de_respuestas():
+    from apps.suppliers import respuestas
+
+    return f"pedidos sin respuesta: {len(respuestas.recordar())} recordados"
+
+
 def ciclo_de_casilla():
     resultado = casilla.ciclo()
     if resultado.estado != "revisada":
@@ -110,6 +116,7 @@ PROCESOS = (
     ciclo_de_cotizaciones,
     ciclo_de_cobros,
     ciclo_de_casilla,
+    ciclo_de_respuestas,
 )
 
 

@@ -190,6 +190,33 @@ credencial. Es configurable desde acá porque el sistema se demuestra desplegado
 </section>
 
 {% comment %}
+El modelo de respaldo (plan 00 de últimos cambios, A): si el activo falla tres
+veces seguidas, el sistema propone pasar a éste y un Administrador lo confirma
+(CO-228, CO-229). Nunca cambia solo.
+{% endcomment %}
+<section class="seccion" aria-labelledby="titulo-respaldo">
+  <div class="seccion__titulo">
+    <h2 id="titulo-respaldo">{% include "_iconos.html" with icono="modelo" %}Modelo de respaldo</h2>
+    {% if configuracion.tiene_respaldo %}<a href="{% url 'suppliers:cambiar_modelo' %}" class="boton-texto texto-chico"><span>Pasar al respaldo</span>{% include "_iconos.html" with icono="siguiente" %}</a>{% endif %}
+  </div>
+  <p class="seccion__bajada">
+    Si el modelo activo falla tres veces seguidas, el sistema avisa y propone pasar a éste. No cambia solo: lo confirma un Administrador. Vacío, sólo avisa.
+  </p>
+  <form method="post" novalidate class="formulario">
+    {% csrf_token %}
+    <div class="rejilla-2">
+      {% include "_campo.html" with campo=form_respaldo.llm_respaldo_modo %}
+      {% include "_campo.html" with campo=form_respaldo.llm_respaldo_modelo %}
+    </div>
+    {% include "_campo.html" with campo=form_respaldo.llm_respaldo_url %}
+    {% include "_campo.html" with campo=form_respaldo.respaldo_api_key %}
+    <div class="acciones">
+      <button type="submit" name="guardar_respaldo" value="1" class="boton-seccion">Guardar el modelo de respaldo</button>
+    </div>
+  </form>
+</section>
+
+{% comment %}
 Los catálogos de clasificación tienen pantalla propia, con su listado, su
 filtro por estado y la baja con informe (CU-CFG-EDC, TPC, FMC y CU-CAT-GRC). No
 son parámetros (CO-130): entran en la identidad del producto y en sus precios.

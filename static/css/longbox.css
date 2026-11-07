@@ -125,6 +125,8 @@ em, i { font-style: normal; }
 
 .fila { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-3); }
 .fila-2 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); }
+/* La portada y el nombre de un producto en una celda angosta: el nombre se parte, no baja. */
+.fila-2--fija { flex-wrap: nowrap; }
 .fila-5 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-5); }
 .fila-arriba { align-items: flex-start; }
 .fila-base { align-items: baseline; }
@@ -2012,6 +2014,9 @@ a.cifra:hover .cifra__rotulo { color: var(--texto); }
    Tablas y listas
    --------------------------------------------------------------------- */
 .tabla-desplazable { overflow-x: auto; }
+/* Una tabla con listas desplegables adentro (los renglones del pedido a mano, B-05-018):
+   sin desplazamiento propio, la lista se abre encima y no arrastra la tabla. */
+.tabla-desplazable--con-listas { overflow: visible; }
 table { border-collapse: collapse; width: 100%; }
 .tabla { font-size: var(--op-chico); }
 .tabla caption { padding-bottom: var(--esp-2); text-align: left; color: var(--texto-2); }
@@ -3453,7 +3458,11 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .grupo-plegable + .grupo-plegable { margin-top: var(--esp-3); }
 .grupo-plegable--atencion { border-color: var(--acento); }
 /* El grupo que se abrió desde el calendario (cuarta parte, E). */
-.grupo-plegable--elegido { outline: 2px solid var(--acento); outline-offset: 2px; }
+.grupo-plegable--elegido {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  animation: destello-fila var(--dur-5) var(--curva-golpe);
+}
 .grupo-plegable__cabeza {
   display: flex;
   flex-wrap: wrap;
@@ -3720,6 +3729,55 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 @media (max-width: 899px) {
   .calendario { display: none; }
   .calendario-lista { display: grid; gap: var(--esp-2); }
+}
+
+/* El calendario con movimiento (B-00-033), con animaciones del catálogo. Las
+   celdas entran en una ola diagonal (--s es la semana y --d el día, los pone el
+   guion de la pantalla); las llegadas se pegan como figuritas cuando su celda ya
+   está; hoy rebota suave y su marco late; el número de una llegada atrasada late.
+   Al pasar el mouse, la ficha se levanta con la sombra de golpe del sistema. */
+.calendario__dia {
+  animation: aparece var(--dur-4) var(--curva-golpe) both;
+  animation-delay: calc((var(--s, 0) + var(--d, 0)) * 28ms);
+}
+.calendario__dia--con-llegadas { background-image: var(--trama-puntos); background-size: 8px 8px; }
+.calendario__dia--finde.calendario__dia--con-llegadas {
+  background-color: color-mix(in srgb, var(--fondo-2) 55%, var(--fondo));
+}
+.calendario__llegada {
+  animation: sticker-pega var(--dur-3) var(--curva-resorte) both;
+  animation-delay: calc(180ms + (var(--s, 0) + var(--d, 0)) * 28ms);
+  transition: background-color var(--dur-1) var(--curva-golpe), transform var(--dur-1) var(--curva-golpe), box-shadow var(--dur-1) var(--curva-golpe);
+}
+.calendario__llegada:hover,
+.calendario__llegada:focus-visible { transform: translate(-2px, -2px); box-shadow: var(--sombra-golpe-1); }
+.calendario__llegada:active { transform: none; box-shadow: none; }
+.calendario__llegada--atrasada .calendario__cuenta {
+  background: var(--error);
+  color: var(--sobre-error);
+  animation: latido 1.6s ease-in-out 1s infinite;
+}
+.calendario__dia--hoy .calendario__numero { animation: rebote-numero 2.4s ease-in-out 600ms infinite; }
+.calendario__dia--hoy { position: relative; }
+.calendario__dia--hoy::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--acento);
+  pointer-events: none;
+  animation: latido 2.4s ease-in-out 600ms infinite;
+}
+.calendario-cabeza__mes { animation: barrido-diagonal var(--dur-4) var(--curva-golpe) both; }
+.calendario-lista__dia {
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+  animation-delay: calc(var(--d, 0) * var(--escalonado));
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendario__dia, .calendario__llegada, .calendario__llegada--atrasada .calendario__cuenta,
+  .calendario__dia--hoy .calendario__numero, .calendario__dia--hoy::after,
+  .calendario-cabeza__mes, .calendario-lista__dia, .grupo-plegable--elegido { animation: none; }
+  .calendario__dia--hoy::after { display: none; }
+  .calendario__llegada:hover, .calendario__llegada:focus-visible { transform: none; }
 }
 
 /* Riel de estados del pedido (4.2). Cada paso es una columna; el tramo que llega
@@ -4183,3 +4241,313 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
 .plegable[open] > .plegable__titulo::before { transform: rotate(90deg); }
 .plegable__titulo:hover { color: var(--texto-fuerte); }
 .plegable[open] > .plegable__titulo { margin-bottom: var(--esp-3); }
+
+/* B-19-018: el QR del enlace con Telegram, sobre blanco para que la cámara lo lea. */
+.vinculo-qr { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-5); }
+.vinculo-qr__codigo {
+  margin: 0;
+  padding: var(--esp-2);
+  background: var(--blanco);
+  line-height: 0;
+  flex: none;
+}
+.vinculo-qr__codigo svg { display: block; width: 200px; max-width: 100%; height: auto; }
+.vinculo-qr > .pila-2 { flex: 1 1 220px; min-width: 0; }
+
+/* ---------------------------------------------------------------------
+   El tablero de ventas del panel (B-00-032). Un solo tono por gráfico, el
+   del acento; el dato exacto va en el globo y en la tabla. Las barras crecen
+   al entrar, escalonadas, con las animaciones del catálogo (marcador-entra y
+   barra-crece); con movimiento reducido, quietas. --alto, --ancho y --i los
+   pone el guion de la plantilla desde sus atributos data-.
+   --------------------------------------------------------------------- */
+.tablero { display: flex; flex-direction: column; gap: var(--esp-5); }
+.tablero__columna { display: flex; flex-direction: column; gap: var(--esp-5); }
+.tablero__cifras {
+  display: grid;
+  gap: var(--esp-4);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.kpi {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  padding: var(--esp-4) var(--esp-5);
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+}
+.kpi::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fondo-2);
+  clip-path: var(--forma-corte);
+}
+.tablero__cifras > .kpi:nth-child(2) { animation-delay: var(--escalonado); }
+.tablero__cifras > .kpi:nth-child(3) { animation-delay: calc(2 * var(--escalonado)); }
+.tablero__cifras > .kpi:nth-child(4) { animation-delay: calc(3 * var(--escalonado)); }
+.kpi--heroe { grid-column: span 2; }
+.kpi--heroe::before {
+  background: var(--trama-puntos), var(--fondo-2);
+  background-size: 8px 8px, auto;
+  box-shadow: inset 4px 0 0 var(--acento);
+}
+.kpi__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.kpi__valor {
+  font: 800 var(--op-cifra) / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-fuerte);
+}
+.kpi--heroe .kpi__valor { font-size: calc(var(--op-cifra) * 1.5); }
+.kpi__delta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--esp-2);
+  font: 700 var(--op-chico) / 1.3 var(--fuente-datos);
+}
+.kpi__delta--sube { color: var(--ok); }
+.kpi__delta--baja { color: var(--error); }
+.kpi__delta .secundario { font-family: var(--fuente-interfaz); font-weight: 400; }
+
+.grafico {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  padding: var(--esp-4) var(--esp-5);
+  background: var(--fondo-2);
+  border: var(--trazo) var(--linea);
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+}
+.grafico__titulo {
+  font: 700 var(--op-rotulo) / 1.2 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.grafico__tabla > summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--op-chico);
+  color: var(--acento-texto);
+}
+.grafico__tabla[open] > summary { margin-bottom: var(--esp-2); }
+
+/* Las columnas por día: el alto lo da --alto (por ciento del mejor día). */
+.grafico-dias {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: end;
+  gap: 2px;
+  height: 9rem;
+  padding-bottom: 1px;
+  border-bottom: var(--trazo) var(--linea);
+  background: repeating-linear-gradient(0deg, var(--linea) 0 1px, transparent 1px 25%) bottom / 100% 100%;
+}
+.grafico-dias__columna {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  cursor: default;
+  outline-offset: 2px;
+}
+.grafico-dias__barra {
+  width: 100%;
+  height: max(var(--alto, 0%), 2px);
+  background: var(--acento);
+  opacity: 0.85;
+  transform-origin: bottom;
+  animation: marcador-entra var(--dur-4) var(--curva-golpe) both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+  transition: opacity var(--dur-1), background-color var(--dur-1);
+}
+.grafico-dias__columna:hover .grafico-dias__barra,
+.grafico-dias__columna:focus-visible .grafico-dias__barra { opacity: 1; background: var(--acento-vivo); }
+.grafico-dias__columna--hoy .grafico-dias__barra { opacity: 1; background: var(--acento-vivo); }
+.grafico-dias__eje {
+  display: flex;
+  justify-content: space-between;
+  font: 400 var(--op-chico) / 1 var(--fuente-datos);
+  color: var(--texto-2);
+}
+
+/* Lo más vendido: barras horizontales con el nombre y las unidades. */
+.grafico-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+.grafico-ranking__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "nombre valor" "pista pista";
+  gap: var(--esp-1) var(--esp-3);
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+  animation-delay: calc(var(--i, 0) * var(--escalonado));
+}
+.grafico-ranking__nombre {
+  grid-area: nombre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--op-chico);
+  color: var(--texto);
+}
+.grafico-ranking__valor { grid-area: valor; font-size: var(--op-chico); color: var(--texto-fuerte); }
+.grafico-ranking__pista { grid-area: pista; height: 10px; background: var(--fondo-3); }
+.grafico-ranking__barra {
+  display: block;
+  height: 100%;
+  width: var(--ancho, 0%);
+  background: var(--acento);
+  transform-origin: left;
+  animation: barra-crece var(--dur-4) var(--curva-golpe) both;
+  animation-delay: calc(120ms + var(--i, 0) * 70ms);
+}
+.grafico-ranking__fila:first-child .grafico-ranking__barra { background: var(--acento-vivo); }
+
+/* Una barra apilada, partida en tramos, con 2px de aire entre uno y otro. */
+.grafico-tramos {
+  display: flex;
+  gap: 2px;
+  height: 22px;
+  overflow: hidden;
+  clip-path: var(--forma-corte-chico);
+  animation: barrido-diagonal var(--dur-5) var(--curva-golpe) both;
+}
+.grafico-tramos__tramo { flex: 0 0 var(--ancho, 0%); min-width: 4px; cursor: default; outline-offset: -2px; }
+.grafico-tramos__tramo--ok { background: var(--ok); }
+.grafico-tramos__tramo--dato { background: var(--dato); }
+.grafico-tramos__tramo--senal { background: var(--acento); }
+.grafico-tramos__tramo:hover,
+.grafico-tramos__tramo:focus-visible { outline: 2px solid var(--texto-fuerte); }
+.grafico-leyenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-5);
+  font-size: var(--op-chico);
+  color: var(--texto);
+}
+.grafico-leyenda > li { display: inline-flex; align-items: center; gap: var(--esp-2); }
+.grafico-leyenda__marca { width: 12px; height: 12px; flex: none; }
+
+/* El globo con el dato exacto. */
+.grafico-globo {
+  position: absolute;
+  z-index: 50;
+  padding: var(--esp-1) var(--esp-3);
+  background: var(--fondo-3);
+  border: var(--trazo) var(--linea);
+  box-shadow: var(--sombra-golpe-1);
+  font: 600 var(--op-chico) / 1.3 var(--fuente-datos);
+  color: var(--texto-fuerte);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (max-width: 40rem) {
+  .kpi--heroe { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grafico-dias__barra, .grafico-ranking__barra, .grafico-tramos,
+  .grafico-ranking__fila, .kpi, .grafico { animation: none; }
+  .grafico-dias__barra, .grafico-ranking__barra { transform: none; }
+}
+
+/* Los bloques del menú del Administrador (B-00-031): aire entre uno y otro. */
+.menu-rotulo:not(:first-child) { margin-top: var(--esp-5); }
+
+/* ---------------------------------------------------------------------
+   La respuesta del proveedor, simple (plan 00 de la respuesta simple).
+   Una pregunta con tres respuestas en la ficha; en «Con cambios», cada línea
+   con tres segmentos, y la cantidad o el motivo sólo cuando hacen falta.
+   --------------------------------------------------------------------- */
+.pregunta-respuesta { display: flex; flex-direction: column; gap: var(--esp-3); }
+.pregunta-respuesta__pregunta {
+  margin: 0;
+  font: 700 var(--op-titulo-3) / 1.2 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  color: var(--texto-fuerte);
+}
+.pregunta-respuesta__opciones { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.resumen-respuesta { margin: 0; color: var(--texto); }
+
+.respuesta-lineas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.respuesta-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-4);
+  padding: var(--esp-3) 0;
+  border-bottom: var(--trazo) var(--linea);
+}
+.respuesta-linea:first-child { border-top: var(--trazo) var(--linea); }
+.respuesta-linea__producto { display: flex; flex-direction: column; gap: var(--esp-1); min-width: 0; }
+.respuesta-linea__cantidad,
+.respuesta-linea__motivo { grid-column: 1 / -1; display: none; }
+.respuesta-linea:has(input[value="otra_cantidad"]:checked) .respuesta-linea__cantidad,
+.respuesta-linea:has(input[value="no_disponible"]:checked) .respuesta-linea__motivo { display: flex; }
+.respuesta-linea__cantidad { flex-direction: row; align-items: center; gap: var(--esp-3); }
+.respuesta-linea__cantidad .entrada-cifra { width: 6rem; }
+@supports not selector(:has(*)) {
+  .respuesta-linea__cantidad, .respuesta-linea__motivo { display: flex; }
+}
+
+/* Tres opciones pegadas: la elegida lleva el acento; «No la tiene», el error. */
+.segmentos {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: var(--trazo-fuerte) var(--borde-control);
+}
+.segmentos__opcion {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--esp-2) var(--esp-3);
+  font: 700 var(--op-chico) / 1.2 var(--fuente-interfaz);
+  color: var(--texto-2);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.segmentos__opcion + .segmentos__opcion { border-left: var(--trazo) var(--borde-control); }
+.segmentos__opcion > input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.segmentos__opcion:hover { color: var(--texto-fuerte); }
+.segmentos__opcion:has(input:checked) { background: var(--acento); color: var(--sobre-acento); }
+.segmentos__opcion--critica:has(input:checked) { background: var(--error); color: var(--sobre-error); }
+.segmentos__opcion:has(input:focus-visible) { outline: 2px solid var(--foco); outline-offset: 2px; }
+
+.lista-simple { margin: 0; padding-left: var(--esp-5); display: flex; flex-direction: column; gap: var(--esp-1); }
+.opciones-tarjeta--compactas .opcion-tarjeta { padding: var(--esp-3); grid-template-areas: "opcion titulo titulo"; }
+.opciones-tarjeta--compactas > legend { margin-bottom: var(--esp-4); }
+.opciones-tarjeta--compactas .opcion-tarjeta__titulo { font-size: var(--op-base); }
+.campo--otro-motivo { display: none; }
+form:has(input[name="motivo"][value="otro"]:checked) .campo--otro-motivo { display: flex; }
+@supports not selector(:has(*)) {
+  .campo--otro-motivo { display: flex; }
+}
+@media (max-width: 40rem) {
+  .respuesta-linea { grid-template-columns: minmax(0, 1fr); }
+}

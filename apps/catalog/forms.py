@@ -1636,7 +1636,7 @@ class GrupoEtiquetaForm(CatalogoNombradoForm):
 
     class Meta:
         model = GrupoEtiqueta
-        fields = ["nombre"]
+        fields = ["nombre", "de_serie"]
 
 
 class EtiquetaForm(CatalogoNombradoForm):
@@ -1978,6 +1978,70 @@ class ModeloDeLenguajeForm(forms.ModelForm):
         nueva = self.cleaned_data.get("api_key")
         if nueva:
             configuracion.llm_api_key = nueva
+        if commit:
+            configuracion.save()
+        return configuracion
+
+
+class RespaldoDelModeloForm(forms.ModelForm):
+    """El modelo de respaldo (plan 00 de últimos cambios, A): al que el sistema
+    propone pasar cuando el activo falla seguido (`CO-228`).
+
+    Las mismas reglas que `ModeloDeLenguajeForm`. La dirección vacía es «sin
+    respaldo»: entonces el aviso sólo dice que el modelo falla. La clave se
+    escribe pero no se lee, como la del activo.
+    """
+
+    respaldo_api_key = forms.CharField(
+        label="Clave de la API del respaldo",
+        required=False,
+        widget=forms.PasswordInput(render_value=False, attrs={"autocomplete": "off"}),
+        help_text="No se vuelve a mostrar una vez guardada.",
+    )
+
+    class Meta:
+        model = ConfiguracionSistema
+        fields = ["llm_respaldo_modo", "llm_respaldo_url", "llm_respaldo_modelo"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.llm_respaldo_api_key:
+            self.fields["respaldo_api_key"].help_text = (
+                f"Hay una clave guardada ({self.instance.clave_de_respaldo_enmascarada}). "
+                "Escriba una nueva solo si quiere reemplazarla."
+            )
+
+    def clean_llm_respaldo_url(self):
+        url = (self.cleaned_data.get("llm_respaldo_url") or "").strip().rstrip("/")
+        if url and "/v1/" not in f"{url}/":
+            raise forms.ValidationError(
+                "Falta la ruta de la API. Tiene que terminar en algo como "
+                "«/v1/chat/completions», no ser solo la dirección del servidor."
+            )
+        return url
+
+    def clean(self):
+        datos = super().clean()
+        if not datos.get("llm_respaldo_url"):
+            return datos
+        remoto = datos.get("llm_respaldo_modo") == ConfiguracionSistema.REMOTO
+        sin_clave = not (datos.get("respaldo_api_key") or self.instance.llm_respaldo_api_key)
+        if remoto and sin_clave:
+            self.add_error("respaldo_api_key", "Un proveedor remoto necesita una clave de API.")
+        if remoto and not datos.get("llm_respaldo_modelo"):
+            self.add_error(
+                "llm_respaldo_modelo", "Un proveedor remoto necesita que se nombre el modelo."
+            )
+        return datos
+
+    def save(self, commit=True):
+        configuracion = super().save(commit=False)
+        nueva = self.cleaned_data.get("respaldo_api_key")
+        if nueva:
+            configuracion.llm_respaldo_api_key = nueva
+        if not configuracion.llm_respaldo_url:
+            # Sin respaldo no queda una clave suelta guardada.
+            configuracion.llm_respaldo_api_key = ""
         if commit:
             configuracion.save()
         return configuracion

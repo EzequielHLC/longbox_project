@@ -7,6 +7,7 @@ el local. Corre después de confirmar la transacción y en segundo plano: un
 Telegram caído no frena ni deshace un pago.
 """
 
+from apps.avisos import tarjetas
 from apps.avisos.canales import avisar_administradores, enlace
 from apps.avisos.models import VENTAS
 from apps.core.templatetags.moneda import pesos
@@ -36,11 +37,21 @@ def avisar_venta(pedido):
         VENTAS,
         asunto=f"Longbox — venta online {pedido.numero}",
         antetitulo="Venta online",
-        titulo=f"{pedido} · {pesos(pedido.total)}",
+        titulo=f"¡Venta! {pedido} · {pesos(pedido.total)}",
         parrafos=[f"{cliente}, {'retira en el local' if pedido.retiro else 'con envío'}."],
         filas=filas,
         enlace=enlace("pedidos:detalle", pedido.pk),
         texto_enlace="Ver el pedido",
+        tarjeta={
+            "titulo": "¡Venta!",
+            "bajada": f"{pedido} · {cliente}",
+            "cifras": [
+                ("Total", pesos(pedido.total)),
+                ("Artículos", sum(linea.cantidad for linea in lineas)),
+                ("Entrega", "Retiro" if pedido.retiro else "Envío"),
+            ],
+            "gesto": tarjetas.FESTEJO,
+        },
     )
     agotadas = {
         linea.producto_id: linea.producto
@@ -52,12 +63,18 @@ def avisar_venta(pedido):
             VENTAS,
             asunto=f"Longbox — la pre-venta de {producto} agotó su cupo",
             antetitulo="Pre-venta sin cupo",
-            titulo=f"{producto.especifico} agotó el cupo",
+            titulo=f"¡{producto.especifico} agotó el cupo!",
             parrafos=[
                 f"Con el {pedido} se reservó todo lo que viene en camino "
                 f"({llegadas.reservado(producto)} unidades). Nadie más puede reservarla "
                 "hasta que se pida más al proveedor."
             ],
-            enlace=enlace("pedidos:preventas"),
+            enlace=enlace("suppliers:por_llegar"),
             texto_enlace="Ver las pre-ventas",
+            tarjeta={
+                "titulo": "¡Agotó el cupo!",
+                "bajada": str(producto.especifico),
+                "cifras": [("Reservadas", llegadas.reservado(producto))],
+                "gesto": tarjetas.FESTEJO,
+            },
         )

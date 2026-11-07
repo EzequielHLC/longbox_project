@@ -33,6 +33,7 @@ from apps.catalog.forms import (
     ProductoEditorialForm,
     ProductoNoEditorialForm,
     RechazoDeBorradorForm,
+    RespaldoDelModeloForm,
     SeguridadForm,
     TipoForm,
     formatos_para,
@@ -111,8 +112,47 @@ class AltaLoteView(CatalogoAdminMixin, View):
 
     def get(self, request):
         self._avisar_si_falta_configuracion(request)
-        cabecera = self.cabecera_form_class()
-        return self._render(request, cabecera, self._formset(cabecera))
+        retirada = self._reanunciar(request)
+        if retirada is None:
+            cabecera = self.cabecera_form_class()
+            return self._render(request, cabecera, self._formset(cabecera))
+        # B-01-026: «Volver a anunciar» trae la edición cancelada como primer ítem.
+        # El producto nuevo nace con código propio y enlazado a ella.
+        cabecera = self.cabecera_form_class(
+            initial={
+                "editorial": retirada.editorial_id,
+                "tipo": retirada.tipo_id,
+                "formato": retirada.formato_id,
+            }
+        )
+        formset = formset_de_items(self.origen)(
+            form_kwargs=self._form_kwargs(cabecera),
+            initial=[
+                {
+                    "titulo": retirada.titulo,
+                    "volumen": retirada.volumen,
+                    "isbn": retirada.isbn,
+                    "editorial": retirada.editorial_id,
+                    "tipo": retirada.tipo_id,
+                    "formato": retirada.formato_id,
+                    "solo_adultos": retirada.solo_adultos,
+                    "etiquetas": [etiqueta.pk for etiqueta in retirada.etiquetas.all()],
+                }
+            ],
+        )
+        messages.info(
+            request,
+            f"Se precargó «{retirada}» ({retirada.codigo}), cancelado por la editorial. "
+            "Se carga como una edición nueva, con código propio; la cancelada queda en el "
+            "historial.",
+        )
+        return self._render(request, cabecera, formset)
+
+    def _reanunciar(self, request):
+        pk = request.GET.get("reanuncia", "")
+        if not pk.isdigit():
+            return None
+        return ProductoEditorial.objects.filter(pk=int(pk), edicion_retirada=True).first()
 
     def post(self, request):
         cabecera = self.cabecera_form_class(request.POST)
@@ -471,9 +511,15 @@ class ParametrosView(CatalogoAdminMixin, View):
     template_name = "catalog/parametros.html"
 
     def get(
-        self, request, formulario=None, form_modelo=None, form_compra=None, form_seguridad=None
+        self,
+        request,
+        formulario=None,
+        form_modelo=None,
+        form_compra=None,
+        form_seguridad=None,
+        form_respaldo=None,
     ):
-        contexto = self._contexto(request, formulario, form_modelo)
+        contexto = self._contexto(request, formulario, form_modelo, form_respaldo)
         configuracion = ConfiguracionSistema.obtener()
         contexto["form_compra"] = form_compra or CompraOnlineForm(instance=configuracion)
         contexto["form_seguridad"] = form_seguridad or SeguridadForm(instance=configuracion)
@@ -495,6 +541,8 @@ class ParametrosView(CatalogoAdminMixin, View):
         # el otro.
         if "guardar_modelo" in request.POST:
             return self._guardar_modelo(request)
+        if "guardar_respaldo" in request.POST:
+            return self._guardar_respaldo(request)
         if "guardar_compra" in request.POST:
             return self._guardar_parametros(request, CompraOnlineForm)
         if "guardar_seguridad" in request.POST:
@@ -629,12 +677,49 @@ class ParametrosView(CatalogoAdminMixin, View):
         )
         return redirect("catalog:parametros")
 
-    def _contexto(self, request, formulario, form_modelo=None):
+    def _guardar_respaldo(self, request):
+        """El modelo de respaldo (plan 00 de últimos cambios, A). Como el activo: la
+        clave no entra en la auditoría, sólo que cambió."""
+        configuracion = ConfiguracionSistema.obtener()
+        anterior = (
+            configuracion.get_llm_respaldo_modo_display(),
+            configuracion.llm_respaldo_url or "sin respaldo",
+            configuracion.llm_respaldo_modelo or "el que tenga cargado el servidor",
+        )
+        formulario = RespaldoDelModeloForm(request.POST, instance=configuracion)
+        if not formulario.is_valid():
+            return self.get(request, form_respaldo=formulario)
+
+        with transaction.atomic():
+            configuracion = formulario.save(commit=False)
+            configuracion.actualizado_por = request.user
+            configuracion.save()
+            detalles = [
+                f"respaldo, modo: {anterior[0]} → {configuracion.get_llm_respaldo_modo_display()}",
+                f"dirección: {anterior[1]} → {configuracion.llm_respaldo_url or 'sin respaldo'}",
+                f"modelo: {anterior[2]} → "
+                f"{configuracion.llm_respaldo_modelo or 'el que tenga cargado el servidor'}",
+            ]
+            if formulario.cleaned_data.get("respaldo_api_key"):
+                detalles.append("se reemplazó la clave de la API del respaldo")
+            RegistroAuditoria.registrar(
+                accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
+                actor=request.user,
+                objetivo=configuracion,
+                ip=obtener_ip(request),
+                detalle="; ".join(detalles),
+            )
+        messages.success(request, "Se actualizó el modelo de respaldo.")
+        return redirect("catalog:parametros")
+
+    def _contexto(self, request, formulario, form_modelo=None, form_respaldo=None):
         return {
             "configuracion": ConfiguracionSistema.obtener(),
             "form": formulario or ConfiguracionForm(instance=ConfiguracionSistema.obtener()),
             "form_modelo": form_modelo
             or ModeloDeLenguajeForm(instance=ConfiguracionSistema.obtener()),
+            "form_respaldo": form_respaldo
+            or RespaldoDelModeloForm(instance=ConfiguracionSistema.obtener()),
             "editoriales": Editorial.objects.all(),
             # Una editorial activa sin ninguna fila no tiene de dónde sacar el
             # precio de un alta nacional: sus productos van con precio a mano.
@@ -1169,6 +1254,8 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
             # cortesía que CU-ALT-NAC E1 le da a los duplicados del alta en lote,
             # enlace a la ficha existente incluido.
             "duplicado": self._duplicado_de(borrador),
+            # B-01-026: el tomo es igual a una edición cancelada por la editorial.
+            "retirada": self._retirada_de(borrador),
             # B-01-020: la serie, si ya está en el catálogo, con lo que difiere.
             "serie": (serie := services.serie_de(borrador.titulo, borrador.editorial)),
             "serie_datos": serie
@@ -1188,6 +1275,18 @@ class BorradorDetalleView(CatalogoAdminMixin, View):
         }
         contexto.update(extra)
         return contexto
+
+    def _retirada_de(self, borrador):
+        if not borrador.esta_abierto:
+            return None
+        return services.buscar_retirada(
+            borrador.titulo,
+            borrador.volumen,
+            borrador.tipo,
+            borrador.formato,
+            borrador.editorial,
+            borrador.isbn,
+        )
 
     def _duplicado_de(self, borrador):
         """El producto que ya ocupa esa identidad, o `None`.
@@ -1402,6 +1501,26 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
         contexto["es_editorial"] = self.object.clase == Producto.EDITORIAL
         if contexto["es_editorial"]:
             contexto["restauracion"] = tabla_de_precios.restauracion_de(self.object)
+            # B-01-024: lo que ya saben los otros tomos de la serie, como en el borrador.
+            serie = services.serie_de(
+                self.object.titulo, self.object.editorial, excluir=self.object.pk
+            )
+            contexto["serie"] = serie
+            contexto["grupos_de_serie"] = list(
+                GrupoEtiqueta.objects.filter(de_serie=True, activo=True).values_list(
+                    "nombre", flat=True
+                )
+            )
+            contexto["serie_datos"] = (
+                {
+                    "autor": serie.autor,
+                    "sinopsis": serie.sinopsis,
+                    "solo_adultos": serie.solo_adultos,
+                    "etiquetas": [etiqueta.pk for etiqueta in serie.etiquetas],
+                }
+                if serie
+                else None
+            )
         return contexto
 
     def form_valid(self, form):
@@ -1426,7 +1545,16 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
 
         self.object = producto
         if partes:
-            messages.success(self.request, f"Se actualizó «{producto.titulo}».")
+            messages.success(
+                self.request,
+                f"Se actualizó «{producto.titulo}»."
+                + (
+                    f" Las etiquetas de la serie también en los {self.tomos_de_la_serie} "
+                    "tomos restantes."
+                    if getattr(self, "tomos_de_la_serie", 0)
+                    else ""
+                ),
+            )
         else:
             # Guardar sin haber tocado nada no es un error, pero decir "se
             # actualizó" sería afirmar algo que el historial de la ficha
@@ -1436,6 +1564,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
 
     def _guardar(self, form, campos, anterior, antes):
         """El guardado de la edición con su historial, en una transacción."""
+        etiquetas_antes = set(anterior.etiquetas.values_list("pk", flat=True))
         with transaction.atomic():
             producto = form.save()
             # Antes de medir los cambios: «Usar como portada» cambia la portada.
@@ -1471,6 +1600,19 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             if agregadas or quitadas:
                 partes.append(galeria.describir(agregadas, quitadas))
             partes.extend(orden_y_portada)
+            # B-01-025: las etiquetas de los grupos «de serie» siguen a la serie entera.
+            self.tomos_de_la_serie = 0
+            if producto.clase == Producto.EDITORIAL:
+                etiquetas_despues = set(producto.etiquetas.values_list("pk", flat=True))
+                self.tomos_de_la_serie = services.aplicar_a_la_serie(
+                    producto,
+                    etiquetas_despues - etiquetas_antes,
+                    etiquetas_antes - etiquetas_despues,
+                )
+                if self.tomos_de_la_serie:
+                    partes.append(
+                        "etiquetas de la serie aplicadas a " f"{self.tomos_de_la_serie} tomo(s) más"
+                    )
             if partes:
                 RegistroAuditoria.registrar(
                     RegistroAuditoria.MODIFICACION_PRODUCTO,

@@ -1,7 +1,7 @@
 """El calendario de las pre-ventas por llegar (plan 00 de interfaz, 22).
 
-Se arma con los mismos grupos de `preventa.por_llegar()` —fecha de llegada
-vigente y editorial—, así que el calendario no puede decir otra cosa que la
+Se arma con los mismos grupos de «Por llegar» (`suppliers.recepcion.por_llegar`,
+B-05-017) —fecha y proveedor—, así que el calendario no puede decir otra cosa que la
 lista de abajo. Un mes empieza en lunes y trae los días de los meses vecinos
 que completan sus semanas.
 """
@@ -105,17 +105,3 @@ def mes_de(primero, grupos):
         )
     ]
     return Mes(primero=primero, semanas=semanas)
-
-
-def resumen(grupos):
-    """Las cifras de arriba: el tamaño de lo que viene antes de recorrerlo."""
-    hoy = timezone.localdate()
-    filas = [fila for grupo in grupos for fila in grupo.filas]
-    return {
-        "productos": len(filas),
-        "reservadas": sum(fila.reservadas for fila in filas),
-        "esta_semana": sum(
-            1 for fila in filas if fila.llegada and hoy <= fila.llegada <= hoy + timedelta(days=7)
-        ),
-        "atrasados": sum(1 for fila in filas if fila.llegada and fila.llegada < hoy),
-    }

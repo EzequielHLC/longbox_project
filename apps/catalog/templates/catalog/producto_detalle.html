@@ -63,8 +63,12 @@ esconderse con CSS.
           <li><a href="{% url 'pedidos:demora' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="atencion" %}<span>Registrar demora</span></a></li>
         {% endif %}
         {% if producto.esta_en_pre_venta %}
-          <li><a href="{% url 'pedidos:preventas' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Confirmar ingreso</span></a></li>
+          <li><a href="{% url 'suppliers:por_llegar' %}" class="boton-texto">{% include "_iconos.html" with icono="inventario" %}<span>Cargar la llegada</span></a></li>
           <li><a data-dialogo href="{% url 'pedidos:cancelar_preventa' producto.pk %}" class="boton-texto boton-texto--critico">{% include "_iconos.html" with icono="baja" %}<span>Cancelar pre-venta</span></a></li>
+        {% endif %}
+        {% if producto.es_editorial and producto.edicion_retirada %}
+          {# B-01-026: no se reactiva (CU-ALT-CAN); vuelve como una edición nueva. #}
+          <li><a href="{% url 'catalog:lote_nacional' %}?reanuncia={{ producto.pk }}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Volver a anunciar</span></a></li>
         {% endif %}
         {% if producto.estado == "descatalogado" %}
           <li><a data-dialogo href="{% url 'catalog:producto_reactivar' producto.pk %}" class="boton-texto">{% include "_iconos.html" with icono="reactivar" %}<span>Reactivar</span></a></li>
@@ -76,6 +80,21 @@ esconderse con CSS.
   </div>
 
   <div class="pila-6">
+    {% if producto.es_editorial %}
+      {% with nuevas=producto.reanunciada_como.all %}
+      {% if producto.reanuncia_a or nuevas %}
+        {# B-01-026: la edición cancelada y la que la reanuncia se enlazan. #}
+        <div class="panel" role="note">
+          {% if producto.reanuncia_a %}
+            <p>Reanuncia a <a href="{% url 'catalog:producto_detalle' producto.reanuncia_a.pk %}">{{ producto.reanuncia_a }}</a> (<span class="datos">{{ producto.reanuncia_a.codigo }}</span>), cancelado por la editorial.</p>
+          {% endif %}
+          {% for nueva in nuevas %}
+            <p>Reanunciado como <a href="{% url 'catalog:producto_detalle' nueva.pk %}">{{ nueva }}</a> (<span class="datos">{{ nueva.codigo }}</span>).</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% endwith %}
+    {% endif %}
     <section class="seccion" aria-labelledby="titulo-datos">
       <div class="seccion__titulo"><h2 id="titulo-datos">Datos</h2></div>
       <dl class="datos-de-ficha">

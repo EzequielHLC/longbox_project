@@ -1,0 +1,122 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Una respuesta del proveedor (plan 00 de la respuesta simple). Desde la ficha se abre
+como diálogo (`data-dialogo-contenido`); sin guion, es esta pantalla. Una pregunta por
+vez: lo que no hace falta no se pide. En «Con cambios», la cantidad aparece sólo al
+elegir «Menos» y el motivo sólo al elegir «No la tiene», en esa línea.
+{% endcomment %}
+
+{% block titulo %}{{ titulo }} · Pedido #{{ pedido.pk }} · Longbox{% endblock %}
+{% block seccion %}Pedidos a proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Volver al pedido" atras=1 %}</span>
+    <h1>{{ titulo }}</h1>
+    <p>{{ pedido.nombre_proveedor }} · pedido #{{ pedido.pk }}</p>
+  </div>
+</header>
+
+<div data-dialogo-contenido{% if tipo == "no-puede" %}="critico"{% endif %} class="panel{% if tipo == 'no-puede' %} panel--atencion{% endif %} formulario--angosto">
+  <form method="post" action="{% url 'suppliers:pedido_respuesta' pedido.pk %}" class="pila-4" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="volver" value="{{ volver }}">
+
+    {% if tipo == "todo" %}
+      <input type="hidden" name="accion" value="todo">
+      <p>Se confirman <strong>tal como se pidieron</strong> los {{ pedido.sin_respuesta }} producto{{ pedido.sin_respuesta|pluralize }} que esperaban respuesta.</p>
+      <div class="campo">
+        <label for="fecha" class="etiqueta">¿Dijo cuándo llega? <span class="secundario">(opcional)</span></label>
+        <input type="date" id="fecha" name="fecha" value="{{ pedido.fecha_estimada|date:'Y-m-d' }}">
+      </div>
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Confirmar</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
+
+    {% elif tipo == "cambios" %}
+      <input type="hidden" name="accion" value="cambios">
+      <p class="secundario">Marcá sólo lo que cambió: el resto queda confirmado tal cual.</p>
+      <ul class="respuesta-lineas">
+        {% for linea in lineas %}
+          <li class="respuesta-linea">
+            <div class="respuesta-linea__producto">
+              <span class="fuerte">{{ linea.producto.especifico }}</span>
+              <span class="texto-chico secundario">Pedidas: <span class="datos">{{ linea.cantidad_pedida }}</span>{% if linea.cantidad_recibida %} · llegaron <span class="datos">{{ linea.cantidad_recibida }}</span>{% endif %}</span>
+            </div>
+            <fieldset class="segmentos">
+              <legend class="sr-only">Qué dijo de {{ linea.producto.especifico }}</legend>
+              <label class="segmentos__opcion"><input type="radio" name="respuesta-{{ linea.pk }}" value="confirmada"{% if linea.respuesta != "otra_cantidad" %} checked{% endif %}><span>Tal cual</span></label>
+              <label class="segmentos__opcion"><input type="radio" name="respuesta-{{ linea.pk }}" value="otra_cantidad"{% if linea.respuesta == "otra_cantidad" %} checked{% endif %}><span>Menos</span></label>
+              <label class="segmentos__opcion segmentos__opcion--critica"><input type="radio" name="respuesta-{{ linea.pk }}" value="no_disponible"><span>No la tiene</span></label>
+            </fieldset>
+            <div class="respuesta-linea__cantidad campo">
+              <label for="cantidad-{{ linea.pk }}" class="etiqueta">Confirma</label>
+              <span class="fila-2"><input type="number" id="cantidad-{{ linea.pk }}" name="cantidad-{{ linea.pk }}" value="{% if linea.cantidad_confirmada %}{{ linea.cantidad_confirmada }}{% endif %}" min="1" max="{{ linea.cantidad_pedida }}" step="1" inputmode="numeric" class="entrada-cifra"><span class="secundario">de {{ linea.cantidad_pedida }}</span></span>
+            </div>
+            <div class="respuesta-linea__motivo campo">
+              <label for="motivo-{{ linea.pk }}" class="etiqueta">Por qué no la tiene</label>
+              <input type="text" id="motivo-{{ linea.pk }}" name="motivo-{{ linea.pk }}" maxlength="500" placeholder="{{ motivos|join:', ' }}…">
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="campo">
+        <label for="fecha" class="etiqueta">¿Dijo cuándo llega? <span class="secundario">(opcional)</span></label>
+        <input type="date" id="fecha" name="fecha" value="{{ pedido.fecha_estimada|date:'Y-m-d' }}">
+      </div>
+      <p class="texto-chico secundario">«No la tiene» cierra ese producto sin recibir, y no se deshace.</p>
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Guardar la respuesta</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
+
+    {% elif tipo == "no-puede" %}
+      <input type="hidden" name="accion" value="nada">
+      <p class="fila-2 fuerte">{% include "_iconos.html" with icono="atencion" %}<span>Se cierran {{ consecuencias.lineas }} producto{{ consecuencias.lineas|pluralize }} sin recibir. No se deshace.</span></p>
+      {% if consecuencias.preventas %}
+        <div class="pila-2">
+          <p>Estas pre-ventas tienen reservas y se quedan sin lo que esperaban de este pedido:</p>
+          <ul class="lista-simple">
+            {% for fila in consecuencias.preventas %}
+              <li>{{ fila.producto.especifico }}: <span class="datos">{{ fila.reservas }}</span> reserva{{ fila.reservas|pluralize }}{% if fila.quedan %}, con <span class="datos">{{ fila.quedan }}</span> en camino por otro pedido{% endif %}.</li>
+            {% endfor %}
+          </ul>
+          <p class="texto-chico secundario">Las reservas no se cancelan solas: después se registra la demora o se cancela la pre-venta.</p>
+        </div>
+      {% endif %}
+      <fieldset class="opciones-tarjeta opciones-tarjeta--compactas">
+        <legend class="etiqueta">Por qué no puede</legend>
+        {% for motivo in motivos %}
+          <label class="opcion-tarjeta"><input type="radio" name="motivo" value="{{ motivo }}"{% if forloop.first %} checked{% endif %}><span class="opcion-tarjeta__titulo">{{ motivo }}</span></label>
+        {% endfor %}
+        <label class="opcion-tarjeta"><input type="radio" name="motivo" value="otro"><span class="opcion-tarjeta__titulo">Otro motivo</span></label>
+      </fieldset>
+      <div class="campo campo--otro-motivo">
+        <label for="motivo-otro" class="etiqueta">El otro motivo</label>
+        <input type="text" id="motivo-otro" name="motivo_otro" maxlength="500">
+      </div>
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Cerrar el pedido sin recibir</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
+
+    {% else %}
+      <input type="hidden" name="accion" value="fecha">
+      <div class="campo">
+        <label for="fecha" class="etiqueta">Llega el</label>
+        <input type="date" id="fecha" name="fecha" value="{{ pedido.fecha_estimada|date:'Y-m-d' }}">
+        <div class="ayuda">Si atrasa una pre-venta con reservas, es una demora: después se registra en Pre-ventas.</div>
+      </div>
+      {% if pedido.fecha_estimada %}
+        <label class="casilla"><input type="checkbox" name="sin_fecha" value="1"><span>Sin fecha: borrar la que tiene</span></label>
+      {% endif %}
+      <div class="acciones">
+        <button type="submit" class="boton-primario">Guardar la fecha</button>
+        {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+      </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

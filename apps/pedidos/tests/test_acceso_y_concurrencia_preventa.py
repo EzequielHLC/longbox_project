@@ -8,7 +8,7 @@ from apps.catalog.models import Producto
 from apps.core.models import RegistroAuditoria
 from apps.core.tests.concurrencia import a_la_vez, errores_internos, sesion_de
 from apps.pedidos.models import LineaPedido, Pedido
-from apps.pedidos.tests.util import crear_preventa, demorar, reservar
+from apps.pedidos.tests.util import crear_preventa, datos_de_llegada, demorar, reservar
 from apps.puntos.models import LotePuntos
 from apps.tienda.tests.compra_util import fijar_parametros
 
@@ -25,10 +25,11 @@ def test_acceso_solo_el_administrador_opera_la_preventa(client, request, rol):
     client.force_login(request.getfixturevalue(rol))
 
     respuestas = [
-        client.get(reverse("pedidos:preventas")),
+        # B-05-017: la llegada se carga en «Por llegar».
+        client.get(reverse("suppliers:por_llegar")),
         client.post(
-            reverse("pedidos:ingreso"),
-            {"producto": [producto.pk], f"unidades_{producto.pk}": "5", "confirmar": "1"},
+            reverse("suppliers:llegada_revisar"),
+            {**datos_de_llegada({producto: "5"}), "confirmar": "1"},
         ),
         client.get(reverse("pedidos:demora", args=[producto.pk])),
         client.post(reverse("pedidos:demora", args=[producto.pk]), {"confirmar": "1"}),
@@ -74,7 +75,7 @@ def test_acceso_el_panel_muestra_las_preventas_por_llegar(client_admin):
 
     proximas = respuesta.context["preventas"]
     assert (len(proximas.vencidas), len(proximas.hoy), len(proximas.proximas)) == (1, 1, 1)
-    assert reverse("pedidos:preventas") in respuesta.content.decode()
+    assert reverse("suppliers:por_llegar") in respuesta.content.decode()
 
 
 @pytest.mark.django_db
@@ -193,8 +194,8 @@ def test_concurrencia_la_llegada_y_la_cancelacion_del_cliente_no_se_pisan():
     respuestas = a_la_vez(
         lambda: navegador.post(url, {"opcion": LineaPedido.CANCELAR, "confirmar": "1"}),
         lambda: panel.post(
-            reverse("pedidos:ingreso"),
-            {"producto": [producto.pk], f"unidades_{producto.pk}": "1", "confirmar": "1"},
+            reverse("suppliers:llegada_revisar"),
+            {**datos_de_llegada({producto: "1"}), "confirmar": "1"},
         ),
     )
 
@@ -218,12 +219,13 @@ def test_concurrencia_dos_administradores_que_confirman_el_mismo_ingreso_lo_cuen
     uno, otro = UsuarioFactory(rol="administrador"), UsuarioFactory(rol="administrador")
     producto = crear_preventa(dias=0)
     pedido, _ = reservar(cliente, producto)
-    datos = {"producto": [producto.pk], f"unidades_{producto.pk}": "5", "confirmar": "1"}
+    # Los dos revisaron la misma caja: la segunda confirmación no vuelve a sumarla.
+    datos = {**datos_de_llegada({producto: "5"}), "confirmar": "1"}
     primero, segundo = sesion_de(uno), sesion_de(otro)
 
     respuestas = a_la_vez(
-        lambda: primero.post(reverse("pedidos:ingreso"), datos),
-        lambda: segundo.post(reverse("pedidos:ingreso"), datos),
+        lambda: primero.post(reverse("suppliers:llegada_revisar"), datos),
+        lambda: segundo.post(reverse("suppliers:llegada_revisar"), datos),
     )
 
     producto.refresh_from_db()

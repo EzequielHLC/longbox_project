@@ -19,6 +19,7 @@ a mano— y se cierran cuando llega todo o lo que falta se da por perdido.
 </header>
 
 <div class="cifras">
+  {% if sin_enviar %}<div class="cifra cifra--atencion"><span class="cifra__rotulo">Requiere atención</span><span class="cifra__rotulo">{% include "_iconos.html" with icono="correo" %}Sin enviar</span><span class="cifra__valor">{{ sin_enviar }}</span></div>{% endif %}
   <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="proveedores" %}Por llegar</span><span class="cifra__valor">{{ por_llegar }}</span></div>
   <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="lote" %}Unidades en camino</span><span class="cifra__valor">{{ unidades_por_llegar }}</span></div>
   <div class="cifra{% if atrasados %} cifra--atencion{% endif %}">{% if atrasados %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasados</span><span class="cifra__valor">{{ atrasados }}</span></div>
@@ -48,7 +49,7 @@ a mano— y se cierran cuando llega todo o lo que falta se da por perdido.
         <summary class="grupo-plegable__cabeza">
           <span class="grupo-plegable__nombre"><span class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ pedido.nombre_proveedor }}</span>
           <span class="grupo-plegable__cuenta">Pedido #{{ pedido.pk }} · {{ pedido.get_origen_display }} · {{ pedido.lineas.all|length }} producto{{ pedido.lineas.all|length|pluralize }}{% if pedido.estado == "abierto" %} · faltan {{ pedido.unidades_pendientes }}{% endif %}</span>
-          <span class="marca-estado{% if pedido.vencido %} marca-estado--error{% elif pedido.estado != 'abierto' %} marca-estado--apagado{% elif pedido.dias_para == 0 %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span>
+          <span class="marca-estado{% if pedido.vencido or pedido.estado == 'sin_enviar' %} marca-estado--error{% elif pedido.estado != 'abierto' %} marca-estado--apagado{% elif pedido.dias_para == 0 %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span>
         </summary>
         <div class="grupo-plegable__cuerpo pila-3">
           <div class="tabla-desplazable">

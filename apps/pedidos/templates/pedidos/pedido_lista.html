@@ -5,15 +5,15 @@ primero, con filtros por estado, cliente, canal, fechas y artículos demorados.
 Cada fila lleva al detalle (CO-183), desde donde se avanza el estado.
 {% endcomment %}
 
-{% block titulo %}Pedidos · Longbox{% endblock %}
-{% block seccion %}Pedidos{% endblock %}
+{% block titulo %}Pedidos de clientes · Longbox{% endblock %}
+{% block seccion %}Pedidos de clientes{% endblock %}
 
 {% block contenido %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
-    <h1>Pedidos</h1>
+    <h1>Pedidos de clientes</h1>
   </div>
-  <a href="{% url 'pedidos:preventas' %}" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="inventario" %}<span>Pre-ventas por llegar</span></a>
+  <a href="{% url 'suppliers:por_llegar' %}" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="inventario" %}<span>Por llegar</span></a>
 </header>
 
 <section class="seccion">

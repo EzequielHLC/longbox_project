@@ -23,7 +23,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.accounts.models import Usuario
-from apps.core import llm
+from apps.core import llm, modelo_de_respaldo
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 from apps.core.utils import obtener_ip
@@ -765,3 +765,33 @@ def _describir_diagnostico(estado, resultado):
         f"Extracción en {resultado.milisegundos} ms con el prompt {resultado.version_prompt}: "
         f"{resumen['productos']} producto(s), {resumen['con_reparos']} con reparos"
     )
+
+
+class CambiarModeloView(ProveedoresMixin, View):
+    """`CO-229`: pasar al modelo de respaldo (plan 00 de últimos cambios, A).
+
+    Lo propone el sistema cuando el activo falla seguido (`CO-228`), por correo o
+    Telegram con un enlace acá; nunca cambia solo. Confirmar prueba primero el
+    respaldo e intercambia los dos. Mirar la pantalla no cambia nada.
+    """
+
+    template_name = "suppliers/cambiar_modelo.html"
+
+    def _contexto(self, **extra):
+        return {"configuracion": ConfiguracionSistema.obtener(), **extra}
+
+    def get(self, request):
+        return render(request, self.template_name, self._contexto())
+
+    def post(self, request):
+        try:
+            nuevo = modelo_de_respaldo.confirmar_cambio(request.user, ip=obtener_ip(request))
+        except modelo_de_respaldo.CambioRechazado as rechazo:
+            messages.error(request, str(rechazo))
+            return render(request, self.template_name, self._contexto())
+        messages.success(
+            request,
+            f"El sistema usa ahora «{nuevo.llm_modelo or nuevo.llm_url}». "
+            "El anterior quedó como respaldo.",
+        )
+        return redirect("suppliers:diagnostico_llm")

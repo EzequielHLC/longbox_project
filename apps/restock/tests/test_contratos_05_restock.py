@@ -534,7 +534,16 @@ def test_CO072_despachar_envia_el_correo_y_marca_las_lineas(
     assert mailoutbox[-1].to == [proveedor.correo_comercial]
     assert _acciones(RegistroAuditoria.DESPACHO_RESTOCK).get().actor == administrador
     assert "Enviado" in _acciones(RegistroAuditoria.PEDIDO_A_PROVEEDOR).get().detalle
-    # Era el único proveedor: la propuesta se cierra sola.
+    # Era el único proveedor. DME-13 la cerraba acá; desde el desvío aprobado (B-05-013)
+    # espera la respuesta del proveedor, y se cierra cuando la tiene.
+    assert propuesta.estado == PropuestaRestock.ESPERANDO
+    assert not _acciones(RegistroAuditoria.CIERRE_PROPUESTA_RESTOCK).exists()
+
+    from apps.suppliers import respuestas
+
+    respuestas.confirmar_todo(propuesta.pedidos.get(), administrador)
+
+    propuesta.refresh_from_db()
     assert propuesta.estado == PropuestaRestock.CERRADA
     assert _acciones(RegistroAuditoria.CIERRE_PROPUESTA_RESTOCK).exists()
 

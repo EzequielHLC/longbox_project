@@ -28,7 +28,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import Usuario
-from apps.avisos import telegram
+from apps.avisos import tarjetas, telegram, voz
 from apps.avisos.canales import enlace
 from apps.avisos.miniaturas import miniatura
 from apps.avisos.models import INTENTOS_DE_CONFIRMACION, CodigoVinculacion, VinculoTelegram
@@ -49,29 +49,30 @@ MOTIVOS = (
 )
 _CORREO_EN_LA_PREGUNTA = re.compile(r"correo #(\d+)")
 
+# La ayuda de Long-bot (B-19-017). `{saludo}` es su presentación y `{bot}` su usuario.
 AYUDA = (
-    "<b>Soy el bot de Longbox.</b> Te aviso lo que elegiste en tu perfil y, cuando llega un "
-    "correo de un proveedor, lo podés aprobar o descartar desde acá.\n\n"
-    "<b>Consultas</b>\n"
+    "{saludo}\n"
+    "Te aviso lo que elegiste en tu perfil y, cuando llega un correo de un proveedor, lo "
+    "aprobamos o lo descartamos desde acá.\n\n"
+    "🔎 <b>Preguntame</b>\n"
     "/stock <i>título, código o ISBN</i> — stock, precio y estado\n"
     "/llega — lo que llega esta semana y lo atrasado\n"
     "/pendientes — lo que espera una decisión\n"
     "/caja — lo cobrado hoy, sin cerrar\n"
     "/estado — disco, memoria, base y el último respaldo\n"
     "/refresh — revisar la casilla de novedades ahora, sin esperar\n"
-    "También podés preguntar con tus palabras: «¿cuántos Chainsaw Man 12 hay?».\n\n"
-    "<b>Cargar un borrador</b>\n"
-    "/cargar <i>Berserk Deluxe 5, Ivrea, B6, 24900</i> — o mandá la foto de la tapa con ese "
-    "texto. Queda para revisar en la web; nada entra al catálogo sin tu confirmación. "
-    "Es para material editorial: lo demás se da de alta en la web.\n"
-    "/borradores <i>título (opcional)</i> — los que esperan revisión, con su portada. "
-    "Desde acá se pueden rechazar; se confirman sólo en la web.\n\n"
-    "<b>Compartir un producto</b>\n"
-    "En cualquier chat, escribí <code>@{bot} berserk</code> y elegí el tomo: se comparte su "
+    "O escribime con tus palabras: «¿cuántos Chainsaw Man 12 hay?».\n\n"
+    "📝 <b>Borradores</b>\n"
+    "/cargar <i>Berserk Deluxe 5, Ivrea, B6, 24900</i> — o mandame la foto de la tapa con ese "
+    "texto. Queda para revisar en la web: nada entra al catálogo sin tu confirmación. Es para "
+    "material editorial; lo demás se da de alta en la web.\n"
+    "/borradores <i>título (opcional)</i> — los que esperan revisión, con su portada. Desde acá "
+    "se rechazan; se confirman sólo en la web.\n\n"
+    "📣 <b>Compartir un producto</b>\n"
+    "En cualquier chat escribí <code>@{bot} berserk</code> y elegí el tomo: se comparte su "
     "ficha de la tienda, con el precio y el enlace, sin el stock.\n\n"
-    "/salir — desvincular este chat de tu cuenta."
+    "👋 /salir — desvincular este chat de tu cuenta."
 )
-NO_VINCULADO = "Este chat no está vinculado a un Administrador activo. Vinculalo desde tu perfil."
 _COMANDO = re.compile(r"^/(?P<nombre>[a-z]+)(?:@\w+)?(?:\s+(?P<resto>.*))?$", re.S | re.I)
 
 
@@ -110,15 +111,20 @@ def _mensaje(mensaje):
     elif nombre == "salir":
         _desvincular_desde_el_chat(chat_id)
     elif nombre in ("ayuda", "help"):
-        telegram.enviar(chat_id, _ayuda())
+        _presentarse(chat_id)
+        telegram.enviar(chat_id, _ayuda(chat_id))
     elif (pregunta := (mensaje.get("reply_to_message") or {}).get("text", "")) and (
         encontrado := _CORREO_EN_LA_PREGUNTA.search(pregunta)
     ):
         _descartar(chat_id, int(encontrado.group(1)), texto)
     elif pregunta and (encontrado := _BORRADOR_EN_LA_PREGUNTA.search(pregunta)):
         _rechazar(chat_id, int(encontrado.group(1)), texto)
+    elif pregunta and (encontrado := _FECHA_DEL_PEDIDO.search(pregunta)):
+        _poner_fecha_al_pedido(chat_id, int(encontrado.group(1)), texto)
+    elif pregunta and (encontrado := _NO_PUEDE_EL_PEDIDO.search(pregunta)):
+        _no_puede_el_pedido(chat_id, int(encontrado.group(1)), texto)
     elif administrador_del_chat(chat_id) is None:
-        telegram.enviar(chat_id, NO_VINCULADO)
+        telegram.enviar(chat_id, _no_vinculado())
     elif mensaje.get("photo"):
         # La foto más grande que mandó Telegram; el epígrafe son los datos.
         foto = max(mensaje["photo"], key=lambda f: f.get("file_size") or 0)["file_id"]
@@ -129,20 +135,37 @@ def _mensaje(mensaje):
     elif nombre == "borradores":
         lanzar(partial(_borradores, chat_id, resto))
     elif nombre in ("refresh", "revisar"):
-        telegram.enviar(chat_id, "Revisando la casilla…")
+        telegram.enviar(chat_id, voz.frase("revisando"))
         lanzar(partial(_refrescar, chat_id))
     elif nombre in ("stock", "llega", "pendientes", "caja", "estado"):
         telegram.enviar(chat_id, _consultar(nombre, resto))
     elif nombre:
-        telegram.enviar(chat_id, f"No conozco /{html.escape(nombre)}. Mandá /ayuda.")
+        telegram.enviar(chat_id, voz.frase("comando_desconocido", comando=html.escape(nombre)))
     elif texto:
         lanzar(partial(_pregunta_libre, chat_id, texto))
     else:
-        telegram.enviar(chat_id, _ayuda())
+        telegram.enviar(chat_id, _ayuda(chat_id))
 
 
-def _ayuda():
-    return AYUDA.replace("{bot}", html.escape(telegram.usuario_del_bot() or "el_bot"))
+def _presentarse(chat_id):
+    """B-19-020: la tarjeta de Long-bot antes de la lista de comandos."""
+    tarjetas.mandar(
+        chat_id,
+        f"¡Hola! Soy {voz.NOMBRE}",
+        bajada="Tu compañero en Longbox: avisos, consultas y borradores, todo desde acá.",
+        gesto=tarjetas.GUINO,
+    )
+
+
+def _ayuda(chat_id=None):
+    usuario = administrador_del_chat(chat_id) if chat_id is not None else None
+    return AYUDA.replace(
+        "{saludo}", voz.frase("presentacion", nombre=html.escape(voz.nombre_de(usuario)))
+    ).replace("{bot}", html.escape(telegram.usuario_del_bot() or "el_bot"))
+
+
+def _no_vinculado():
+    return voz.frase("no_vinculado")
 
 
 def _nombre(remitente):
@@ -187,13 +210,15 @@ def _vincular(chat_id, codigo, nombre):
         if pedido is None or not pedido.vigente:
             telegram.enviar(
                 chat_id,
-                "Ese enlace no sirve: venció o ya se usó. "
-                "Pedí uno nuevo desde tu perfil en Longbox.",
+                "⛔ Ese enlace no sirve: venció o ya se usó. "
+                "Pedí uno nuevo desde tu perfil en Longbox y probamos de nuevo.",
             )
             return
         usuario = pedido.usuario
         if usuario.rol != Usuario.ADMINISTRADOR or usuario.estado != Usuario.ACTIVO:
-            telegram.enviar(chat_id, "Esta cuenta no puede usar el bot.")
+            telegram.enviar(
+                chat_id, "🚫 Esta cuenta no puede usar el bot: soy sólo para Administradores."
+            )
             return
         pedido.chat_pendiente = chat_id
         pedido.nombre_pendiente = nombre[:200]
@@ -204,7 +229,8 @@ def _vincular(chat_id, codigo, nombre):
         )
     telegram.enviar(
         chat_id,
-        "Para terminar, escribí este número en tu perfil de Longbox:\n\n"
+        f"🔐 <b>¡Casi estamos!</b> Soy {voz.NOMBRE}. Para terminar, escribí este número en "
+        "tu perfil de Longbox:\n\n"
         f"<b>{pedido.confirmacion[:3]} {pedido.confirmacion[3:]}</b>\n\n"
         f"Vence a las {timezone.localtime(pedido.vence_en):%H:%M}. "
         "Si no pediste vincular una cuenta, ignorá este mensaje.",
@@ -248,12 +274,9 @@ def confirmar_vinculo(usuario, numero):
                 "confirmado desde el perfil."
             ),
         )
-    saludo = f", {html.escape(nombre.split()[0])}" if nombre else ""
-    telegram.enviar(
-        chat_id,
-        f"Listo{saludo}: este chat quedó vinculado a tu cuenta de Longbox. "
-        "Elegí qué avisos recibir acá desde tu perfil. Mandá /ayuda para ver lo que podés hacer.",
-    )
+    nombre_de_pila = voz.nombre_de(usuario) or (nombre.split()[0] if nombre else "")
+    _presentarse(chat_id)
+    telegram.enviar(chat_id, voz.frase("vinculado", nombre=html.escape(nombre_de_pila)))
     return True, "Telegram quedó vinculado. Elegí abajo qué avisos querés recibir ahí."
 
 
@@ -274,10 +297,12 @@ def desvincular(usuario, *, desde="el perfil"):
 def _desvincular_desde_el_chat(chat_id):
     vinculo = VinculoTelegram.objects.select_related("usuario").filter(chat_id=chat_id).first()
     if vinculo is None:
-        telegram.enviar(chat_id, "Este chat no está vinculado a ninguna cuenta.")
+        telegram.enviar(
+            chat_id, "🤷 Este chat no está vinculado a ninguna cuenta: no hay nada que desvincular."
+        )
         return
     desvincular(vinculo.usuario, desde="el chat")
-    telegram.enviar(chat_id, "Listo: este chat ya no recibe avisos. Te llegan por correo.")
+    telegram.enviar(chat_id, voz.frase("desvinculado"))
 
 
 # ---------------------------------------------------------------------------
@@ -294,16 +319,22 @@ def mandar_correo(chat_id, correo):
     """El aviso de un correo nuevo, con «Aprobar y procesar» y «Descartar»."""
     primeras = " ".join((correo.contenido or "").split())[:300]
     ficha = enlace("suppliers:correo_detalle", correo.pk)
+    proveedor = html.escape(str(correo.proveedor))
+    llegada = voz.elegir(
+        (f"¡Llegó algo de {proveedor}!", f"¡Correo de {proveedor}!", f"{proveedor} escribió")
+    )
     texto = (
-        f"<i>Correo nuevo · {html.escape(str(correo.proveedor))}</i>\n"
+        f"{voz.encabezado(voz.EMOJI['correos'], llegada)}\n"
         f"<b>{html.escape(correo.asunto or 'Sin asunto')}</b>\n"
-        f"{html.escape(correo.remitente)}"
-        + (f"\n\n{html.escape(primeras)}…" if primeras else "")
-        + (f'\n\n<a href="{html.escape(ficha)}">Verlo en Longbox</a>' if ficha else "")
+        f"<i>{html.escape(correo.remitente)}</i>"
+        + (f"\n\n<blockquote>{html.escape(primeras)}…</blockquote>" if primeras else "")
+        + "\n\n"
+        + voz.elegir(("¿Lo proceso o lo descartamos?", "¿Qué hacemos con este?"))
+        + (f'\n👉 <a href="{html.escape(ficha)}">Verlo en Longbox</a>' if ficha else "")
     )
     botones = [
-        [{"text": "Aprobar y procesar", "callback_data": _boton_de("ap", correo.pk, chat_id)}],
-        [{"text": "Descartar", "callback_data": _boton_de("de", correo.pk, chat_id)}],
+        [{"text": "✅ Aprobar y procesar", "callback_data": _boton_de("ap", correo.pk, chat_id)}],
+        [{"text": "🗑 Descartar", "callback_data": _boton_de("de", correo.pk, chat_id)}],
     ]
     return telegram.enviar(chat_id, texto, botones=botones)
 
@@ -321,13 +352,13 @@ def _boton(consulta):
         return
     if administrador_del_chat(chat_id) is None:
         telegram.responder_boton(
-            consulta["id"], "Este chat no está vinculado a un Administrador activo."
+            consulta["id"], "🔒 Este chat no está vinculado a un Administrador activo."
         )
         return
     pk = int(pk)
     mensaje_id = mensaje.get("message_id")
     if accion == "ap":
-        telegram.responder_boton(consulta["id"], "Procesando…")
+        telegram.responder_boton(consulta["id"], "🧠 Dale, lo leo y te cuento…")
         telegram.quitar_botones(chat_id, mensaje_id)
         # El modelo puede tardar minutos y Telegram espera la respuesta del botón:
         # se procesa aparte y el resultado llega como otro mensaje.
@@ -339,7 +370,7 @@ def _boton(consulta):
             for i, motivo in enumerate(MOTIVOS)
         ]
         botones.append([{"text": "Otro motivo…", "callback_data": _boton_de("do", pk, chat_id)}])
-        telegram.enviar(chat_id, f"¿Por qué se descarta el correo #{pk}?", botones=botones)
+        telegram.enviar(chat_id, f"🗑 ¿Por qué descartamos el correo #{pk}?", botones=botones)
     elif accion == "dm" and extra.isdigit() and int(extra) < len(MOTIVOS):
         telegram.responder_boton(consulta["id"])
         telegram.quitar_botones(chat_id, mensaje_id)
@@ -349,7 +380,7 @@ def _boton(consulta):
         telegram.quitar_botones(chat_id, mensaje_id)
         telegram.enviar(
             chat_id,
-            f"Escribí el motivo para descartar el correo #{pk}, " "respondiendo a este mensaje.",
+            f"✍️ Escribime el motivo para descartar el correo #{pk}, respondiendo a este mensaje.",
             forzar_respuesta=True,
         )
     elif accion == "rb":
@@ -364,46 +395,112 @@ def _boton(consulta):
         telegram.quitar_botones(chat_id, mensaje_id)
         telegram.enviar(
             chat_id,
-            f"Escribí el motivo para rechazar el borrador #{pk}, respondiendo a este mensaje.",
+            f"✍️ Escribime el motivo para rechazar el borrador #{pk}, respondiendo a este mensaje.",
+            forzar_respuesta=True,
+        )
+    elif accion == "rp":
+        telegram.responder_boton(consulta["id"], "🔁 Dale, lo intento de nuevo…")
+        telegram.quitar_botones(chat_id, mensaje_id)
+        lanzar(partial(_aprobar, chat_id, pk, reintento=True))
+    elif accion == "pe":
+        telegram.responder_boton(consulta["id"], "📨 Dale, lo mando de nuevo…")
+        telegram.quitar_botones(chat_id, mensaje_id)
+        lanzar(partial(_reintentar_envio, chat_id, pk))
+    elif accion == "pc":
+        telegram.responder_boton(consulta["id"])
+        telegram.quitar_botones(chat_id, mensaje_id)
+        _confirmar_pedido(chat_id, pk)
+    elif accion == "pf":
+        telegram.responder_boton(consulta["id"])
+        telegram.enviar(
+            chat_id,
+            f"📅 Escribime la fecha de llegada del pedido #{pk} (por ejemplo 15/11), "
+            "respondiendo a este mensaje.",
+            forzar_respuesta=True,
+        )
+    elif accion == "pn":
+        telegram.responder_boton(consulta["id"])
+        from apps.suppliers.respuestas import MOTIVOS_NO_PUEDE
+
+        botones = [
+            [{"text": motivo, "callback_data": _boton_de("pm", pk, chat_id, str(i))}]
+            for i, motivo in enumerate(MOTIVOS_NO_PUEDE)
+        ]
+        botones.append([{"text": "Otro motivo…", "callback_data": _boton_de("po", pk, chat_id)}])
+        telegram.enviar(
+            chat_id, f"⛔ ¿Por qué no puede abastecer el pedido #{pk}?", botones=botones
+        )
+    elif accion == "pm" and extra.isdigit():
+        from apps.suppliers.respuestas import MOTIVOS_NO_PUEDE
+
+        if int(extra) >= len(MOTIVOS_NO_PUEDE):
+            telegram.responder_boton(consulta["id"], "Botón inválido.")
+            return
+        telegram.responder_boton(consulta["id"])
+        telegram.quitar_botones(chat_id, mensaje_id)
+        _no_puede_el_pedido(chat_id, pk, MOTIVOS_NO_PUEDE[int(extra)])
+    elif accion == "po":
+        telegram.responder_boton(consulta["id"])
+        telegram.quitar_botones(chat_id, mensaje_id)
+        telegram.enviar(
+            chat_id,
+            f"✍️ Escribime por qué no puede abastecer el pedido #{pk}, respondiendo a este "
+            "mensaje.",
             forzar_respuesta=True,
         )
     else:
         telegram.responder_boton(consulta["id"], "Botón inválido.")
 
 
-def _aprobar(chat_id, correo_pk):
-    """`CO-017` desde el chat. Lo que pasa después es lo mismo que desde la web."""
+def _aprobar(chat_id, correo_pk, *, reintento=False):
+    """`CO-017` desde el chat; con `reintento`, `CO-019` sobre uno que falló. Lo que
+    pasa después es lo mismo que desde la web."""
     usuario = administrador_del_chat(chat_id)
     if usuario is None:
         return
+    operacion = services.reprocesar_correo if reintento else services.aprobar_correo
     try:
-        resultado = services.aprobar_correo(correo_pk, actor=usuario)
+        resultado = operacion(correo_pk, actor=usuario)
     except CorreoProveedor.DoesNotExist:
-        telegram.enviar(chat_id, f"El correo #{correo_pk} ya no existe.")
+        telegram.enviar(chat_id, f"🤷 El correo #{correo_pk} ya no existe.")
         return
     except services.CorreoYaResuelto as error:
-        telegram.enviar(chat_id, f"Otro Administrador ya resolvió el correo #{correo_pk}: {error}.")
+        telegram.enviar(
+            chat_id,
+            f"⚡ Se te adelantaron: otro Administrador ya resolvió el correo #{correo_pk} "
+            f"({error}).",
+        )
         return
     correo = CorreoProveedor.objects.get(pk=correo_pk)
     ficha = enlace("suppliers:correo_detalle", correo.pk)
     if correo.estado == CorreoProveedor.FALLIDO:
-        texto = f"Falló el procesamiento del correo #{correo.pk}. {correo.motivo}"
+        texto = f"😬 <b>No pude procesar el correo #{correo.pk}.</b>\n{html.escape(correo.motivo)}"
+        if ficha:
+            texto += f'\n\n👉 <a href="{html.escape(ficha)}">Verlo en Longbox</a>'
+        # Si fue el modelo (o el túnel), otro intento suele alcanzar: el botón lo ofrece.
+        botones = [
+            [{"text": "🔁 Reintentar", "callback_data": _boton_de("rp", correo.pk, chat_id)}],
+            [{"text": "🗑 Descartar", "callback_data": _boton_de("de", correo.pk, chat_id)}],
+        ]
+        telegram.enviar(chat_id, texto, botones=botones)
+        return
     elif resultado.generacion is not None:
         cuenta = resultado.generacion.resumen
         borradores = enlace("catalog:borrador_lista")
         texto = (
-            f"Se procesó el correo #{correo.pk}: {cuenta['generados']} borrador(es) para revisar "
-            f"y {cuenta['duplicados']} omitido(s) por existir ya."
+            f"✨ <b>¡Listo el correo #{correo.pk}!</b>\n"
+            f"📝 {cuenta['generados']} borrador(es) para revisar y {cuenta['duplicados']} "
+            "omitido(s) por existir ya."
             + (
-                f'\n\n<a href="{html.escape(borradores)}">Revisar los borradores</a>'
+                f'\n\n👉 <a href="{html.escape(borradores)}">Revisar los borradores</a>'
                 if borradores
                 else ""
             )
         )
     else:
-        texto = f"Se procesó el correo #{correo.pk}. {correo.motivo}"
+        texto = f"✅ <b>Procesé el correo #{correo.pk}.</b>\n{html.escape(correo.motivo)}"
         if ficha:
-            texto += f'\n\n<a href="{html.escape(ficha)}">Verlo en Longbox</a>'
+            texto += f'\n\n👉 <a href="{html.escape(ficha)}">Verlo en Longbox</a>'
     telegram.enviar(chat_id, texto)
 
 
@@ -412,20 +509,21 @@ def _descartar(chat_id, correo_pk, motivo):
     usuario = administrador_del_chat(chat_id)
     motivo = " ".join((motivo or "").split())[:500]
     if usuario is None:
-        telegram.enviar(chat_id, "Este chat no está vinculado a un Administrador activo.")
+        telegram.enviar(chat_id, _no_vinculado())
         return
     if not motivo:
-        telegram.enviar(chat_id, "El motivo es obligatorio.")
+        telegram.enviar(chat_id, voz.frase("motivo_obligatorio"))
         return
     with transaction.atomic():
         correo = CorreoProveedor.objects.select_for_update().filter(pk=correo_pk).first()
         if correo is None:
-            telegram.enviar(chat_id, f"El correo #{correo_pk} ya no existe.")
+            telegram.enviar(chat_id, f"🤷 El correo #{correo_pk} ya no existe.")
             return
         if not correo.puede_descartarse:
             telegram.enviar(
                 chat_id,
-                f"El correo #{correo_pk} ya no se puede descartar: {correo.get_estado_display()}.",
+                f"🤷 El correo #{correo_pk} ya no se puede descartar: "
+                f"{correo.get_estado_display()}.",
             )
             return
         services.descartar(correo, usuario, motivo)
@@ -438,7 +536,9 @@ def _descartar(chat_id, correo_pk, motivo):
                 "(desde Telegram)"
             ),
         )
-    telegram.enviar(chat_id, f"Se descartó el correo #{correo_pk}: {html.escape(motivo)}.")
+    telegram.enviar(
+        chat_id, f"🗑 Listo, se descartó el correo #{correo_pk}: {html.escape(motivo)}. Uno menos 👌"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -456,27 +556,27 @@ def _refrescar(chat_id):
         return
     resumen = casilla.ciclo(forzar=True)
     if resumen.estado == "sin configurar":
-        telegram.enviar(chat_id, "La casilla de novedades no está configurada en este sistema.")
+        telegram.enviar(chat_id, "🤷 La casilla de novedades no está configurada en este sistema.")
         return
     if resumen.estado != "revisada":
         telegram.enviar(
             chat_id,
-            "No se pudo conectar a la casilla de novedades. Se avisó a los administradores; "
+            "😵 No se pudo conectar a la casilla de novedades. Ya avisé a los administradores; "
             "probá de nuevo en un rato.",
         )
         return
     nuevos = resumen.ingresados
     lineas = [
         (
-            f"<b>Revisé la casilla: {len(nuevos)} correo(s) nuevo(s) en la cola.</b>"
+            f"📬 <b>¡Revisé la casilla: {len(nuevos)} correo(s) nuevo(s) en la cola!</b>"
             if nuevos
-            else "<b>Revisé la casilla: no hay correos nuevos.</b>"
+            else "🫙 <b>Revisé la casilla: no hay correos nuevos.</b> Todo tranqui por ahí."
         )
     ]
     if nuevos:
         llegan_aca = any(chat == chat_id for _, chat in destinatarios("correos")[1])
         if llegan_aca:
-            lineas.append("Te los mandé arriba, cada uno con sus botones.")
+            lineas.append("Te los mandé arriba, cada uno con sus botones 👆")
         else:
             lineas.extend(
                 f"✉ {html.escape(str(c.proveedor))}: {html.escape(c.asunto or 'sin asunto')}"
@@ -484,11 +584,11 @@ def _refrescar(chat_id):
             )
             cola = enlace("suppliers:correo_lista")
             if cola:
-                lineas.append(f'<a href="{html.escape(cola)}">Abrir la cola</a>')
+                lineas.append(f'👉 <a href="{html.escape(cola)}">Abrir la cola</a>')
     proxima = casilla.proxima_revision()
     if proxima:
         lineas.append(
-            f"La próxima revisión automática es a las {timezone.localtime(proxima):%H:%M}."
+            f"⏰ La próxima revisión automática es a las {timezone.localtime(proxima):%H:%M}."
         )
     telegram.enviar(chat_id, "\n".join(lineas))
 
@@ -515,25 +615,21 @@ def _pregunta_libre(chat_id, texto):
     """El modelo elige la consulta; el sistema consulta y responde (regla 4)."""
     from apps.avisos import asistente
 
-    if administrador_del_chat(chat_id) is None:
+    usuario = administrador_del_chat(chat_id)
+    if usuario is None:
         return
-    elegida = asistente.elegir_consulta(texto)
+    elegida = asistente.elegir_consulta(texto, nombre=voz.nombre_de(usuario))
     if elegida is None:
-        telegram.enviar(
-            chat_id,
-            "No pude entender la pregunta ahora: el modelo no contestó. "
-            "Probá con un comando, como /stock o /pendientes.",
-        )
+        telegram.enviar(chat_id, voz.frase("sin_modelo"))
         return
-    consulta, argumento = elegida
+    consulta, argumento, charla = elegida
     if consulta == "cargar":
         _cargar(chat_id, texto, None)
     elif consulta == "borradores":
         _borradores(chat_id, argumento)
     elif consulta == "ninguna":
-        telegram.enviar(
-            chat_id, "Eso no lo sé responder. Mandá /ayuda para ver lo que puedo hacer."
-        )
+        # B-19-017: la charla del modelo, en personaje. Sólo texto: no hace nada.
+        telegram.enviar(chat_id, html.escape(charla) if charla else voz.frase("charla_sin_modelo"))
     else:
         telegram.enviar(chat_id, _consultar(consulta, argumento or texto))
 
@@ -571,17 +667,19 @@ def _cargar(chat_id, texto, foto):
     if not texto:
         telegram.enviar(
             chat_id,
-            "Contame qué cargar: <code>/cargar Berserk Deluxe 5, Ivrea, B6, 24900</code>, "
-            "o mandá la foto de la tapa con ese texto.",
+            "📝 Contame qué cargar: <code>/cargar Berserk Deluxe 5, Ivrea, B6, 24900</code>, "
+            "o mandame la foto de la tapa con ese texto.",
         )
         return
     lectura = asistente.leer_producto(texto, hoy=timezone.localdate())
     if lectura is None:
-        telegram.enviar(chat_id, "No pude leer el producto ahora: el modelo no contestó.")
+        telegram.enviar(
+            chat_id, "😵 No pude leer el producto: el modelo no contestó. Probá en un rato."
+        )
         return
     if not lectura.crudo["titulo"]:
         telegram.enviar(
-            chat_id, "No encontré un título en el mensaje. Probá de nuevo con más datos."
+            chat_id, "🤔 No encontré un título en el mensaje. Probá de nuevo con más datos."
         )
         return
     tipo = _tipo_por_nombre(lectura.tipo)
@@ -617,7 +715,12 @@ def _cargar(chat_id, texto, foto):
         reparos=reparos,
         tipo=tipo,
     )
-    mostrar_borrador(chat_id, borrador, encabezado="Quedó este borrador para revisar en la web.")
+    mostrar_borrador(
+        chat_id,
+        borrador,
+        encabezado=voz.elegir(("✨ ¡Anotado!", "✨ ¡Listo!", "✨ ¡Ahí va!"))
+        + " Quedó este borrador para revisar en la web.",
+    )
 
 
 def _no_editorial(chat_id, lectura, tipo):
@@ -626,7 +729,7 @@ def _no_editorial(chat_id, lectura, tipo):
     alta = enlace("catalog:producto_no_editorial_alta")
     telegram.enviar(
         chat_id,
-        f"«{html.escape(lectura.crudo['titulo'])}» parece material no editorial{clase}. "
+        f"🧸 «{html.escape(lectura.crudo['titulo'])}» parece material no editorial{clase}. "
         "Los borradores son sólo de material editorial, así que no cargué nada: "
         "dalo de alta desde la web."
         + (f'\n\n<a href="{html.escape(alta)}">Alta no editorial</a>' if alta else ""),
@@ -658,7 +761,7 @@ def _texto_del_borrador(borrador, encabezado=""):
     from apps.catalog import services as catalogo
 
     lineas = [encabezado] if encabezado else []
-    lineas.append(f"<b>{_e(borrador)}</b> · borrador #{borrador.pk}")
+    lineas.append(f"📝 <b>{_e(borrador)}</b> · borrador #{borrador.pk}")
     clasificacion = [
         str(borrador.editorial or "sin editorial"),
         str(borrador.tipo or "sin tipo"),
@@ -698,7 +801,7 @@ def _texto_del_borrador(borrador, encabezado=""):
         lineas.append("Para mirar: " + _e(reparos if len(reparos) < 300 else reparos[:297] + "…"))
     ficha = enlace("catalog:borrador_detalle", borrador.pk)
     if ficha:
-        lineas.append(f'<a href="{_e(ficha)}">Revisarlo en Longbox</a>')
+        lineas.append(f'👉 <a href="{_e(ficha)}">Revisarlo en Longbox</a>')
     return "\n".join(lineas)
 
 
@@ -736,15 +839,15 @@ def _borradores(chat_id, texto=""):
     abiertos = list(abiertos)
     filtro = f" con «{_e(texto)}»" if buscado else ""
     if not abiertos:
-        telegram.enviar(chat_id, f"No hay borradores para revisar{filtro}.")
+        telegram.enviar(chat_id, f"🎉 No hay borradores para revisar{filtro}. ¡Al día!")
         return
     lista = enlace("catalog:borrador_lista")
-    cabecera = f"<b>{len(abiertos)} borrador(es) para revisar{filtro}.</b>"
+    cabecera = f"📝 <b>{len(abiertos)} borrador(es) para revisar{filtro}.</b>"
     if len(abiertos) > BORRADORES_POR_CONSULTA:
         cabecera += f" Te muestro los {BORRADORES_POR_CONSULTA} más nuevos."
     cabecera += " Desde acá se rechazan; se confirman en la web."
     if lista:
-        cabecera += f'\n\n<a href="{_e(lista)}">Todos los borradores</a>'
+        cabecera += f'\n\n👉 <a href="{_e(lista)}">Todos los borradores</a>'
     telegram.enviar(chat_id, cabecera)
     for borrador in abiertos[:BORRADORES_POR_CONSULTA]:
         mostrar_borrador(chat_id, borrador)
@@ -763,7 +866,7 @@ def _preguntar_motivo_de_rechazo(chat_id, borrador_pk):
         [{"text": "Otro motivo…", "callback_data": _boton_de("ro", borrador_pk, chat_id)}]
     )
     telegram.enviar(
-        chat_id, f"¿Por qué se rechaza el borrador #{borrador_pk}{nombre}?", botones=botones
+        chat_id, f"🗑 ¿Por qué rechazamos el borrador #{borrador_pk}{nombre}?", botones=botones
     )
 
 
@@ -775,23 +878,26 @@ def _rechazar(chat_id, borrador_pk, motivo):
     usuario = administrador_del_chat(chat_id)
     motivo = " ".join((motivo or "").split())[:500]
     if usuario is None:
-        telegram.enviar(chat_id, NO_VINCULADO)
+        telegram.enviar(chat_id, _no_vinculado())
         return
     if not motivo:
-        telegram.enviar(chat_id, "El motivo es obligatorio.")
+        telegram.enviar(chat_id, voz.frase("motivo_obligatorio"))
         return
     borrador = BorradorProducto.objects.filter(pk=borrador_pk).first()
     if borrador is None:
-        telegram.enviar(chat_id, f"El borrador #{borrador_pk} ya no existe.")
+        telegram.enviar(chat_id, f"🤷 El borrador #{borrador_pk} ya no existe.")
         return
     if revisiones.rechazar(borrador, actor=usuario, motivo=motivo, desde="Telegram") is None:
         borrador.refresh_from_db()
         telegram.enviar(
             chat_id,
-            f"El borrador #{borrador_pk} ya no está abierto: {_e(borrador.get_estado_display())}.",
+            f"🤷 El borrador #{borrador_pk} ya no está abierto: "
+            f"{_e(borrador.get_estado_display())}.",
         )
         return
-    telegram.enviar(chat_id, f"Se rechazó el borrador «{_e(borrador)}»: {_e(motivo)}.")
+    telegram.enviar(
+        chat_id, f"🗑 Se rechazó el borrador «{_e(borrador)}»: {_e(motivo)}. Uno menos 👌"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -863,3 +969,197 @@ def _resultado_inline(producto):
     if settings.URL_PUBLICA.startswith("https://") and producto.portada:
         resultado["thumbnail_url"] = settings.URL_PUBLICA + producto.portada.url
     return resultado
+
+
+# ---------------------------------------------------------------------------
+# La respuesta del proveedor desde el chat (plan 00 de la respuesta del proveedor)
+# ---------------------------------------------------------------------------
+
+_FECHA_DEL_PEDIDO = re.compile(r"fecha de llegada del pedido #(\d+)")
+_NO_PUEDE_EL_PEDIDO = re.compile(r"no puede abastecer el pedido #(\d+)")
+LINEAS_A_LA_VISTA = 10
+
+
+def mandar_pedido(chat_id, pedido, *, recordatorio=False):
+    """El pedido que salió, con «Confirmó todo», «Fecha de llegada» y «No puede».
+    Las cantidades línea por línea se anotan en la web (decisión del responsable)."""
+    proveedor = html.escape(pedido.nombre_proveedor)
+    titulo = (
+        f"{proveedor} todavía no respondió el pedido #{pedido.pk}"
+        if recordatorio
+        else f"Salió el pedido #{pedido.pk} a {proveedor}"
+    )
+    lineas = list(pedido.lineas.select_related("producto"))
+    filas = [
+        f"• {html.escape(str(linea.producto.especifico))} × {linea.cantidad_pedida}"
+        for linea in lineas[:LINEAS_A_LA_VISTA]
+    ]
+    if len(lineas) > LINEAS_A_LA_VISTA:
+        filas.append(f"<i>y {len(lineas) - LINEAS_A_LA_VISTA} más</i>")
+    llegada = (
+        f"📅 Llega el {pedido.fecha_estimada:%d/%m/%Y}"
+        if pedido.fecha_estimada
+        else "📅 Sin fecha de llegada"
+    )
+    # Plan 00 de la respuesta simple: «Con cambios» abre la misma pantalla de la web.
+    cambios = enlace("suppliers:pedido_responder", pedido.pk, "cambios")
+    texto = (
+        voz.encabezado("⏰" if recordatorio else "🚚", titulo)
+        + "\n"
+        + "\n".join(filas)
+        + f"\n\n{llegada}\n\n"
+        + voz.elegir(("¿Qué respondió el proveedor?", "Cuando conteste, anotalo acá 👇"))
+    )
+    botones = [
+        [{"text": "✅ Confirmó todo", "callback_data": _boton_de("pc", pedido.pk, chat_id)}],
+        [{"text": "📅 Fecha de llegada", "callback_data": _boton_de("pf", pedido.pk, chat_id)}],
+        [{"text": "⛔ No puede", "callback_data": _boton_de("pn", pedido.pk, chat_id)}],
+    ]
+    if cambios.startswith("https://"):
+        botones.insert(1, [{"text": "✏️ Confirmó con cambios", "url": cambios}])
+    return telegram.enviar(chat_id, texto, botones=botones)
+
+
+def mandar_pedido_sin_enviar(chat_id, pedido):
+    """B-05-014: el pedido cuyo correo no salió, con «Reintentar el envío»."""
+    ficha = enlace("suppliers:pedido_detalle", pedido.pk)
+    texto = (
+        voz.encabezado(
+            "📭", f"No salió el pedido #{pedido.pk} a {html.escape(pedido.nombre_proveedor)}"
+        )
+        + f"\n{html.escape(pedido.error_de_envio or 'No se pudo enviar.')}\n\n"
+        + "Mientras no salga, no cuenta como mercadería en camino."
+        + (f'\n👉 <a href="{html.escape(ficha)}">Ver el pedido</a>' if ficha else "")
+    )
+    botones = [
+        [{"text": "📨 Reintentar el envío", "callback_data": _boton_de("pe", pedido.pk, chat_id)}]
+    ]
+    tarjetas.mandar(
+        chat_id,
+        f"No salió el pedido #{pedido.pk}",
+        bajada=f"El correo a {pedido.nombre_proveedor} no se pudo enviar. Probá reintentarlo.",
+        gesto=tarjetas.TRISTE,
+    )
+    return telegram.enviar(chat_id, texto, botones=botones)
+
+
+def _reintentar_envio(chat_id, pedido_pk):
+    from apps.suppliers import llegadas
+    from apps.suppliers import pedidos as correo_de_pedido
+
+    usuario = administrador_del_chat(chat_id)
+    pedido = _pedido_de(chat_id, pedido_pk) if usuario else None
+    if pedido is None:
+        return
+    try:
+        envio = correo_de_pedido.reintentar(pedido, usuario, desde="Telegram")
+    except llegadas.OperacionRechazada as rechazo:
+        telegram.enviar(chat_id, f"🤷 {html.escape(str(rechazo))}")
+        return
+    if envio.enviado:
+        telegram.enviar(chat_id, f"📨 ¡Salió el pedido #{pedido.pk}! Ya está por llegar.")
+    else:
+        pedido.refresh_from_db()
+        mandar_pedido_sin_enviar(chat_id, pedido)
+
+
+def _pedido_de(chat_id, pedido_pk):
+    from apps.suppliers.models import PedidoProveedor
+
+    pedido = PedidoProveedor.objects.filter(pk=pedido_pk).first()
+    if pedido is None:
+        telegram.enviar(chat_id, f"🤷 El pedido #{pedido_pk} ya no existe.")
+    return pedido
+
+
+def _contar_la_respuesta(chat_id, resultado, hecho):
+    """Lo que pasó, y lo que queda por resolver con las pre-ventas."""
+    lineas = [hecho]
+    for producto, reservado, esperado in resultado.sin_cubrir:
+        lineas.append(
+            f"⚠️ «{html.escape(str(producto.especifico))}» tiene {reservado} reservas y ahora se "
+            f"esperan {esperado}: registrá la demora o cancelá la pre-venta desde la web."
+        )
+    for producto in resultado.para_demorar:
+        lineas.append(
+            f"⚠️ «{html.escape(str(producto.especifico))}» tiene reservas y la fecha nueva la "
+            "atrasa: es una demora. Registrala desde Pre-ventas para avisar a los clientes."
+        )
+    if resultado.propuesta_cerrada:
+        lineas.append("🎉 Respondieron todos los proveedores: la propuesta quedó cerrada.")
+    telegram.enviar(chat_id, "\n\n".join(lineas))
+
+
+def _confirmar_pedido(chat_id, pedido_pk):
+    from apps.suppliers import llegadas, respuestas
+
+    usuario = administrador_del_chat(chat_id)
+    pedido = _pedido_de(chat_id, pedido_pk) if usuario else None
+    if pedido is None:
+        return
+    try:
+        resultado = respuestas.confirmar_todo(pedido, usuario, desde="Telegram")
+    except llegadas.OperacionRechazada as rechazo:
+        telegram.enviar(chat_id, f"🤷 {html.escape(str(rechazo))}")
+        return
+    _contar_la_respuesta(
+        chat_id,
+        resultado,
+        f"✅ Anotado: {html.escape(pedido.nombre_proveedor)} confirmó todo el pedido #{pedido.pk}.",
+    )
+
+
+def _poner_fecha_al_pedido(chat_id, pedido_pk, texto):
+    from apps.suppliers import extraccion, llegadas, respuestas
+
+    usuario = administrador_del_chat(chat_id)
+    if usuario is None:
+        telegram.enviar(chat_id, _no_vinculado())
+        return
+    pedido = _pedido_de(chat_id, pedido_pk)
+    if pedido is None:
+        return
+    hoy = timezone.localdate()
+    fecha = extraccion.interpretar_fecha(texto) or extraccion.fecha_sin_anio(texto, hoy)
+    if fecha is None:
+        telegram.enviar(
+            chat_id,
+            f"🤔 No entendí la fecha «{html.escape(texto)}». Probá con el formato 15/11 o "
+            "15/11/2026, respondiendo al mensaje del pedido.",
+        )
+        return
+    try:
+        resultado = respuestas.poner_fecha(pedido, fecha, usuario, desde="Telegram")
+    except llegadas.OperacionRechazada as rechazo:
+        telegram.enviar(chat_id, f"🤷 {html.escape(str(rechazo))}")
+        return
+    _contar_la_respuesta(
+        chat_id, resultado, f"📅 Anotado: el pedido #{pedido.pk} llega el {fecha:%d/%m/%Y}."
+    )
+
+
+def _no_puede_el_pedido(chat_id, pedido_pk, motivo):
+    from apps.suppliers import llegadas, respuestas
+
+    usuario = administrador_del_chat(chat_id)
+    motivo = " ".join((motivo or "").split())
+    if usuario is None:
+        telegram.enviar(chat_id, _no_vinculado())
+        return
+    if not motivo:
+        telegram.enviar(chat_id, voz.frase("motivo_obligatorio"))
+        return
+    pedido = _pedido_de(chat_id, pedido_pk)
+    if pedido is None:
+        return
+    try:
+        resultado = respuestas.no_puede(pedido, motivo, usuario, desde="Telegram")
+    except llegadas.OperacionRechazada as rechazo:
+        telegram.enviar(chat_id, f"🤷 {html.escape(str(rechazo))}")
+        return
+    _contar_la_respuesta(
+        chat_id,
+        resultado,
+        f"⛔ Anotado: {html.escape(pedido.nombre_proveedor)} no puede abastecer el pedido "
+        f"#{pedido.pk} ({html.escape(motivo)}). No se espera más.",
+    )

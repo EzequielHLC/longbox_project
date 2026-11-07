@@ -394,6 +394,23 @@ base anterior. Para volver: `DB_NAME=longbox_db` en el `.env` y `media/` desde e
 
 ## Última verificación
 
+> **Fotografía del 2026-11-07, ruta 3: «Por llegar», el modelo de respaldo y MercadoPago.**
+
+Se subió sólo el código (`subir_a_vm.sh`, sin `--con-base`): aplicaron `avisos.0004` y `core.0050`, y
+`check --deploy` quedó sin advertencias. El token de MercadoPago (`MERCADOPAGO_ACCESS_TOKEN`, de una
+cuenta vendedora **de prueba**) se copió desde el `.env` local sin mostrarlo, con un respaldo del
+`.env` anterior en `/srv/longbox/.env.antes-mp`. Desde afuera: la tienda responde 200, «Por llegar»
+pide sesión, y un aviso de pago falso a `/tienda/compra/aviso/mercadopago/` recibe 400 después de que
+la VM le preguntó a MercadoPago por ese pago con la credencial. **Lo que se subió no estaba
+commiteado**: la VM corre el árbol de trabajo del 2026-11-07, que no corresponde a ningún commit.
+
+> **Fotografía del 2026-10-28, cuenta de muestra.**
+
+En la VM existe **`admin_muestra@correo.com`**, un Administrador completo para que personas ajenas
+recorran el sistema. Se creó desde la consola, a pedido del responsable, con una contraseña al azar
+que el responsable tiene, y quedó auditado como alta de usuario. Cuando termine la muestra, se da de
+baja desde Cuentas. Cada vez que entre desde una IP nueva llega la alerta de seguridad.
+
 > **Fotografía del 2026-10-28, más tarde, ruta 3: limpieza y modelo local.**
 
 - **La base de la VM se limpió**, con un respaldo previo en

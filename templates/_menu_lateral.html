@@ -57,12 +57,14 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       </div>
     {% endif %}
 
-    <p class="menu-rotulo">Operación</p>
-
     {% comment %}
     Cada rol ve lo que puede usar: el Panel es del Administrador, el Mostrador
     del Cajero. El Inventario lo consultan los dos (CU-CAT-INV). Ofrecer una
     entrada que termina en 403 es invitar a un camino que no existe.
+
+    El Administrador ve tres bloques con nombre (B-00-031): lo de los clientes,
+    lo de los proveedores y la administración. Antes «Pedidos» (de clientes) y
+    «Pedidos por llegar» (a proveedores) estaban juntos y se confundían.
     {% endcomment %}
     {% if user.rol == 'administrador' %}
       {% pendientes_del_menu as pendientes %}
@@ -71,17 +73,8 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="panel" %}
         <span>Panel</span>
       </a>
-      <a href="{% url 'pedidos:lista' %}"
-         class="menu-enlace {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}aria-current="page"{% endif %}>
-        {% include "_iconos.html" with icono="bolsa" %}
-        <span>Pedidos</span>
-        {% if pendientes.pedidos %}<span class="contador-menu" title="Por armar"><span class="sr-only">, </span>{{ pendientes.pedidos }}<span class="sr-only"> por armar</span></span>{% endif %}
-      </a>
-      <a href="{% url 'pedidos:preventas' %}"
-         class="menu-enlace {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:preventas' or actual == 'pedidos:ingreso' %}aria-current="page"{% endif %}>
-        {% include "_iconos.html" with icono="inventario" %}
-        <span>Pre-ventas</span>
-      </a>
+
+      <p class="menu-rotulo">Ventas y clientes</p>
       <a href="{% url 'core:mostrador' %}"
          class="menu-enlace {% if actual == 'core:mostrador' or 'ventas:' in actual %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' or 'ventas:' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="bolsa" %}
@@ -92,21 +85,11 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         {% include "_iconos.html" with icono="caja" %}
         <span>Caja</span>
       </a>
-      <a href="{% url 'almacen:lista' %}"
-         class="menu-enlace {% if 'almacen:' in actual %}menu-enlace--actual{% endif %}" {% if 'almacen:' in actual %}aria-current="page"{% endif %}>
-        {% include "_iconos.html" with icono="lote" %}
-        <span>Stock en local</span>
-      </a>
-      <a href="{% url 'restock:propuesta' %}"
-         class="menu-enlace {% if 'restock:' in actual %}menu-enlace--actual{% endif %}" {% if 'restock:' in actual %}aria-current="page"{% endif %}>
-        {% include "_iconos.html" with icono="proveedores" %}
-        <span>Restock</span>
-        {% if pendientes.restock %}<span class="contador-menu" title="Productos por pedir"><span class="sr-only">, </span>{{ pendientes.restock }}<span class="sr-only"> productos por pedir</span></span>{% endif %}
-      </a>
-      <a href="{% url 'suppliers:pedido_lista' %}"
-         class="menu-enlace {% if 'suppliers:pedido' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:pedido' in actual %}aria-current="page"{% endif %}>
-        {% include "_iconos.html" with icono="camion" %}
-        <span>Pedidos por llegar</span>
+      <a href="{% url 'pedidos:lista' %}"
+         class="menu-enlace {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}menu-enlace--actual{% endif %}" {% if actual == 'pedidos:lista' or actual == 'pedidos:detalle' or actual == 'pedidos:avanzar' %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="bolsa" %}
+        <span>Pedidos de clientes</span>
+        {% if pendientes.pedidos %}<span class="contador-menu" title="Por armar"><span class="sr-only">, </span>{{ pendientes.pedidos }}<span class="sr-only"> por armar</span></span>{% endif %}
       </a>
       <a href="{% url 'devoluciones:lista' %}"
          class="menu-enlace {% if 'devoluciones:' in actual %}menu-enlace--actual{% endif %}" {% if 'devoluciones:' in actual %}aria-current="page"{% endif %}>
@@ -114,7 +97,39 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         <span>Devoluciones</span>
         {% if pendientes.devoluciones %}<span class="contador-menu" title="Sin resolver"><span class="sr-only">, </span>{{ pendientes.devoluciones }}<span class="sr-only"> sin resolver</span></span>{% endif %}
       </a>
+      <a href="{% url 'almacen:lista' %}"
+         class="menu-enlace {% if 'almacen:' in actual %}menu-enlace--actual{% endif %}" {% if 'almacen:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="lote" %}
+        <span>Stock en local</span>
+      </a>
+
+      <p class="menu-rotulo">Compras a proveedores</p>
+      <a href="{% url 'restock:propuesta' %}"
+         class="menu-enlace {% if 'restock:' in actual %}menu-enlace--actual{% endif %}" {% if 'restock:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="proveedores" %}
+        <span>Restock</span>
+        {% if pendientes.restock %}<span class="contador-menu" title="Productos por pedir"><span class="sr-only">, </span>{{ pendientes.restock }}<span class="sr-only"> productos por pedir</span></span>{% endif %}
+      </a>
+      {# B-05-017: la llegada de pre-ventas y de pedidos, en una sola pantalla. #}
+      <a href="{% url 'suppliers:por_llegar' %}"
+         class="menu-enlace {% if actual == 'suppliers:por_llegar' or actual == 'suppliers:llegada_revisar' or 'pedidos:demora' in actual %}menu-enlace--actual{% endif %}" {% if actual == 'suppliers:por_llegar' or actual == 'suppliers:llegada_revisar' %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="inventario" %}
+        <span>Por llegar</span>
+      </a>
+      <a href="{% url 'suppliers:pedido_lista' %}"
+         class="menu-enlace {% if 'suppliers:pedido' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:pedido' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="camion" %}
+        <span>Pedidos a proveedores</span>
+        {% if pendientes.sin_enviar %}<span class="contador-menu" title="Sin enviar"><span class="sr-only">, </span>{{ pendientes.sin_enviar }}<span class="sr-only"> sin enviar</span></span>{% endif %}
+      </a>
+      <a href="{% url 'suppliers:correo_lista' %}"
+         class="menu-enlace {% if 'suppliers:correo' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:correo' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="correo" %}
+        <span>Correos recibidos</span>
+        {% if pendientes.correos %}<span class="contador-menu" title="Sin decidir"><span class="sr-only">, </span>{{ pendientes.correos }}<span class="sr-only"> sin decidir</span></span>{% endif %}
+      </a>
     {% elif user.rol == 'cajero' %}
+      <p class="menu-rotulo">Operación</p>
       <a href="{% url 'core:mostrador' %}"
          class="menu-enlace {% if actual == 'core:mostrador' or 'ventas:' in actual %}menu-enlace--actual{% endif %}" {% if actual == 'core:mostrador' or 'ventas:' in actual %}aria-current="page"{% endif %}>
         {% include "_iconos.html" with icono="bolsa" %}
@@ -138,31 +153,7 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
     {% endif %}
 
     {% if user.rol == 'administrador' %}
-      {% comment %}
-      El grupo queda abierto en cualquiera de las pantallas de cuentas, no solo
-      en los dos listados: si el Administrador está editando un usuario, el
-      menú tiene que mostrarle dónde está parado.
-      {% endcomment %}
-      <details class="menu-grupo"
-               {% if 'accounts:usuario' in actual or 'accounts:cliente' in actual %}open{% endif %}>
-        <summary class="menu-titulo">
-          {% include "_iconos.html" with icono="cuentas" %}
-          <span>Cuentas</span>
-        </summary>
-
-        <a href="{% url 'accounts:usuario_lista' %}"
-           class="menu-enlace menu-enlace--hijo
-                  {% if 'accounts:usuario' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:usuario' in actual %}aria-current="page"{% endif %}>
-          {% include "_iconos.html" with icono="personal" %}
-          <span>Usuarios del sistema</span>
-        </a>
-        <a href="{% url 'accounts:cliente_lista' %}"
-           class="menu-enlace menu-enlace--hijo
-                  {% if 'accounts:cliente' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:cliente' in actual %}aria-current="page"{% endif %}>
-          {% include "_iconos.html" with icono="clientes" %}
-          <span>Clientes</span>
-        </a>
-      </details>
+      <p class="menu-rotulo">Administración</p>
 
       {% comment %}
       Catálogo. Las dos altas son pantallas distintas porque lo que cambia entre
@@ -208,11 +199,10 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
       </details>
 
       {% comment %}
-      La cola de correos va dentro de Proveedores y no como sección aparte:
-      es la casilla de ellos lo que la alimenta, y su ficha es donde se
-      resuelve por qué un proveedor manda o no manda a la cola.
+      El padrón y el diagnóstico del modelo. La cola de correos subió a «Compras a
+      proveedores»: se mira todos los días, el padrón casi nunca (B-00-031).
       {% endcomment %}
-      <details class="menu-grupo" {% if 'suppliers:' in actual and 'suppliers:pedido' not in actual %}open{% endif %}>
+      <details class="menu-grupo" {% if 'suppliers:proveedor' in actual or 'suppliers:diagnostico' in actual %}open{% endif %}>
         <summary class="menu-titulo">
           {% include "_iconos.html" with icono="proveedores" %}
           <span>Proveedores</span>
@@ -223,12 +213,6 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
                   {% if 'suppliers:proveedor' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:proveedor' in actual %}aria-current="page"{% endif %}>
           {% include "_iconos.html" with icono="proveedores" %}
           <span>Padrón</span>
-        </a>
-        <a href="{% url 'suppliers:correo_lista' %}"
-           class="menu-enlace menu-enlace--hijo
-                  {% if 'suppliers:correo' in actual %}menu-enlace--actual{% endif %}" {% if 'suppliers:correo' in actual %}aria-current="page"{% endif %}>
-          {% include "_iconos.html" with icono="lote" %}
-          <span>Correos recibidos</span>
         </a>
         {% comment %}
         No es una pantalla de negocio sino de operación, pero vive acá porque lo
@@ -293,6 +277,32 @@ control de acceso real está en `RolRequeridoMixin`, del lado del servidor
         <a href="{% url 'core:tienda_catalogo' %}" class="menu-enlace menu-enlace--hijo" target="_blank" rel="noopener">
           {% include "_iconos.html" with icono="ver" %}
           <span>Ver la tienda</span>
+        </a>
+      </details>
+
+      {% comment %}
+      El grupo queda abierto en cualquiera de las pantallas de cuentas, no solo
+      en los dos listados: si el Administrador está editando un usuario, el
+      menú tiene que mostrarle dónde está parado.
+      {% endcomment %}
+      <details class="menu-grupo"
+               {% if 'accounts:usuario' in actual or 'accounts:cliente' in actual %}open{% endif %}>
+        <summary class="menu-titulo">
+          {% include "_iconos.html" with icono="cuentas" %}
+          <span>Cuentas</span>
+        </summary>
+
+        <a href="{% url 'accounts:usuario_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'accounts:usuario' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:usuario' in actual %}aria-current="page"{% endif %}>
+          {% include "_iconos.html" with icono="personal" %}
+          <span>Usuarios del sistema</span>
+        </a>
+        <a href="{% url 'accounts:cliente_lista' %}"
+           class="menu-enlace menu-enlace--hijo
+                  {% if 'accounts:cliente' in actual %}menu-enlace--actual{% endif %}" {% if 'accounts:cliente' in actual %}aria-current="page"{% endif %}>
+          {% include "_iconos.html" with icono="clientes" %}
+          <span>Clientes</span>
         </a>
       </details>
 

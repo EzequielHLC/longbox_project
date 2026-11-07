@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-28**.
+> **Tipo: Fotografía.** Tomada el **2026-11-07**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -210,6 +210,8 @@ Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` 
 | `apps/suppliers/views_pedidos.py`, `llegadas.py` | «Pedidos por llegar»: la ficha del pedido, la llegada en dos tiempos, el cierre de una línea sin recibir y el pedido a mano | `CU-RST-LLE` y `CU-RST-PDA` (C-23): faltan su ficha y sus contratos. Probado en `test_pedidos_a_proveedor.py` y `test_pantallas_pedidos.py` |
 | `apps/avisos` (módulo 19) | El perfil del Administrador, los canales de aviso, la vinculación con Telegram, el bot que resuelve correos, las consultas y la carga de borradores desde el chat | Las fichas y los contratos de los once casos de uso, de `CU-AVI-PEC` a `CU-AVI-INL` (B-19-001). Probado en `apps/avisos/tests/` |
 | `apps/restock/views.py::PropuestaListaView`, `PropuestaDetalleView` | Consultar las propuestas de restock, también las cerradas | `CU-RST-PRC` (C-23): faltan su ficha y su contrato |
+| `apps/suppliers/views_llegadas.py`, `recepcion.py` | «Por llegar»: la llegada de mercadería en una sola pantalla | La ficha de `CU-RST-LLE`; `CO-232` está nombrado por autorización del responsable y falta en el documento |
+| `apps/core/modelo_de_respaldo.py`, `suppliers:cambiar_modelo` | La propuesta y el cambio al modelo de respaldo | `CO-228` y `CO-229`, nombrados por autorización del responsable; faltan en el documento |
 
 **Las dos pantallas públicas del contenido de la tienda** (la portada con el carrusel y la página
 de preguntas frecuentes) se construyeron dentro de `CU-CFG-BNC` y `CU-CFG-FAQ` por decisión del
@@ -329,11 +331,24 @@ código sin terminar.
 | `TOKENS_VISUALES.md`: el gestor de una sola portada | B-00-029 |
 | **El módulo 19 Perfil y avisos** (cambio de alcance del 2026-10-27): el módulo, sus requerimientos, las fichas y contratos de `CU-AVI-PEC`, `CAM`, `TGA`, `TGB`, `COR`, `BOR` y `CON`; «notifica al Administrador» pasa a «por los canales que eligió» en cada paso que avisa; `CO-111` también para el personal; los tres conceptos nuevos; la confirmación del vínculo en el perfil; el borrador con origen propio y sin correo (`CU-ALT-REV`, la generación de borradores); las consultas de sólo lectura; el rechazo de borradores desde el chat (`CU-AVI-REB`), sin confirmación; la excepción del material no editorial; los parecidos y la editorial por la serie | B-19-001 a B-19-010 |
 | **La etapa 3 del bot**: las fichas de `CU-AVI-RES`, `CU-AVI-EST` y `CU-AVI-INL`; los tipos de aviso con su canal por defecto (`CU-AVI-CAM`); la hora del resumen en `CU-CFG-PAR` y `CO-130`; el reloj por minuto en P-05; el aviso de seguridad al Administrador en `CU-AUT-INI`, `CU-USR-ALT`, `CU-USR-MOD`, `CO-048` y `CO-053`; las fotos del reclamo por Telegram en `CU-DEV-SOL` paso 5 y en datos personales; la rutina de respaldo de la VM en `RESPALDOS.md` | B-19-011 a B-19-015 |
+| La voz de Long-bot y la charla en personaje (`CU-AVI-COR`, `CU-AVI-CON`) | B-19-017 |
+| `CU-AVI-TGA`: el enlace también como código QR | B-19-018 |
+| `CU-RST-PRC`: la ficha de la pendiente lleva a `CU-RST-APR`; `CU-RST-PRO`: la propuesta armada a mano, vacía, y su cierre vacía, **con un código de operación a asignar** | B-05-011, B-05-012 |
+| **La respuesta del proveedor** (desvío aprobado): DME-13 con «Esperando respuesta»; un caso de uso nuevo con sus operaciones y contratos, **códigos a asignar**; `CO-072` y `CO-073` sin el cierre al despachar; `LineaPedidoProveedor` y `PedidoProveedor` en el modelo; el reintento de un correo y la respuesta desde el chat | B-05-013, B-19-019 |
+| `CU-CAT-EDI`: los datos de la serie en la edición | B-01-024 |
+| `CO-074` E1: el pedido que no sale queda «Sin enviar», con reintento y descarte; `CU-RST-PRO` paso 2: la pre-venta sin nada en camino; `PedidoProveedor` gana el estado y el error | B-05-014 |
+| **Los grupos de etiquetas «de serie»**: `GrupoEtiqueta` gana el atributo; `CU-CAT-GRA`, `CU-CAT-GRM`; `CU-CAT-EDI` las aplica a toda la serie | B-01-025 |
 | `CO-016`: también desde el chat (`/refresh`), y la frecuencia cuenta desde la última revisión, automática o a pedido | B-19-016 |
 | `CU-ALT-NOV` y la generación de borradores: el formato se reconoce sin mayúsculas, tildes ni signos | B-01-023 |
 | **La frecuencia de la casilla en minutos**: el modelo de dominio, `CU-CFG-PAR`, `CO-130`; `CO-016` corre cada minuto y respeta la frecuencia | B-04-015 |
 | La tarjeta de la cuenta arriba del menú lateral, si se fija como componente en `TOKENS_VISUALES.md` | B-00-030 |
 | **La demora de varios tomos** (desvío consultado del 2026-10-27): `CU-ALT-DEM` gana el flujo «varios tomos» con informe conjunto, exclusión de lo que no admite y un aviso por Cliente; `CO-014` y `CO-015` aceptan una lista; el DSS lo muestra | B-01-022 |
+| La respuesta del proveedor, simple: lo que llega cuenta como respuesta, no se confirma más de lo pedido, sólo se anota lo que cambió y el motivo es de cada línea, como postcondiciones del caso de uso de la respuesta (aún sin código) | B-05-015 |
+| **El tomo cancelado que vuelve**: un comentario en `CU-ALT-CAN`; en `CO-027`, la edición queda retirada; en las notas de `CO-006`, el duplicado no cuenta las retiradas; `ProductoEditorial` gana la marca y el enlace «reanuncia a»; «Volver a anunciar» como flujo alternativo del alta, **con un código a asignar si hace falta** | B-01-026 |
+| `CU-RST-APR` paso 2: el producto se busca también por título con su número | B-05-016 |
+| **«Por llegar»**: `CU-ALT-TRA` pasos 4 a 7 invocan la llegada de mercadería; la ficha de `CU-RST-LLE` con `CO-232` | B-05-017 |
+| `CU-RST-PDA`: el renglón por nombre y la excepción del producto que trae otro proveedor | B-05-018 |
+| **El modelo de respaldo**: `CU-CFG-LLM` con `CO-229`, la propuesta `CO-228`, la sección en `CU-CFG-PAR` y `CO-130`, y `ConfiguracionSistema` | B-17-020 |
 
 ---
 

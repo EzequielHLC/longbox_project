@@ -14,7 +14,7 @@ uno por Cliente, con todos sus tomos.
 {% if correo %}
   {% url 'suppliers:correo_detalle' correo.pk as volver %}
 {% else %}
-  {% url 'pedidos:preventas' as volver %}
+  {% url 'suppliers:por_llegar' as volver %}
 {% endif %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">

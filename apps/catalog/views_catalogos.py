@@ -390,6 +390,7 @@ class GrupoListaView(CatalogoListaView):
 class GrupoCrearView(CatalogoAltaView):
     catalogo = catalogos.GRUPOS
     form_class = GrupoEtiquetaForm
+    campos_auditados = (("nombre", "nombre"), ("de_serie", "de serie"))
     titulo = "Nuevo grupo de etiquetas"
     descripcion = (
         "El eje en el que describe una etiqueta. Cada grupo es un filtro aparte: sin ellos, "
@@ -401,6 +402,7 @@ class GrupoEditarView(CatalogoEdicionView):
     catalogo = catalogos.GRUPOS
     model = catalogos.GRUPOS.modelo
     form_class = GrupoEtiquetaForm
+    campos_auditados = (("nombre", "nombre"), ("de_serie", "de serie"))
     titulo = "Modificar grupo de etiquetas"
     descripcion = (
         "Reactivar el grupo no reactiva sus etiquetas: cada una conserva su propio estado."

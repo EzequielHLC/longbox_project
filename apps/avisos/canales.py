@@ -64,13 +64,30 @@ def _cae_al_correo(tipo, usuario, correos):
 
 
 def texto_para_telegram(
-    *, titulo, parrafos, antetitulo="", filas=(), enlace="", texto_enlace="", **_
+    *,
+    titulo,
+    parrafos,
+    antetitulo="",
+    filas=(),
+    enlace="",
+    texto_enlace="",
+    tipo="",
+    nombre="",
+    voz=None,
+    **_,
 ):
-    """El mismo aviso que el correo, en el HTML que entiende Telegram."""
-    partes = []
-    if antetitulo:
-        partes.append(f"<i>{html.escape(antetitulo)}</i>")
-    partes.append(f"<b>{html.escape(titulo)}</b>")
+    """El mismo aviso que el correo, en el HTML que entiende Telegram y con la voz
+    de Long-bot (B-19-017): el emoji del tipo, el título, la línea, el dato y un
+    remate. `voz` trae lo que sólo usa Telegram (el día y lo pendiente del resumen).
+    """
+    from apps.avisos import voz as long_bot
+    from apps.avisos.models import RESUMEN
+
+    voz = voz or {}
+    if tipo == RESUMEN and "hoy" in voz:
+        titulo = long_bot.saludo_del_dia(nombre, voz["hoy"])
+    cabeza = long_bot.encabezado(long_bot.EMOJI.get(tipo, "🔔"), html.escape(titulo))
+    partes = [f"<i>{html.escape(antetitulo)}</i>\n{cabeza}" if antetitulo else cabeza]
     partes.extend(html.escape(parrafo) for parrafo in parrafos)
     if filas:
         partes.append(
@@ -79,31 +96,79 @@ def texto_para_telegram(
                 for izquierda, derecha in filas
             )
         )
+    if tipo == RESUMEN and "pendientes" in voz:
+        partes.append(f"<i>{long_bot.cierre_del_resumen(voz['pendientes'])}</i>")
+    elif remate := long_bot.remate(tipo):
+        partes.append(f"<i>{remate}</i>")
     if enlace:
-        partes.append(f'<a href="{html.escape(enlace)}">{html.escape(texto_enlace or "Abrir")}</a>')
+        partes.append(
+            f'👉 <a href="{html.escape(enlace)}">{html.escape(texto_enlace or "Abrir")}</a>'
+        )
     return "\n\n".join(partes)
 
 
-def avisar_administradores(tipo, *, fotos=(), **aviso):
+def avisar_administradores(tipo, *, fotos=(), voz=None, tarjeta=None, **aviso):
     """El aviso a los Administradores, por el canal de cada uno.
 
     `fotos` son imágenes (`ImageField`) que por Telegram van debajo del aviso,
-    achicadas; por correo no van (B-19-014).
+    achicadas; por correo no van (B-19-014). `voz`, lo que Long-bot usa para
+    hablar y el correo no (B-19-017). `tarjeta`, la ilustración que va antes del
+    texto por Telegram (B-19-020): los datos de `tarjetas.dibujar`; un `{nombre}`
+    en su título se completa con el de cada Administrador.
     """
+    from apps.avisos import tarjetas
+    from apps.avisos import voz as long_bot
     from apps.avisos.miniaturas import miniatura
     from apps.pedidos import avisos
 
     correos, chats = destinatarios(tipo)
     if chats:
-        texto = texto_para_telegram(**aviso)
         album = [m for m in (miniatura(foto) for foto in fotos) if m] if fotos else []
+        dibujadas = {}
         for usuario, chat in chats:
+            if tarjeta:
+                titulo = _titulo_de_la_tarjeta(tarjeta["titulo"], long_bot.nombre_de(usuario))
+                if titulo not in dibujadas:
+                    dibujadas[titulo] = tarjetas.tarjeta(**{**tarjeta, "titulo": titulo})
+                if dibujadas[titulo]:
+                    # Si la foto no sale, el texto sale igual: la tarjeta sólo acompaña.
+                    telegram.enviar_foto(chat, dibujadas[titulo], "")
+            texto = texto_para_telegram(
+                **aviso, tipo=tipo, nombre=long_bot.nombre_de(usuario), voz=voz
+            )
             if telegram.enviar(chat, texto) is None:
                 _cae_al_correo(tipo, usuario, correos)
             elif album:
                 telegram.enviar_album(chat, album)
     if correos:
         avisos.avisar(correos, **aviso)
+
+
+def _titulo_de_la_tarjeta(titulo, nombre):
+    """El título con el nombre de pila, o sin la coma si no hay nombre."""
+    if "{nombre}" not in titulo:
+        return titulo
+    return titulo.replace(", {nombre}", f", {nombre}" if nombre else "").replace("{nombre}", nombre)
+
+
+def avisar_pedido(pedido, *, recordatorio=False):
+    """El pedido a proveedor que salió (o que no respondió), con sus botones, a quien
+    recibe los avisos de restock por Telegram. Por correo no hay nada nuevo: la
+    respuesta se anota en la web (plan 00 de la respuesta del proveedor)."""
+    from apps.avisos import bot
+
+    _, chats = destinatarios("restock")
+    for _usuario, chat in chats:
+        bot.mandar_pedido(chat, pedido, recordatorio=recordatorio)
+
+
+def avisar_pedido_sin_enviar(pedido):
+    """B-05-014: el pedido que no salió, con «Reintentar el envío»."""
+    from apps.avisos import bot
+
+    _, chats = destinatarios("restock")
+    for _usuario, chat in chats:
+        bot.mandar_pedido_sin_enviar(chat, pedido)
 
 
 def avisar_correos_nuevos(correos_nuevos, **aviso):

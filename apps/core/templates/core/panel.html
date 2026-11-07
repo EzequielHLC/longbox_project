@@ -21,6 +21,8 @@ No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
   </a>
 </header>
 
+{% include "core/_tablero_ventas.html" %}
+
 <section class="seccion" aria-labelledby="titulo-pedidos">
   <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos</h2></div>
   <div class="cifras">
@@ -43,20 +45,20 @@ No tiene contrato todavía: `CO-219` está en camino (ver `docs/DEUDA.md`).
 </section>
 
 <section class="seccion" aria-labelledby="titulo-preventas">
-  <div class="seccion__titulo"><h2 id="titulo-preventas">Pre-ventas por llegar</h2></div>
+  <div class="seccion__titulo"><h2 id="titulo-preventas">Por llegar</h2></div>
   <div class="cifras">
-    <a class="cifra{% if preventas.vencidas %} cifra--atencion{% endif %}" href="{% url 'pedidos:preventas' %}">
+    <a class="cifra{% if preventas.vencidas %} cifra--atencion{% endif %}" href="{% url 'suppliers:por_llegar' %}">
       {% if preventas.vencidas %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}
       <span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasadas</span>
       <span class="cifra__valor">{{ preventas.vencidas|length }}</span>
       <span class="cifra__nota">Sin ingreso confirmado</span>
     </a>
-    <a class="cifra" href="{% url 'pedidos:preventas' %}">
+    <a class="cifra" href="{% url 'suppliers:por_llegar' %}">
       <span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Llegan hoy</span>
       <span class="cifra__valor">{{ preventas.hoy|length }}</span>
       <span class="cifra__nota">Confirmar ingreso</span>
     </a>
-    <a class="cifra" href="{% url 'pedidos:preventas' %}">
+    <a class="cifra" href="{% url 'suppliers:por_llegar' %}">
       <span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Próximas</span>
       <span class="cifra__valor">{{ preventas.proximas|length }}</span>
       <span class="cifra__nota">En {{ dias_aviso }} día{{ dias_aviso|pluralize }}</span>

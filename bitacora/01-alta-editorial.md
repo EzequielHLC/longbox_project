@@ -770,3 +770,109 @@ cuál se refiere un texto.
 **Qué habría que cambiar.**
 `CU-ALT-NOV` y la generación de borradores, Notas: el formato se reconoce por su nombre comparado sin
 mayúsculas, tildes ni signos.
+
+---
+
+### B-01-024 · La edición de un tomo ofrece los datos de su serie
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-CAT-EDI`
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El borrador ya tomaba de la serie lo que no traía (B-01-020), pero al editar un tomo cargado había que
+copiar a mano el autor, la sinopsis o las etiquetas de los otros tomos.
+
+**Qué dice la especificación.**
+`Nada` sobre la serie en `CU-CAT-EDI`.
+
+**Qué se hizo.**
+- Si hay **otros** tomos con el mismo título en la misma editorial, la edición muestra «Datos de la
+  serie»: cuántos tomos más hay, el último, y el autor, las etiquetas, el público y la sinopsis.
+- «Usar los datos de la serie» **completa lo vacío**: el autor y la sinopsis si faltan, «sólo para
+  adultos» si la serie lo es. Además **suma** las etiquetas de la serie.
+- No pisa la sinopsis propia del tomo ni toca el tipo o el formato, que deciden la identidad y el precio.
+- El tomo que se edita no cuenta como su propia serie.
+
+**Qué habría que cambiar.**
+`CU-CAT-EDI`: el flujo alternativo que completa con los datos de la serie.
+
+---
+
+### B-01-025 · Las etiquetas de los grupos «de serie» siguen a la serie entera
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-CAT-EDI`, `CU-CAT-GRA`, `CU-CAT-GRM`
+**Estado:** Abierta — decidido por el responsable el 2026-10-28 entre tres opciones
+
+**Qué apareció.**
+Las etiquetas se guardan por tomo. Si una serie de 30 tomos pasa de «Serie en curso» a «Serie
+completa», había que editar los 30.
+
+**Qué dice la especificación.**
+> «Los campos deciden, las etiquetas describen.» (regla 2) · «Lo que cambia el comportamiento del
+> sistema es campo, aunque parezca etiqueta.» (regla 3)
+
+Sobre una etiqueta que valga para toda la serie, `Nada`.
+
+**Qué se hizo.**
+- Un grupo de etiquetas puede ser **«de serie»**: sus etiquetas describen la serie entera. Como cambia
+  lo que hace el sistema, es **un campo del grupo** (regla 3), que se marca desde la pantalla del
+  grupo, auditado. Nacieron marcados los que nombró el responsable: Estado de la serie, Demografía y
+  Franquicia.
+- Al editar un tomo, **lo que cambió** en las etiquetas de esos grupos se aplica a los otros tomos de
+  la serie: mismo título y misma editorial, sin mayúsculas ni tildes. Se agregan las que se agregaron
+  y se quitan las que se quitaron.
+- **Lo propio de cada tomo queda**: las etiquetas de los demás grupos no viajan, y lo que un tomo
+  tenía distinto en un grupo de serie se respeta si no cambió en esta edición.
+- **Una sola entrada de auditoría**, en el tomo editado, que dice a cuántos tomos llegó. La edición
+  avisa qué grupos son de la serie y a cuántos tomos alcanza.
+
+**Qué habría que cambiar.**
+En el modelo de dominio, **GrupoEtiqueta** gana «de serie». `CU-CAT-GRA` y `CU-CAT-GRM`: el atributo.
+`CU-CAT-EDI`: las etiquetas de los grupos de serie se aplican a toda la serie.
+
+---
+
+### B-01-026 · El tomo cancelado que vuelve es otra edición, enlazada a la cancelada
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-ALT-CAN`, `CO-027`, `CO-003`, `CO-006`, alta de borradores
+**Estado:** Abierta — plan [00 del tomo que vuelve](../docs/planes/00-respuesta-simple-y-tomo-que-vuelve.md), aprobado el 2026-10-28
+
+**Qué apareció.**
+Una editorial canceló Sakamoto Days #24 y después lo volvió a anunciar. El tomo nuevo chocaba contra
+el cancelado por la detección de duplicados, y no había salida: reactivarlo está prohibido. El
+2026-10-28 se resolvió borrando el cancelado en la VM, que no tenía reservas ni ventas. Ese borrado
+**rompe la postcondición del historial** si el cancelado las tuviera, y con esto deja de hacer falta.
+
+**Qué dice la especificación.**
+> `CU-ALT-CAN`, comentarios: «La cancelación por editorial que este caso de uso establece es un
+> estado del que no se retorna […] la reactivación de CU-CAT-REA tampoco lo admite.»
+>
+> Postcondición: «El estado se conserva en el inventario interno y en el historial de ventas».
+
+Sobre un título que vuelve, `Nada`.
+
+**Qué se hizo.**
+- **La cancelación (`CO-027`) retira la edición** (`edicion_retirada`), en la misma transacción.
+  Las restricciones de unicidad por ISBN y por clave valen **sólo entre ediciones no retiradas**.
+  Quedan como índices parciales: verificado a mano en la base de desarrollo. Una migración marca
+  las canceladas que ya existían.
+- **`buscar_duplicado` ignora las ediciones retiradas**, y con eso todos los caminos de alta (lote,
+  borrador de correo o de Telegram) aceptan el tomo que vuelve. Dos ediciones vivas iguales siguen
+  chocando, en el servicio y en la base.
+- **El tomo nuevo nace enlazado** a la cancelada (`reanuncia_a`). Lo pone el `save()` del modelo al
+  crearlo, para que ningún camino lo saltee. Las dos fichas se enlazan: «Reanuncia a…» y «Reanunciado
+  como…».
+- **La ficha de una cancelada ofrece «Volver a anunciar»**: abre el alta en lote con sus datos
+  precargados. El borrador que coincide con una cancelada lo avisa.
+- Las reservas de la cancelada ya se reembolsaron en puntos (`CO-027`) y **no pasan a la nueva**.
+
+**Detalle de construcción.** El plan proponía un botón «Cargarlo como reanunciado» ante el
+duplicado. Quedó automático, con el aviso: si el tomo coincide con una edición retirada, ya es el
+mismo título que vuelve, y pedir un clic más no agrega una decisión.
+
+**Qué habría que cambiar.**
+- En `CU-ALT-CAN`, un comentario: el título que vuelve se carga como edición nueva, enlazada.
+- En `CO-027`, una postcondición: la edición queda retirada.
+- En las notas de `CO-006`, que el duplicado no cuenta las ediciones retiradas.
+- «Volver a anunciar», como flujo alternativo del alta (ambigüedad 2 del plan). El código, si hace
+  falta, lo asigna el responsable.

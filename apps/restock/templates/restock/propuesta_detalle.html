@@ -2,8 +2,8 @@
 {% comment %}
 La ficha de una propuesta de restock (plan 00 del circuito, B-05-009): cada
 proveedor con lo que se le pidió o por qué se descartó, y los pedidos que
-salieron con lo que ya llegó. Sólo lee. La misma forma que «Restock»: cifras,
-el filtro y un bloque plegable por proveedor.
+salieron con lo que ya llegó. La misma forma que «Restock»: cifras, el filtro y un
+bloque plegable por proveedor. Si está pendiente, se trabaja acá mismo (B-05-011).
 {% endcomment %}
 
 {% block titulo %}{{ propuesta }} · Longbox{% endblock %}
@@ -12,15 +12,14 @@ el filtro y un bloque plegable por proveedor.
 {% block contenido %}
 <header class="encabezado-de-pantalla">
   <div class="encabezado-de-pantalla__textos">
-    {% url 'restock:propuesta_lista' as volver %}
-    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Propuestas de restock" atras=1 %}</span>
+    {% url 'restock:propuesta_lista' as a_la_lista %}
+    <span class="miga">{% include "_boton_texto.html" with url=a_la_lista texto="Propuestas de restock" atras=1 %}</span>
     <h1>{{ propuesta }}</h1>
     <p>
-      <span class="marca-estado{% if propuesta.estado == 'pendiente' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ propuesta.get_estado_display }}</span>
+      <span class="marca-estado{% if propuesta.estado == 'pendiente' %} marca-estado--dato{% elif propuesta.estado == 'esperando' %} marca-estado--atencion{% else %} marca-estado--apagado{% endif %}">{% if propuesta.espera %}{{ propuesta.espera }}{% else %}{{ propuesta.get_estado_display }}{% endif %}</span>
       · {{ propuesta.get_tipo_disparo_display }} · generada el {{ propuesta.fecha_generacion|date:"d/m/Y H:i" }}{% if propuesta.cerrada_en %} · cerrada el {{ propuesta.cerrada_en|date:"d/m/Y H:i" }}{% endif %}
     </p>
   </div>
-  {% if propuesta.estado == "pendiente" %}<a href="{% url 'restock:propuesta' %}" class="boton-primario">Trabajar la propuesta</a>{% endif %}
 </header>
 
 <div class="cifras">
@@ -35,22 +34,30 @@ el filtro y un bloque plegable por proveedor.
     <div class="seccion__titulo"><h2 id="titulo-pedidos">Pedidos que salieron</h2></div>
     <div class="tabla-desplazable">
       <table class="tabla">
-        <thead><tr><th>Pedido</th><th>Proveedor</th><th>Llegada estimada</th><th class="numero">Faltan</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Pedido</th><th>Proveedor</th><th>Respuesta</th><th>Llegada estimada</th><th class="numero">Faltan</th><th>Estado</th></tr></thead>
         <tbody>
           {% for pedido in pedidos %}
+            {% with r=pedido.respuesta_resumida %}
             <tr>
               <td class="celda-principal"><a href="{% url 'suppliers:pedido_detalle' pedido.pk %}" class="datos">#{{ pedido.pk }}</a></td>
               <td>{{ pedido.nombre_proveedor }}</td>
+              <td>
+                <span class="marca-estado{% if r.clave == 'esperando' or r.clave == 'sin_enviar' %} marca-estado--atencion{% elif r.clave == 'no_puede' %} marca-estado--apagado{% else %} marca-estado--ok{% endif %}">{{ r.texto }}</span>
+                {% if r.clave == "esperando" and pedido.estado == "abierto" %}<br><a href="{% url 'suppliers:pedido_detalle' pedido.pk %}#respuesta-{{ pedido.pk }}" class="texto-chico">Anotar la respuesta</a>{% elif r.clave == "sin_enviar" %}<br><a href="{% url 'suppliers:pedido_detalle' pedido.pk %}" class="texto-chico">Reintentar el envío</a>{% endif %}
+              </td>
               <td class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</td>
               <td class="numero">{{ pedido.unidades_pendientes }}</td>
               <td><span class="marca-estado{% if pedido.vencido %} marca-estado--error{% elif pedido.estado == 'abierto' %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ pedido.cuando }}</span></td>
             </tr>
+            {% endwith %}
           {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
 {% endif %}
+
+{# Plan 00 de la respuesta simple: la respuesta se anota en la ficha de cada pedido. #}
 
 <div class="barra-de-herramientas">
   <div class="campo campo--principal">
@@ -59,6 +66,12 @@ el filtro y un bloque plegable por proveedor.
   </div>
 </div>
 
+{% if propuesta.estado == "pendiente" %}
+  {% for grupo in grupos %}
+    {% include "restock/_grupo_editable.html" %}
+  {% endfor %}
+  {% include "restock/_agregar_producto.html" %}
+{% else %}
 {% for grupo in grupos %}
   <details class="grupo-plegable" id="grupo-{{ grupo.clave }}"{% if grupos|length == 1 %} open{% endif %}>
     <summary class="grupo-plegable__cabeza">
@@ -93,5 +106,6 @@ el filtro y un bloque plegable por proveedor.
     </div>
   </details>
 {% endfor %}
+{% endif %}
 {% include "restock/_filtro_js.html" %}
 {% endblock %}

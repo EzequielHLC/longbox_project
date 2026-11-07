@@ -26,7 +26,7 @@ es otra puerta y su número también vive ahí.
 | Contratos especificados | 219 |
 | Con al menos una prueba que lleva su código | 219 |
 | Sin ninguna | 0 |
-| Pruebas de contrato en la suite | 1080 |
+| Pruebas de contrato en la suite | 1085 |
 
 ---
 
@@ -84,7 +84,7 @@ es otra puerta y su número también vive ahí.
 | `CO-023` | confirmarBorradoresEnLote | 1 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-024` | rechazarBorrador | 2 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-026` | solicitarCancelacionDePreventaEnLote | 2 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
-| `CO-027` | confirmarCancelacionDePreventaEnLote | 6 | `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/puntos/tests/test_descuento_de_ganados.py` |
+| `CO-027` | confirmarCancelacionDePreventaEnLote | 8 | `apps/catalog/tests/test_tomo_que_vuelve.py`, `apps/pedidos/tests/test_contratos_01_preventa.py`, `apps/puntos/tests/test_descuento_de_ganados.py` |
 | `CO-159` | consultarColaDeBorradores | 3 | `apps/catalog/tests/test_contratos_01_revision.py` |
 | `CO-160` | abrirBorrador | 1 | `apps/catalog/tests/test_contratos_01_revision.py` |
 
@@ -171,7 +171,7 @@ es otra puerta y su número también vive ahí.
 | `CO-068` | generarPropuestaDeRestock | 3 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-069` | ajustarCantidadDeLinea | 4 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-070` | eliminarLineaDePropuesta | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
-| `CO-071` | agregarProductoAPropuesta | 1 | `apps/restock/tests/test_contratos_05_restock.py` |
+| `CO-071` | agregarProductoAPropuesta | 4 | `apps/restock/tests/test_agregar_por_titulo.py`, `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-072` | despacharPedidoAProveedor | 5 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pantallas_pedidos.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-073` | descartarProveedorDePropuesta | 2 | `apps/restock/tests/test_contratos_05_restock.py` |
 | `CO-075` | suscribirseAReposicion | 5 | `apps/restock/tests/test_contratos_05_restock.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
@@ -592,6 +592,8 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO027_E1_si_falla_un_reembolso_no_queda_nada` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO027_cancela_reservas_reembolsa_en_puntos_y_cancela_el_producto` — `apps/pedidos/tests/test_contratos_01_preventa.py`
+- `test_CO027_cancelar_no_toca_el_isbn_ni_el_código` — `apps/catalog/tests/test_tomo_que_vuelve.py`
+- `test_CO027_cancelar_retira_la_edición` — `apps/catalog/tests/test_tomo_que_vuelve.py`
 - `test_CO027_incluye_las_reservas_ya_demoradas` — `apps/pedidos/tests/test_contratos_01_preventa.py`
 - `test_CO027_la_cancelacion_en_lote_descuenta_lo_que_gano_cada_reserva` — `apps/puntos/tests/test_descuento_de_ganados.py`
 - `test_CO027_no_se_cancela_lo_que_no_esta_en_preventa` — `apps/pedidos/tests/test_contratos_01_preventa.py`
@@ -889,6 +891,9 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-071` · agregarProductoAPropuesta**
 
 - `test_CO071_agregar_va_al_grupo_de_su_proveedor` — `apps/restock/tests/test_contratos_05_restock.py`
+- `test_CO071_el_isbn_con_guiones` — `apps/restock/tests/test_agregar_por_titulo.py`
+- `test_CO071_la_opción_del_buscador_trae_el_código` — `apps/restock/tests/test_agregar_por_titulo.py`
+- `test_CO071_por_título_y_número` — `apps/restock/tests/test_agregar_por_titulo.py`
 
 **`CO-072` · despacharPedidoAProveedor**
 

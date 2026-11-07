@@ -137,7 +137,7 @@ def _enlace_al_pedido(origen, pedido):
 
 
 # ---------------------------------------------------------------------------
-# «Pre-ventas por llegar» (B-01-006) y el bloque del panel
+# Las filas de pre-venta del bloque del panel (la pantalla es «Por llegar», B-05-017)
 # ---------------------------------------------------------------------------
 
 
@@ -151,52 +151,6 @@ class FilaPreVenta:
     @property
     def vencida(self):
         return self.llegada is not None and self.llegada < timezone.localdate()
-
-
-@dataclass
-class GrupoDeLlegada:
-    llegada: object
-    editorial: object
-    filas: list = field(default_factory=list)
-
-    @property
-    def clave(self):
-        return f"{self.llegada.isoformat() if self.llegada else 'sin-fecha'}-{self.editorial.pk}"
-
-    @property
-    def vencido(self):
-        return self.llegada is not None and self.llegada < timezone.localdate()
-
-    @property
-    def es_hoy(self):
-        return self.llegada == timezone.localdate()
-
-    @property
-    def dias_para(self):
-        return (self.llegada - timezone.localdate()).days if self.llegada else None
-
-    @property
-    def cuando(self):
-        """Una palabra en vez de una fecha para calcular (plan 00 de interfaz, 22.4)."""
-        dias = self.dias_para
-        if dias is None:
-            return "Sin fecha"
-        if dias < 0:
-            return "Atrasado"
-        if dias == 0:
-            return "Llega hoy"
-        if dias == 1:
-            return "Llega mañana"
-        return f"Llega en {dias} días"
-
-    @property
-    def cercano(self):
-        """Lo atrasado y lo de la próxima semana se muestra abierto."""
-        return self.dias_para is not None and self.dias_para <= 7
-
-    @property
-    def reservadas(self):
-        return sum(fila.reservadas for fila in self.filas)
 
 
 def _con_reservas(qs):
@@ -221,23 +175,6 @@ def filas_de_preventa(qs=None):
         )
         for p in productos
     ]
-
-
-def por_llegar():
-    """Las pre-ventas agrupadas por fecha de llegada vigente y editorial."""
-    grupos = {}
-    for fila in filas_de_preventa():
-        clave = (fila.llegada, fila.producto.editorial_id)
-        if clave not in grupos:
-            grupos[clave] = GrupoDeLlegada(llegada=fila.llegada, editorial=fila.producto.editorial)
-        grupos[clave].filas.append(fila)
-    for grupo in grupos.values():
-        grupo.filas.sort(key=lambda f: (f.producto.titulo.lower(), f.producto.volumen or 0))
-    sin_fecha = timezone.localdate().replace(year=9999)
-    return sorted(
-        grupos.values(),
-        key=lambda g: (g.llegada or sin_fecha, g.editorial.nombre.lower()),
-    )
 
 
 @dataclass
@@ -949,7 +886,9 @@ def cancelar_preventa(producto, actor):
         informe = InformeCancelacion(producto=p, clientes=_reembolsos(lineas))
 
         p.estado = Producto.CANCELADO_EDITORIAL
-        p.save(update_fields=["estado", "actualizado_en"])
+        # B-01-026: la edición se retira y libera su identidad, por si vuelve.
+        p.edicion_retirada = True
+        p.save(update_fields=["estado", "actualizado_en", "edicion_retirada"])
         for linea in lineas:
             linea.estado = LineaPedido.CANCELADO_REEMBOLSO
             linea.compensacion_cerrada = True

@@ -107,7 +107,8 @@ def test_la_ayuda_lista_los_comandos(comando, vinculado, falso):
 def test_un_comando_desconocido_lo_dice(vinculado, falso):
     bot.procesar(mensaje("/vender 3"))
 
-    assert "No conozco /vender" in falso.textos(CHAT)[-1]
+    # La frase varía (B-19-017); el comando que no conoce, no.
+    assert "/vender" in falso.textos(CHAT)[-1] and "/ayuda" in falso.textos(CHAT)[-1]
 
 
 def test_un_mensaje_vacío_responde_la_ayuda(vinculado, falso):

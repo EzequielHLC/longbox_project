@@ -51,6 +51,32 @@ leer un informe de impacto.
 {% endif %}
 {% include "catalog/_conflicto_de_codigo.html" %}
 
+{% comment %}
+B-01-024: como en el borrador (B-01-020), lo que ya saben los otros tomos de la serie.
+Completa lo vacío —autor, sinopsis— y suma las etiquetas; no pisa la sinopsis propia
+del tomo ni toca el tipo o el formato, que deciden la identidad y el precio.
+{% endcomment %}
+{% if serie %}
+  <section class="panel pila-3" aria-labelledby="titulo-serie">
+    <div class="fila fila-entre">
+      <h2 id="titulo-serie" class="fila-2">{% include "_iconos.html" with icono="libro" %}<span>Datos de la serie</span></h2>
+      <button type="button" class="boton-seccion" data-usar-serie>{% include "_iconos.html" with icono="reactivar" %}<span>Usar los datos de la serie</span></button>
+    </div>
+    <p class="texto-chico secundario">
+      <span class="datos">{{ serie.tomos }}</span> tomo{{ serie.tomos|pluralize }} más de
+      <a href="{% url 'catalog:producto_detalle' serie.ultimo.pk %}">{{ serie.ultimo.titulo }}</a> en el catálogo; el último es el <span class="datos">#{{ serie.ultimo.volumen }}</span>.
+      Completa lo que está vacío y suma las etiquetas de la serie.
+    </p>
+    <dl class="datos-de-ficha">
+      {% if serie.autor %}<dt>Autor</dt><dd>{{ serie.autor }}</dd>{% endif %}
+      {% if serie.etiquetas %}<dt>Etiquetas</dt><dd>{% for etiqueta in serie.etiquetas %}{{ etiqueta }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd>{% endif %}
+      {% if serie.solo_adultos %}<dt>Público</dt><dd>Sólo para adultos</dd>{% endif %}
+      {% if serie.sinopsis %}<dt>Sinopsis</dt><dd class="texto-chico">{{ serie.sinopsis|truncatechars:160 }}</dd>{% endif %}
+    </dl>
+    {{ serie_datos|json_script:"datos-de-la-serie" }}
+  </section>
+{% endif %}
+
 <form method="post" enctype="multipart/form-data" novalidate class="formulario">
   {% csrf_token %}
 
@@ -122,6 +148,12 @@ leer un informe de impacto.
     {% include "_campo.html" with campo=form.descripcion %}
     {% include "_casilla.html" with campo=form.solo_adultos %}
     {% include "_etiquetas.html" with campo=form.etiquetas %}
+    {% if serie and grupos_de_serie %}
+      <p class="texto-chico secundario">
+        {% include "_iconos.html" with icono="info" %}
+        Las etiquetas de {{ grupos_de_serie|join:", " }} son de la serie: si las cambiás acá, cambian también en los otros <span class="datos">{{ serie.tomos }}</span> tomo{{ serie.tomos|pluralize }}.
+      </p>
+    {% endif %}
   </fieldset>
 
   {% comment %}
@@ -140,4 +172,28 @@ leer un informe de impacto.
     {% include "_boton_texto.html" with url=cancelar texto="Cancelar" %}
   </div>
 </form>
+{% if serie %}
+  <script>
+    (function () {
+      // B-01-024: lo vacío con lo de la serie; las etiquetas se suman.
+      const formulario = document.querySelector("form.formulario");
+      const serie = JSON.parse(document.getElementById("datos-de-la-serie").textContent);
+      document.querySelector("[data-usar-serie]").addEventListener("click", () => {
+        const campos = formulario.elements;
+        if (serie.autor && campos.autor && !campos.autor.value.trim()) campos.autor.value = serie.autor;
+        if (serie.sinopsis && campos.descripcion && !campos.descripcion.value.trim()) {
+          campos.descripcion.value = serie.sinopsis;
+        }
+        if (serie.solo_adultos && campos.solo_adultos) campos.solo_adultos.checked = true;
+        const etiquetas = campos.etiquetas;
+        if (etiquetas && serie.etiquetas.length) {
+          for (const opcion of etiquetas.options) {
+            if (serie.etiquetas.includes(Number(opcion.value))) opcion.selected = true;
+          }
+          etiquetas.closest("[data-selector-etiquetas]")?.dispatchEvent(new CustomEvent("etiquetas:recargar"));
+        }
+      });
+    })();
+  </script>
+{% endif %}
 {% endblock %}

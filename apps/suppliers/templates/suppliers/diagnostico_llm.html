@@ -23,6 +23,14 @@ Indicadores), sin latido ni color.
   </div>
 </header>
 
+{# Plan 00 de últimos cambios, A: el sistema propuso pasar al respaldo (CO-228). #}
+{% if parametros.llm_cambio_propuesto_en %}
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span><span class="mensaje__prefijo">Atención:</span>El modelo falló {{ parametros.llm_fallas_seguidas }} veces seguidas.{% if parametros.tiene_respaldo %} <a href="{% url 'suppliers:cambiar_modelo' %}">Pasar al modelo de respaldo</a>{% else %} No hay modelo de respaldo: cargalo en <a href="{% url 'catalog:parametros' %}#titulo-respaldo">Parámetros globales</a>.{% endif %}</span>
+  </p>
+{% endif %}
+
 {# Bloque 1: la pregunta sí/no, respondida sin leer. #}
 <section class="panel{% if not estado.disponible %} panel--atencion{% endif %}" aria-labelledby="titulo-estado">
   <div class="fila fila-entre">

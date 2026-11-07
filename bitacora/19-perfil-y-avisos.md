@@ -559,3 +559,134 @@ Sobre el chat y sobre el reloj, `Nada`.
 
 **Qué habría que cambiar.**
 `CO-016`: también desde el chat, y la frecuencia cuenta desde la última revisión, sea cual sea.
+
+---
+
+### B-19-017 · El bot tiene personalidad: Long-bot, un compañero de trabajo
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-AVI-COR`, `CU-AVI-CON`, `CU-AVI-CAM`
+**Estado:** Abierta — pedido del responsable el 2026-10-28; tono, nombre y charla elegidos por él
+
+**Qué apareció.**
+El responsable pidió que el bot tuviera «más personalidad», como un Jarvis pero no tan formal: animado,
+un compañero de trabajo, y que los mensajes fueran más llamativos.
+
+**Qué dice la especificación.**
+`Nada`: el módulo no tiene fichas todavía (B-19-001).
+
+**Qué se hizo.**
+- **Se llama Long-bot** y se presenta así. Habla de vos, en rioplatense, y por el nombre de pila de quien
+  lee: cada Administrador recibe el aviso con su nombre.
+- **Cada aviso arranca con el emoji de su tipo** (📬 correos, 💸 ventas, ☀️ resumen, 🛡️ seguridad, 🩺
+  sistema…), el título en negrita y una línea. Cierra con un remate según el tipo: festeja una venta,
+  marca una alerta. El resumen de la mañana saluda según el día y cierra según cuánto hay pendiente.
+- Los correos nuevos citan sus primeras líneas en un recuadro, y los botones llevan emoji (✅ 🗑).
+- **Las frases varían, el dato no**: la cifra, el título, el enlace y el número de correo o de
+  borrador van siempre igual. Lo que cambia es la frase alrededor, para que no suene a máquina. Todo
+  vive en un solo lugar (`avisos/voz.py`).
+- **Charla con el modelo**: si lo que se escribe no es una consulta («gracias», «buen día»), el mismo
+  pedido que elige la consulta trae una respuesta corta en personaje. El modelo **no da cifras ni dice
+  que hizo algo**; su respuesta es sólo texto, se escapa y se corta en 400 caracteres. Sin modelo, una
+  frase fija.
+- Por correo, los avisos siguen como estaban: la voz es de Telegram.
+
+**Qué habría que cambiar.**
+Las fichas de `CU-AVI-COR` y `CU-AVI-CON`: la respuesta conversacional cuando el mensaje no es una
+consulta, y que nunca modifica nada.
+
+---
+
+### B-19-018 · El enlace con Telegram trae su código QR
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-AVI-TGA`
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+Para vincular Telegram había que abrir el enlace en el teléfono: desde la computadora, copiarlo y
+mandárselo a uno mismo.
+
+**Qué dice la especificación.**
+`Nada` (B-19-003 y B-19-005 describen el enlace y la confirmación).
+
+**Qué se hizo.**
+Mientras el enlace está vigente, el perfil muestra su **código QR** al lado del botón: se escanea con
+la cámara del teléfono y abre el bot. Vence con el enlace, y la confirmación por número no cambia. El
+código lo genera `segno`, una dependencia nueva en Python puro, como un SVG sin texto.
+
+**Qué habría que cambiar.**
+La ficha de `CU-AVI-TGA`: el enlace se ofrece también como código QR.
+
+---
+
+### B-19-019 · La respuesta del proveedor y el reintento de un correo, desde el chat
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-AVI-COR`, `CO-019`, B-05-013
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El responsable quiere anotar desde el teléfono lo que contesta un proveedor, y reintentar un correo cuyo
+procesamiento falló (por ejemplo, porque el modelo no respondió) sin ir a la web.
+
+**Qué dice la especificación.**
+> `CO-019 reprocesarCorreo`: vuelve a extraer un correo procesado o fallido (`CU-PRV-COL` A2).
+
+Sobre el chat, `Nada`.
+
+**Qué se hizo.**
+- **Cuando sale un pedido a un proveedor**, por revisión, restock o a mano, llega al chat con sus
+  productos, la fecha y tres botones:
+  - **«✅ Confirmó todo»**;
+  - **«📅 Fecha de llegada»**, que se escribe respondiendo: «15/11», o con año. Sin año, es la próxima;
+  - **«⛔ No puede»**, con motivos rápidos u otro escrito.
+  Las cantidades línea por línea se anotan en la web, con el enlace del mensaje. Le llega a quien
+  recibe los avisos de restock por Telegram.
+- Si a los tres días no respondió, el mismo mensaje como recordatorio, una vez.
+- **Un correo que falló al procesarse** trae **«🔁 Reintentar»**, que es `CO-019`, y «🗑 Descartar».
+- Todo con la firma por botón y la autorización en el momento, como los correos.
+
+**Qué habría que cambiar.**
+La ficha de `CU-AVI-COR`: el reintento. El caso de uso de la respuesta del proveedor (B-05-013): también
+desde el chat.
+
+---
+
+### B-19-020 · Long-bot tiene cara: tarjetas ilustradas en algunos avisos
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-AVI-CON`, avisos por Telegram (B-19-011, B-19-017)
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El responsable pidió imágenes al estilo del sistema para acompañar ciertos mensajes del bot, que
+está basado en un bangboo de Zenless Zone Zero.
+
+**Qué dice la especificación.**
+`Nada`.
+
+**Qué se hizo.**
+`apps/avisos/tarjetas.py` dibuja en el momento, con Pillow, una tarjeta de 1280 × 640 con los
+colores y las fuentes del sistema: fondo noche con trama de puntos, el título en Bangers con la
+sombra dura del acento, una bajada, hasta cuatro cifras en recuadros con la esquina cortada y, en
+un panel diagonal, **Long-bot**.
+
+Long-bot es **un personaje propio**, no una copia de un bangboo: una caja de historietas (un
+longbox) con la etiqueta «LB» en la tapa, orejas de conejo y la cara en una pantalla. Tiene cinco
+gestos: contento, festejo, guiño, alerta y triste.
+
+Llevan tarjeta:
+
+| Aviso | Gesto |
+| --- | --- |
+| Resumen de la mañana, con lo por armar, correos, borradores y lo vendido ayer | Contento; festejo si no hay nada pendiente |
+| Venta online | Festejo |
+| Una pre-venta que agotó el cupo | Festejo |
+| Alerta de seguridad | Alerta, en el tono de alarma |
+| Un problema de salud del sistema | Alerta, en el tono de alarma |
+| Un pedido a proveedor que no salió | Triste |
+| `/ayuda` y la vinculación confirmada | Guiño |
+
+La tarjeta sale **antes** del mensaje, como foto sin epígrafe. **Nunca lo reemplaza**: no dice nada
+que el texto no diga, y si no se puede dibujar o mandar, el mensaje sale igual. Por correo no va.
+
+**Qué habría que cambiar.**
+`Nada` en el documento de análisis. Si el responsable quiere fijar a Long-bot como identidad del
+bot, los tokens visuales.

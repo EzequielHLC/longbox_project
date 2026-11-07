@@ -96,7 +96,7 @@ def test_refresh_sin_novedades_lo_dice(vinculado, configurada, falso):
     with parche:
         refresh()
 
-    assert falso.textos(CHAT)[0] == "Revisando la casilla…"
+    assert falso.textos(CHAT)[0].startswith("🔄")
     assert "no hay correos nuevos" in falso.textos(CHAT)[-1]
 
 

@@ -377,3 +377,90 @@ del mismo estilo, «Mi perfil» (resaltada cuando se está en el perfil) y «Sal
 **Qué habría que cambiar.**
 `Nada` en el documento de análisis. Los tokens visuales, si el responsable quiere fijar la tarjeta de
 la cuenta como componente.
+
+---
+
+### B-00-031 · El menú del Administrador, en tres bloques con nombre
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** menú lateral del backoffice
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+«Pedidos» (de clientes) y «Pedidos por llegar» (a proveedores) estaban juntos en «Operación», y el
+responsable señaló que se confundían.
+
+**Qué dice la especificación.**
+`Nada` sobre el orden del menú.
+
+**Qué se hizo.**
+El menú del Administrador se parte en tres bloques con rótulo:
+- **Ventas y clientes**: Mostrador, Caja, **Pedidos de clientes** (con el contador de los que hay que
+  armar), Pre-ventas, Devoluciones y Stock en local.
+- **Compras a proveedores**: Restock, **Pedidos a proveedores** (con el contador de los «Sin enviar»)
+  y **Correos recibidos** (con el de los que esperan una decisión). Los correos salen del grupo
+  Proveedores: se miran todos los días, el padrón casi nunca.
+- **Administración**: los grupos Catálogo, Proveedores (padrón y diagnóstico), Precios, Tienda y
+  Cuentas, y después Reportes, Auditoría, Parámetros y Etiquetas.
+
+La lista de pedidos de clientes se titula igual que su entrada. El menú del Cajero no cambia.
+
+**Qué habría que cambiar.**
+`Nada` en el documento de análisis. Los tokens visuales, si el responsable quiere fijar los rótulos de
+bloque del menú.
+
+---
+
+### B-00-032 · Las ventas en gráficos, arriba del panel
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** panel del Administrador (sin contrato, ver `CO-219` en `docs/DEUDA.md`)
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El responsable pidió más gráficos y elementos llamativos en el panel de administración.
+
+**Qué dice la especificación.**
+`Nada`: el panel no tiene contrato todavía.
+
+**Qué se hizo.**
+Una sección «Ventas» al principio del panel, calculada en `apps/core/tablero.py` (sólo lee):
+- **Cifras**: lo vendido en el mes, con la variación contra **el mismo tramo** del mes anterior (del 1
+  al mismo día, o al último si el mes anterior es más corto); los pedidos del mes; el ticket
+  promedio, y lo vendido en los últimos 30 días. Las cifras cuentan hasta su valor al cargar.
+- **Lo vendido por día** en los últimos 30, en columnas que crecen al entrar; el dato exacto aparece
+  al pasar el mouse o con el foco, y hay una vista de tabla.
+- **Lo más vendido**, cinco productos por unidades.
+- **Por dónde se vendió**: la tienda online contra el mostrador, en plata.
+- **El catálogo hoy**: con stock, en pre-venta y agotados, sin los descatalogados.
+
+Se cuenta **lo cobrado en dinero**, como en la caja: lo cubierto con puntos no suma, el envío sí, y
+un pedido cancelado no cuenta. Un solo color por gráfico, el del acento; el dato nunca depende sólo
+del color. Con movimiento reducido no hay animaciones.
+
+**Qué habría que cambiar.**
+Cuando se escriba `CO-219`: que el panel también muestre estas cifras, y la regla de qué es «vendido».
+
+---
+
+### B-00-033 · El calendario de pre-ventas, con movimiento
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** pantalla de Pre-ventas por llegar (B-00-026)
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+El responsable dijo que al calendario de pre-ventas le faltaban animaciones.
+
+**Qué dice la especificación.**
+`Nada`.
+
+**Qué se hizo.**
+- Las celdas entran en una ola diagonal, de arriba a la izquierda hacia abajo a la derecha, y las
+  llegadas se pegan después, como figuritas. Un día con llegadas lleva la trama de puntos.
+- Hoy late suave y lanza una onda; una llegada atrasada parpadea su barra.
+- Al pasar el mouse, la llegada se levanta con la sombra dura del sistema.
+- Al cambiar de mes, el nombre entra desde el lado hacia donde se fue.
+- El grupo que se abre desde el calendario se marca con un destello, también si se elige otra vez.
+
+Con movimiento reducido no hay nada de eso: el calendario queda como estaba.
+
+**Qué habría que cambiar.**
+`Nada` en el documento de análisis.

@@ -17,6 +17,8 @@ y se sigue con los demás proveedores.
 import logging
 from dataclasses import dataclass
 
+from django.utils import timezone
+
 from apps.core.mail import cuerpo_html, enviar_correo
 
 logger = logging.getLogger(__name__)
@@ -170,7 +172,9 @@ def enviar_pedido(proveedor, lineas):
     return resultado
 
 
-def enviar_y_registrar(proveedor, lineas, actor=None, *, origen=None, **referencias):
+def enviar_y_registrar(
+    proveedor, lineas, actor=None, *, origen=None, registrar_si_falla=False, **referencias
+):
     """`CO-074` completo: el envío, su entrada en el log y E2.
 
     Sin correo registrado no se intenta (E2). Lo invocan `CU-ALT-REV` al cerrar
@@ -212,4 +216,125 @@ def enviar_y_registrar(proveedor, lineas, actor=None, *, origen=None, **referenc
             actor,
             **referencias,
         )
+        # Plan 00 de la respuesta del proveedor: el aviso, con los botones para anotar
+        # lo que conteste. Después de confirmar, y fuera del pedido: si falla, el
+        # pedido queda.
+        from apps.avisos import canales
+        from apps.core.segundo_plano import despues_del_commit
+
+        despues_del_commit(canales.avisar_pedido, resultado.pedido)
+    elif origen and registrar_si_falla:
+        # B-05-014: si no sale, queda «Sin enviar», a la vista para reintentarlo. Sin
+        # esto, lo confirmado en una revisión quedaba en Pre-venta sin nada en camino
+        # y sin ningún lugar desde donde volver a pedirlo.
+        from apps.avisos import canales
+        from apps.core.segundo_plano import despues_del_commit
+        from apps.suppliers import llegadas
+
+        resultado.pedido = llegadas.registrar(
+            proveedor,
+            origen,
+            [(linea.producto, linea.cantidad) for linea in resultado.lineas if linea.producto],
+            actor,
+            error_de_envio=resultado.error or "no se envió",
+            **referencias,
+        )
+        if resultado.pedido:
+            despues_del_commit(canales.avisar_pedido_sin_enviar, resultado.pedido)
     return resultado
+
+
+# ---------------------------------------------------------------------------
+# B-05-014 · el pedido que no salió: reintentar o descartar
+# ---------------------------------------------------------------------------
+
+
+def reintentar(pedido, actor, *, desde=""):
+    """Vuelve a mandar un pedido «Sin enviar». Si sale, queda «Por llegar» y abre sus
+    pre-ventas, como si hubiera salido la primera vez. Devuelve el `ResultadoDeEnvio`."""
+    from django.db import transaction
+
+    from apps.avisos import canales
+    from apps.core.models import RegistroAuditoria
+    from apps.core.segundo_plano import despues_del_commit
+    from apps.suppliers import llegadas
+    from apps.suppliers.models import PedidoProveedor
+
+    with transaction.atomic():
+        pedido = PedidoProveedor.objects.select_for_update().get(pk=pedido.pk)
+        if pedido.estado != PedidoProveedor.SIN_ENVIAR:
+            raise llegadas.OperacionRechazada("Ese pedido ya salió o se descartó.")
+        proveedor = pedido.proveedor
+        lineas = [
+            LineaDePedido(
+                titulo=linea.producto.titulo,
+                volumen=getattr(linea.producto.especifico, "volumen", None),
+                isbn=getattr(linea.producto.especifico, "isbn", ""),
+                cantidad=linea.cantidad_pedida,
+                producto=linea.producto,
+            )
+            for linea in pedido.lineas.select_related("producto")
+        ]
+        if proveedor is None or not proveedor.correo_comercial:
+            resultado = ResultadoDeEnvio(proveedor=proveedor, lineas=lineas)
+            resultado.error = "sin correo registrado"
+        else:
+            resultado = enviar_pedido(proveedor, lineas)
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.PEDIDO_A_PROVEEDOR,
+            actor=actor,
+            objetivo=pedido,
+            detalle=(
+                f"Reintento del {pedido}: "
+                + (
+                    "enviado."
+                    if resultado.enviado
+                    else f"no se envió ({resultado.error}, {resultado.intentos} intento(s))."
+                )
+                + (f" (desde {desde})" if desde else "")
+            ),
+        )
+        if resultado.enviado:
+            pedido.estado = PedidoProveedor.ABIERTO
+            pedido.error_de_envio = ""
+            pedido.save(update_fields=["estado", "error_de_envio"])
+            for linea in lineas:
+                llegadas.abrir_preventa(linea.producto, pedido.fecha_estimada)
+            despues_del_commit(canales.avisar_pedido, pedido)
+        else:
+            pedido.error_de_envio = (resultado.error or "no se envió")[:300]
+            pedido.save(update_fields=["error_de_envio"])
+    resultado.pedido = pedido
+    return resultado
+
+
+def descartar_sin_enviar(pedido, motivo, actor, *, desde=""):
+    """Un pedido «Sin enviar» que ya no se va a mandar: se cierra con su motivo, y lo
+    que estaba en Pre-venta sólo por él deja de estarlo (como `cerrar_sin_recibir`)."""
+    from django.db import transaction
+
+    from apps.core.models import RegistroAuditoria
+    from apps.suppliers import llegadas
+    from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor
+
+    motivo = " ".join((motivo or "").split())[:500]
+    if not motivo:
+        raise llegadas.OperacionRechazada("El motivo es obligatorio.")
+    with transaction.atomic():
+        pedido = PedidoProveedor.objects.select_for_update().get(pk=pedido.pk)
+        if pedido.estado != PedidoProveedor.SIN_ENVIAR:
+            raise llegadas.OperacionRechazada("Ese pedido ya salió o se descartó.")
+        for linea in pedido.lineas.filter(estado__in=LineaPedidoProveedor.ABIERTAS):
+            llegadas.cerrar_sin_recibir(linea, motivo, actor)
+        PedidoProveedor.objects.filter(pk=pedido.pk).update(
+            estado=PedidoProveedor.CERRADO, cerrado_en=timezone.now()
+        )
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.PEDIDO_A_PROVEEDOR,
+            actor=actor,
+            objetivo=pedido,
+            detalle=f"{pedido} descartado sin enviar: {motivo}"
+            + (f" (desde {desde})" if desde else ""),
+        )
+    pedido.refresh_from_db()
+    return pedido

@@ -36,7 +36,7 @@ B-05-009). Sólo lee: la pendiente se trabaja en «Restock».
               <td>{{ propuesta.get_tipo_disparo_display }}</td>
               <td class="numero">{{ propuesta.lineas.all|length }}</td>
               <td class="numero">{{ propuesta.pedidos.all|length }}</td>
-              <td>{% if propuesta.estado == "pendiente" %}<span class="marca-estado marca-estado--atencion">Pendiente</span>{% else %}<span class="marca-estado marca-estado--apagado">Cerrada{% if propuesta.cerrada_en %} el {{ propuesta.cerrada_en|date:"d/m/Y" }}{% endif %}</span>{% endif %}</td>
+              <td>{% if propuesta.estado == "pendiente" %}<span class="marca-estado marca-estado--atencion">Pendiente</span>{% elif propuesta.estado == "esperando" %}<span class="marca-estado marca-estado--dato">{{ propuesta.espera }}</span>{% else %}<span class="marca-estado marca-estado--apagado">Cerrada{% if propuesta.cerrada_en %} el {{ propuesta.cerrada_en|date:"d/m/Y" }}{% endif %}</span>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

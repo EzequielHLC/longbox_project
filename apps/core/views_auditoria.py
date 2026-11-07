@@ -85,6 +85,8 @@ GRUPOS_DE_ACCIONES = (
             "sesion_revision_cerrada",
             "diagnostico_llm",
             "disponibilidad_llm",
+            "cambio_modelo_propuesto",
+            "cambio_modelo",
         ),
     ),
     (
@@ -110,6 +112,7 @@ GRUPOS_DE_ACCIONES = (
             "cierre_propuesta_restock",
             "pedido_a_proveedor",
             "llegada_pedido",
+            "respuesta_proveedor",
             "cierre_sin_recibir",
         ),
     ),

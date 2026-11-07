@@ -10,12 +10,13 @@ import logging
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
 from apps.catalog.models import Producto, ProductoEditorial
-from apps.pedidos import calendario, preventa
-from apps.pedidos.forms import DemoraForm, leer_unidades
+from apps.pedidos import preventa
+from apps.pedidos.forms import DemoraForm
 from apps.pedidos.views import PedidosMixin
 from apps.suppliers import demoras
 from apps.suppliers.models import CorreoProveedor
@@ -32,78 +33,24 @@ def _plural(cantidad, singular, plural):
 
 
 class PreVentasView(PedidosMixin, View):
-    """Las pre-ventas agrupadas por fecha de llegada y editorial."""
+    """B-05-017: «Pre-ventas por llegar» pasó a «Por llegar», con los pedidos a
+    proveedores. La dirección vieja (y los enlaces de los correos ya enviados) lleva
+    ahí, con el mes y el grupo que pedía."""
 
     def get(self, request):
-        grupos = preventa.por_llegar()
-        # Plan 00 de interfaz, 22: el calendario del mes y las cifras, de los mismos grupos.
-        mes = calendario.mes_de(calendario.mes_pedido(request.GET.get("mes")), grupos)
-        # Cuarta parte, E: cambiar de mes sin recargar pide sólo el calendario.
-        plantilla = (
-            "pedidos/_calendario_preventas.html"
-            if request.GET.get("parcial") == "calendario"
-            else "pedidos/preventas.html"
-        )
-        return render(
-            request,
-            plantilla,
-            {
-                "grupos": grupos,
-                "mes": mes,
-                "dias_de_la_semana": calendario.DIAS_DE_LA_SEMANA,
-                "resumen": calendario.resumen(grupos),
-            },
-        )
+        destino = reverse("suppliers:por_llegar")
+        if request.GET:
+            destino += "?" + request.GET.urlencode()
+        return redirect(destino)
 
 
 class IngresoView(PedidosMixin, View):
-    """`CO-013`. El primer envío muestra qué va a pasar; el segundo lo confirma."""
+    """B-05-017: la llegada se carga en «Por llegar» (`CO-232`, que pasa las pre-ventas
+    por `CO-013`). Un envío a la dirección vieja no registra nada."""
 
     def post(self, request):
-        ids = [int(pk) for pk in request.POST.getlist("producto") if pk.isdigit()]
-        productos = list(
-            ProductoEditorial.objects.filter(pk__in=ids, estado=Producto.PRE_VENTA)
-            .select_related("editorial")
-            .order_by("titulo", "volumen")
-        )
-        if not productos:
-            messages.error(request, "Ninguno de esos productos sigue en pre-venta.")
-            return redirect("pedidos:preventas")
-        unidades, errores = leer_unidades(request.POST, productos)
-        if errores:
-            messages.error(request, "Revise las unidades: " + "; ".join(errores.values()))
-            return redirect("pedidos:preventas")
-
-        if "confirmar" not in request.POST:
-            filas = [preventa.previsualizar_ingreso(p, unidades[p.pk]) for p in productos]
-            return render(request, "pedidos/ingreso_confirmar.html", {"filas": filas})
-
-        resumen = preventa.confirmar_ingreso(unidades, request.user, origen=_origen(request))
-        partes = []
-        if resumen.activados:
-            partes.append(
-                _plural(len(resumen.activados), "producto activado", "productos activados")
-            )
-        if resumen.parciales:
-            partes.append(_plural(len(resumen.parciales), "ingreso parcial", "ingresos parciales"))
-        if resumen.demorados:
-            partes.append(
-                _plural(len(resumen.demorados), "producto demorado", "productos demorados")
-            )
-        if resumen.pedidos:
-            partes.append(
-                _plural(len(resumen.pedidos), "pedido actualizado", "pedidos actualizados")
-            )
-        if partes:
-            messages.success(request, "Ingreso confirmado: " + ", ".join(partes) + ".")
-        elif not resumen.errores:
-            messages.info(request, "No hubo cambios.")
-        if resumen.errores:
-            messages.error(
-                request,
-                "No se pudo confirmar " + ", ".join(resumen.errores) + ". Siguen en pre-venta.",
-            )
-        return redirect("pedidos:preventas")
+        messages.info(request, "La llegada se carga ahora en «Por llegar». No se registró nada.")
+        return redirect("suppliers:por_llegar")
 
 
 def _producto(pk):
@@ -264,7 +211,7 @@ class DemoraLoteView(PedidosMixin, View):
     def _volver(self, correo):
         if correo:
             return redirect("suppliers:correo_detalle", pk=correo.pk)
-        return redirect("pedidos:preventas")
+        return redirect("suppliers:por_llegar")
 
     @staticmethod
     def _productos(ids):

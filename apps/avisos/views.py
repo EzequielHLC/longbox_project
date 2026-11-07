@@ -12,6 +12,7 @@ import hmac
 import json
 import logging
 
+import segno
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -19,6 +20,7 @@ from django.db import transaction
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
@@ -59,6 +61,23 @@ def _enlace_de(codigo):
     return f"https://t.me/{usuario_del_bot}?start={codigo.codigo}" if usuario_del_bot else ""
 
 
+def _qr_de(enlace):
+    """El enlace de vinculación como código QR (B-19-018): se abre apuntando con la
+    cámara del teléfono, sin copiar nada. Vence con el enlace.
+
+    Va sin ancho ni alto fijos (sólo `viewBox`): así escala entero al tamaño del
+    recuadro, sin recortarse. El SVG lo arma `segno` con cuadrados y nada de texto:
+    el enlace queda codificado en los módulos, no escrito, así que no hay nada que
+    escapar.
+    """
+    if not enlace:
+        return ""
+    svg = segno.make(enlace, error="m").svg_inline(
+        scale=5, border=2, dark="#0A0A0C", light="#FFFFFF", omitsize=True
+    )
+    return mark_safe(svg)  # nosec B308 B703 - SVG de segno, sin texto del usuario
+
+
 class PerfilView(PerfilMixin, View):
     """`CU-AVI-PEC`."""
 
@@ -77,7 +96,8 @@ class PerfilView(PerfilMixin, View):
             {
                 "vinculo": vinculo,
                 "codigo": codigo,
-                "enlace_telegram": _enlace_de(codigo) if codigo else "",
+                "enlace_telegram": (enlace := _enlace_de(codigo) if codigo else ""),
+                "qr_telegram": _qr_de(enlace),
                 "telegram_configurado": telegram.configurado(),
                 "preferencias": _preferencias(usuario),
             },

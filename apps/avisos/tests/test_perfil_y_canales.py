@@ -299,3 +299,38 @@ def test_un_fallo_de_telegram_no_escribe_el_token(con_telegram, caplog, monkeypa
 
     assert TOKEN not in caplog.text
     assert "bot***" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# B-19-018 · el QR del enlace
+# ---------------------------------------------------------------------------
+
+
+def test_el_enlace_pendiente_trae_su_qr(client_admin, administrador, settings):
+    from unittest.mock import patch
+
+    from apps.avisos import telegram
+
+    settings.TELEGRAM_BOT_TOKEN = "123:prueba"
+
+    CodigoVinculacion.nuevo(administrador)
+    with patch.object(telegram, "usuario_del_bot", return_value="longbox_prueba_bot"):
+        html = client_admin.get(reverse("avisos:perfil")).content.decode()
+
+    assert '<figure class="vinculo-qr__codigo"' in html and "<svg" in html
+    assert "https://t.me/longbox_prueba_bot?start=" in html
+
+
+def test_sin_el_nombre_del_bot_no_hay_qr(client_admin, administrador, settings):
+    from unittest.mock import patch
+
+    from apps.avisos import telegram
+
+    settings.TELEGRAM_BOT_TOKEN = "123:prueba"
+
+    CodigoVinculacion.nuevo(administrador)
+    with patch.object(telegram, "usuario_del_bot", return_value=""):
+        html = client_admin.get(reverse("avisos:perfil")).content.decode()
+
+    assert "vinculo-qr__codigo" not in html
+    assert "/start " in html

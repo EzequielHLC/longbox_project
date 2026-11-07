@@ -28,8 +28,9 @@ CONSULTAS = (
     "ninguna",
 )
 
-SISTEMA_CONSULTA = """Sos el asistente del bot de una comiquería argentina. Te escribe el \
-Administrador. Elegí cuál de estas consultas responde lo que pregunta:
+SISTEMA_CONSULTA = """Sos Long-bot, el bot de una comiquería argentina: un compañero de \
+trabajo animado, no un sistema formal. Te escribe {nombre}, el Administrador. Elegí cuál de \
+estas consultas responde lo que pregunta:
 
 - "stock": el stock, el precio o el estado de un producto. En "texto" copiá el título (con su \
 número de tomo), el código o el ISBN que nombra.
@@ -42,16 +43,26 @@ título si nombra uno.
 - "cargar": describe un producto para darlo de alta.
 - "ninguna": cualquier otra cosa.
 
-Respondé sólo con la consulta y, si es "stock" o "borradores", el texto. No inventes datos."""
+En "consulta" va una de esas y, si es "stock" o "borradores", en "texto" lo que nombra.
+
+Si es "ninguna" (un saludo, un gracias, una charla), en "respuesta" contestale vos, en \
+personaje: una o dos frases, de vos y en castellano rioplatense, con buena onda y algún emoji. \
+Nunca des cifras ni datos de la comiquería —no los tenés: los da el sistema— y nunca digas \
+que hiciste o vas a hacer algo. Si viene al caso, ofrecé lo que sabés hacer: /stock, /llega, \
+/pendientes, /caja, /cargar, /borradores, /refresh, /ayuda. Para las otras consultas, "respuesta" \
+va vacía."""
 
 ESQUEMA_CONSULTA = {
     "type": "object",
     "properties": {
         "consulta": {"type": "string", "enum": list(CONSULTAS)},
         "texto": {"type": "string"},
+        "respuesta": {"type": "string"},
     },
-    "required": ["consulta", "texto"],
+    "required": ["consulta", "texto", "respuesta"],
 }
+# La charla es un saludo, no un informe: lo que pase de esto se corta.
+TOPE_DE_LA_CHARLA = 400
 
 SISTEMA_PRODUCTO = """Sos el asistente que carga productos de una comiquería argentina. Te \
 mandan un texto corto que describe UN producto. Copiá sus datos:
@@ -100,15 +111,21 @@ def _limpio(valor):
     return " ".join(str(valor or "").split())
 
 
-def elegir_consulta(texto):
-    """`(consulta, argumento)`, o `None` si el modelo no contestó."""
-    respuesta = llm.pedir_json(SISTEMA_CONSULTA, texto, formato=ESQUEMA_CONSULTA)
+def elegir_consulta(texto, *, nombre=""):
+    """`(consulta, argumento, charla)`, o `None` si el modelo no contestó.
+
+    `charla` es lo que Long-bot contesta cuando no es ninguna consulta (B-19-017):
+    sólo texto, que el bot escapa; el modelo no toca la base ni hace nada.
+    """
+    sistema = SISTEMA_CONSULTA.replace("{nombre}", nombre or "el Administrador")
+    respuesta = llm.pedir_json(sistema, texto, formato=ESQUEMA_CONSULTA)
     if not respuesta or not isinstance(respuesta.datos, dict):
         return None
     consulta = respuesta.datos.get("consulta")
     if consulta not in CONSULTAS:
         consulta = "ninguna"
-    return consulta, _limpio(respuesta.datos.get("texto"))
+    charla = str(respuesta.datos.get("respuesta") or "").strip()[:TOPE_DE_LA_CHARLA]
+    return consulta, _limpio(respuesta.datos.get("texto")), charla
 
 
 def leer_producto(texto, *, hoy=None):

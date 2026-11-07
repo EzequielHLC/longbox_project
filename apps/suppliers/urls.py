@@ -1,15 +1,43 @@
 from django.urls import path
 
-from apps.suppliers import views, views_pedidos
+from apps.suppliers import views, views_llegadas, views_pedidos
 
 app_name = "suppliers"
 
 urlpatterns = [
+    # B-05-017: la llegada de mercadería en una sola pantalla (CO-232).
+    path("por-llegar/", views_llegadas.PorLlegarView.as_view(), name="por_llegar"),
+    path(
+        "por-llegar/revisar/",
+        views_llegadas.RevisarLlegadaView.as_view(),
+        name="llegada_revisar",
+    ),
     # Plan 00 del circuito: los pedidos a proveedores y su llegada.
     path("pedidos/", views_pedidos.PedidoListaView.as_view(), name="pedido_lista"),
     path("pedidos/nuevo/", views_pedidos.PedidoNuevoView.as_view(), name="pedido_nuevo"),
     path("pedidos/<int:pk>/", views_pedidos.PedidoDetalleView.as_view(), name="pedido_detalle"),
     path("pedidos/<int:pk>/llegada/", views_pedidos.LlegadaView.as_view(), name="pedido_llegada"),
+    path(
+        "pedidos/<int:pk>/reintentar/",
+        views_pedidos.ReintentarEnvioView.as_view(),
+        name="pedido_reintentar",
+    ),
+    path(
+        "pedidos/<int:pk>/descartar/",
+        views_pedidos.DescartarSinEnviarView.as_view(),
+        name="pedido_descartar",
+    ),
+    path(
+        "pedidos/<int:pk>/respuesta/",
+        views_pedidos.RespuestaView.as_view(),
+        name="pedido_respuesta",
+    ),
+    # Plan 00 de la respuesta simple: cada respuesta en su pantalla (o diálogo).
+    path(
+        "pedidos/<int:pk>/responder/<slug:tipo>/",
+        views_pedidos.ResponderView.as_view(),
+        name="pedido_responder",
+    ),
     path(
         "pedidos/lineas/<int:pk>/cerrar/",
         views_pedidos.CerrarLineaView.as_view(),
@@ -43,4 +71,6 @@ urlpatterns = [
     # CU-CFG-LLM — diagnóstico: si el modelo está vivo y qué entiende cuando se
     # le manda algo.
     path("modelo/", views.DiagnosticoLLMView.as_view(), name="diagnostico_llm"),
+    # Plan 00 de últimos cambios, A: pasar al modelo de respaldo (CO-229).
+    path("modelo/cambiar/", views.CambiarModeloView.as_view(), name="cambiar_modelo"),
 ]

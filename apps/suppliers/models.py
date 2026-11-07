@@ -425,7 +425,11 @@ class PedidoProveedor(models.Model):
 
     ABIERTO = "abierto"
     CERRADO = "cerrado"
+    # B-05-014: el correo no salió (CO-074 E1). Queda a la vista para reintentarlo o
+    # descartarlo; **no da cupo** hasta que sale, porque nadie lo está mandando.
+    SIN_ENVIAR = "sin_enviar"
     ESTADO_CHOICES = [  # noqa: RUF012
+        (SIN_ENVIAR, "Sin enviar"),
         (ABIERTO, "Por llegar"),
         (CERRADO, "Cerrado"),
     ]
@@ -450,6 +454,11 @@ class PedidoProveedor(models.Model):
         related_name="pedidos_a_proveedor",
     )
     cerrado_en = models.DateTimeField("cerrado el", null=True, blank=True)
+    # Cuándo se le recordó al Administrador que el proveedor no respondió (plan 00
+    # de la respuesta del proveedor): una sola vez.
+    recordado_en = models.DateTimeField("respuesta recordada el", null=True, blank=True)
+    # Por qué no salió el último intento (B-05-014).
+    error_de_envio = models.CharField("error del envío", max_length=300, blank=True)
     # De dónde salió, para enlazarlo. Uno solo, según el origen.
     propuesta = models.ForeignKey(
         "restock.PropuestaRestock",
@@ -499,7 +508,48 @@ class PedidoProveedor(models.Model):
     def unidades_recibidas(self):
         return sum(linea.cantidad_recibida for linea in self.lineas.all())
 
-    # Las mismas palabras que «Pre-ventas por llegar» (`GrupoDeLlegada`): las dos
+    @property
+    def respondido(self):
+        """Si el proveedor ya dijo algo de cada línea (o la línea ya se cerró)."""
+        return all(linea.respondida for linea in self.lineas.all())
+
+    @property
+    def sin_respuesta(self):
+        return sum(1 for linea in self.lineas.all() if not linea.respondida)
+
+    @property
+    def respuesta_resumida(self):
+        """En qué está la respuesta, en palabras (plan 00 de la respuesta simple).
+
+        Lo usan la ficha del pedido, que se achica a esta línea cuando todo tiene
+        respuesta, y la de la propuesta, que ya no tiene formularios (R5, R6).
+        """
+        lineas = list(self.lineas.all())
+        cuenta = {
+            "confirmadas": sum(1 for x in lineas if x.respuesta == LineaPedidoProveedor.CONFIRMADA),
+            "con_otra_cantidad": sum(
+                1 for x in lineas if x.respuesta == LineaPedidoProveedor.OTRA_CANTIDAD
+            ),
+            "no_disponibles": sum(
+                1 for x in lineas if x.respuesta == LineaPedidoProveedor.NO_DISPONIBLE
+            ),
+            "esperando": sum(1 for x in lineas if not x.respondida),
+        }
+        respondidas = [x.respondida_en for x in lineas if x.respondida_en]
+        cuenta["ultima"] = max(respondidas) if respondidas else None
+        if self.estado == self.SIN_ENVIAR:
+            return {**cuenta, "clave": "sin_enviar", "texto": "Esperando un reintento de envío"}
+        if cuenta["esperando"]:
+            dias = (timezone.localdate() - timezone.localdate(self.creado_en)).days
+            espera = "desde hoy" if dias <= 0 else f"hace {dias} día{'s' if dias != 1 else ''}"
+            return {**cuenta, "clave": "esperando", "texto": f"Esperando respuesta {espera}"}
+        if cuenta["no_disponibles"] == len(lineas):
+            return {**cuenta, "clave": "no_puede", "texto": "No puede abastecer"}
+        if cuenta["no_disponibles"] or cuenta["con_otra_cantidad"]:
+            return {**cuenta, "clave": "cambios", "texto": "Confirmó con cambios"}
+        return {**cuenta, "clave": "todo", "texto": "Confirmó todo"}
+
+    # Las mismas palabras que los grupos de «Por llegar» (`recepcion.Grupo`): las dos
     # pantallas hablan de lo mismo visto desde dos lados.
     @property
     def dias_para(self):
@@ -518,6 +568,8 @@ class PedidoProveedor(models.Model):
 
     @property
     def cuando(self):
+        if self.estado == self.SIN_ENVIAR:
+            return "Sin enviar"
         if self.estado != self.ABIERTO:
             return "Cerrado"
         dias = self.dias_para
@@ -552,6 +604,19 @@ class LineaPedidoProveedor(models.Model):
     ]
     ABIERTAS = (PENDIENTE, PARCIAL)
 
+    # Lo que contestó el proveedor (plan 00 de la respuesta del proveedor). Mientras
+    # no contesta se espera lo pedido; si confirma otra cantidad, se espera esa.
+    SIN_RESPUESTA = "sin_respuesta"
+    CONFIRMADA = "confirmada"
+    OTRA_CANTIDAD = "otra_cantidad"
+    NO_DISPONIBLE = "no_disponible"
+    RESPUESTA_CHOICES = [  # noqa: RUF012
+        (SIN_RESPUESTA, "Sin respuesta"),
+        (CONFIRMADA, "Confirmada"),
+        (OTRA_CANTIDAD, "Con otra cantidad"),
+        (NO_DISPONIBLE, "No la puede abastecer"),
+    ]
+
     pedido = models.ForeignKey(PedidoProveedor, on_delete=models.CASCADE, related_name="lineas")
     producto = models.ForeignKey(
         "catalog.Producto", on_delete=models.PROTECT, related_name="pedidos_a_proveedor"
@@ -561,6 +626,11 @@ class LineaPedidoProveedor(models.Model):
     estado = models.CharField("estado", max_length=12, choices=ESTADO_CHOICES, default=PENDIENTE)
     recibida_en = models.DateTimeField("última llegada", null=True, blank=True)
     motivo_cierre = models.TextField("motivo del cierre sin recibir", blank=True)
+    respuesta = models.CharField(
+        "respuesta del proveedor", max_length=14, choices=RESPUESTA_CHOICES, default=SIN_RESPUESTA
+    )
+    cantidad_confirmada = models.PositiveIntegerField("confirmada", null=True, blank=True)
+    respondida_en = models.DateTimeField("respondida el", null=True, blank=True)
 
     class Meta:
         verbose_name = "línea de pedido a proveedor"
@@ -576,14 +646,30 @@ class LineaPedidoProveedor(models.Model):
                 condition=models.Q(cantidad_pedida__gte=1),
                 name="linea_pedido_proveedor_pide_algo",
             ),
+            # Lo que no se puede abastecer se cierra sin recibir; confirmar cero no existe.
+            models.CheckConstraint(
+                condition=models.Q(cantidad_confirmada__isnull=True)
+                | models.Q(cantidad_confirmada__gte=1),
+                name="linea_pedido_proveedor_confirma_algo",
+            ),
         ]
 
     def __str__(self):
         return f"{self.producto} × {self.cantidad_pedida}"
 
     @property
+    def esperada(self):
+        """Lo que se espera que llegue: lo confirmado, o lo pedido si no respondió."""
+        return self.cantidad_confirmada or self.cantidad_pedida
+
+    @property
     def pendiente(self):
         """Lo que todavía puede llegar. Cero en una línea cerrada."""
         if self.estado not in self.ABIERTAS:
             return 0
-        return max(0, self.cantidad_pedida - self.cantidad_recibida)
+        return max(0, self.esperada - self.cantidad_recibida)
+
+    @property
+    def respondida(self):
+        """El proveedor dijo algo, o la línea ya se cerró (llegó o se dio por perdida)."""
+        return self.respuesta != self.SIN_RESPUESTA or self.estado not in self.ABIERTAS

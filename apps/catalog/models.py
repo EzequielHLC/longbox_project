@@ -107,6 +107,18 @@ class GrupoEtiqueta(models.Model):
 
     nombre = models.CharField("nombre", max_length=60)
     activo = models.BooleanField("activo", default=True)
+    # B-01-025: un grupo «de serie» describe la serie entera, no el tomo (el estado de
+    # la serie, la demografía, la franquicia). Cambia lo que hace el sistema —cambiar
+    # una de sus etiquetas en un tomo la cambia en toda la serie—, así que es campo
+    # (regla 3) y no otra etiqueta.
+    de_serie = models.BooleanField(
+        "de serie",
+        default=False,
+        help_text=(
+            "Sus etiquetas describen la serie entera: cambiarlas en un tomo las cambia en "
+            "todos los tomos de la serie."
+        ),
+    )
 
     class Meta:
         verbose_name = "grupo de etiquetas"
@@ -924,6 +936,30 @@ class ProductoEditorial(Producto):
     # porque el `save()` del padre no toca la tabla de la hija.
     clave_edicion = models.CharField(max_length=320, editable=False, default="")
 
+    # B-01-026 · el tomo cancelado que vuelve. `CU-ALT-CAN` deja al cancelado en un
+    # estado del que no se vuelve y en el historial; si la editorial lo reanuncia,
+    # el que vuelve es **otra edición, con código nuevo**. Para que no choque, la
+    # cancelación (`CO-027`) **retira** la edición: las dos restricciones de abajo
+    # valen sólo entre ediciones no retiradas. La marca va en esta tabla y no se
+    # deduce del estado porque el estado vive en la del padre, y una restricción
+    # no abarca dos tablas.
+    edicion_retirada = models.BooleanField(
+        "edición retirada",
+        default=False,
+        editable=False,
+        help_text="La puso la cancelación por la editorial: el ISBN y la clave quedan libres.",
+    )
+    # A qué edición cancelada vuelve a anunciar. Lo completa `save()` al crear.
+    reanuncia_a = models.ForeignKey(
+        "self",
+        verbose_name="reanuncia a",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="reanunciada_como",
+    )
+
     class Meta:
         verbose_name = "producto editorial"
         verbose_name_plural = "productos editoriales"
@@ -942,7 +978,7 @@ class ProductoEditorial(Producto):
             # por qué se aceptó.
             models.UniqueConstraint(
                 fields=["isbn"],
-                condition=~models.Q(isbn=""),
+                condition=~models.Q(isbn="") & models.Q(edicion_retirada=False),
                 name="producto_editorial_unico_por_isbn",
             ),
             # La tupla de A13, recuperada como garantía de base. Es el respaldo
@@ -950,6 +986,7 @@ class ProductoEditorial(Producto):
             # dos altas simultáneas del mismo tomo sin ISBN entrarían las dos.
             models.UniqueConstraint(
                 fields=["clave_edicion"],
+                condition=models.Q(edicion_retirada=False),
                 name="producto_editorial_unico_por_clave",
             ),
             # CO-005 (b): un precio fijado a mano no está asociado a la tabla de
@@ -971,7 +1008,21 @@ class ProductoEditorial(Producto):
 
     def save(self, *args, **kwargs):
         self.clave_edicion = self.calcular_clave_edicion()
+        # B-01-026: el que nace igual a una edición retirada la reanuncia. Va acá y no
+        # en cada alta para que ningún camino (manual, lote, borrador) se lo saltee.
+        if self._state.adding and self.reanuncia_a_id is None and not self.edicion_retirada:
+            self.reanuncia_a = self.edicion_retirada_igual()
         return super().save(*args, **kwargs)
+
+    def edicion_retirada_igual(self):
+        """La edición cancelada con la misma identidad, la más nueva, o `None`.
+        El mismo criterio que el duplicado: primero el ISBN, si no la clave."""
+        retiradas = ProductoEditorial.objects.filter(edicion_retirada=True).exclude(pk=self.pk)
+        if self.isbn:
+            por_isbn = retiradas.filter(isbn=self.isbn).order_by("-pk").first()
+            if por_isbn is not None:
+                return por_isbn
+        return retiradas.filter(clave_edicion=self.calcular_clave_edicion()).order_by("-pk").first()
 
     def clean(self):
         super().clean()

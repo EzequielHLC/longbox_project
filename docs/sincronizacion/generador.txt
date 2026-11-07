@@ -1,0 +1,91 @@
+Documento  : docs\Longbox - Comic Store Manager.docx
+Salida     : .contexto-ia/
+Módulos    : 18
+Casos de uso: 103  ·  Contratos: 219
+
+Estructura del documento
+  · 6 hueco(s) en la numeración de contratos: CO-219, CO-222, CO-223, CO-224, CO-225, CO-226
+  · 2 contrato(s) archivado(s) donde ninguno de sus casos de uso vive:
+      CO-059 → 03-pricing.md (no referencia ningún caso de uso con ficha; archivado por posición)
+      CO-155 → 18-stock-almacenado-en-local.md (no referencia ningún caso de uso con ficha; archivado por posición)
+
+Referencias en el texto
+  · 6 código(s) de caso de uso mencionado(s) sin ficha extendida:
+      CU-CAT-ETQ (retirado): 2 mención(es) en tabla en § Estado de Construcción, tabla en § Plan de Iteración
+      CU-CFG-BAN (retirado): 1 mención(es) en tabla en § Estado de Construcción
+      CU-CFG-EDT (retirado): 1 mención(es) en tabla en § Estado de Construcción
+      CU-CFG-TIP (retirado): 1 mención(es) en tabla en § Estado de Construcción
+      CU-PVP-TAB (retirado): 1 mención(es) en tabla en § Estado de Construcción
+      CU-PVP-VEN: 1 mención(es) en CO-059
+
+Trazabilidad casos de uso ↔ requisitos
+  Sin observaciones.
+
+  (18 contrato(s) transversal(es) en 00-transversales.md)
+
+Operaciones: contratos ↔ dss/DSS.md (por nombre, no por número)
+  Contratos: 219  ·  Casos de uso con apartado en el DSS: 103
+  · 1 contrato(s) cuya operación no aparece en ningún DSS: sincronizarCotizaciones (CO-155)
+  · 57 operación(es) cuyo contrato nombra un caso de uso cuyo DSS no la muestra. Es informativo: suele ser un contrato que cita el caso de uso como contexto (una consulta previa, una invocación). Sólo es deuda si la operación debería estar en ese DSS:
+      CU-ALT-IMP · notificarReposicionASuscriptores
+      CU-ALT-IMP · registrarEditorial
+      CU-ALT-IMP · registrarFormato
+      CU-ALT-IMP · registrarTipoDeMaterial
+      CU-ALT-IMP · restaurarPrecioCalculado
+      CU-ALT-NAC · notificarReposicionASuscriptores
+      CU-ALT-NAC · registrarEditorial
+      CU-ALT-NAC · registrarFormato
+      CU-ALT-NAC · registrarTipoDeMaterial
+      CU-ALT-NOV · aprobarCorreoParaProcesamiento
+      CU-ALT-NOV · reprocesarCorreo
+      CU-ALT-REV · enviarPedidoConsolidado
+      CU-ALT-REV · notificarReposicionASuscriptores
+      CU-ALT-TRA · confirmarRegistroDeDemora
+      CU-ALT-TRA · notificarReposicionASuscriptores
+      CU-AUT-ACT · regenerarEnlaceDeActivacion
+      CU-CAT-ETA · consultarEtiquetasDeGrupo
+      CU-CAT-ETB · consultarEtiquetasDeGrupo
+      CU-CAT-ETM · consultarEtiquetasDeGrupo
+      CU-CAT-GRA · consultarGruposDeEtiqueta
+      CU-CAT-GRB · consultarGruposDeEtiqueta
+      CU-CAT-GRM · consultarGruposDeEtiqueta
+      CU-CAT-REA · cancelarOperacion
+      CU-CFG-BNA · consultarBanners
+      CU-CFG-BNB · consultarBanners
+      CU-CFG-BNM · consultarBanners
+      CU-CFG-EDA · consultarEditoriales
+      CU-CFG-EDB · consultarEditoriales
+      CU-CFG-EDM · consultarEditoriales
+      CU-CFG-FMA · consultarFormatos
+      CU-CFG-FMB · consultarFormatos
+      CU-CFG-FMM · consultarFormatos
+      CU-CFG-PAR · confirmarCambioDeMargenGlobal
+      CU-CFG-TPA · consultarTiposDeMaterial
+      CU-CFG-TPB · consultarTiposDeMaterial
+      CU-CFG-TPM · consultarTiposDeMaterial
+      CU-CLI-BAJ · cancelarOperacion
+      CU-PED-OPC · confirmarCancelacionDeArticuloDemorado
+      CU-PRV-REA · cancelarOperacion
+      CU-PVP-TBA · consultarTablaDePrecios
+      CU-PVP-TBA · restaurarPrecioCalculado
+      CU-PVP-TBB · consultarTablaDePrecios
+      CU-PVP-TBB · restaurarPrecioCalculado
+      CU-PVP-TBM · consultarTablaDePrecios
+      CU-RST-APR · enviarPedidoConsolidado
+      CU-RST-PED · cerrarSesionDeRevision
+      CU-RST-PED · despacharPedidoAProveedor
+      CU-STK-DES · cancelarOperacion
+      CU-STK-FIS · consultarStockAlmacenado
+      CU-STK-PLA · consultarStockAlmacenado
+      CU-TDA-CAT · agregarProductoAlCarrito
+      CU-TDA-CRC · eliminarLineaDelCarrito
+      CU-TDA-CRC · fusionarCarritoDeSesion
+      CU-USR-BAJ · cancelarOperacion
+      CU-USR-ELI · cancelarOperacion
+      CU-USR-REA · cancelarOperacion
+      CU-USR-REA · regenerarEnlaceDeActivacion
+
+El chequeo informa y no corrige: las diferencias van a docs/DEUDA.md.
+
+Archivos del responsable: 11 protegido(s)
+  Ninguno desapareció ni cambió.

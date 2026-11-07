@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-10-28**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-11-07**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -10,6 +10,45 @@ enlazan a éste.
 ---
 
 ## Resumen
+
+Del 2026-11-07: **los últimos cambios antes del cierre** ([plan](planes/00-ultimos-cambios-antes-del-cierre.md),
+aprobado con sus recomendaciones; el responsable autorizó nombrar `CO-228` a `CO-232`). Ningún caso
+de uso del documento cambia de estado:
+
+- **«Por llegar», una sola pantalla para la llegada de mercadería** (B-05-017, `CO-232`): reemplaza a
+  «Pre-ventas por llegar» y a «Pedidos por llegar», por proveedor y fecha, con el pedido, lo
+  confirmado, lo recibido y las reservas en cada línea. La revisión guarda lo recibido que mostró y
+  la confirmación no vuelve a sumar una caja que otro ya cargó. Las direcciones viejas redirigen.
+- **El pedido a mano busca por nombre, quita renglones y no le pide a un proveedor lo que trae
+  otro** (B-05-018). La búsqueda de Restock pasó a `catalog.busqueda`, compartida.
+- **El modelo de respaldo** (B-17-020, `CO-228`, `CO-229`): tres fallas seguidas del modelo activo
+  proponen el cambio por el canal de cada Administrador; confirmar prueba el respaldo y los
+  intercambia. Nunca cambia solo.
+- **MercadoPago**: la credencial del `.env` es de una cuenta vendedora **de prueba** (`test_user`,
+  MLA), y la API creó una preferencia sin pagar. Falta la compra de punta a punta, que la hace una
+  persona en el navegador.
+- **Ingreso con Google**: no empezado (el plan lo dejó para si sobraba tiempo).
+
+Del 2026-10-28, más tarde: **la respuesta del proveedor, simple, y el tomo cancelado que vuelve**
+([plan](planes/00-respuesta-simple-y-tomo-que-vuelve.md), aprobado con las recomendaciones). Ningún
+caso de uso cambia de estado:
+
+- **La respuesta se anota sólo en la ficha del pedido**, con una pregunta y tres respuestas como en
+  Telegram. Lo que llega cuenta como respuesta, no se confirma más de lo pedido, lo que no cambió no
+  se vuelve a anotar, y el motivo es de cada línea (B-05-015).
+- **Un tomo cancelado por la editorial que vuelve** se carga como edición nueva, con código propio y
+  enlazada a la cancelada, que queda en el historial (B-01-026).
+- **Agregar un producto a la propuesta** acepta también el título con su número, y el error dice qué
+  pasó (B-05-016).
+
+Del 2026-10-28, al cierre: **pulido pedido por el responsable**. Ningún caso de uso cambia de estado:
+
+- **El menú del Administrador en tres bloques**: «Ventas y clientes», «Compras a proveedores» y
+  «Administración». «Pedidos de clientes» y «Pedidos a proveedores» ya no conviven (B-00-031).
+- **Las ventas en gráficos** al principio del panel: cifras del mes con su variación, lo vendido por
+  día, lo más vendido, tienda contra mostrador y el catálogo por estado (B-00-032).
+- **El calendario de pre-ventas con movimiento**, y quieto con movimiento reducido (B-00-033).
+- **Long-bot tiene cara**: tarjetas ilustradas antes de algunos avisos de Telegram (B-19-020).
 
 Del 2026-10-28, después: **la etapa 3 del bot** ([plan](planes/00-bot-de-telegram-etapa-3.md),
 aprobado con las decisiones recomendadas). Tres casos de uso nuevos del módulo 19 (`CU-AVI-RES`,
@@ -254,14 +293,14 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-ALT-REV` | Verificado | 9 / 10 | `BorradorListaView`, `BorradorDetalleView`, `ConfirmarEnLoteView`, `CerrarSesionRevisionView`, `catalog/revisiones.py`. **Todos sus contratos aplicables verificados.** Completar un borrador incompleto lo pasa a Pendiente (`CO-020`); el cierre encadena `CO-074` con su entrada por proveedor (`CO-025`); la colisión dice su criterio (`CO-022` E7). `CO-077` no aplica (B-05-001). El producto nace sin stock: lo declarado es la cantidad a pedir, y el cierre registra el pedido (B-01-017, B-05-010). El precio de la tabla se propone y apartarse de él se confirma (B-01-018); una serie conocida completa lo que falta y el precio sigue al formato (B-01-020). |
 | `CU-ALT-DEM` | Verificado | 3 / 3 | `apps/pedidos/preventa.py`, `views_preventa.py`. **Todos sus contratos verificados**: informe de impacto (A3), E1 con lo ingresado conservado, la cascada a pedidos con la ventana de decisión (B-08-004) y el correo con acceso directo, E2 con un pedido que falla, y volver sin registrar (`CO-156`). Desde la ficha del producto y, con la fecha propuesta, desde un aviso de demora (B-04-011). Plan 01. Varios tomos a la vez, con un aviso por Cliente (B-01-022, desvío consultado). |
 | `CU-ALT-TRA` | Verificado | 5 / 5 | **Todos sus contratos verificados.** «Pre-ventas por llegar» (B-01-006) con revisión previa (B-01-011); `CO-013` cubre reservas en orden (B-01-007), demora los faltantes vencidos (B-01-008), avisa a los suscriptores con lo que sobra (B-05-001) y deja retenido lo de despacho diferido (B-18-002); `CO-011` y `CO-012` en el Temporizador (B-01-009). Plan 01. Lo confirmado se descuenta de las líneas del pedido a proveedor, y la llegada también entra por «Pedidos por llegar» (B-05-010). |
-| `CU-ALT-CAN` | Verificado | 3 / 3 | **Todos sus contratos verificados**: informe por cliente con los puntos (B-01-010), atomicidad total (E1), un lote por cliente, el envío de los pedidos que se quedan vacíos (B-08-008) y volver sin efecto (`CO-156`). Plan 01. |
+| `CU-ALT-CAN` | Verificado | 3 / 3 | **Todos sus contratos verificados**: informe por cliente con los puntos (B-01-010), atomicidad total (E1), un lote por cliente, el envío de los pedidos que se quedan vacíos (B-08-008) y volver sin efecto (`CO-156`). Plan 01. La cancelación también **retira la edición**, para que el título pueda volver como edición nueva, enlazada (B-01-026). |
 
 ### `02` Catálogo
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-CAT-ALT` | Verificado | 2 / 2 | `ProductoNoEditorialAltaView` y `DuplicadosNoEditorialesView`. **Todos sus contratos verificados.** E3 enlaza la ficha en conflicto, también cuando otra alta gana el código después de validarlo; la portada se guarda en WebP (B-01-015). |
-| `CU-CAT-EDI` | Verificado | 5 / 5 | `ProductoEdicionView`. **Todos sus contratos verificados.** La pantalla declara los inmutables: código, rubro y costo en origen del importado (`CO-161`). `CO-031` desde la ficha y desde la edición (B-03-005); el valor actual de editorial, tipo, formato y etiquetas aunque esté dado de baja (B-17-007). |
+| `CU-CAT-EDI` | Verificado | 5 / 5 | `ProductoEdicionView`. **Todos sus contratos verificados.** La pantalla declara los inmutables: código, rubro y costo en origen del importado (`CO-161`). `CO-031` desde la ficha y desde la edición (B-03-005); el valor actual de editorial, tipo, formato y etiquetas aunque esté dado de baja (B-17-007). Ofrece los datos de la serie, de los otros tomos (B-01-024). Las etiquetas de los grupos «de serie» se aplican a toda la serie (B-01-025). |
 | `CU-CAT-BAJ` | Verificado | 3 / 3 | `ProductoBajaView` y `services.confirmar_baja_de_producto`. **Todos sus contratos verificados.** El informe calcula las cuatro categorías y la baja las resuelve: suscripciones canceladas, oferta exclusiva eliminada, carritos avisados, pedidos intactos (B-02-006). |
 | `CU-CAT-REA` | Verificado | 3 / 3 | `ProductoReactivarView`. **Todos sus contratos verificados.** Rechaza el cancelado por editorial (E1), avisa la fecha de llegada vencida (E2) y registra el estado anterior y el nuevo. |
 | `CU-CAT-INV` | Verificado | 3 / 3 | **Todos sus contratos verificados.** Exportación CSV del listado filtrado, sólo Administrador y auditada (`CO-037`); filtro por editorial y etiquetas inactivas marcadas (`CO-162`); ficha por rol que no dibuja lo que el Cajero no ve e indicadores «No disponible» (`CO-163`). |
@@ -305,7 +344,7 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | --- | --- | --- | --- |
 | `CU-RST-PED` | Verificado | 3 / 3 | `suppliers/pedidos.py`: tres intentos y su registro (`CO-074`), E2 sin correo. Lo invocan `CU-ALT-REV` y `CU-RST-APR`. Plan 05. Con el envío exitoso queda registrado el pedido con sus líneas (B-05-010). |
 | `CU-RST-PRO` | Verificado | 2 / 2 | **Todos sus contratos verificados**: ciclo diario con la ventana de la semana (B-05-004), cantidad sugerida, grupos por proveedor (B-05-003), E1 a E4, disparo manual que omite el ciclo; I-21 en la base y la carrera entre el ciclo y el botón. Plan 05. |
-| `CU-RST-APR` | Verificado | 8 / 8 | **Todos sus contratos verificados**: propuesta por proveedor, ajustar, quitar, agregar al grupo correcto, despachar con correo (E2 vuelve a Pendiente), descartar con motivo y cierre automático; dos administradores a la vez. Plan 05. El despacho lleva la llegada estimada y registra el pedido (B-05-010). |
+| `CU-RST-APR` | Verificado | 8 / 8 | **Todos sus contratos verificados**: propuesta por proveedor, ajustar, quitar, agregar al grupo correcto, despachar con correo (E2 vuelve a Pendiente), descartar con motivo y cierre automático; dos administradores a la vez. Plan 05. El despacho lleva la llegada estimada y registra el pedido (B-05-010). **Desvío aprobado (B-05-013)**: la propuesta despachada queda «Esperando respuesta» hasta que cada proveedor responde; `CO-072` ya no la cierra al despachar. Agregar acepta también el título con su número (B-05-016). |
 | `CU-RST-SUS` | Verificado | 2 / 2 | `apps/restock`. **Todos sus contratos verificados**: aviso desde la ficha de un agotado (B-05-002), E1, E2, cancelar, sin auditoría; I-22 en la base y dos clics a la vez. Plan 05. También sobre una pre-venta completa (B-07-042). |
 | `CU-RST-NOT` | Verificado | 1 / 1 | **Verificado**: FIFO con `min(N, M)` en cada suba de stock (B-05-001), tres intentos y turno conservado (B-05-005), E2 sin ceder el cupo. Plan 05. |
 
@@ -316,9 +355,9 @@ arriba ni en `COBERTURA.md` hasta que el documento tenga su ficha y sus contrato
 
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
-| `CU-RST-PRC` | Construido, sin contrato | — | Consultar propuestas de restock: `PropuestaListaView` y `PropuestaDetalleView`, también las cerradas, con sus pedidos. |
-| `CU-RST-PDA` | Construido, sin contrato | — | Registrar un pedido a proveedor a mano: `PedidoNuevoView`, con el correo de `CO-074`. |
-| `CU-RST-LLE` | Construido, sin contrato | — | Registrar la llegada de un pedido a proveedor: «Pedidos por llegar», la llegada en dos tiempos y el cierre de una línea sin recibir como flujo alternativo (`views_pedidos.py`, `llegadas.py`). |
+| `CU-RST-PRC` | Construido, sin contrato | — | Consultar propuestas de restock: `PropuestaListaView` y `PropuestaDetalleView`, también las cerradas, con sus pedidos. La ficha de la pendiente se trabaja ahí mismo (B-05-011). La propuesta **armada a mano**, vacía, y su cierre vacía, sin código de operación todavía (B-05-012). |
+| `CU-RST-PDA` | Construido, sin contrato | — | Registrar un pedido a proveedor a mano: `PedidoNuevoView`, con el correo de `CO-074`. Renglones por código, ISBN o título con su número, que se agregan y se quitan; un producto que trae otro proveedor no se pide (B-05-018). |
+| `CU-RST-LLE` | Construido, sin ficha | `CO-232` (sin ficha) | **«Por llegar»** (B-05-017): la llegada de pre-ventas y de pedidos en una sola pantalla, por proveedor y fecha (`views_llegadas.py`, `recepcion.py`, `llegadas.py`), con `CO-013` para las pre-ventas y el faltante de `CU-ALT-TRA` A1; probado en `test_contratos_llegada.py`. El cierre de una línea sin recibir como flujo alternativo. La respuesta del proveedor —todo, con cambios por línea, no puede, fecha— **sólo desde la ficha del pedido** y desde Telegram; lo pendiente se cuenta sobre lo confirmado, y lo que llega cuenta como respuesta (B-05-015). La llegada se carga en su pantalla. **Caso de uso nuevo sin código** (B-05-013, B-19-019). |
 
 ### `06` Ventas Presenciales
 
@@ -422,7 +461,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | Caso de uso | Estado | Contratos | Observación |
 | --- | --- | --- | --- |
 | `CU-CFG-PAR` | Verificado | 3 / 3 | `ParametrosView`: **todas las secciones** — operación, Seguridad (B-12-004), Compra online (Logística, Comercial con los plazos de arrepentimiento y de garantía, Fidelización y pasarela), Proveedores (frecuencia de la casilla) y el modelo de lenguaje; el margen del cupo de pre-venta (B-07-042). **Todos sus contratos verificados**: `CO-130` con E1 y E2, `CO-207` y `CO-053` desde el enlace al margen (A1). Plan 00, A3. |
-| `CU-CFG-LLM` | Verificado | 3 / 3 | `DiagnosticoLLMView` y `core/llm.py`. **Todos sus contratos verificados.** El diagnóstico y la comprobación de disponibilidad quedan en el log sin la credencial (B-17-018). |
+| `CU-CFG-LLM` | Verificado | 3 / 3 | `DiagnosticoLLMView` y `core/llm.py`. **Todos sus contratos verificados.** El diagnóstico y la comprobación de disponibilidad quedan en el log sin la credencial (B-17-018). Además, **el modelo de respaldo** (B-17-020): `CO-228` y `CO-229`, sin ficha en el documento, probados en `test_contratos_modelo_de_respaldo.py`. |
 | `CU-CFG-EDC` | Verificado | 1 / 1 | **Todos sus contratos verificados.** `EditorialListaView`, pantalla propia: activas y dadas de baja, productos vinculados, filtro por estado. |
 | `CU-CFG-EDA` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Nace activa; la colisión enlaza la existente con su estado. Alta al vuelo con la misma auditoría. |
 | `CU-CFG-EDM` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Corrige y reactiva; no da de baja. |
@@ -462,15 +501,15 @@ la cuenta de 103.
 | --- | --- | --- | --- |
 | `CU-AVI-PEC` | Construido, sin contrato | — | `apps/avisos`, `PerfilView` y `ContrasenaView`. Sus datos, su contraseña con la regla de `CO-111`, sus avisos y Telegram. Sólo el Administrador, por la dirección real (B-19-003). |
 | `CU-AVI-CAM` | Construido, sin contrato | — | `CanalesView` y `canales.py`: por tipo, correo y Telegram, auditado; sin chat, Telegram no se puede marcar; «Todo por Telegram» (B-19-002). |
-| `CU-AVI-TGA` | Construido, sin contrato | — | El enlace de un solo uso que vence a los 15 minutos y `/start` en el bot, que da un número; se vincula al escribirlo en el perfil, con cinco intentos (B-19-005); un chat por cuenta; auditado (B-19-003). |
+| `CU-AVI-TGA` | Construido, sin contrato | — | El enlace de un solo uso que vence a los 15 minutos, con su código QR (B-19-018), y `/start` en el bot, que da un número; se vincula al escribirlo en el perfil, con cinco intentos (B-19-005); un chat por cuenta; auditado (B-19-003). |
 | `CU-AVI-TGB` | Construido, sin contrato | — | Desde el perfil o con `/salir`; borra el chat; auditado (B-19-003). |
-| `CU-AVI-COR` | Construido, sin contrato | — | `bot.py`: cada correo nuevo con sus botones; aprobar es `CO-017` y descartar `CO-018`, con motivos rápidos o escritos; firma por botón y autorización en cada acción (B-19-004). `/refresh` revisa la casilla en el momento y, como el botón de la cola, reinicia el reloj de la lectura automática (B-19-016). |
+| `CU-AVI-COR` | Construido, sin contrato | — | Un correo que falló trae «🔁 Reintentar» (`CO-019`, B-19-019). `bot.py`: cada correo nuevo con sus botones; aprobar es `CO-017` y descartar `CO-018`, con motivos rápidos o escritos; firma por botón y autorización en cada acción (B-19-004). `/refresh` revisa la casilla en el momento y, como el botón de la cola, reinicia el reloj de la lectura automática (B-19-016). |
 | `CU-AVI-BOR` | Construido, sin contrato | — | `bot._cargar` y `borradores.desde_telegram`: `/cargar` o foto con epígrafe; el modelo lee el texto con la validación de las novedades; la foto es la portada; precio de la tabla y datos de la serie; aviso de duplicado; auditado; nunca un producto (B-19-006). |
 | `CU-AVI-REB` | Construido, sin contrato | — | `bot.mostrar_borrador`, `_borradores` y `_rechazar`: vista previa con la portada y «Rechazar…» con motivos; el rechazo de `CU-ALT-REV` con «(desde Telegram)»; ningún botón confirma (B-19-008). |
 | `CU-AVI-RES` | Construido, sin contrato | — | `resumen.py`: a la hora de Parámetros, una vez por día con bloqueo de fila; siempre, aunque esté en cero; lo dispara el reloj por minuto (B-19-011). |
 | `CU-AVI-EST` | Construido, sin contrato | — | `salud.py`: `/estado` sólo lee; disco y respaldo avisados una vez por día y por problema; el respaldo se vigila donde está programado (B-19-013). |
 | `CU-AVI-INL` | Construido, sin contrato | — | `bot._inline`: sólo a vinculados activos; lo que muestra la tienda, sin el stock en el mensaje compartido (B-19-015). Falta `/setinline` en @BotFather. |
-| `CU-AVI-CON` | Construido, sin contrato | — | `consultas.py` y `asistente.elegir_consulta`: `/stock`, `/llega`, `/pendientes`, `/caja` o una pregunta libre; sólo leen; Administrador activo en cada consulta (B-19-007). |
+| `CU-AVI-CON` | Construido, sin contrato | — | Con la voz de Long-bot y charla en personaje cuando no es una consulta, sin datos ni acciones (B-19-017). `consultas.py` y `asistente.elegir_consulta`: `/stock`, `/llega`, `/pendientes`, `/caja` o una pregunta libre; sólo leen; Administrador activo en cada consulta (B-19-007). |
 
 ### Códigos retirados y a qué se repartieron
 
@@ -490,6 +529,13 @@ no tiene fila.
 ---
 
 ## Las siete puertas
+
+Medición del **2026-11-07**, al cerrar las partes A y B del plan de últimos cambios: **3788 pruebas
+pasan**, 0 fallos; cobertura **97 %**; `ruff` y `black` sin hallazgos ni cambios; `bandit` sin
+hallazgos; `pip-audit` sin vulnerabilidades; `check --deploy` sin advertencias. `avisos.0004` y
+`core.0050` aplicaron sobre la base de desarrollo y `makemigrations --check` no detecta cambios.
+«Por llegar», su revisión y el pedido a mano con la lista abierta se revisaron con capturas de Chrome
+sin interfaz. La medición anterior queda abajo.
 
 Medición del **2026-10-26**, al cerrar el plan 00 del circuito con los proveedores, sobre el árbol
 de trabajo (39f1d8b más los cambios de los planes 00 del 23 y el 26, sin commitear), con

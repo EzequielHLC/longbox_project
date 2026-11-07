@@ -73,6 +73,51 @@ def _configuracion():
     return ConfiguracionSistema.obtener()
 
 
+@dataclass
+class Perfil:
+    """Un modelo al que se le puede hablar: el activo o el de respaldo (plan 00, A).
+
+    Tiene los mismos nombres que `ConfiguracionSistema` para que el resto de este
+    archivo reciba uno u otro sin distinguirlos.
+    """
+
+    llm_modo: str
+    llm_url: str
+    llm_modelo: str
+    llm_api_key: str
+
+    @property
+    def usa_modelo_remoto(self):
+        from apps.core.models import ConfiguracionSistema
+
+        return self.llm_modo == ConfiguracionSistema.REMOTO
+
+
+def perfil_de_respaldo(configuracion=None):
+    configuracion = configuracion or _configuracion()
+    return Perfil(
+        llm_modo=configuracion.llm_respaldo_modo,
+        llm_url=configuracion.llm_respaldo_url,
+        llm_modelo=configuracion.llm_respaldo_modelo,
+        llm_api_key=configuracion.llm_respaldo_api_key,
+    )
+
+
+def _anotar(respuesta):
+    """Cada pedido cuenta para el modelo de respaldo: la conexión o el rechazo
+    suman una falla; cualquier otra respuesta, aunque sea ilegible, corta la racha."""
+    from apps.core import modelo_de_respaldo
+
+    try:
+        if respuesta.error in (SIN_SERVICIO, RECHAZADO):
+            modelo_de_respaldo.anotar_falla()
+        else:
+            modelo_de_respaldo.anotar_acierto()
+    except Exception:  # noqa: BLE001 - llevar la cuenta nunca rompe una extracción
+        logger.exception("No se pudo anotar el resultado del modelo para el respaldo.")
+    return respuesta
+
+
 def _credencial(configuracion):
     """La cabecera de autorización, si hay clave que mandar.
 
@@ -130,10 +175,12 @@ def pedir_json(sistema, usuario, *, formato=None):
         # pipeline pueda mostrarle a una persona — y **se distinguen los dos**:
         # un rechazo del proveedor no se arregla esperando.
         rechazado = getattr(respuesta, "motivo", "") == integraciones.RECHAZADO
-        return RespuestaDelModelo(
-            error=RECHAZADO if rechazado else SIN_SERVICIO,
-            crudo=getattr(respuesta, "detalle", ""),
-            milisegundos=tardanza,
+        return _anotar(
+            RespuestaDelModelo(
+                error=RECHAZADO if rechazado else SIN_SERVICIO,
+                crudo=getattr(respuesta, "detalle", ""),
+                milisegundos=tardanza,
+            )
         )
 
     # Algunos proveedores devuelven el fallo **con código 200 y el error en el
@@ -142,24 +189,30 @@ def pedir_json(sistema, usuario, *, formato=None):
     ajeno = _error_declarado(respuesta.datos)
     if ajeno:
         logger.warning("El proveedor devolvió un error en el cuerpo: %s", ajeno)
-        return RespuestaDelModelo(error=RECHAZADO, crudo=ajeno, milisegundos=tardanza)
+        return _anotar(RespuestaDelModelo(error=RECHAZADO, crudo=ajeno, milisegundos=tardanza))
 
     texto = _contenido(respuesta.datos)
     if not texto:
         logger.warning("El modelo respondió sin contenido: %s", respuesta.datos)
-        return RespuestaDelModelo(
-            error=RESPUESTA_ILEGIBLE, crudo=json.dumps(respuesta.datos), milisegundos=tardanza
+        return _anotar(
+            RespuestaDelModelo(
+                error=RESPUESTA_ILEGIBLE, crudo=json.dumps(respuesta.datos), milisegundos=tardanza
+            )
         )
 
     try:
-        return RespuestaDelModelo(datos=json.loads(texto), crudo=texto, milisegundos=tardanza)
+        return _anotar(
+            RespuestaDelModelo(datos=json.loads(texto), crudo=texto, milisegundos=tardanza)
+        )
     except ValueError:
         # Pasa cuando el modelo envuelve el JSON en prosa o en un bloque de
         # código. No se intenta rescatarlo con expresiones regulares: eso
         # esconde un prompt que hay que arreglar detrás de un parche que
         # funciona a veces.
         logger.warning("El modelo no devolvió JSON legible: %.200s", texto)
-        return RespuestaDelModelo(error=RESPUESTA_ILEGIBLE, crudo=texto, milisegundos=tardanza)
+        return _anotar(
+            RespuestaDelModelo(error=RESPUESTA_ILEGIBLE, crudo=texto, milisegundos=tardanza)
+        )
 
 
 def _error_declarado(respuesta):
@@ -244,15 +297,18 @@ class EstadoDelServicio:
         return self.modelo_configurado in self.modelos
 
 
-def estado():
+def estado(configuracion=None):
     """Pregunta si el servicio está en línea y qué modelos tiene cargados.
+
+    Sin argumento, el modelo activo; con un `Perfil`, ese (el de respaldo, antes de
+    pasar a él: `CO-229`).
 
     Es un `GET` barato al catálogo de modelos, no una generación: contesta en
     milisegundos y no gasta nada. Sirve para separar los dos motivos por los que
     una extracción puede fallar —el servicio no está, o el servicio está y la
     respuesta no se pudo interpretar— que se arreglan en lugares distintos.
     """
-    configuracion = _configuracion()
+    configuracion = configuracion or _configuracion()
     url = _url_de_modelos(configuracion.llm_url)
     if not url:
         return EstadoDelServicio(

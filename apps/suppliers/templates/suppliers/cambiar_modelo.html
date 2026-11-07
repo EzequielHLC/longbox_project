@@ -1,0 +1,63 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Pasar al modelo de respaldo (plan 00 de últimos cambios, A; CO-229).
+
+Se llega desde el aviso de CO-228, cuando el modelo activo falló seguido, o desde
+el diagnóstico. El sistema no cambia solo: esta pantalla muestra los dos modelos
+y el botón prueba el respaldo antes de intercambiarlos. Las claves no se muestran.
+{% endcomment %}
+
+{% block titulo %}Pasar al modelo de respaldo · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+{% url 'suppliers:diagnostico_llm' as volver %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=volver texto="Diagnóstico del modelo" atras=1 %}</span>
+    <h1>Pasar al modelo de respaldo</h1>
+    <p>Los dos se intercambian: el que hoy está activo queda como respaldo, para volver por el mismo camino.</p>
+  </div>
+</header>
+
+{% if configuracion.llm_cambio_propuesto_en %}
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span><span class="mensaje__prefijo">Atención:</span>El modelo activo falló {{ configuracion.llm_fallas_seguidas }} veces seguidas. El sistema propuso el cambio el {{ configuracion.llm_cambio_propuesto_en|date:"d/m/Y H:i" }}.</span>
+  </p>
+{% endif %}
+
+<div class="rejilla-2">
+  <section class="panel pila-3" aria-labelledby="titulo-activo">
+    <h2 id="titulo-activo">Activo</h2>
+    <dl class="datos-de-ficha">
+      <dt>Modo</dt><dd>{{ configuracion.get_llm_modo_display }}</dd>
+      <dt>Dirección</dt><dd class="datos">{{ configuracion.llm_url }}</dd>
+      <dt>Modelo</dt><dd class="datos">{{ configuracion.llm_modelo|default:"el que esté cargado en el servidor" }}</dd>
+      <dt>Clave</dt><dd class="datos">{{ configuracion.clave_enmascarada|default:"sin clave" }}</dd>
+    </dl>
+  </section>
+  <section class="panel pila-3" aria-labelledby="titulo-respaldo">
+    <h2 id="titulo-respaldo">Respaldo</h2>
+    {% if configuracion.tiene_respaldo %}
+      <dl class="datos-de-ficha">
+        <dt>Modo</dt><dd>{{ configuracion.get_llm_respaldo_modo_display }}</dd>
+        <dt>Dirección</dt><dd class="datos">{{ configuracion.llm_respaldo_url }}</dd>
+        <dt>Modelo</dt><dd class="datos">{{ configuracion.llm_respaldo_modelo|default:"el que esté cargado en el servidor" }}</dd>
+        <dt>Clave</dt><dd class="datos">{{ configuracion.clave_de_respaldo_enmascarada|default:"sin clave" }}</dd>
+      </dl>
+    {% else %}
+      <p class="secundario">No hay un modelo de respaldo. Cargalo en <a href="{% url 'catalog:parametros' %}#titulo-respaldo">Parámetros globales</a>.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if configuracion.tiene_respaldo %}
+  <form method="post" class="acciones">
+    {% csrf_token %}
+    <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="reactivar" %}<span>Probar el respaldo y cambiar</span></button>
+    {% include "_boton_texto.html" with url=volver texto="Cancelar" %}
+  </form>
+  <p class="texto-chico secundario">Si el respaldo tampoco responde, no se cambia nada.</p>
+{% endif %}
+{% endblock %}

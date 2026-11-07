@@ -9,13 +9,14 @@ from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 
 from apps.accounts.models import Usuario
-from apps.catalog.models import Producto, ProductoEditorial
+from apps.catalog import busqueda
+from apps.catalog.models import Producto
 from apps.core.mixins import RolRequeridoMixin
 from apps.restock import servicios
 from apps.restock.models import LineaPropuestaRestock, PropuestaRestock
@@ -58,6 +59,36 @@ class RestockMixin(RolRequeridoMixin):
     roles_permitidos = (Usuario.ADMINISTRADOR,)
 
 
+def _volver(request, ancla=""):
+    """Adonde vuelve un formulario de la propuesta: a la ficha si vino de ahí, o a
+    «Restock» (B-05-011). Sólo a una dirección de este sitio."""
+    destino = request.POST.get("volver", "")
+    if not url_has_allowed_host_and_scheme(
+        destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        destino = reverse("restock:propuesta")
+    return redirect(destino + ancla)
+
+
+def _contexto_de(propuesta, grupos):
+    """Lo que muestran «Restock» y la ficha de una propuesta pendiente."""
+    return {
+        "propuesta": propuesta,
+        "grupos": grupos,
+        "opciones_para_agregar": (
+            busqueda.opciones_para_pedir() if propuesta and propuesta.estado == "pendiente" else []
+        ),
+        # Plan 00 de interfaz, segunda parte, 14.1.
+        "resumen": {
+            "productos": sum(len(g.lineas) for g in grupos),
+            "unidades": sum(g.unidades for g in grupos),
+            "pendientes": sum(1 for g in grupos if g.pendiente),
+            "suscriptores": sum(g.suscriptores for g in grupos),
+            "descartados": sum(1 for g in grupos if g.estado == "descartado"),
+        },
+    }
+
+
 def _pendiente_o_volver(request):
     propuesta = servicios.pendiente()
     if propuesta is None:
@@ -75,15 +106,8 @@ class PropuestaView(RestockMixin, View):
             request,
             "restock/propuesta.html",
             {
-                "propuesta": propuesta,
-                "grupos": grupos,
-                # Plan 00 de interfaz, segunda parte, 14.1.
-                "resumen": {
-                    "productos": sum(len(g.lineas) for g in grupos),
-                    "unidades": sum(g.unidades for g in grupos),
-                    "pendientes": sum(1 for g in grupos if g.pendiente),
-                    "suscriptores": sum(g.suscriptores for g in grupos),
-                },
+                **_contexto_de(propuesta, grupos),
+                "volver": request.path,
                 "ultima": PropuestaRestock.objects.filter(estado=PropuestaRestock.CERRADA).first(),
             },
         )
@@ -105,7 +129,11 @@ class PropuestaListaView(RestockMixin, View):
 
 
 class PropuestaDetalleView(RestockMixin, View):
-    """La ficha de una propuesta: sus líneas por proveedor y los pedidos que salieron."""
+    """La ficha de una propuesta: sus líneas por proveedor y los pedidos que salieron.
+
+    Si está pendiente, se trabaja desde acá también (B-05-011): las mismas
+    operaciones de `CU-RST-APR` que en «Restock», y cada formulario vuelve a la ficha.
+    """
 
     def get(self, request, pk):
         propuesta = get_object_or_404(PropuestaRestock, pk=pk)
@@ -114,18 +142,45 @@ class PropuestaDetalleView(RestockMixin, View):
             request,
             "restock/propuesta_detalle.html",
             {
-                "propuesta": propuesta,
-                "grupos": grupos,
-                "resumen": {
-                    "productos": sum(len(g.lineas) for g in grupos),
-                    "unidades": sum(g.unidades for g in grupos),
-                    "descartados": sum(1 for g in grupos if g.estado == "descartado"),
-                },
+                **_contexto_de(propuesta, grupos),
+                "volver": request.path,
                 "pedidos": propuesta.pedidos.select_related("proveedor").prefetch_related(
-                    "lineas__producto"
+                    "lineas__producto__productoeditorial",
+                    "lineas__producto__productonoeditorial",
                 ),
             },
         )
+
+
+class AManoView(RestockMixin, View):
+    """B-05-012: una propuesta vacía, para cargarla producto por producto."""
+
+    def post(self, request):
+        try:
+            servicios.armar_a_mano(request.user)
+        except servicios.OperacionRechazada as rechazo:
+            messages.error(request, str(rechazo))
+        else:
+            messages.success(
+                request, "Propuesta armada: agregue los productos con su código o su título."
+            )
+        return redirect("restock:propuesta")
+
+
+class CerrarVaciaView(RestockMixin, View):
+    """B-05-012: cerrar la propuesta pendiente que quedó sin productos."""
+
+    def post(self, request):
+        propuesta = _pendiente_o_volver(request)
+        if propuesta is None:
+            return redirect("restock:propuesta")
+        try:
+            servicios.cerrar_vacia(propuesta, request.user)
+        except servicios.OperacionRechazada as rechazo:
+            messages.error(request, str(rechazo))
+        else:
+            messages.success(request, "Se cerró la propuesta vacía.")
+        return redirect("restock:propuesta")
 
 
 class GenerarView(RestockMixin, View):
@@ -167,7 +222,7 @@ class LineaView(RestockMixin, View):
                 )
         except servicios.OperacionRechazada as rechazo:
             messages.error(request, str(rechazo))
-        return redirect("restock:propuesta")
+        return _volver(request)
 
 
 class CantidadesView(RestockMixin, View):
@@ -191,36 +246,27 @@ class CantidadesView(RestockMixin, View):
                 messages.success(request, f"Se guardaron {cambiadas} cantidad(es).")
             else:
                 messages.info(request, "No cambió ninguna cantidad.")
-        return redirect(reverse("restock:propuesta") + f"#grupo-{clave}")
+        return _volver(request, f"#grupo-{clave}")
 
 
 class AgregarView(RestockMixin, View):
-    """`CO-071`: por código, ISBN o código de barras exactos."""
+    """`CO-071`: por código, ISBN, código de barras o título con su número (B-05-016)."""
 
     def post(self, request):
         propuesta = _pendiente_o_volver(request)
         if propuesta is None:
             return redirect("restock:propuesta")
-        texto = request.POST.get("producto", "").strip()
-        producto = (
-            ProductoEditorial.objects.filter(
-                Q(codigo__iexact=texto) | Q(isbn=texto) | Q(codigo_barras=texto)
-            )
-            .exclude(estado__in=Producto.ESTADOS_TERMINALES)
-            .first()
-            if texto
-            else None
-        )
+        producto, problema = busqueda.buscar_para_pedir(request.POST.get("producto", ""))
         if producto is None:
-            messages.error(request, f"No hay un producto editorial con el código «{texto}».")
-            return redirect("restock:propuesta")
+            messages.error(request, problema)
+            return _volver(request)
         try:
             servicios.agregar_producto(propuesta, producto, _entero(request.POST.get("cantidad")))
         except servicios.OperacionRechazada as rechazo:
             messages.error(request, str(rechazo))
-            return redirect("restock:propuesta")
+            return _volver(request)
         messages.success(request, f"Se agregó «{producto}».")
-        return redirect("restock:propuesta")
+        return _volver(request)
 
 
 class ProveedorView(RestockMixin, View):

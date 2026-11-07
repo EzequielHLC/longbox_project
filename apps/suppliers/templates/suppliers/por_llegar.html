@@ -1,0 +1,193 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+«Por llegar» (B-05-017, CO-232): todo lo que se espera, por proveedor y fecha.
+Reemplaza a «Pre-ventas por llegar» y a «Pedidos por llegar»: cada línea trae el
+pedido, lo pedido, lo confirmado y lo recibido, y si es pre-venta, sus reservas y
+su demora. Cada grupo es una caja que llega: se cargan las unidades y la revisión
+dice qué va a pasar antes de confirmar. Arriba, las cifras y el calendario del mes.
+{% endcomment %}
+
+{% block titulo %}Por llegar · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Por llegar</h1>
+    <p>Las pre-ventas y los pedidos a proveedores, por proveedor y fecha.</p>
+  </div>
+  <span class="fila-2">
+    <a href="{% url 'suppliers:pedido_lista' %}" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="proveedores" %}<span>Pedidos a proveedores</span></a>
+    <a href="{% url 'suppliers:pedido_nuevo' %}" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Pedido a mano</span></a>
+  </span>
+</header>
+
+{% if sin_enviar %}
+  <p class="mensaje">
+    {% include "_iconos.html" with icono="atencion" %}
+    <span><span class="mensaje__prefijo">Atención:</span>{{ sin_enviar }} pedido{{ sin_enviar|pluralize }} sin enviar: no se espera{{ sin_enviar|pluralize:",n" }} hasta que salga{{ sin_enviar|pluralize:",n" }}. <a href="{% url 'suppliers:pedido_lista' %}">Ver los pedidos</a></span>
+  </p>
+{% endif %}
+
+{% if grupos %}
+  <div class="cifras">
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="libro" %}Líneas esperadas</span><span class="cifra__valor">{{ resumen.lineas }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="inventario" %}Unidades en camino</span><span class="cifra__valor">{{ resumen.unidades }}</span></div>
+    <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="bolsa" %}Unidades reservadas</span><span class="cifra__valor">{{ resumen.reservadas }}</span></div>
+    <div class="cifra{% if resumen.atrasados %} cifra--atencion{% endif %}">{% if resumen.atrasados %}<span class="cifra__rotulo">Requiere atención</span>{% endif %}<span class="cifra__rotulo">{% include "_iconos.html" with icono="atencion" %}Atrasados</span><span class="cifra__valor">{{ resumen.atrasados }}</span></div>
+  </div>
+
+  <section class="seccion" aria-labelledby="titulo-calendario" data-calendario>
+    {% include "pedidos/_calendario_preventas.html" %}
+  </section>
+{% endif %}
+
+{% for grupo in grupos %}
+  <details class="grupo-plegable{% if grupo.vencido %} grupo-plegable--atencion{% endif %}" id="grupo-{{ grupo.clave }}"{% if grupo.cercano %} open{% endif %}>
+    <summary class="grupo-plegable__cabeza">
+      <span class="grupo-plegable__nombre"><span class="datos">{{ grupo.llegada|date:"d/m/Y"|default:"Sin fecha" }}</span> · {{ grupo.nombre }}</span>
+      <span class="grupo-plegable__cuenta">{{ grupo.filas|length }} línea{{ grupo.filas|length|pluralize }}{% if grupo.reservadas %} · {{ grupo.reservadas }} reservada{{ grupo.reservadas|pluralize }}{% endif %}</span>
+      <span class="marca-estado{% if grupo.vencido %} marca-estado--error{% elif grupo.es_hoy %} marca-estado--dato{% else %} marca-estado--apagado{% endif %}">{{ grupo.cuando }}</span>
+    </summary>
+    <form method="post" action="{% url 'suppliers:llegada_revisar' %}" class="grupo-plegable__cuerpo pila-3">
+      {% csrf_token %}
+      <input type="hidden" name="grupo" value="{{ grupo.clave }}">
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Pedido</th>
+              <th class="numero">Pedidas</th>
+              <th class="numero">Confirmadas</th>
+              <th class="numero">Recibidas</th>
+              <th class="numero">Reservadas</th>
+              <th class="numero">Llegan ahora</th>
+              <th class="derecha"><span class="sr-only">Acción</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in grupo.filas %}
+              {% with producto=fila.producto.especifico linea=fila.linea %}
+              <tr>
+                <td class="celda-principal">
+                  <span class="fila-2">
+                    <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                    <span>
+                      <a href="{% url 'catalog:producto_detalle' producto.pk %}">{{ producto }}</a>
+                      <br><span class="texto-chico datos secundario">{{ producto.codigo }}</span>
+                      {% if fila.en_preventa %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
+                      {% if producto.demorado %}<span class="marca-estado marca-estado--atencion">Demorado</span>{% endif %}
+                      {% if fila.sin_pedido %}<span class="marca-estado marca-estado--apagado">Sin pedido registrado</span>{% endif %}
+                    </span>
+                  </span>
+                </td>
+                <td class="sin-cortar">{% if linea %}<a href="{% url 'suppliers:pedido_detalle' linea.pedido_id %}" class="datos">#{{ linea.pedido_id }}</a>{% else %}<span class="secundario">—</span>{% endif %}</td>
+                <td class="numero">{% if linea %}{{ linea.cantidad_pedida }}{% else %}<span class="secundario">—</span>{% endif %}</td>
+                <td class="numero">{% if linea.cantidad_confirmada %}{{ linea.cantidad_confirmada }}{% else %}<span class="secundario">—</span>{% endif %}</td>
+                <td class="numero">{% if linea %}{{ linea.cantidad_recibida }}{% else %}<span class="secundario">—</span>{% endif %}</td>
+                <td class="numero">{% if fila.en_preventa %}{{ fila.reservadas }}<span class="texto-chico secundario"> · {{ fila.pedidos_de_clientes }} ped.</span>{% else %}<span class="secundario">—</span>{% endif %}</td>
+                <td class="numero">
+                  <input type="hidden" name="fila" value="{{ fila.campo }}">
+                  <label class="sr-only" for="llegaron-{{ fila.campo }}">Unidades de {{ producto }} que llegaron</label>
+                  <input type="number" id="llegaron-{{ fila.campo }}" name="llegaron_{{ fila.campo }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra" data-esperadas="{{ fila.sugeridas }}">
+                </td>
+                <td class="derecha">
+                  {% if linea %}<a href="{% url 'suppliers:pedido_cerrar_linea' linea.pk %}" class="boton-icono boton-icono--critico" aria-label="{{ producto }} no va a llegar" title="No va a llegar">{% include "_iconos.html" with icono="baja" %}</a>{% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="fila-5">
+        <button type="submit" class="boton-seccion">Revisar la llegada</button>
+        <button type="button" class="boton-texto" data-completar>Llegó todo lo esperado</button>
+        {% if grupo.preventas %}
+          {# B-01-022: la demora de las pre-ventas del grupo, con un informe y una confirmación. #}
+          <a href="{% url 'pedidos:demora_lote' %}?{% for producto in grupo.preventas %}producto={{ producto.pk }}{% if not forloop.last %}&amp;{% endif %}{% endfor %}" class="boton-texto">{% include "_iconos.html" with icono="reloj" %}<span>Demorar las pre-ventas</span></a>
+        {% endif %}
+        <span class="texto-chico secundario">Vacío o 0: no llegó. Una pre-venta con la fecha cumplida se demora.</span>
+      </div>
+    </form>
+  </details>
+{% empty %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="inventario" %}
+    <p>No se espera nada.</p>
+  </div>
+{% endfor %}
+
+<script>
+  (function () {
+    const calendario = document.querySelector("[data-calendario]");
+
+    // Abrir el grupo de una llegada, resaltarlo y dejar el foco en su primer campo.
+    function abrir(id) {
+      const grupo = document.getElementById(id);
+      if (!grupo) return;
+      grupo.open = true;
+      document.querySelectorAll(".grupo-plegable--elegido").forEach((g) => g.classList.remove("grupo-plegable--elegido"));
+      void grupo.offsetWidth;  // reinicia el destello si se elige el mismo grupo otra vez
+      grupo.classList.add("grupo-plegable--elegido");
+      grupo.scrollIntoView({ block: "start" });
+      grupo.querySelector("input[type=number]")?.focus({ preventScroll: true });
+    }
+
+    // B-00-033: la ola diagonal. Cada celda sabe su semana y su día por su lugar.
+    function escalonar() {
+      if (!calendario) return;
+      calendario.querySelectorAll(".calendario tbody tr").forEach((semana, s) => {
+        semana.style.setProperty("--s", s);
+        semana.querySelectorAll("td").forEach((dia, d) => dia.style.setProperty("--d", d));
+      });
+      calendario.querySelectorAll(".calendario-lista__dia").forEach((dia, d) => dia.style.setProperty("--d", d));
+    }
+    escalonar();
+
+    if (calendario) {
+      calendario.addEventListener("click", async function (evento) {
+        const llegada = evento.target.closest("[data-llegada]");
+        if (llegada) {
+          evento.preventDefault();
+          abrir(llegada.dataset.llegada);
+          history.replaceState(null, "", "#" + llegada.dataset.llegada);
+          return;
+        }
+        // Cambiar de mes sin recargar: se pide sólo el calendario.
+        const mes = evento.target.closest("[data-mes]");
+        if (!mes) return;
+        evento.preventDefault();
+        evento.stopPropagation();
+        const destino = new URL(mes.href, location.href);
+        const parcial = new URL(destino);
+        parcial.searchParams.set("parcial", "calendario");
+        try {
+          const respuesta = await fetch(parcial, { headers: { "X-Requested-With": "fetch" } });
+          if (!respuesta.ok) throw new Error(respuesta.status);
+          calendario.innerHTML = await respuesta.text();
+          escalonar();
+          history.replaceState(null, "", destino);
+          const hoy = mes.hasAttribute("data-hoy") && calendario.querySelector("td[aria-current=date]");
+          if (hoy) hoy.focus();
+          else calendario.querySelector(`[data-mes][aria-label="${mes.getAttribute("aria-label")}"]`)?.focus();
+        } catch (error) {
+          location.href = destino;
+        }
+      });
+    }
+
+    // El caso más común: llegó lo que se esperaba.
+    document.addEventListener("click", function (evento) {
+      const boton = evento.target.closest("[data-completar]");
+      if (!boton) return;
+      for (const campo of boton.closest("form").querySelectorAll("[data-esperadas]")) {
+        campo.value = campo.dataset.esperadas;
+      }
+    });
+
+    if (location.hash.startsWith("#grupo-")) abrir(location.hash.slice(1));
+  })();
+</script>
+{% endblock %}

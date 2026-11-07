@@ -649,3 +649,38 @@ no del color elegido. Y no había forma de saber qué partes de la tienda pintab
 **Qué habría que cambiar.**
 `CU-CFG-VIS` paso 2: agregar el mapa de colores a la sección Apariencia. `CO-131`: los siete roles
 en la firma (`colores` pasa a incluir el mapa). `CO-208`: presentarlos.
+
+---
+
+### B-17-020 · El sistema propone pasar al modelo de respaldo cuando el activo falla seguido
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-CFG-LLM`, `CU-CFG-PAR`, `CO-130`, `CO-228`, `CO-229`, `ConfiguracionSistema`
+**Estado:** Abierta — plan [00 de últimos cambios](../docs/planes/00-ultimos-cambios-antes-del-cierre.md), parte A, aprobado por el responsable el 2026-11-07 con sus recomendaciones
+
+**Qué apareció.**
+El responsable pidió un «cambio automático de modelo de IA dada una falla de conexión constante (como
+solicitud, no como cambio automático)». Hasta ahora, cuando el modelo no respondía, los correos
+quedaban en «Falló el procesamiento» y pasar a otro modelo exigía volver a escribir dirección,
+modelo y clave en Parámetros.
+
+**Qué dice la especificación.**
+`Nada`. `CU-CFG-LLM` diagnostica un solo modelo; `CU-CFG-PAR` configura uno solo.
+
+**Qué se hizo.**
+- **Un modelo de respaldo en Parámetros** (modo, dirección, modelo y clave), con las mismas reglas
+  que el activo. Vacío, no hay respaldo. La clave se escribe y no se lee, y no entra en la auditoría.
+- **`CO-228` proponerCambioDeModelo** (el sistema): **tres fallas seguidas** por conexión o rechazo
+  del proveedor (sin servicio, credencial, cuota, límite) avisan a los Administradores por su canal
+  (tipo nuevo «Modelo de lenguaje», correo y Telegram), con el enlace para cambiar. Una respuesta
+  ilegible no cuenta: el servicio contesta. Se propone **una vez por racha**; un acierto la corta.
+  Sin respaldo, el aviso lo dice y manda al diagnóstico. **No cambia nada del modelo.**
+- **`CO-229` confirmarCambioDeModelo** (el Administrador, en «Pasar al modelo de respaldo»): prueba
+  primero que el respaldo conteste y ofrezca el modelo nombrado; si no, no cambia nada y lo dice. Si
+  contesta, **intercambia** el activo y el respaldo, pone la racha en cero y lo audita.
+- Desde Telegram, el aviso lleva el enlace a esa pantalla: la confirmación es siempre la de la web.
+
+**Qué habría que cambiar.**
+`CU-CFG-LLM`: un flujo alternativo «pasar al respaldo», con `CO-229`. Un proceso automático (o una
+nota en `CU-ALT-NOV` E2) para la propuesta, con `CO-228`. `CU-CFG-PAR` y `CO-130`: la sección del
+respaldo. En el modelo de dominio, `ConfiguracionSistema` gana el respaldo y la racha de fallas; en
+`RegistroAuditoria`, las dos acciones nuevas.

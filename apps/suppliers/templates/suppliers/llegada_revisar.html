@@ -1,0 +1,97 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+El segundo tiempo de «Por llegar» (B-05-017, CO-232): lo que va a pasar con cada
+producto antes de registrarlo. Junta las dos revisiones de antes: la de las
+pre-ventas (reservas cubiertas, a la venta, se demora) y la de los pedidos (lo que
+sigue faltando, lo que llega de más). Volver no deja nada.
+{% endcomment %}
+
+{% block titulo %}Revisar la llegada · Longbox{% endblock %}
+{% block seccion %}Proveedores{% endblock %}
+
+{% block contenido %}
+{% url 'suppliers:por_llegar' as por_llegar %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <span class="miga">{% include "_boton_texto.html" with url=por_llegar texto="Por llegar" atras=1 %}</span>
+    <h1>Revisar la llegada</h1>
+    <p>Nada se registra hasta confirmar.</p>
+  </div>
+</header>
+
+<div class="panel pila-4">
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="numero">Llegan</th>
+          <th class="numero">Reservadas cubiertas</th>
+          <th class="numero">A la venta</th>
+          <th class="numero">Siguen faltando</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for previa in previas %}
+          <tr>
+            <td class="celda-principal">
+              <span class="fila-2 fila-2--fija">
+                <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if previa.producto.portada %}<img src="{{ previa.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                <span>{{ previa.producto.especifico }}</span>
+              </span>
+            </td>
+            <td class="numero">{{ previa.unidades }}</td>
+            <td class="numero">{% if previa.en_preventa %}{{ previa.cubiertas }} de {{ previa.reservas }}{% else %}<span class="secundario">—</span>{% endif %}</td>
+            <td class="numero">{{ previa.a_la_venta }}</td>
+            <td class="numero">{{ previa.quedan }}</td>
+            <td>
+              {% if previa.en_preventa %}
+                {% if previa.unidades and not previa.se_demora and previa.cubiertas == previa.reservas %}
+                  <span class="marca-estado marca-estado--ok">Pasa a la venta</span>
+                  <span class="texto-chico secundario">· {% if previa.reservas %}aparta las {{ previa.reservas }} unidad{{ previa.reservas|pluralize:"es" }} reservada{{ previa.reservas|pluralize }}{% else %}sin reservas{% endif %}</span>
+                {% elif previa.unidades %}
+                  <span class="marca-estado marca-estado--atencion">Ingreso parcial</span>
+                  <span class="texto-chico secundario">· sigue en pre-venta{% if previa.se_demora %}, las reservas sin cubrir se demoran{% endif %}</span>
+                {% elif previa.se_demora %}
+                  <span class="marca-estado marca-estado--atencion">Se demora</span>
+                  <span class="texto-chico secundario">· su fecha ya pasó; se avisa a los clientes</span>
+                {% else %}
+                  <span class="marca-estado marca-estado--apagado">Sin cambios</span>
+                  <span class="texto-chico secundario">· sigue esperando</span>
+                {% endif %}
+              {% elif previa.unidades %}
+                <span class="marca-estado marca-estado--ok">Suma al stock</span>
+                <span class="texto-chico secundario">· se avisa a quien pidió el aviso de reposición</span>
+              {% else %}
+                <span class="marca-estado marca-estado--apagado">Sin cambios</span>
+                <span class="texto-chico secundario">· sigue esperando</span>
+              {% endif %}
+              {% if previa.unidades and previa.quedan %}
+                <br><span class="marca-estado marca-estado--atencion">Llegada parcial</span>
+                <span class="texto-chico secundario">· faltan {{ previa.quedan }}, la línea sigue abierta</span>
+              {% endif %}
+              {% if previa.de_mas %}
+                <br><span class="marca-estado marca-estado--atencion">Llegan de más</span>
+                <span class="texto-chico secundario">· {{ previa.de_mas }} sobre lo esperado, queda en la auditoría</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="{% url 'suppliers:llegada_revisar' %}" class="fila-5">
+    {% csrf_token %}
+    <input type="hidden" name="confirmar" value="1">
+    <input type="hidden" name="grupo" value="{{ grupo }}">
+    {% for campo in filas %}<input type="hidden" name="fila" value="{{ campo }}">{% endfor %}
+    {% for campo, valor in valores.items %}<input type="hidden" name="llegaron_{{ campo }}" value="{{ valor }}">{% endfor %}
+    {# Lo recibido que muestra esta revisión: si alguien se adelanta, no se suma dos veces. #}
+    {% for previa in previas %}{% for linea, recibidas in previa.filas %}{% if linea %}<input type="hidden" name="vista_l{{ linea.pk }}" value="{{ linea.cantidad_recibida }}">{% endif %}{% endfor %}{% endfor %}
+    <button type="submit" class="boton-primario">Confirmar la llegada</button>
+    {% include "_boton_texto.html" with url=por_llegar texto="Cancelar" %}
+  </form>
+</div>
+{% endblock %}

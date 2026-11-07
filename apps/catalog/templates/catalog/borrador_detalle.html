@@ -70,6 +70,19 @@ La confianza se dibuja **junto al campo que califica** y no en una lista aparte.
     </div>
   {% endif %}
 
+  {% if retirada and not duplicado %}
+    {# B-01-026: el mismo tomo, cancelado por la editorial, que vuelve a anunciarse. #}
+    <div class="panel" role="note">
+      <h2 class="fila-2">{% include "_iconos.html" with icono="info" %}<span>Este tomo vuelve a anunciarse</span></h2>
+      <p>
+        <a href="{% url 'catalog:producto_detalle' retirada.pk %}">{{ retirada }}</a>
+        (<span class="datos">{{ retirada.codigo }}</span>) fue cancelado por la editorial. Al confirmar,
+        este borrador se carga como una edición nueva, con código propio y enlazada a la cancelada,
+        que queda en el historial. Las reservas de la cancelada ya se reembolsaron y no pasan a la nueva.
+      </p>
+    </div>
+  {% endif %}
+
   {% comment %}
   Los reparos después: es lo que el sistema le descartó al modelo, y conviene
   leerlo antes de mirar los campos, porque explica por qué alguno está vacío.

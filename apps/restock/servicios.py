@@ -14,7 +14,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -25,7 +25,7 @@ from apps.core.segundo_plano import despues_del_commit
 from apps.pedidos import avisos
 from apps.restock.models import LineaPropuestaRestock, PropuestaRestock, SuscripcionReposicion
 from apps.suppliers import pedidos as pedidos_a_proveedor
-from apps.suppliers.models import Proveedor
+from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor, Proveedor
 
 logger = logging.getLogger(__name__)
 
@@ -261,13 +261,21 @@ def proveedor_de(producto, habituales=None):
 def elegibles(configuracion=None):
     """Editoriales Activos o Agotados con menos unidades que el margen (B-05-003).
 
-    Con margen cero entra lo que tiene stock cero.
+    Con margen cero entra lo que tiene stock cero. También una **Pre-venta sin nada
+    en camino** (B-05-014): si su pedido no salió o se cerró sin recibir, nadie la
+    está trayendo, y sin esto no había desde dónde volver a pedirla.
     """
     configuracion = configuracion or ConfiguracionSistema.obtener()
     tope = max(configuracion.margen_stock_restock, 1)
+    en_camino = LineaPedidoProveedor.objects.filter(
+        producto_id=OuterRef("pk"),
+        estado__in=LineaPedidoProveedor.ABIERTAS,
+        pedido__estado=PedidoProveedor.ABIERTO,
+    )
     return (
         ProductoEditorial.objects.filter(
-            estado__in=(Producto.ACTIVO, Producto.AGOTADO), stock__lt=tope
+            Q(estado__in=(Producto.ACTIVO, Producto.AGOTADO), stock__lt=tope)
+            | (Q(estado=Producto.PRE_VENTA) & ~Exists(en_camino))
         )
         .select_related("proveedor", "editorial")
         .annotate(
@@ -277,6 +285,16 @@ def elegibles(configuracion=None):
             )
         )
     )
+
+
+def _cantidad_para(producto, configuracion):
+    """La sugerida; para una pre-venta, al menos lo que ya está reservado (B-05-014)."""
+    cantidad = sugerida(producto.en_espera, configuracion)
+    if producto.estado == Producto.PRE_VENTA:
+        from apps.suppliers import llegadas
+
+        cantidad = max(cantidad, llegadas.reservado(producto))
+    return cantidad
 
 
 def sugerida(suscriptores, configuracion):
@@ -299,7 +317,9 @@ def pendiente():
 def ciclo_semanal(ahora=None):
     """`CO-067`: el Temporizador lo intenta todos los días (B-05-004)."""
     ahora = ahora or timezone.now()
-    if PropuestaRestock.objects.filter(fecha_generacion__gt=ahora - SEMANA).exists():
+    # Una propuesta armada a mano no reemplaza a la de la demanda (B-05-012).
+    recientes = PropuestaRestock.objects.exclude(tipo_disparo=PropuestaRestock.A_MANO)
+    if recientes.filter(fecha_generacion__gt=ahora - SEMANA).exists():
         return ResultadoDeCiclo(motivo="reciente")  # E4: ya hubo una esta semana.
     return _generar(PropuestaRestock.AUTOMATICO, None, ahora)
 
@@ -331,7 +351,7 @@ def _generar(disparo, actor, ahora):
                 LineaPropuestaRestock(
                     propuesta=propuesta,
                     producto=p,
-                    cantidad_sugerida=sugerida(p.en_espera, configuracion),
+                    cantidad_sugerida=_cantidad_para(p, configuracion),
                     suscriptores_activos=p.en_espera,
                 )
                 for p in productos
@@ -367,6 +387,55 @@ def _generar(disparo, actor, ahora):
     if productos:
         despues_del_commit(_avisar_propuesta, propuesta)
     return ResultadoDeCiclo(propuesta=propuesta)
+
+
+def armar_a_mano(actor):
+    """B-05-012: una propuesta vacía y pendiente, para cargarle productos con `CO-071`.
+
+    No mira la demanda ni cuenta como el ciclo de la semana: es un pedido que el
+    Administrador arma porque sabe algo que el sistema no ve. Como cualquier
+    propuesta, una sola pendiente por vez (I-21).
+    """
+    if pendiente():
+        raise OperacionRechazada("Ya hay una propuesta pendiente: resuélvala antes de armar otra.")
+    try:
+        with transaction.atomic():
+            propuesta = PropuestaRestock.objects.create(tipo_disparo=PropuestaRestock.A_MANO)
+            RegistroAuditoria.registrar(
+                accion=RegistroAuditoria.PROPUESTA_RESTOCK,
+                actor=actor,
+                objetivo=propuesta,
+                detalle="Propuesta armada a mano, vacía: se cargan los productos uno por uno.",
+            )
+    except IntegrityError as error:
+        raise OperacionRechazada(
+            "Ya hay una propuesta pendiente: resuélvala antes de armar otra."
+        ) from error
+    return propuesta
+
+
+def cerrar_vacia(propuesta, actor):
+    """B-05-012: una propuesta pendiente sin productos no se despacha ni se descarta
+    por proveedor —no tiene ninguno—, así que se cierra entera. Si no, bloquearía
+    la próxima (I-21)."""
+    with transaction.atomic():
+        propuesta = PropuestaRestock.objects.select_for_update().get(pk=propuesta.pk)
+        if propuesta.estado != PropuestaRestock.PENDIENTE:
+            raise OperacionRechazada("La propuesta ya está cerrada.")
+        if propuesta.lineas.exists():
+            raise OperacionRechazada(
+                "La propuesta tiene productos: despache o descarte cada proveedor."
+            )
+        propuesta.estado = PropuestaRestock.CERRADA
+        propuesta.cerrada_en = timezone.now()
+        propuesta.save(update_fields=["estado", "cerrada_en"])
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.CIERRE_PROPUESTA_RESTOCK,
+            actor=actor,
+            objetivo=propuesta,
+            detalle=f"{propuesta}: se cerró vacía, sin productos.",
+        )
+    return propuesta
 
 
 def _registrar_sin_propuesta(disparo, actor, ahora, texto, clave):
@@ -649,9 +718,45 @@ def descartar(propuesta, clave, motivo, actor):
 
 
 def _cerrar_si_corresponde(propuesta, actor):
-    """El cierre es automático cuando no queda nada pendiente (DME-13)."""
+    """Cuando no queda ningún proveedor por despachar o descartar.
+
+    DME-13 la cerraba ahí. Desde el plan 00 de la respuesta del proveedor (desvío
+    aprobado, B-05-013) **queda esperando** si algún pedido que salió todavía no tiene
+    la respuesta del proveedor, y se cierra cuando la tiene (`al_responder`).
+    """
     if propuesta.lineas.filter(estado_despacho=LineaPropuestaRestock.PENDIENTE).exists():
         return
+    esperan = [p for p in propuesta.pedidos.prefetch_related("lineas") if not p.respondido]
+    if esperan:
+        propuesta.estado = PropuestaRestock.ESPERANDO
+        propuesta.save(update_fields=["estado"])
+        RegistroAuditoria.registrar(
+            accion=RegistroAuditoria.PROPUESTA_RESTOCK,
+            actor=actor,
+            objetivo=propuesta,
+            detalle=(
+                f"{propuesta}: despachada; espera la respuesta de {len(esperan)} "
+                f"proveedor(es): " + ", ".join(p.nombre_proveedor for p in esperan) + "."
+            ),
+        )
+        return
+    _cerrar(propuesta, actor)
+
+
+def al_responder(propuesta, actor):
+    """La que esperaba respuesta se cierra cuando respondió el último proveedor.
+    Devuelve si se cerró."""
+    with transaction.atomic():
+        propuesta = PropuestaRestock.objects.select_for_update().get(pk=propuesta.pk)
+        if propuesta.estado != PropuestaRestock.ESPERANDO:
+            return False
+        if any(not p.respondido for p in propuesta.pedidos.prefetch_related("lineas")):
+            return False
+        _cerrar(propuesta, actor)
+    return True
+
+
+def _cerrar(propuesta, actor):
     propuesta.estado = PropuestaRestock.CERRADA
     propuesta.cerrada_en = timezone.now()
     propuesta.save(update_fields=["estado", "cerrada_en"])

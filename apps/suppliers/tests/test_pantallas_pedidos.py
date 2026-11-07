@@ -35,6 +35,15 @@ def pedido(ivrea):
     return llegadas.registrar(ivrea, PedidoProveedor.MANUAL, [(producto, 6)])
 
 
+def llegada(linea, valor):
+    """El formulario de «Por llegar» para una línea (B-05-017)."""
+    return {
+        "fila": [f"l{linea.pk}"],
+        f"llegaron_l{linea.pk}": valor,
+        f"vista_l{linea.pk}": str(linea.cantidad_recibida),
+    }
+
+
 def direcciones(pedido):
     linea = pedido.lineas.get()
     return [
@@ -42,6 +51,7 @@ def direcciones(pedido):
         reverse("suppliers:pedido_nuevo"),
         reverse("suppliers:pedido_detalle", args=[pedido.pk]),
         reverse("suppliers:pedido_cerrar_linea", args=[linea.pk]),
+        reverse("suppliers:por_llegar"),
         reverse("restock:propuesta_lista"),
     ]
 
@@ -53,8 +63,8 @@ def test_el_rol_equivocado_recibe_403_en_cada_pantalla(client, pedido, rol):
     for url in direcciones(pedido):
         assert client.get(url).status_code == 403, url
     respuesta = client.post(
-        reverse("suppliers:pedido_llegada", args=[pedido.pk]),
-        {f"llegaron_{pedido.lineas.get().pk}": "6", "confirmar": "1"},
+        reverse("suppliers:llegada_revisar"),
+        {**llegada(pedido.lineas.get(), "6"), "confirmar": "1"},
     )
     assert respuesta.status_code == 403
     assert pedido.lineas.get().cantidad_recibida == 0
@@ -79,17 +89,18 @@ def test_la_lista_muestra_lo_que_esta_por_llegar(client_admin, pedido):
 def test_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar(client_admin, pedido, cliente):
     reservar(cliente, pedido.lineas.get().producto, cantidad=2)
     linea = pedido.lineas.get()
-    url = reverse("suppliers:pedido_llegada", args=[pedido.pk])
+    url = reverse("suppliers:llegada_revisar")
 
-    revision = client_admin.post(url, {f"llegaron_{linea.pk}": "4"})
+    revision = client_admin.post(url, llegada(linea, "4"))
 
-    fila = revision.context["filas"][0]
-    assert (fila["unidades"], fila["cubre"], fila["a_la_venta"]) == (4, 2, 2)
+    (previa,) = revision.context["previas"]
+    assert (previa.unidades, previa.cubiertas, previa.reservas) == (4, 2, 2)
+    assert (previa.a_la_venta, previa.quedan) == (2, 2)
     assert "Llegada parcial" in revision.content.decode()
     linea.refresh_from_db()
     assert linea.cantidad_recibida == 0
 
-    client_admin.post(url, {f"llegaron_{linea.pk}": "4", "confirmar": "1"})
+    client_admin.post(url, {**llegada(linea, "4"), "confirmar": "1"})
 
     linea.refresh_from_db()
     assert (linea.cantidad_recibida, linea.estado) == (4, LineaPedidoProveedor.PARCIAL)
@@ -100,14 +111,15 @@ def test_una_llegada_mal_escrita_o_vacia_no_registra(client_admin, pedido, valor
     linea = pedido.lineas.get()
 
     respuesta = client_admin.post(
-        reverse("suppliers:pedido_llegada", args=[pedido.pk]),
-        {f"llegaron_{linea.pk}": valor, "confirmar": "1"},
+        reverse("suppliers:llegada_revisar"),
+        {**llegada(linea, valor), "confirmar": "1"},
         follow=True,
     )
 
     linea.refresh_from_db()
     assert linea.cantidad_recibida == 0
-    assert "Error" in respuesta.content.decode() or "Indicá" in respuesta.content.decode()
+    contenido = respuesta.content.decode()
+    assert "Revisá las unidades" in contenido or "No cambió nada" in contenido
 
 
 def test_cerrar_una_linea_pide_motivo_y_lo_guarda(client_admin, pedido):
@@ -167,7 +179,7 @@ def test_nuevo_pedido_con_un_codigo_que_no_existe_no_sale(client_admin, ivrea, m
     )
 
     assert respuesta.status_code == 200
-    assert "No hay un producto con el código o ISBN «NO-EXISTE»" in respuesta.content.decode()
+    assert "No encontré «NO-EXISTE»" in respuesta.content.decode()
     assert not PedidoProveedor.objects.exists()
     assert mailoutbox == []
 

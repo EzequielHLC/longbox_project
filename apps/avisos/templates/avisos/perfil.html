@@ -59,10 +59,15 @@ correo.
         {% if codigo.espera_confirmacion %}
           <p><strong>{{ codigo.nombre_pendiente|default:"Un chat de Telegram" }}</strong> abrió el enlace. Escribí el número de seis cifras que te mandó el bot.</p>
         {% else %}
-          <p><strong>1.</strong> Abrí el enlace desde el teléfono donde tenés Telegram y tocá <strong>Iniciar</strong>. Vence a las <span class="datos">{{ codigo.vence_en|time:"H:i" }}</span>.</p>
+          <p><strong>1.</strong> Escaneá el código con la cámara del teléfono donde tenés Telegram, o abrí el enlace, y tocá <strong>Iniciar</strong>. Vence a las <span class="datos">{{ codigo.vence_en|time:"H:i" }}</span>.</p>
           {% if enlace_telegram %}
-            <a href="{{ enlace_telegram }}" class="boton-seccion" target="_blank" rel="noopener">{% include "_iconos.html" with icono="adelante" %}<span>Abrir Telegram</span></a>
-            <p class="texto-chico secundario cortar-palabras datos">{{ enlace_telegram }}</p>
+            <div class="vinculo-qr">
+              <figure class="vinculo-qr__codigo" aria-label="Código QR del enlace de vinculación">{{ qr_telegram }}</figure>
+              <div class="pila-2">
+                <a href="{{ enlace_telegram }}" class="boton-seccion" target="_blank" rel="noopener">{% include "_iconos.html" with icono="adelante" %}<span>Abrir Telegram</span></a>
+                <p class="texto-chico secundario cortar-palabras datos">{{ enlace_telegram }}</p>
+              </div>
+            </div>
           {% else %}
             <p class="texto-chico">No se pudo consultar el nombre del bot. Mandale este mensaje: <span class="datos cortar-palabras">/start {{ codigo.codigo }}</span></p>
           {% endif %}

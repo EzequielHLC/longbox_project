@@ -15,8 +15,10 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.avisos import tarjetas
 from apps.avisos.canales import avisar_administradores, enlace
 from apps.avisos.models import RESUMEN
+from apps.avisos.voz import DIAS
 from apps.core.models import ConfiguracionSistema
 from apps.core.templatetags.moneda import pesos
 
@@ -55,6 +57,7 @@ def armar(hoy):
     from apps.catalog.models import BorradorProducto, Producto, ProductoEditorial
     from apps.pedidos.models import Pedido
     from apps.restock import servicios as restock
+    from apps.suppliers import respuestas
     from apps.suppliers.models import CorreoProveedor, PedidoProveedor
 
     ayer = hoy - timedelta(days=1)
@@ -76,27 +79,34 @@ def armar(hoy):
         .prefetch_related("lineas")
     )
     cierre = CierreDeCaja.objects.filter(fecha_jornada=ayer).first()
+    correos = CorreoProveedor.objects.pendientes().count()
+    borradores = BorradorProducto.objects.pendientes().count()
+    por_armar = Pedido.objects.filter(estado=Pedido.PENDIENTE_ARMADO).count()
+    propuesta = restock.pendiente() is not None
+    sin_respuesta = len(respuestas.sin_respuesta())
     filas = [
-        ("Correos de proveedores sin decidir", CorreoProveedor.objects.pendientes().count()),
-        ("Borradores para revisar", BorradorProducto.objects.pendientes().count()),
+        ("📬 Correos de proveedores sin decidir", correos),
+        ("📝 Borradores para revisar", borradores),
+        ("📦 Pedidos de clientes por armar", por_armar),
+        ("🔁 Propuesta de restock", "pendiente" if propuesta else "ninguna"),
+        ("🚚 Pre-ventas que llegan hoy", len(llegan_hoy)),
+        ("⏳ Pre-ventas atrasadas", atrasadas),
+        ("⏳ Pedidos a proveedores atrasados", pedidos_atrasados),
+        ("🤝 Pedidos sin respuesta del proveedor", sin_respuesta),
         (
-            "Pedidos de clientes por armar",
-            Pedido.objects.filter(estado=Pedido.PENDIENTE_ARMADO).count(),
-        ),
-        ("Propuesta de restock", "pendiente" if restock.pendiente() else "ninguna"),
-        ("Pre-ventas que llegan hoy", len(llegan_hoy)),
-        ("Pre-ventas atrasadas", atrasadas),
-        ("Pedidos a proveedores atrasados", pedidos_atrasados),
-        (
-            "Ventas online de ayer",
+            "💸 Ventas online de ayer",
             (
                 f"{len(ventas)} por {pesos(sum((p.total for p in ventas), 0))}"
                 if ventas
                 else "ninguna"
             ),
         ),
-        ("Caja de ayer", f"cerrada, {pesos(cierre.total_global)}" if cierre else "sin cerrar"),
+        ("💰 Caja de ayer", f"cerrada, {pesos(cierre.total_global)}" if cierre else "sin cerrar"),
     ]
+    # Lo que espera una mano: decide el remate de Long-bot (B-19-017).
+    pendientes = (
+        correos + borradores + por_armar + propuesta + atrasadas + pedidos_atrasados + sin_respuesta
+    )
     parrafos = []
     if llegan_hoy:
         titulos = ", ".join(str(p) for p in llegan_hoy[:LLEGAN_HOY_A_LA_VISTA])
@@ -110,4 +120,18 @@ def armar(hoy):
         "filas": filas,
         "enlace": enlace("core:panel"),
         "texto_enlace": "Abrir el panel",
+        # B-19-017: con qué saluda y cierra Long-bot; el correo no lo usa.
+        "voz": {"hoy": hoy, "pendientes": pendientes},
+        # B-19-020: la tarjeta, con lo que más se mira a la mañana.
+        "tarjeta": {
+            "titulo": "¡Buen día, {nombre}!",
+            "bajada": f"Así arranca el {DIAS[hoy.weekday()]} {hoy:%d/%m}.",
+            "cifras": [
+                ("Por armar", por_armar),
+                ("Correos", correos),
+                ("Borradores", borradores),
+                ("Ventas ayer", pesos(sum((p.total for p in ventas), 0))),
+            ],
+            "gesto": tarjetas.CONTENTO if pendientes else tarjetas.FESTEJO,
+        },
     }

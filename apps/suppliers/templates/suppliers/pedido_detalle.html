@@ -1,10 +1,12 @@
 {% extends "base_operativo.html" %}
 {% comment %}
-La ficha de un pedido a proveedor y su llegada (plan 00 del circuito). La misma
-forma que la ficha de un pedido de cliente: el estado arriba, un panel que dice
-en qué está, los datos y el avance lado a lado, y los productos. Cada línea
-abierta pide cuántas unidades llegaron; vacío es «todavía nada». Lo que llega se
-confirma en la pantalla siguiente, con lo que va a pasar a la vista.
+La ficha de un pedido a proveedor (plan 00 del circuito). La misma forma que la
+ficha de un pedido de cliente: el estado arriba, con el avance en el panel; la
+respuesta del proveedor y los datos lado a lado, y los productos.
+
+Plan 00 de la respuesta simple: **una sola tabla, que sólo informa**. La respuesta
+se anota con la pregunta de `_pregunta_respuesta.html` y la llegada en su pantalla
+(«Registrar la llegada»), así los productos no aparecen dos veces.
 {% endcomment %}
 
 {% block titulo %}Pedido #{{ pedido.pk }} · Longbox{% endblock %}
@@ -23,10 +25,31 @@ confirma en la pantalla siguiente, con lo que va a pasar a la vista.
   </div>
 </header>
 
-{% if pedido.estado == "abierto" %}
+{% if pedido.estado == "sin_enviar" %}
+  {% comment %}B-05-014: el correo no salió. No da cupo hasta que sale.{% endcomment %}
+  <div class="panel panel--atencion pila-3" role="alert">
+    <p class="fila-2">{% include "_iconos.html" with icono="atencion" %}<strong>El correo de este pedido no salió.</strong></p>
+    <p>{{ pedido.error_de_envio|default:"No se pudo enviar." }} Mientras no salga, el pedido no cuenta como mercadería en camino.</p>
+    <div class="fila-5 fila-abajo">
+      <form method="post" action="{% url 'suppliers:pedido_reintentar' pedido.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-seccion">{% include "_iconos.html" with icono="reactivar" %}<span>Reintentar el envío</span></button>
+      </form>
+      <form method="post" action="{% url 'suppliers:pedido_descartar' pedido.pk %}" class="fila-5 fila-abajo" novalidate>
+        {% csrf_token %}
+        <div class="campo">
+          <label for="motivo-descarte" class="etiqueta">Motivo para descartarlo</label>
+          <input type="text" id="motivo-descarte" name="motivo" maxlength="500" placeholder="Ya se pidió por otro lado…">
+        </div>
+        <button type="submit" class="boton-seccion boton-seccion--critico">Descartar el pedido</button>
+      </form>
+    </div>
+  </div>
+{% elif pedido.estado == "abierto" %}
   <div class="panel{% if pedido.vencido %} panel--atencion{% endif %}" role="note">
     <p>
-      Faltan <strong class="datos">{{ pedido.unidades_pendientes }}</strong> unidad{{ pedido.unidades_pendientes|pluralize:"es" }}.
+      Pedidas <strong class="datos">{{ pedido.unidades_pedidas }}</strong> · llegaron <strong class="datos">{{ pedido.unidades_recibidas }}</strong> ·
+      faltan <strong class="datos">{{ pedido.unidades_pendientes }}</strong> unidad{{ pedido.unidades_pendientes|pluralize:"es" }}.
       {% if pedido.vencido %}La llegada estimada ya pasó: registrá lo que llegó, o cerrá lo que no va a llegar.
       {% elif pedido.fecha_estimada %}Se esperan para el {{ pedido.fecha_estimada|date:"d/m/Y" }}.
       {% else %}El pedido no tiene fecha estimada.{% endif %}
@@ -37,6 +60,9 @@ confirma en la pantalla siguiente, con lo que va a pasar a la vista.
 {% endif %}
 
 <div class="rejilla-2">
+  {% if pedido.estado == "abierto" %}
+    {% include "suppliers/_pregunta_respuesta.html" %}
+  {% endif %}
   <section class="seccion" aria-labelledby="titulo-datos">
     <div class="seccion__titulo"><h2 id="titulo-datos">Proveedor y pedido</h2></div>
     <dl class="datos-de-ficha">
@@ -53,81 +79,53 @@ confirma en la pantalla siguiente, con lo que va a pasar a la vista.
       <dd class="datos">{{ pedido.fecha_estimada|date:"d/m/Y"|default:"Sin fecha" }}</dd>
     </dl>
   </section>
-
-  <section class="seccion" aria-labelledby="titulo-avance">
-    <div class="seccion__titulo"><h2 id="titulo-avance">Avance</h2></div>
-    <div class="cifras">
-      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="lote" %}Pedidas</span><span class="cifra__valor">{{ pedido.unidades_pedidas }}</span></div>
-      <div class="cifra"><span class="cifra__rotulo">{% include "_iconos.html" with icono="listo" %}Llegaron</span><span class="cifra__valor">{{ pedido.unidades_recibidas }}</span></div>
-      <div class="cifra{% if pedido.vencido %} cifra--atencion{% endif %}"><span class="cifra__rotulo">{% include "_iconos.html" with icono="reloj" %}Faltan</span><span class="cifra__valor">{{ pedido.unidades_pendientes }}</span></div>
-    </div>
-  </section>
 </div>
 
 <section class="seccion" aria-labelledby="titulo-lineas">
-  <div class="seccion__titulo"><h2 id="titulo-lineas">Productos</h2></div>
-  <form method="post" action="{% url 'suppliers:pedido_llegada' pedido.pk %}" class="pila-3">
-    {% csrf_token %}
-    <div class="tabla-desplazable">
-      <table class="tabla">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th class="numero">Pedidas</th>
-            <th class="numero">Llegaron</th>
-            <th class="numero">Reservadas</th>
-            <th>Estado</th>
-            {% if pedido.estado == "abierto" %}<th class="numero">Llegan ahora</th><th class="derecha"><span class="sr-only">Acción</span></th>{% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for fila in filas %}
-            {% with linea=fila.linea %}
-            <tr>
-              <td class="celda-principal">
-                <span class="fila-2">
-                  <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
-                  <span>
-                    <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto.especifico }}</a>
-                    <br><span class="texto-chico datos secundario">{{ fila.producto.codigo }}</span>
-                    {% if fila.en_preventa %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
-                  </span>
-                </span>
-              </td>
-              <td class="numero">{{ linea.cantidad_pedida }}</td>
-              <td class="numero">{{ linea.cantidad_recibida }}</td>
-              <td class="numero">{{ fila.reservado }}</td>
-              <td>{% include "suppliers/_estado_linea.html" %}{% if linea.estado == "sin_recibir" %}<br><span class="texto-chico secundario">{{ linea.motivo_cierre }}</span>{% endif %}</td>
-              {% if pedido.estado == "abierto" %}
-                <td class="numero">
-                  {% if linea.pendiente %}
-                    <label class="sr-only" for="llegaron-{{ linea.pk }}">Unidades de {{ fila.producto.especifico }} que llegaron</label>
-                    <input type="number" id="llegaron-{{ linea.pk }}" name="llegaron_{{ linea.pk }}" min="0" max="9999" step="1" inputmode="numeric" class="entrada-cifra" data-pendiente="{{ linea.pendiente }}">
-                  {% endif %}
-                </td>
-                <td class="derecha">
-                  {% if linea.pendiente %}<a href="{% url 'suppliers:pedido_cerrar_linea' linea.pk %}" class="boton-icono boton-icono--critico" aria-label="{{ fila.producto.especifico }} no va a llegar" title="No va a llegar">{% include "_iconos.html" with icono="baja" %}</a>{% endif %}
-                </td>
-              {% endif %}
-            </tr>
-            {% endwith %}
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if pedido.estado == "abierto" %}
-      <div class="fila-5">
-        <button type="submit" class="boton-primario">Revisar la llegada</button>
-        {# El atajo del caso más común, como «Completar con lo reservado» en las pre-ventas. #}
-        <button type="button" class="boton-texto" data-completar>Llegó todo lo que faltaba</button>
-        <span class="texto-chico secundario">Vacío o 0: no llegó todavía.</span>
-      </div>
+  <div class="seccion__titulo">
+    <h2 id="titulo-lineas">Productos</h2>
+    {% if pedido.estado == "abierto" and pedido.unidades_pendientes %}
+      <a href="{% url 'suppliers:pedido_llegada' pedido.pk %}" class="boton-primario">{% include "_iconos.html" with icono="paquete" %}<span>Registrar la llegada</span></a>
     {% endif %}
-  </form>
+  </div>
+  <div class="tabla-desplazable">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="numero">Pedidas</th>
+          <th class="numero">Llegaron</th>
+          <th class="numero">Reservadas</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in filas %}
+          {% with linea=fila.linea %}
+          <tr>
+            <td class="celda-principal">
+              <span class="fila-2">
+                <span class="portada-mini portada-mini--chica" aria-hidden="true">{% if fila.producto.portada %}<img src="{{ fila.producto.portada.url }}" alt="">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}</span>
+                <span>
+                  <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto.especifico }}</a>
+                  <br><span class="texto-chico datos secundario">{{ fila.producto.codigo }}</span>
+                  {% if fila.en_preventa %}<span class="marca-estado marca-estado--dato">Pre-venta</span>{% endif %}
+                </span>
+              </span>
+            </td>
+            <td class="numero">{{ linea.cantidad_pedida }}</td>
+            <td class="numero">{{ linea.cantidad_recibida }}</td>
+            <td class="numero">{{ fila.reservado }}</td>
+            <td>
+              {% include "suppliers/_estado_linea.html" %}
+              {% if linea.estado == "sin_recibir" %}<br><span class="texto-chico secundario">{{ linea.motivo_cierre }}</span>
+              {% elif linea.estado == "pendiente" or linea.estado == "parcial" %}<br><span class="texto-chico secundario">{% if linea.respuesta == "sin_respuesta" %}Esperando respuesta{% elif linea.respuesta == "otra_cantidad" %}Confirma {{ linea.cantidad_confirmada }} de {{ linea.cantidad_pedida }}{% else %}Confirmada{% endif %}</span>{% endif %}
+            </td>
+          </tr>
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
-<script>
-  document.querySelector("[data-completar]")?.addEventListener("click", function () {
-    for (const campo of document.querySelectorAll("[data-pendiente]")) campo.value = campo.dataset.pendiente;
-  });
-</script>
 {% endblock %}

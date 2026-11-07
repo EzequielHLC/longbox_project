@@ -18,6 +18,7 @@ from django.conf import settings
 from django.db import connection, transaction
 from django.utils import timezone
 
+from apps.avisos import tarjetas
 from apps.avisos.canales import avisar_administradores
 from apps.avisos.models import SISTEMA
 from apps.core.models import ConfiguracionSistema
@@ -87,7 +88,7 @@ def texto_del_estado(ahora=None):
     """El mensaje de `/estado`, en el HTML de Telegram."""
     ahora = ahora or timezone.now()
     usado, libre = disco()
-    lineas = ["<b>Estado del sistema</b>"]
+    lineas = ["🩺 <b>Estado del sistema</b>"]
     lineas.append(
         f"• Disco: {usado} % usado, {_gb(libre)} libres" + (" ⚠" if usado >= DISCO_LLENO else "")
     )
@@ -159,5 +160,11 @@ def controlar(ahora=None):
             antetitulo="Estado del sistema",
             titulo="Hay algo para mirar",
             parrafos=[texto, "Mandá /estado al bot para ver todo."],
+            tarjeta={
+                "titulo": "Hay algo para mirar",
+                "bajada": texto,
+                "gesto": tarjetas.ALERTA,
+                "tono": "alarma",
+            },
         )
     return list(nuevos)

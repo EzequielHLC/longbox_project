@@ -172,7 +172,7 @@ def test_la_pantalla_va_en_tres_tiempos_y_sólo_confirma_al_final(
     with django_capture_on_commit_callbacks(execute=True):
         respuesta = client_admin.post(URL, {**datos, "confirmar": "1"})
 
-    assert respuesta.url == reverse("pedidos:preventas")
+    assert respuesta.url == reverse("suppliers:por_llegar")
     uno, dos = (ProductoEditorial.objects.get(pk=p.pk) for p in (uno, dos))
     assert (uno.demorado, uno.fecha_estimada.isoformat()) == (True, fecha)
     assert dos.demorado is True
@@ -223,10 +223,10 @@ def test_sin_tomos_elegidos_vuelve_con_el_aviso(client_admin):
 def test_el_grupo_de_preventas_ofrece_demorarlo_entero(client_admin):
     uno = crear_preventa(dias=5)
 
-    html = client_admin.get(reverse("pedidos:preventas")).content.decode()
+    html = client_admin.get(reverse("suppliers:por_llegar")).content.decode()
 
     assert f"{URL}?producto={uno.pk}" in html
-    assert "Demorar este grupo" in html
+    assert "Demorar las pre-ventas" in html
 
 
 def test_el_cajero_no_registra_demoras_por_la_direccion_real(client, cajero):

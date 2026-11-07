@@ -19,7 +19,7 @@ from apps.catalog import services
 from apps.catalog.models import Producto, ProductoEditorial
 from apps.suppliers import llegadas
 from apps.suppliers.extraccion import separar_volumen
-from apps.suppliers.models import LineaPedidoProveedor
+from apps.suppliers.models import LineaPedidoProveedor, PedidoProveedor
 
 _titulo = services.titulo_comparable
 
@@ -63,7 +63,9 @@ def preventas_del_proveedor(proveedor):
     """
     filtro = Q(
         pk__in=LineaPedidoProveedor.objects.filter(
-            pedido__proveedor=proveedor, estado__in=LineaPedidoProveedor.ABIERTAS
+            pedido__proveedor=proveedor,
+            pedido__estado=PedidoProveedor.ABIERTO,
+            estado__in=LineaPedidoProveedor.ABIERTAS,
         ).values("producto_id")
     )
     if proveedor.editorial_id:

@@ -1,0 +1,173 @@
+{% load moneda %}
+{% comment %}
+B-00-032: las ventas del panel, de un vistazo. Lo calcula `core.tablero`.
+
+Un solo color por gráfico (el naranja de la marca, que pasa el contraste contra el
+fondo); el dato exacto aparece al pasar el mouse y en «Ver como tabla», así que nada
+depende sólo del color. Las barras crecen al cargar, salvo con movimiento reducido.
+Los largos van en atributos data-: el guion de abajo los pasa a variables de CSS,
+porque una plantilla no lleva estilo propio (Viñeta Nocturna).
+{% endcomment %}
+<section class="seccion tablero" aria-labelledby="titulo-ventas">
+  <div class="seccion__titulo"><h2 id="titulo-ventas">Ventas</h2></div>
+
+  <div class="tablero__cifras">
+    <div class="kpi kpi--heroe">
+      <span class="kpi__rotulo">{% include "_iconos.html" with icono="efectivo" %}Vendido este mes</span>
+      <span class="kpi__valor" data-contar="{{ tablero.mes.total|stringformat:'d' }}" data-moneda>{{ tablero.mes.total|pesos }}</span>
+      {% if tablero.mes.variacion is not None %}
+        <span class="kpi__delta {% if tablero.mes.variacion >= 0 %}kpi__delta--sube{% else %}kpi__delta--baja{% endif %}">
+          {% if tablero.mes.variacion >= 0 %}▲ {{ tablero.mes.variacion }} %{% else %}▼ {{ tablero.mes.variacion|stringformat:'d'|slice:'1:' }} %{% endif %}
+          <span class="secundario">contra el mismo tramo del mes pasado</span>
+        </span>
+      {% else %}
+        <span class="kpi__delta secundario">Sin ventas el mes pasado para comparar</span>
+      {% endif %}
+    </div>
+    <div class="kpi">
+      <span class="kpi__rotulo">{% include "_iconos.html" with icono="bolsa" %}Pedidos del mes</span>
+      <span class="kpi__valor" data-contar="{{ tablero.mes.pedidos }}">{{ tablero.mes.pedidos }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__rotulo">{% include "_iconos.html" with icono="tarjeta" %}Ticket promedio</span>
+      <span class="kpi__valor" data-contar="{{ tablero.mes.ticket|stringformat:'d' }}" data-moneda>{{ tablero.mes.ticket|pesos }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__rotulo">{% include "_iconos.html" with icono="reloj" %}Últimos 30 días</span>
+      <span class="kpi__valor" data-contar="{{ tablero.vendido_30|stringformat:'d' }}" data-moneda>{{ tablero.vendido_30|pesos }}</span>
+    </div>
+  </div>
+
+  <figure class="grafico">
+    <figcaption class="grafico__titulo">Lo vendido por día · últimos 30 días</figcaption>
+    {% if tablero.con_ventas %}
+      <div class="grafico-dias" role="img" aria-label="Ventas por día de los últimos 30 días. El detalle está en «Ver como tabla».">
+        {% for dia in tablero.serie %}
+          <span class="grafico-dias__columna{% if dia.es_hoy %} grafico-dias__columna--hoy{% endif %}"
+                data-dato="{{ dia.fecha|date:'D d/m' }} · {{ dia.total|pesos }} · {{ dia.pedidos }} pedido{{ dia.pedidos|pluralize }}"
+                data-alto="{{ dia.alto|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
+            <span class="grafico-dias__barra"></span>
+          </span>
+        {% endfor %}
+      </div>
+      <div class="grafico-dias__eje" aria-hidden="true">
+        <span>{{ tablero.serie.0.fecha|date:"d/m" }}</span>
+        <span>Hoy</span>
+      </div>
+      <details class="grafico__tabla">
+        <summary>Ver como tabla</summary>
+        <div class="tabla-desplazable">
+          <table class="tabla">
+            <thead><tr><th>Día</th><th class="numero">Pedidos</th><th class="numero">Vendido</th></tr></thead>
+            <tbody>
+              {% for dia in tablero.serie %}{% if dia.pedidos %}
+                <tr><td class="datos">{{ dia.fecha|date:"d/m/Y" }}</td><td class="numero">{{ dia.pedidos }}</td><td class="numero">{{ dia.total|pesos }}</td></tr>
+              {% endif %}{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    {% else %}
+      <div class="vacio">
+        {% include "_iconos.html" with icono="reportes" %}
+        <p>Todavía no hay ventas en los últimos 30 días.</p>
+      </div>
+    {% endif %}
+  </figure>
+
+  <div class="rejilla-2">
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Lo más vendido · 30 días</figcaption>
+      {% if tablero.mas_vendidos %}
+        <ol class="grafico-ranking">
+          {% for fila in tablero.mas_vendidos %}
+            <li class="grafico-ranking__fila" data-ancho="{{ fila.ancho|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
+              <span class="grafico-ranking__nombre">{{ fila.producto }}</span>
+              <span class="grafico-ranking__pista"><span class="grafico-ranking__barra"></span></span>
+              <span class="grafico-ranking__valor datos">{{ fila.unidades }} u.</span>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="secundario">Sin ventas en los últimos 30 días.</p>
+      {% endif %}
+    </figure>
+
+    <div class="tablero__columna">
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Por dónde se vendió · 30 días</figcaption>
+      {% if tablero.canales.total %}
+        <div class="grafico-tramos" role="img" aria-label="{% for tramo in tablero.canales.tramos %}{{ tramo.nombre }}: {{ tramo.cantidad|pesos }}. {% endfor %}">
+          {% for tramo in tablero.canales.tramos %}{% if tramo.cantidad %}
+            <span class="grafico-tramos__tramo {% include "core/_tono_de_tramo.html" with tono=tramo.tono %}" data-ancho="{{ tramo.ancho|stringformat:'.2f' }}" data-dato="{{ tramo.nombre }} · {{ tramo.cantidad|pesos }}"></span>
+          {% endif %}{% endfor %}
+        </div>
+        <ul class="grafico-leyenda">
+          {% for tramo in tablero.canales.tramos %}
+            <li><span class="grafico-leyenda__marca {% include "core/_tono_de_tramo.html" with tono=tramo.tono %}" aria-hidden="true"></span>{{ tramo.nombre }} <strong class="datos">{{ tramo.cantidad|pesos }}</strong> <span class="secundario">({{ tramo.ancho|floatformat:0 }} %)</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="secundario">Sin ventas en los últimos 30 días.</p>
+      {% endif %}
+    </figure>
+
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">El catálogo hoy · {{ tablero.catalogo.total }} productos</figcaption>
+      <div class="grafico-tramos" role="img" aria-label="{% for tramo in tablero.catalogo.tramos %}{{ tramo.nombre }}: {{ tramo.cantidad }}. {% endfor %}">
+        {% for tramo in tablero.catalogo.tramos %}{% if tramo.cantidad %}
+          <span class="grafico-tramos__tramo {% include "core/_tono_de_tramo.html" with tono=tramo.tono %}" data-ancho="{{ tramo.ancho|stringformat:'.2f' }}" data-dato="{{ tramo.nombre }} · {{ tramo.cantidad }}"></span>
+        {% endif %}{% endfor %}
+      </div>
+      <ul class="grafico-leyenda">
+        {% for tramo in tablero.catalogo.tramos %}
+          <li><span class="grafico-leyenda__marca {% include "core/_tono_de_tramo.html" with tono=tramo.tono %}" aria-hidden="true"></span>{{ tramo.nombre }} <strong class="datos">{{ tramo.cantidad }}</strong> <span class="secundario">({{ tramo.ancho|floatformat:0 }} %)</span></li>
+        {% endfor %}
+      </ul>
+    </figure>
+    </div>
+  </div>
+  <div class="grafico-globo" role="tooltip" hidden data-globo></div>
+</section>
+
+<script>
+  (function () {
+    // Los largos de cada barra, de sus atributos a las variables que lee la hoja.
+    for (const marca of document.querySelectorAll(".tablero [data-alto]")) marca.style.setProperty("--alto", marca.dataset.alto + "%");
+    for (const marca of document.querySelectorAll(".tablero [data-ancho]")) marca.style.setProperty("--ancho", marca.dataset.ancho + "%");
+    for (const marca of document.querySelectorAll(".tablero [data-i]")) marca.style.setProperty("--i", marca.dataset.i);
+    // La ventanita con el dato exacto, sobre lo que tenga `data-dato`.
+    const globo = document.querySelector("[data-globo]");
+    for (const marca of document.querySelectorAll(".tablero [data-dato]")) {
+      marca.tabIndex = 0;
+      const mostrar = () => {
+        globo.textContent = marca.dataset.dato;
+        globo.hidden = false;
+        const caja = marca.getBoundingClientRect();
+        const ancho = globo.offsetWidth;
+        globo.style.left = Math.max(8, Math.min(window.innerWidth - ancho - 8, caja.left + caja.width / 2 - ancho / 2)) + "px";
+        globo.style.top = (caja.top + window.scrollY - globo.offsetHeight - 8) + "px";
+      };
+      marca.addEventListener("mouseenter", mostrar);
+      marca.addEventListener("focus", mostrar);
+      marca.addEventListener("mouseleave", () => { globo.hidden = true; });
+      marca.addEventListener("blur", () => { globo.hidden = true; });
+    }
+    // Las cifras cuentan hasta su valor al cargar, salvo con movimiento reducido.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const formato = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+    for (const cifra of document.querySelectorAll(".tablero [data-contar]")) {
+      const final = Number(cifra.dataset.contar);
+      if (!final) continue;
+      const moneda = "moneda" in cifra.dataset;
+      const inicio = performance.now();
+      const paso = (ahora) => {
+        const t = Math.min(1, (ahora - inicio) / 900);
+        const valor = Math.round(final * (1 - Math.pow(1 - t, 3)));
+        cifra.textContent = (moneda ? "$ " : "") + formato.format(valor);
+        if (t < 1) requestAnimationFrame(paso);
+      };
+      requestAnimationFrame(paso);
+    }
+  })();
+</script>

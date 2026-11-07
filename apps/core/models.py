@@ -127,6 +127,41 @@ class ConfiguracionSistema(models.Model):
     )
 
     # ------------------------------------------------------------------
+    # El modelo de respaldo (plan 00 de últimos cambios, A; CO-228, CO-229)
+    #
+    # Un segundo modelo listo para usar. Cuando el activo falla seguido, el
+    # sistema **propone** pasar a éste y un Administrador lo confirma: nunca
+    # cambia solo. Confirmar intercambia los dos, así se vuelve por el mismo
+    # camino. La clave, como la del activo, se guarda y no se muestra.
+    # ------------------------------------------------------------------
+
+    llm_respaldo_modo = models.CharField(
+        "modo del modelo de respaldo",
+        max_length=10,
+        choices=MODO_LLM_CHOICES,
+        default=REMOTO,
+    )
+    llm_respaldo_url = models.URLField(
+        "dirección de la API del respaldo",
+        max_length=300,
+        blank=True,
+        help_text="Vacía: no hay respaldo, y el sistema sólo avisa que el modelo falla.",
+    )
+    llm_respaldo_modelo = models.CharField("modelo de respaldo", max_length=120, blank=True)
+    llm_respaldo_api_key = models.CharField(
+        "clave de la API del respaldo", max_length=200, blank=True
+    )
+    # Cuántas veces seguidas falló el activo por conexión o rechazo, y cuándo se
+    # pidió el cambio. Un acierto pone las dos en cero: el pedido se hace una vez
+    # por racha de fallas (ambigüedad A4).
+    llm_fallas_seguidas = models.PositiveIntegerField(
+        "fallas seguidas del modelo", default=0, editable=False
+    )
+    llm_cambio_propuesto_en = models.DateTimeField(
+        "cambio de modelo propuesto el", null=True, blank=True, editable=False
+    )
+
+    # ------------------------------------------------------------------
     # Catálogo y pre-venta (CU-CFG-PAR; CO-011)
     # ------------------------------------------------------------------
 
@@ -391,6 +426,16 @@ class ConfiguracionSistema(models.Model):
             return ""
         return f"…{self.llm_api_key[-4:]}"
 
+    @property
+    def clave_de_respaldo_enmascarada(self):
+        if not self.llm_respaldo_api_key:
+            return ""
+        return f"…{self.llm_respaldo_api_key[-4:]}"
+
+    @property
+    def tiene_respaldo(self):
+        return bool(self.llm_respaldo_url)
+
     @classmethod
     def obtener(cls):
         """La configuración vigente, creándola con los valores de `settings`.
@@ -523,6 +568,7 @@ class RegistroAuditoria(models.Model):
     PEDIDO_A_PROVEEDOR = "pedido_a_proveedor"
     # Plan 00 del circuito con los proveedores: la llegada de lo pedido.
     LLEGADA_PEDIDO = "llegada_pedido"
+    RESPUESTA_PROVEEDOR = "respuesta_proveedor"
     CIERRE_SIN_RECIBIR = "cierre_sin_recibir"
     # Módulo 19 · Perfil y avisos (plan 00 de Telegram).
     VINCULO_TELEGRAM = "vinculo_telegram"
@@ -543,6 +589,9 @@ class RegistroAuditoria(models.Model):
     # CU-CFG-LLM: el diagnóstico (CO-149) y la comprobación de disponibilidad (CO-150).
     DIAGNOSTICO_LLM = "diagnostico_llm"
     DISPONIBILIDAD_LLM = "disponibilidad_llm"
+    # Plan 00 de últimos cambios, A: el modelo de respaldo (CO-228, CO-229).
+    CAMBIO_MODELO_PROPUESTO = "cambio_modelo_propuesto"
+    CAMBIO_MODELO = "cambio_modelo"
     # CU-CLI-BAJ (CO-113).
     BAJA_CUENTA_CLIENTE = "baja_cuenta_cliente"
     # CU-REP-GEN A1 (CO-128).
@@ -626,6 +675,7 @@ class RegistroAuditoria(models.Model):
         (CIERRE_PROPUESTA_RESTOCK, "Cierre de propuesta de restock"),
         (PEDIDO_A_PROVEEDOR, "Correo de pedido a proveedor"),
         (LLEGADA_PEDIDO, "Llegada de un pedido a proveedor"),
+        (RESPUESTA_PROVEEDOR, "Respuesta de un proveedor a un pedido"),
         (CIERRE_SIN_RECIBIR, "Línea de pedido cerrada sin recibir"),
         (VINCULO_TELEGRAM, "Vínculo con Telegram"),
         (DESVINCULO_TELEGRAM, "Desvínculo de Telegram"),
@@ -642,6 +692,8 @@ class RegistroAuditoria(models.Model):
         (AJUSTE_PUNTOS, "Ajuste manual de puntos"),
         (DIAGNOSTICO_LLM, "Diagnóstico del modelo de lenguaje"),
         (DISPONIBILIDAD_LLM, "Comprobación de disponibilidad del modelo de lenguaje"),
+        (CAMBIO_MODELO_PROPUESTO, "Cambio de modelo de lenguaje propuesto"),
+        (CAMBIO_MODELO, "Cambio al modelo de lenguaje de respaldo"),
         (BAJA_CUENTA_CLIENTE, "Baja de cuenta de cliente"),
         (EXPORTACION_REPORTE, "Exportación de reporte"),
     ]

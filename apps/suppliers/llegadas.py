@@ -47,12 +47,16 @@ def registrar(
     propuesta=None,
     sesion=None,
     lote=None,
+    error_de_envio="",
 ):
     """El pedido que salió, con una línea por `(producto, cantidad)`.
 
-    Se llama **sólo cuando el pedido salió** (decisión 1): el correo exitoso de
-    `CO-074`, o el alta de un lote en pre-venta. Los productos sin stock que
-    tenían el pedido en camino pasan a Pre-venta.
+    Se llama cuando el pedido salió (decisión 1): el correo exitoso de `CO-074`, o
+    el alta de un lote en pre-venta. Los productos sin stock que tenían el pedido en
+    camino pasan a Pre-venta.
+
+    Con `error_de_envio`, el correo **no** salió (B-05-014): queda «Sin enviar», a la
+    vista para reintentarlo, y no abre ninguna pre-venta ni da cupo.
     """
     renglones = [(producto, cantidad) for producto, cantidad in renglones if cantidad > 0]
     if not renglones:
@@ -60,6 +64,8 @@ def registrar(
     pedido = PedidoProveedor.objects.create(
         proveedor=proveedor,
         origen=origen,
+        estado=PedidoProveedor.SIN_ENVIAR if error_de_envio else PedidoProveedor.ABIERTO,
+        error_de_envio=error_de_envio[:300],
         fecha_estimada=fecha_estimada,
         creado_por=actor,
         propuesta=propuesta,
@@ -70,8 +76,9 @@ def registrar(
         LineaPedidoProveedor(pedido=pedido, producto=producto, cantidad_pedida=cantidad)
         for producto, cantidad in renglones
     )
-    for producto, _ in renglones:
-        abrir_preventa(producto, fecha_estimada)
+    if not error_de_envio:
+        for producto, _ in renglones:
+            abrir_preventa(producto, fecha_estimada)
     return pedido
 
 
@@ -81,8 +88,11 @@ def registrar(
 
 
 def lineas_abiertas(producto):
+    """Lo que viene en camino: sólo de pedidos que salieron (B-05-014)."""
     return LineaPedidoProveedor.objects.filter(
-        producto_id=producto.pk, estado__in=LineaPedidoProveedor.ABIERTAS
+        producto_id=producto.pk,
+        estado__in=LineaPedidoProveedor.ABIERTAS,
+        pedido__estado=PedidoProveedor.ABIERTO,
     )
 
 
@@ -159,11 +169,18 @@ class ResumenLlegada:
         return sum(unidades for _, unidades in self.recibidas)
 
 
-def registrar_llegada(pedido, cantidades, actor, *, origen=""):
+def registrar_llegada(pedido, cantidades, actor, *, origen="", ingreso=None, vistas=None):
     """Lo que llegó de verdad, línea por línea. `cantidades` va de línea a unidades.
 
     Cero en una línea es «no llegó nada de esto todavía»: la línea sigue abierta.
     Llegar de más se acepta y queda en la auditoría (plan, decisión 3 anterior).
+
+    `ingreso` junta lo que `CO-013` hizo con las pre-ventas, para quien lo quiera
+    contar (la pantalla unificada, B-05-017).
+
+    `vistas` va de línea a lo recibido que mostraba la revisión. Si al bloquear la
+    línea ya no coincide, otro registro se adelantó y nada se suma: dos
+    administradores con la misma caja la cuentan una vez.
     """
     from apps.pedidos import preventa
     from apps.restock import servicios as restock
@@ -192,21 +209,35 @@ def registrar_llegada(pedido, cantidades, actor, *, origen=""):
                 raise OperacionRechazada("Una de las líneas ya no está esperando mercadería.")
             producto = Producto.objects.select_for_update().get(pk=linea.producto_id)
             linea = LineaPedidoProveedor.objects.select_for_update().get(pk=linea.pk)
+            if vistas is not None and vistas.get(pk) != linea.cantidad_recibida:
+                raise OperacionRechazada(
+                    "Otra persona registró una llegada de este pedido mientras revisabas. "
+                    "Volvé a «Por llegar» y cargá lo que falte."
+                )
 
             linea.cantidad_recibida += unidades
             linea.estado = (
                 LineaPedidoProveedor.RECIBIDA
-                if linea.cantidad_recibida >= linea.cantidad_pedida
+                if linea.cantidad_recibida >= linea.esperada
                 else LineaPedidoProveedor.PARCIAL
             )
             linea.recibida_en = ahora
-            linea.save(update_fields=["cantidad_recibida", "estado", "recibida_en"])
+            linea.save(
+                update_fields=[
+                    "cantidad_recibida",
+                    "estado",
+                    "recibida_en",
+                    *_confirmar(linea, ahora),
+                ]
+            )
             resumen.recibidas.append((linea, unidades))
 
             if producto.estado == Producto.PRE_VENTA:
                 # CO-013: cubre las reservas en orden; lo que sobra, a la venta.
                 parcial = preventa.ResumenIngreso()
                 preventa._ingresar(producto.pk, unidades, actor, origen, parcial)
+                if ingreso is not None:
+                    ingreso.sumar(parcial)
                 resumen.a_preventa.append(producto)
             else:
                 anterior = producto.stock
@@ -218,6 +249,7 @@ def registrar_llegada(pedido, cantidades, actor, *, origen=""):
                 resumen.al_stock.append(producto)
 
         _cerrar_si_corresponde(pedido)
+        _propuesta_respondida(pedido, actor)
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.LLEGADA_PEDIDO,
             actor=actor,
@@ -225,8 +257,8 @@ def registrar_llegada(pedido, cantidades, actor, *, origen=""):
             detalle=f"{pedido}: "
             + "; ".join(
                 f"{linea.producto.especifico} llegaron {unidades} "
-                f"({linea.cantidad_recibida} de {linea.cantidad_pedida})"
-                + (" · de más" if linea.cantidad_recibida > linea.cantidad_pedida else "")
+                f"({linea.cantidad_recibida} de {linea.esperada})"
+                + (" · de más" if linea.cantidad_recibida > linea.esperada else "")
                 for linea, unidades in resumen.recibidas
             ),
         )
@@ -252,11 +284,18 @@ def descontar(producto, unidades, momento=None):
         linea.cantidad_recibida += toma
         linea.estado = (
             LineaPedidoProveedor.RECIBIDA
-            if linea.cantidad_recibida >= linea.cantidad_pedida
+            if linea.cantidad_recibida >= linea.esperada
             else LineaPedidoProveedor.PARCIAL
         )
         linea.recibida_en = momento
-        linea.save(update_fields=["cantidad_recibida", "estado", "recibida_en"])
+        linea.save(
+            update_fields=[
+                "cantidad_recibida",
+                "estado",
+                "recibida_en",
+                *_confirmar(linea, momento),
+            ]
+        )
         _cerrar_si_corresponde(linea.pedido)
         queda -= toma
 
@@ -281,6 +320,7 @@ def cerrar_sin_recibir(linea, motivo, actor):
         linea.motivo_cierre = motivo
         linea.save(update_fields=["estado", "motivo_cierre"])
         _cerrar_si_corresponde(linea.pedido)
+        _propuesta_respondida(linea.pedido, actor)
 
         con_reservas = reservado(producto) > 0
         if producto.estado == Producto.PRE_VENTA and pendiente(producto) == 0 and not con_reservas:
@@ -299,6 +339,26 @@ def cerrar_sin_recibir(linea, motivo, actor):
             ),
         )
     return con_reservas
+
+
+def _confirmar(linea, momento):
+    """R1 del plan 00 de la respuesta simple: **lo que llega es una respuesta**. Una
+    línea que nadie había respondido queda confirmada entera al llegar algo; si
+    después no manda el resto, se cierra como siempre. Devuelve los campos a guardar."""
+    if linea.respuesta != LineaPedidoProveedor.SIN_RESPUESTA:
+        return []
+    linea.respuesta = LineaPedidoProveedor.CONFIRMADA
+    linea.respondida_en = momento
+    return ["respuesta", "respondida_en"]
+
+
+def _propuesta_respondida(pedido, actor):
+    """Lo que llega, o se da por perdido, también es la respuesta del proveedor: la
+    propuesta que esperaba puede cerrarse (plan 00 de la respuesta del proveedor)."""
+    if pedido.propuesta_id:
+        from apps.restock import servicios as restock
+
+        restock.al_responder(pedido.propuesta, actor)
 
 
 def _cerrar_si_corresponde(pedido):

@@ -19,7 +19,7 @@ from apps.catalog.tests.factories import EditorialFactory
 from apps.core.models import RegistroAuditoria
 from apps.pedidos import preventa
 from apps.pedidos.models import AvisoDePreVenta, LineaPedido, Pedido
-from apps.pedidos.tests.util import crear_preventa, demorar, reservar
+from apps.pedidos.tests.util import crear_preventa, datos_de_llegada, demorar, reservar
 from apps.puntos.models import LotePuntos, MovimientoPuntos
 from apps.tienda.tests.compra_util import fijar_parametros
 
@@ -356,19 +356,20 @@ def test_CO013_el_articulo_de_despacho_diferido_llega_disponible_y_cierra_la_com
 def test_CO013_por_la_pantalla_se_revisa_y_despues_se_confirma(client_admin, cliente):
     producto = crear_preventa(dias=0)
     reservar(cliente, producto)
-    datos = {"producto": [producto.pk], f"unidades_{producto.pk}": "3"}
+    # B-05-017: la llegada se carga en «Por llegar», que pasa la pre-venta por CO-013.
+    datos = datos_de_llegada({producto: "3"})
     antes = _foto()
 
-    revision = client_admin.post(reverse("pedidos:ingreso"), datos)
+    revision = client_admin.post(reverse("suppliers:llegada_revisar"), datos)
 
     assert revision.status_code == 200
     assert "Pasa a la venta" in revision.content.decode()
     assert _foto() == antes
 
-    respuesta = client_admin.post(reverse("pedidos:ingreso"), {**datos, "confirmar": "1"})
+    respuesta = client_admin.post(reverse("suppliers:llegada_revisar"), {**datos, "confirmar": "1"})
 
     producto.refresh_from_db()
-    assert respuesta.url == reverse("pedidos:preventas")
+    assert respuesta.url == reverse("suppliers:por_llegar")
     assert (producto.estado, producto.stock) == (Producto.ACTIVO, 2)
 
 
@@ -378,28 +379,29 @@ def test_CO013_la_pantalla_rechaza_unidades_invalidas(client_admin, valor):
     producto = crear_preventa(dias=0)
 
     respuesta = client_admin.post(
-        reverse("pedidos:ingreso"),
-        {"producto": [producto.pk], f"unidades_{producto.pk}": valor, "confirmar": "1"},
+        reverse("suppliers:llegada_revisar"),
+        {**datos_de_llegada({producto: valor}), "confirmar": "1"},
         follow=True,
     )
 
     producto.refresh_from_db()
     assert producto.estado == Producto.PRE_VENTA
-    assert "Revise las unidades" in respuesta.content.decode()
+    assert "Revisá las unidades" in respuesta.content.decode()
 
 
 @pytest.mark.django_db
-def test_CO013_la_pantalla_agrupa_por_fecha_y_editorial(client_admin):
+def test_CO232_la_pantalla_agrupa_por_fecha_y_editorial_si_no_hay_proveedor(client_admin):
     ivrea, panini = EditorialFactory(nombre="Ivrea"), EditorialFactory(nombre="Panini")
     crear_preventa(dias=1, editorial=ivrea, titulo="Uno")
     crear_preventa(dias=1, editorial=ivrea, titulo="Dos")
     crear_preventa(dias=1, editorial=panini, titulo="Tres")
     crear_preventa(dias=-2, editorial=panini, titulo="Cuatro")
 
-    respuesta = client_admin.get(reverse("pedidos:preventas"))
+    respuesta = client_admin.get(reverse("suppliers:por_llegar"))
 
+    # Los pedidos de la fábrica no tienen proveedor: el grupo toma la editorial.
     grupos = respuesta.context["grupos"]
-    assert [(g.editorial.nombre, len(g.filas)) for g in grupos] == [
+    assert [(g.nombre, len(g.filas)) for g in grupos] == [
         ("Panini", 1),
         ("Ivrea", 2),
         ("Panini", 1),
@@ -413,13 +415,14 @@ def test_CO013_un_producto_que_ya_no_esta_en_preventa_se_informa(client_admin):
     producto = crear_preventa(dias=0)
     Producto.objects.filter(pk=producto.pk).update(estado=Producto.ACTIVO)
 
+    # La pre-venta sin pedido que dejó de serlo entre que se mostró y se cargó.
     respuesta = client_admin.post(
-        reverse("pedidos:ingreso"),
-        {"producto": [producto.pk], f"unidades_{producto.pk}": "3"},
+        reverse("suppliers:llegada_revisar"),
+        {"fila": [f"p{producto.pk}"], f"llegaron_p{producto.pk}": "3"},
         follow=True,
     )
 
-    assert "Ninguno de esos productos sigue en pre-venta" in respuesta.content.decode()
+    assert "ya no está en pre-venta" in respuesta.content.decode()
 
 
 # ---------------------------------------------------------------------------
@@ -750,11 +753,11 @@ def test_CO013_la_revision_dice_que_faltante_se_demora_y_cual_no_cambia(client_a
     vencido = crear_preventa(dias=0, titulo="Vencido")
     futuro = crear_preventa(dias=4, titulo="Futuro")
     reservar(cliente, vencido)
-    datos = {"producto": [vencido.pk, futuro.pk]}
+    datos = datos_de_llegada({vencido: "", futuro: ""})
 
-    respuesta = client_admin.post(reverse("pedidos:ingreso"), datos)
+    respuesta = client_admin.post(reverse("suppliers:llegada_revisar"), datos)
 
-    filas = {fila.producto.pk: fila for fila in respuesta.context["filas"]}
+    filas = {fila.producto.pk: fila for fila in respuesta.context["previas"]}
     assert filas[vencido.pk].se_demora and not filas[futuro.pk].se_demora
     contenido = respuesta.content.decode()
     assert "Se demora" in contenido and "Sin cambios" in contenido

@@ -421,6 +421,8 @@ def _pedir_a(proveedor, borradores, actor, sesion):
         lineas,
         actor,
         origen=PedidoProveedor.REVISION,
+        # B-05-014: si no sale, queda «Sin enviar» para reintentarlo.
+        registrar_si_falla=True,
         sesion=sesion,
         fecha_estimada=min(fechas) if fechas else None,
     )

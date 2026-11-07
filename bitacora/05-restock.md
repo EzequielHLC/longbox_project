@@ -275,3 +275,301 @@ postcondiciones: con el envío exitoso se crea el pedido y sus líneas. `CO-003`
 también lo crean (B-01-017). En el modelo de dominio, **PedidoProveedor** (proveedor, origen, estado,
 llegada estimada, enlace a la propuesta, la sesión o el lote) y **LineaPedidoProveedor** (producto,
 cantidad pedida y recibida, estado, motivo de cierre).
+
+---
+
+### B-05-011 · La propuesta pendiente se trabaja también desde su ficha
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-RST-APR`, `CU-RST-PRC`
+**Estado:** Abierta — pedido del responsable el 2026-10-28
+
+**Qué apareció.**
+La ficha de una propuesta (`CU-RST-PRC`) era de sólo lectura: para cambiar algo había que ir a
+«Restock» con «Trabajar la propuesta».
+
+**Qué dice la especificación.**
+> `CU-RST-APR`: el Administrador ajusta cantidades (`CO-069`), quita (`CO-070`) y agrega productos
+> (`CO-071`) en la propuesta pendiente.
+
+No dice desde qué pantalla.
+
+**Qué se hizo.**
+Si la propuesta está pendiente, su ficha muestra los mismos controles que «Restock»: cantidades,
+quitar, agregar y el paso a despachar o descartar cada proveedor. Son las mismas operaciones, y cada
+formulario vuelve a la pantalla de la que vino, siempre dentro del sitio. Una propuesta cerrada sigue
+siendo de lectura.
+
+**Qué habría que cambiar.**
+`CU-RST-PRC`: la ficha de la pendiente lleva a `CU-RST-APR` sin cambiar de pantalla.
+
+---
+
+### B-05-012 · Una propuesta se puede armar a mano, vacía
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-RST-PRO`, `CU-RST-APR`, `CO-067`, `CO-068`
+**Estado:** Abierta — pedido del responsable el 2026-10-28. **Falta el código `CO-NNN` de la
+operación nueva**
+
+**Qué apareció.**
+El responsable quiere poder pedir a un proveedor lo que él sabe que hace falta, sin esperar a que la
+demanda lo muestre.
+
+**Qué dice la especificación.**
+> «En lugar del paso 1, el Administrador ejecuta el ciclo manualmente desde el panel de gestión.»
+> (`CU-RST-PRO` A1, `CO-068`)
+
+El disparo manual arma la propuesta **desde la demanda**, y su E1 deja **cerrada** la que sale vacía.
+Sobre una propuesta armada a mano, `Nada`.
+
+**Qué se hizo.**
+- «Armar una a mano» crea una propuesta **vacía y pendiente**, de tipo «Armada a mano», auditada. Se
+  carga con «Agregar un producto» (`CO-071`) y sigue el camino de siempre: cantidades, despacho o
+  descarte por proveedor.
+- Como toda propuesta, **una sola pendiente por vez** (I-21): con otra pendiente se rechaza, también
+  si dos Administradores la arman a la vez.
+- **No cuenta como el ciclo de la semana**: el ciclo automático de la demanda corre igual.
+- **Una pendiente sin productos se puede cerrar** («Cerrar la propuesta vacía»), auditado. Si no,
+  bloquearía la siguiente.
+- `CO-068` no cambia: el disparo manual sigue mirando la demanda.
+
+**Qué habría que cambiar.**
+`CU-RST-PRO`: un flujo alternativo «armar a mano», con su operación y su contrato (código a asignar),
+y el cierre de una propuesta vacía. El estado «Armada a mano» en el tipo de disparo.
+
+---
+
+### B-05-013 · La propuesta despachada espera la respuesta del proveedor
+
+**Tipo:** Desvío · **Fecha:** 2026-10-28 · **Alcance:** `CU-RST-APR`, `CU-RST-LLE`, DME-13, `CO-072`, `CO-073`
+**Estado:** Abierta — consultado y aprobado por el responsable el 2026-10-28 ([plan de la respuesta
+del proveedor](../docs/planes/00-respuesta-del-proveedor.md)). **Faltan los códigos** del caso de
+uso nuevo y de sus operaciones
+
+**Qué apareció.**
+Despachado el pedido, el proveedor contesta qué manda, cuánto y cuándo, o que no puede. El sistema no
+tenía dónde anotarlo: la propuesta ya estaba cerrada y el pedido sólo esperaba la mercadería.
+
+**Qué dice la especificación.**
+> DME-13: la propuesta se cierra sola cuando no queda ningún proveedor pendiente de despacho o descarte.
+
+Es correcto para lo que modela, y el código se aparta igual: el responsable quiere seguir la
+respuesta desde la propuesta.
+
+**Qué se hizo.**
+- La propuesta despachada pasa a **«Esperando respuesta»** y se cierra cuando **todos sus proveedores
+  respondieron**. Mientras espera no cuenta como pendiente, así que se puede generar la próxima.
+- En cada línea del pedido se anota la respuesta: **confirmada**, **con otra cantidad** o **no
+  disponible**, con su motivo. También se anota **la fecha de llegada**. Se hace desde la ficha de la
+  propuesta y desde la del pedido, línea por línea, con «Confirmó todo» y «No puede abastecer nada».
+  Desde Telegram van las tres de un toque (B-19-019).
+- **Lo que se espera es lo confirmado**: cambiar la cantidad cambia lo pendiente, el cupo de la
+  pre-venta y cuándo la llegada se da por completa. Lo que llega, o se cierra sin recibir desde
+  «Pedidos por llegar», cuenta como respuesta.
+- **Si se confirma menos de lo reservado**, se acepta y se avisa. Nada se cancela solo: se resuelve
+  con la demora o la cancelación que ya existen.
+- **Atrasar la fecha de una pre-venta con reservas es una demora**: no se toca la fecha que ve el
+  Cliente y se pide registrar la demora (`CU-ALT-DEM`). Sin reservas, la pre-venta toma la fecha nueva.
+- Si a los tres días el proveedor no respondió, un recordatorio por Telegram, una sola vez, y una
+  línea en el resumen de la mañana.
+- La web y el chat pueden responder a la vez: el pedido se toma con bloqueo de fila.
+
+**Qué habría que cambiar.**
+DME-13: el estado «Esperando respuesta» y el cierre por respuesta. Un caso de uso nuevo, «Registrar la
+respuesta del proveedor», con sus operaciones (confirmar línea, cambiar la cantidad confirmada, cerrar
+lo que no puede abastecer, poner la fecha) y sus contratos. `CO-072` y `CO-073`: la propuesta ya no se
+cierra al despachar. En el modelo de dominio, **LineaPedidoProveedor** gana la respuesta y la cantidad
+confirmada, y **PedidoProveedor** la fecha del recordatorio.
+
+---
+
+### B-05-014 · El pedido que no salió queda a la vista, y el restock ve la pre-venta sin nada en camino
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CO-074`, `CU-ALT-REV`, `CU-RST-PRO`, `CU-RST-LLE`
+**Estado:** Abierta — decidido por el responsable el 2026-10-28
+
+**Qué apareció.**
+En la VM, Sakamoto Days #24 entró por un borrador y se confirmó en una sesión de revisión. Nació en
+Pre-venta, como toda novedad (B-01-017). Al cerrar la sesión, el correo del pedido falló: Gmail rechaza
+el inicio de sesión desde la VM. Como el pedido sólo se registraba si salía (decisión 1 del plan del
+circuito), el tomo quedó en Pre-venta sin nada en camino, con cupo cero y sin ningún lugar desde donde
+volver a pedirlo. El restock tampoco lo proponía, porque sólo mira lo Activo o Agotado.
+
+**Qué dice la especificación.**
+> `CO-074` E1: si el envío falla tras tres reintentos, registra el error definitivo en el log y
+> notifica al Administrador.
+
+No dice nada de volver a intentarlo, ni de una pre-venta que se queda sin pedido.
+
+**Qué se hizo.**
+- **El pedido que no sale al cerrar una revisión queda registrado «Sin enviar»**, con el error, en
+  «Pedidos por llegar» (primero, y con su cifra). Desde su ficha se **reintenta el envío** o se
+  **descarta** con motivo. También se reintenta desde Telegram, donde llega el aviso con el botón.
+- **No da cupo hasta que sale**, porque nadie lo está mandando: lo que viene en camino cuenta sólo de
+  pedidos enviados. Tampoco recibe llegadas ni respuestas.
+- Si el reintento sale, queda «Por llegar» como si hubiera salido la primera vez: abre sus pre-ventas,
+  da cupo y avisa. Si se descarta, la pre-venta sin reservas deja de estarlo, como al cerrar una línea
+  sin recibir.
+- **Una pre-venta sin nada en camino entra en la propuesta de restock**, con al menos lo reservado como
+  cantidad sugerida.
+- El despacho de restock y el pedido a mano no cambian: si fallan, ya quedaban para reintentarse desde
+  su pantalla (`CO-072` E2 y el formulario).
+
+**Qué habría que cambiar.**
+`CO-074` E1: el pedido queda «Sin enviar» para reintentarlo o descartarlo. `CU-RST-PRO` paso 2: entra
+también la pre-venta sin nada en camino. En el modelo de dominio, **PedidoProveedor** gana el estado
+«Sin enviar» y el error del envío.
+
+---
+
+### B-05-015 · La respuesta del proveedor, en un solo lugar y con una pregunta por vez
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** caso de uso de la respuesta del proveedor (B-05-013, sin código), `CU-RST-APR`
+**Estado:** Abierta — plan [00 de la respuesta simple](../docs/planes/00-respuesta-simple-y-tomo-que-vuelve.md), aprobado el 2026-10-28
+
+**Qué apareció.**
+El responsable encontró confusa la respuesta del proveedor y la pantalla, recargada. El análisis
+encontró siete problemas de pantalla y cinco de lógica, listados en el plan. Los más serios:
+
+- una llegada no contaba como respuesta, y a los 3 días salía el recordatorio de «no respondió»
+  aunque ya hubiera llegado mercadería;
+- se podía confirmar más de lo pedido, lo que inflaba el cupo de la pre-venta;
+- el número de cada línea se ignoraba sin aviso si el desplegable no decía «Con otra cantidad».
+
+**Qué dice la especificación.**
+`Nada`: el caso de uso de la respuesta todavía no está en el documento (B-05-013).
+
+**Qué se hizo.**
+- **La respuesta se anota sólo en la ficha del pedido.** Una pregunta, «¿Qué contestó…?», con
+  tres respuestas como en Telegram: *Confirmó todo* · *Confirmó con cambios* · *No puede
+  abastecer*. Cada una es una pantalla propia que se abre como diálogo. «Con cambios» muestra por
+  línea *Tal cual* · *Menos* · *No la tiene*; el número aparece sólo con «Menos» y el motivo sólo
+  con «No la tiene». «No puede» dice antes de confirmar qué pre-ventas pierden lo que esperaban.
+  Cuando todo tiene respuesta, se achica a una línea.
+- **Una sola tabla de productos, que sólo informa.** La llegada se carga en su pantalla, antes del
+  segundo tiempo de siempre.
+- **La propuesta ya no tiene formularios**: una columna «Respuesta» con «Anotar la respuesta», y el
+  estado dice hace cuánto espera, o que espera un reintento de envío.
+- **Reglas** (valen también para Telegram):
+  - **R1:** lo que llega es una respuesta: la línea queda confirmada entera (ambigüedad 4).
+  - **R2:** no se confirma más de lo pedido (ambigüedad 3).
+  - **R3:** lo que no cambió no se vuelve a anotar ni a auditar.
+  - **R4:** el motivo es de cada línea.
+  - **R7:** las advertencias enlazan la demora del producto.
+  - Además, la fecha se puede borrar.
+- Telegram suma «✏️ Confirmó con cambios», que abre la pantalla de la web.
+
+**Qué habría que cambiar.**
+Cuando el caso de uso de la respuesta entre al documento: las reglas R1 a R4 como postcondiciones.
+
+---
+
+### B-05-016 · Agregar un producto a la propuesta, también por título, y con mensajes que dicen qué pasó
+
+**Tipo:** Agregado · **Fecha:** 2026-10-28 · **Alcance:** `CU-RST-APR` A2, `CO-071`
+**Estado:** Abierta — pedido del responsable el 2026-10-28, con el plan de la respuesta simple
+
+**Qué apareció.**
+El responsable no pudo agregar Sakamoto Days #24 (`E-003891`) a una propuesta: el error decía «no
+hay un producto editorial con el código…». El tomo existía y se podía pedir. El buscador sólo
+aceptaba el código, el ISBN o el código de barras exactos, y este tomo no tenía ni ISBN ni código
+de barras. El mensaje decía «código» aunque se hubiera escrito un título, y no distinguía entre
+algo que no existe y algo que no se puede pedir.
+
+**Qué dice la especificación.**
+> `CU-RST-APR` paso 2: «Puede […] añadir cualquier producto del catálogo con una cantidad definida
+> manualmente.»
+
+Cómo se lo busca, `Nada`.
+
+**Qué se hizo.**
+- **El campo ofrece el catálogo**, como en las ofertas: el código primero y después el nombre, sólo
+  lo que se puede pedir (ni cancelado ni dado de baja).
+- **El servidor acepta también el título con su número** («Sakamoto Days 24»), sin tildes ni
+  mayúsculas, y el ISBN con guiones.
+- **Los mensajes dicen qué pasó**:
+  - falta el número del tomo;
+  - no existe por ningún criterio;
+  - coincide con más de uno, y cuáles son;
+  - está cancelado por la editorial (con la salida «Volver a anunciar», B-01-026);
+  - está dado de baja;
+  - no es material editorial.
+
+**Qué habría que cambiar.**
+`Nada` en el documento de análisis.
+
+---
+
+### B-05-017 · Una sola pantalla para la llegada de mercadería
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-ALT-TRA` pasos 4 a 7, `CU-RST-LLE`, `CO-013`, `CO-232`
+**Estado:** Abierta — plan [00 de últimos cambios](../docs/planes/00-ultimos-cambios-antes-del-cierre.md), aprobado por el responsable el 2026-11-07 con sus recomendaciones
+
+**Qué apareció.**
+La llegada de una pre-venta se cargaba en «Pre-ventas por llegar» (por producto, fecha y editorial) y
+la de un pedido a proveedor en «Pedidos por llegar» (por pedido). Desde B-05-010 casi toda pre-venta
+tiene su pedido, así que la misma caja se podía cargar por dos lados, y cada panel mostraba la mitad:
+uno las reservas, el otro lo pedido y lo confirmado. El responsable: «la información se pierde entre
+un panel y otro. Hace la operatividad confusa».
+
+**Qué dice la especificación.**
+> «El Administrador recibe el lote físico, verifica su contenido y confirma el ingreso de stock en el
+> sistema, indicando las unidades recibidas por producto.» (`CU-ALT-TRA`, paso 4)
+
+La llegada de un pedido a proveedor no está en el documento (`CU-RST-LLE`, código aprobado en C-23).
+
+**Qué se hizo.**
+- **Una pantalla, «Por llegar»** (Proveedores), agrupada **por proveedor y fecha estimada**: lo que
+  entra junto por la puerta. Cada línea dice de qué pedido es, cuánto se pidió, se confirmó y se
+  recibió y, si es pre-venta, sus reservas y si está demorada. Conserva el calendario del mes.
+- **Una carga y una revisión.** Al confirmar, cada línea suma a su pedido; una pre-venta cubre sus
+  reservas como siempre (`CO-013`). **Un faltante** (una pre-venta del grupo que queda en cero) se
+  demora si su fecha ya pasó, como `CU-ALT-TRA` A1; lo que no es pre-venta queda abierto.
+- **Una pre-venta sin pedido registrado** aparece en su grupo, marcada, y se carga igual.
+- Las dos direcciones viejas llevan a la nueva. La lista de pedidos queda como consulta.
+- **Códigos.** El responsable autorizó el 2026-11-07 nombrar los contratos nuevos de este plan:
+  `CO-228` y `CO-229` (modelo de respaldo), `CO-230` y `CO-231` (Google) y **`CO-232`
+  `confirmarLlegadaDeMercaderia`**, el de esta pantalla. Se toman los siguientes al último existente
+  (`CO-227`) y no se reusan los huecos (`CO-219`, `CO-222` a `CO-226`).
+
+**Qué habría que cambiar.**
+`CU-ALT-TRA` pasos 4 a 7: invoca la llegada de mercadería; el caso de uso conserva la vigilancia
+(avisos y escalado). `CU-RST-LLE`, ficha nueva, «Registrar la llegada de mercadería», con `CO-232`:
+*precondición*, hay líneas abiertas de pedidos enviados o pre-ventas sin pedido; *postcondiciones*,
+cada línea suma lo recibido (Parcial o Recibida, con lo de más en la auditoría), cada pre-venta pasa
+por `CO-013`, cada producto sin reservas suma al stock con `CO-077`, cada pre-venta del grupo en cero
+con la fecha cumplida se demora (`CO-015`); *excepción*, el fallo de un pedido no frena a los demás
+(como `CO-013` E3).
+
+---
+
+### B-05-018 · El pedido a mano busca por nombre, quita renglones y no pide lo que trae otro proveedor
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-RST-PDA`, `CU-RST-APR` A2, `CO-071`, `CO-074`
+**Estado:** Abierta — pedido del responsable el 2026-11-07, durante el plan [00 de últimos cambios](../docs/planes/00-ultimos-cambios-antes-del-cierre.md)
+
+**Qué apareció.**
+El responsable: «Nadie se acuerda de +300 códigos de producto», y «hay que revisar también si los
+productos que se piden corresponden al proveedor declarado, si no, le estamos pidiendo algo que no
+tiene». El pedido a mano sólo aceptaba código o ISBN, sus renglones no se podían quitar, y nada
+impedía pedirle a un proveedor un tomo que trae otro.
+
+**Qué dice la especificación.**
+`Nada`. El pedido a mano no tiene ficha (`CU-RST-PDA`, código aprobado en C-23).
+
+**Qué se hizo.**
+- **Cada renglón busca en el catálogo**, como «Agregar un producto» de Restock (B-05-016): la lista
+  ofrece «código — título #tomo» y el servidor acepta el código, el ISBN, el código de barras o el
+  título con su número. La búsqueda vive ahora en un solo lugar para los dos (`catalog.busqueda`).
+- **Los renglones se agregan y se quitan.** El último no se quita: se vacía.
+- **No se le pide a un proveedor lo que trae otro.** Quién trae cada producto es la regla de Restock
+  (B-05-003): su proveedor, si está activo; si no, el único proveedor habitual de su editorial. Si es
+  otro, el renglón lo dice («lo trae Panini Argentina, no Distribuidora Ivrea») y el pedido no sale.
+  **Si no se puede saber quién lo trae, se acepta**: bloquearlo frenaría a una distribuidora que
+  trae varias editoriales y no tiene sus tomos asignados.
+- Como en Restock, no se pide un tomo cancelado por la editorial ni uno dado de baja; a diferencia
+  de Restock, el pedido a mano admite material no editorial por su código.
+
+**Qué habría que cambiar.**
+La ficha de `CU-RST-PDA`: el renglón por código, ISBN o título con su número; la excepción del
+producto que trae otro proveedor; y la regla de quién trae cada producto, que hoy sólo describe
+`CU-RST-PRO` paso 4 (B-05-003).

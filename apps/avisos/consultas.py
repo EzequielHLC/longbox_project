@@ -64,15 +64,15 @@ def buscar(texto, limite=LIMITE):
 
 def stock(texto):
     if not texto:
-        return "Decime qué buscar: <code>/stock Chainsaw Man 12</code>, un código o un ISBN."
+        return "🔎 Decime qué buscar: <code>/stock Chainsaw Man 12</code>, un código o un ISBN."
     encontrados = buscar(texto)
     if not encontrados:
-        return f"No encontré nada con «{_e(texto)}»."
+        return f"🔎 No encontré nada con «{_e(texto)}». ¿Probamos con otro nombre o el código?"
     bloques = []
     for producto in encontrados:
         especifico = producto.especifico
         linea = (
-            f"<b>{_e(especifico)}</b> · <code>{_e(producto.codigo)}</code>\n"
+            f"📚 <b>{_e(especifico)}</b> · <code>{_e(producto.codigo)}</code>\n"
             f"Stock {producto.stock} · {_e(producto.get_estado_display())} · "
             f"{_e(pesos(producto.precio))}"
         )
@@ -109,7 +109,7 @@ def llega(dias=7):
         if p.fecha_estimada and p.fecha_estimada <= hasta
     ]
     if not preventas and not pedidos:
-        return f"No llega nada en los próximos {dias} días, y no hay nada atrasado."
+        return f"🚚 No llega nada en los próximos {dias} días, y no hay nada atrasado. ¡Tranqui!"
     partes = []
     if preventas:
         filas = [
@@ -117,7 +117,7 @@ def llega(dias=7):
             + (" <b>(atrasada)</b>" if p.llegada_vigente < hoy else "")
             for p in preventas[:15]
         ]
-        partes.append(f"<b>Pre-ventas</b> ({len(preventas)})\n" + "\n".join(filas))
+        partes.append(f"📦 <b>Pre-ventas</b> ({len(preventas)})\n" + "\n".join(filas))
     if pedidos:
         filas = [
             f"• Pedido #{p.pk} · {_e(p.nombre_proveedor)} — {_fecha(p.fecha_estimada)}"
@@ -125,10 +125,10 @@ def llega(dias=7):
             + (" <b>(atrasado)</b>" if p.fecha_estimada < hoy else "")
             for p in pedidos[:10]
         ]
-        partes.append(f"<b>Pedidos a proveedores</b> ({len(pedidos)})\n" + "\n".join(filas))
+        partes.append(f"🚚 <b>Pedidos a proveedores</b> ({len(pedidos)})\n" + "\n".join(filas))
     ver = enlace("suppliers:pedido_lista")
     if ver:
-        partes.append(f'<a href="{_e(ver)}">Pedidos por llegar</a>')
+        partes.append(f'👉 <a href="{_e(ver)}">Pedidos por llegar</a>')
     return "\n\n".join(partes)
 
 
@@ -146,12 +146,12 @@ def pendientes():
     por_armar = Pedido.objects.filter(estado=Pedido.PENDIENTE_ARMADO).count()
     propuesta = restock.pendiente()
     filas = [
-        f"• Correos de proveedores sin decidir: <b>{correos.count()}</b>",
-        f"• Borradores para revisar: <b>{borradores}</b>",
-        f"• Pedidos de clientes por armar: <b>{por_armar}</b>",
-        f"• Propuesta de restock: <b>{'pendiente' if propuesta else 'ninguna'}</b>",
+        f"📬 Correos de proveedores sin decidir: <b>{correos.count()}</b>",
+        f"📝 Borradores para revisar: <b>{borradores}</b>",
+        f"📦 Pedidos de clientes por armar: <b>{por_armar}</b>",
+        f"🔁 Propuesta de restock: <b>{'pendiente' if propuesta else 'ninguna'}</b>",
     ]
-    texto = "<b>Lo que espera una decisión</b>\n" + "\n".join(filas)
+    texto = "📋 <b>Lo que espera una decisión</b>\n" + "\n".join(filas)
     ultimos = list(correos[:3])
     if ultimos:
         texto += "\n\n" + "\n".join(
@@ -170,9 +170,9 @@ def caja():
 
     resumen = caja_servicios.resumen_previo()
     if resumen.cierre_de_hoy:
-        return f"La caja de hoy ya se cerró: {_e(pesos(resumen.cierre_de_hoy.total_global))}."
+        return f"🔒 La caja de hoy ya se cerró: {_e(pesos(resumen.cierre_de_hoy.total_global))}."
     filas = [f"• {_e(canal)}: {_e(pesos(monto))}" for canal, monto in resumen.por_canal]
-    texto = f"<b>Cobrado sin cerrar: {_e(pesos(resumen.total_global))}</b>\n" + "\n".join(filas)
+    texto = f"💰 <b>Cobrado sin cerrar: {_e(pesos(resumen.total_global))}</b>\n" + "\n".join(filas)
     if resumen.pendientes:
         texto += f"\n\n{len(resumen.pendientes)} pago(s) esperando verificación."
     return texto

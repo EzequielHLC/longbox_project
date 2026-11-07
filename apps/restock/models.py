@@ -54,16 +54,23 @@ class SuscripcionReposicion(models.Model):
 
 class PropuestaRestock(models.Model):
     PENDIENTE = "pendiente"
+    # Plan 00 de la respuesta del proveedor (desvío de DME-13, aprobado): despachada,
+    # queda abierta hasta que cada proveedor contesta qué manda y cuándo.
+    ESPERANDO = "esperando"
     CERRADA = "cerrada"
     ESTADO_CHOICES = [  # noqa: RUF012
         (PENDIENTE, "Pendiente de aprobación"),
+        (ESPERANDO, "Esperando respuesta"),
         (CERRADA, "Cerrada"),
     ]
     AUTOMATICO = "automatico"
     MANUAL = "manual"
+    # B-05-012: armada a mano por el Administrador, vacía, sin mirar la demanda.
+    A_MANO = "a_mano"
     DISPARO_CHOICES = [  # noqa: RUF012
         (AUTOMATICO, "Automático"),
         (MANUAL, "Manual"),
+        (A_MANO, "Armada a mano"),
     ]
 
     fecha_generacion = models.DateTimeField("fecha de generación", default=timezone.now)
@@ -86,6 +93,23 @@ class PropuestaRestock(models.Model):
 
     def __str__(self):
         return f"Propuesta del {timezone.localtime(self.fecha_generacion):%d/%m/%Y}"
+
+    @property
+    def espera(self):
+        """Qué espera la propuesta y desde cuándo (plan 00 de la respuesta simple, R5 y
+        R6). Vacío si no está esperando. Lee los pedidos ya traídos, sin sus líneas."""
+        if self.estado != self.ESPERANDO:
+            return ""
+        pedidos = list(self.pedidos.all())
+        if any(pedido.estado == "sin_enviar" for pedido in pedidos):
+            return "Esperando un reintento de envío"
+        desde = min((pedido.creado_en for pedido in pedidos), default=None)
+        if desde is None:
+            return "Esperando respuesta"
+        dias = (timezone.localdate() - timezone.localdate(desde)).days
+        if dias <= 0:
+            return "Esperando respuesta desde hoy"
+        return f"Esperando respuesta hace {dias} día{'s' if dias != 1 else ''}"
 
 
 class LineaPropuestaRestock(models.Model):
