@@ -895,6 +895,10 @@ def cancelar_preventa(producto, actor):
             linea.save(update_fields=["estado", "compensacion_cerrada"])
         for pedido in {linea.pedido for linea in lineas}:
             ubicar_pedido(pedido, actor, momento)
+        # B-05-019: lo pedido al proveedor ya no se espera.
+        from apps.suppliers import llegadas
+
+        cerradas = llegadas.cerrar_lineas_de(p, "La editorial canceló el título.", actor)
         for cliente in informe.clientes:
             if cliente.usuario is None or not cliente.puntos:
                 continue
@@ -915,6 +919,7 @@ def cancelar_preventa(producto, actor):
             detalle=(
                 f"{p}: Pre-venta → Cancelado por editorial. {informe.reservas} reserva(s) "
                 f"cancelada(s), {informe.total_puntos} pts emitidos."
+                + (f" {cerradas} línea(s) de pedido al proveedor cerrada(s)." if cerradas else "")
             ),
         )
     return informe

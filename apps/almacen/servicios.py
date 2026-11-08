@@ -322,9 +322,10 @@ def confirmar_despacho(usuario, ids, envio, *, request, pasarela=None):
             )
         return Despacho(solicitud=solicitud)
 
-    from apps.tienda.compra import _solicitar_cobro
+    from apps.tienda.compra import _solicitar_cobro, reemplazar_abiertos
     from apps.tienda.models import CobroEnCurso
 
+    reemplazar_abiertos(tipo=CobroEnCurso.DESPACHO, usuario=usuario)
     cobro = CobroEnCurso.objects.create(
         referencia=secrets.token_hex(16),
         tipo=CobroEnCurso.DESPACHO,

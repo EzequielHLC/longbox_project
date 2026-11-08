@@ -11,6 +11,28 @@ enlazan a éste.
 
 ## Resumen
 
+Del 2026-11-07, más tarde: **la revisión integral antes del cierre**
+([plan](planes/00-revision-integral.md), aprobado con las recomendaciones). Corrige lo construido
+para que cumpla sus contratos; ningún caso de uso cambia de estado:
+
+- **Pagos.** Un pago aprobado después de un rechazo se cobraba sin pedido ni reembolso: ahora el
+  rechazo deja el cobro abierto para reintentar, y confirmar de nuevo reemplaza al anterior
+  (B-07-043). Un invitado cuyo producto pasa a pre-venta mientras paga se reembolsa (B-07-044). La
+  preferencia de MercadoPago vence con el abandono del cobro (B-07-045). **MercadoPago quedó
+  probado de punta a punta** en la VM con cuentas de prueba.
+- **Stock y estados.** Una llegada ya no reactiva un producto Cancelado por editorial o
+  Descatalogado, y cancelar o descatalogar cierra lo pedido al proveedor (B-05-019). El cambio por
+  garantía y la edición que dejan el stock en cero abren la pre-venta si hay un pedido en camino
+  (B-05-020). El pedido a mano no admite un producto sin proveedor identificable (B-05-021).
+- **Puntos.** El canje, en la tienda y en el mostrador, no usa lo comprometido por un pago en curso
+  (B-10-013).
+- **Correo.** Una caída del servidor se reintenta y, si persiste, se avisa por Telegram (B-19-021).
+- **Seguridad.** Tope a la recuperación de contraseña (B-12-005); dos pantallas verificaban el
+  objeto antes que el rol y dos acciones de retiro respondían 500 o 302 a una clave inexistente.
+- **Pantallas.** Las fechas al editar una oferta y en Reportes aparecían vacías; «Por llegar»
+  desbordaba en el celular. Una prueba recorre todos los formularios en busca de selectores de
+  fecha sin formato ISO.
+
 Del 2026-11-07: **los últimos cambios antes del cierre** ([plan](planes/00-ultimos-cambios-antes-del-cierre.md),
 aprobado con sus recomendaciones; el responsable autorizó nombrar `CO-228` a `CO-232`). Ningún caso
 de uso del documento cambia de estado:
@@ -529,6 +551,15 @@ no tiene fila.
 ---
 
 ## Las siete puertas
+
+Medición del **2026-11-07**, al cerrar la [revisión integral](planes/00-revision-integral.md):
+**3825 pruebas pasan**, 0 fallos, en paralelo (3 min 44 s); **contratos**: 219 de 219 con prueba
+según [`COBERTURA.md`](pruebas/COBERTURA.md), regenerado; cobertura **97 %** (17076 sentencias, 562
+sin cubrir); `ruff` y `black` sin hallazgos ni cambios; `bandit` sin hallazgos; `pip-audit` sin
+vulnerabilidades; `check --deploy` sin advertencias. `tienda.0007` aplicó sobre la base de
+desarrollo, `migrate --check` no deja nada pendiente y `makemigrations --check` no detecta cambios.
+El ancho a 500 px se volvió a medir en las 70 pantallas: ninguna desborda. «Por llegar» se revisó
+además con una captura.
 
 Medición del **2026-11-07**, al cerrar las partes A y B del plan de últimos cambios: **3788 pruebas
 pasan**, 0 fallos; cobertura **97 %**; `ruff` y `black` sin hallazgos ni cambios; `bandit` sin

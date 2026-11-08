@@ -21,6 +21,7 @@ from urllib.parse import parse_qs
 
 from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.core import integraciones
 from apps.tienda.pasarelas import AvisoDePago, AvisoInvalido, _monto
@@ -55,7 +56,14 @@ class MercadoPago:
         return {"Authorization": f"Bearer {self.token}", **extra}
 
     def iniciar_cobro(self, cobro, request):
+        from apps.tienda.compra import ABANDONO
+
         resultado = request.build_absolute_uri(reverse("compra:resultado", args=[cobro.referencia]))
+        # B-07-045: la preferencia vence cuando el sistema da el cobro por
+        # abandonado. Sin eso, un cupón de pago en efectivo se paga días después
+        # y se reembolsa, porque el cobro ya se descartó.
+        desde = timezone.localtime(cobro.creado_en or timezone.now())
+        vence = (desde + ABANDONO).isoformat(timespec="milliseconds")
         cuerpo = {
             "items": [
                 {
@@ -74,6 +82,10 @@ class MercadoPago:
             ),
             "back_urls": {"success": resultado, "failure": resultado, "pending": resultado},
             "auto_return": "approved",
+            "expires": True,
+            "expiration_date_from": desde.isoformat(timespec="milliseconds"),
+            "expiration_date_to": vence,
+            "date_of_expiration": vence,
         }
         respuesta = integraciones.pedir(
             f"{API}/checkout/preferences",

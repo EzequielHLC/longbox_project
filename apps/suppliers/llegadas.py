@@ -163,6 +163,8 @@ class ResumenLlegada:
     recibidas: list = field(default_factory=list)  # (línea, unidades)
     a_preventa: list = field(default_factory=list)  # productos que pasaron por CO-013
     al_stock: list = field(default_factory=list)  # productos que sumaron stock
+    # B-05-019: sumaron stock sin volver a la venta (cancelados o descatalogados).
+    fuera_de_venta: list = field(default_factory=list)
 
     @property
     def unidades(self):
@@ -241,12 +243,22 @@ def registrar_llegada(pedido, cantidades, actor, *, origen="", ingreso=None, vis
                 resumen.a_preventa.append(producto)
             else:
                 anterior = producto.stock
+                # B-05-019: sólo vuelve a la venta lo que estaba a la venta. Un
+                # producto cancelado por la editorial (terminal, CO-027) o
+                # descatalogado (se reactiva con CO-036) suma el stock y conserva
+                # su estado.
+                a_la_venta = producto.estado in (Producto.ACTIVO, Producto.AGOTADO)
+                if a_la_venta:
+                    producto.estado = Producto.ACTIVO
                 Producto.objects.filter(pk=producto.pk).update(
-                    stock=anterior + unidades, estado=Producto.ACTIVO, actualizado_en=ahora
+                    stock=anterior + unidades, estado=producto.estado, actualizado_en=ahora
                 )
                 producto.stock = anterior + unidades
-                restock.al_subir_stock(producto, anterior, producto.stock, origen=origen)
-                resumen.al_stock.append(producto)
+                if a_la_venta:
+                    restock.al_subir_stock(producto, anterior, producto.stock, origen=origen)
+                    resumen.al_stock.append(producto)
+                else:
+                    resumen.fuera_de_venta.append(producto)
 
         _cerrar_si_corresponde(pedido)
         _propuesta_respondida(pedido, actor)
@@ -339,6 +351,25 @@ def cerrar_sin_recibir(linea, motivo, actor):
             ),
         )
     return con_reservas
+
+
+def cerrar_lineas_de(producto, motivo, actor):
+    """B-05-019: lo que se pidió de un producto que ya no se vende no se espera.
+
+    Al cancelar la pre-venta (`CO-027`) o descatalogar (`CO-034`), las líneas
+    abiertas de pedidos enviados o sin enviar se cierran como no recibidas, con
+    el motivo, y dejan de figurar en «Por llegar». Devuelve cuántas se cerraron.
+    """
+    lineas = list(
+        LineaPedidoProveedor.objects.filter(
+            producto_id=producto.pk,
+            estado__in=LineaPedidoProveedor.ABIERTAS,
+            pedido__estado__in=(PedidoProveedor.ABIERTO, PedidoProveedor.SIN_ENVIAR),
+        ).order_by("pk")
+    )
+    for linea in lineas:
+        cerrar_sin_recibir(linea, motivo, actor)
+    return len(lineas)
 
 
 def _confirmar(linea, momento):

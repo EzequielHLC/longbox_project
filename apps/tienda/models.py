@@ -158,6 +158,10 @@ class CobroEnCurso(models.Model):
     # Lo que la pasarela devuelve al iniciar el cobro (en MercadoPago, la preferencia).
     id_externo = models.CharField("identificador en la pasarela", max_length=100, blank=True)
     mensaje = models.CharField("mensaje de la pasarela", max_length=300, blank=True)
+    # B-07-043: el último pago que la pasarela rechazó. Un rechazo no cierra el
+    # cobro —en la pasarela se reintenta con otro medio— y un aviso repetido del
+    # mismo pago no se vuelve a registrar.
+    pago_rechazado = models.CharField("último pago rechazado", max_length=100, blank=True)
     # La dirección de la tienda desde la que se compró: el aviso de la pasarela
     # no trae la petición del Cliente, y el correo necesita el enlace al pedido.
     origen = models.CharField("dirección de la tienda", max_length=200, blank=True)
@@ -190,3 +194,8 @@ class CobroEnCurso(models.Model):
     @property
     def correo_de_contacto(self):
         return self.usuario.email if self.usuario_id else self.correo_invitado
+
+    @property
+    def rechazado_y_abierto(self):
+        """La pasarela rechazó un intento y el cobro todavía acepta otro (B-07-043)."""
+        return self.estado == self.PENDIENTE and bool(self.pago_rechazado)

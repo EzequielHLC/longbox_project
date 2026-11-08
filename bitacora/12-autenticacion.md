@@ -245,3 +245,29 @@ queda fijo, como lo escribe el contrato. Los cambios se auditan como el resto de
 
 **Qué habría que cambiar.**
 `ConfiguracionSistema`: los dos atributos, que la ficha de `CU-CFG-PAR` ya nombra.
+
+---
+
+### B-12-005 · La recuperación de contraseña tiene un tope por correo y por IP
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-AUT-REC`, `CO-117`
+**Estado:** Abierta
+
+**Qué apareció.**
+Cualquiera podía pedir el enlace de recuperación en serie para un correo ajeno: el sistema mandaba
+un correo por pedido. Así servía para inundar un buzón y gastaba el cupo diario del servidor de
+correo, que comparten todos los avisos (revisión integral, R-08).
+
+**Qué dice la especificación.**
+> `CO-117`, Responsabilidades: «Emitir un token de recuperación de un solo uso y enviar el enlace al
+> correo, si corresponde a una cuenta activa, respondiendo siempre lo mismo.»
+
+No pone límite a la cantidad de pedidos.
+
+**Qué se hizo.**
+Se aceptan hasta 3 pedidos por hora para un mismo correo y hasta 10 desde una misma IP. Pasado el
+tope no se emite token ni sale correo, pero la pantalla es la misma de siempre: el tope tampoco
+revela si la cuenta existe. El tope vence solo a la hora.
+
+**Qué habría que cambiar.**
+`CO-117`, Notas: el tope de pedidos por correo y por IP, con la respuesta indistinguible.

@@ -175,7 +175,7 @@ def test_frontera_mp_un_pago_rechazado_registra_el_rechazo(navegador, client):
         )
 
     cobro.refresh_from_db()
-    assert cobro.estado == CobroEnCurso.RECHAZADO
+    assert cobro.rechazado_y_abierto
     assert cobro.mensaje == "cc_rejected_insufficient_amount"
 
 
@@ -239,3 +239,107 @@ def test_frontera_una_pasarela_desconocida_no_existe():
 
 def test_frontera_mercadopago_se_elige_por_su_clave():
     assert isinstance(pasarela("mercadopago"), mercadopago.MercadoPago)
+
+
+# ---------------------------------------------------------------------------
+# B-07-043: un rechazo no cierra el cobro (revisión integral, R-01)
+# ---------------------------------------------------------------------------
+
+
+def _avisar_pago(client, datos):
+    with responde(datos):
+        client.post(
+            URL_AVISO_MP,
+            data={"type": "payment", "data": {"id": str(datos["id"])}},
+            content_type="application/json",
+        )
+
+
+@override_settings(MERCADOPAGO_ACCESS_TOKEN="TEST-token")
+def test_CO089_un_aprobado_despues_de_un_rechazo_genera_el_pedido(navegador, client):
+    with responde({"id": "pref-1", "init_point": "https://mp.test/pagar"}):
+        _, cobro = confirmar(navegador)
+
+    _avisar_pago(client, {**pago(cobro, estado="rejected"), "id": 1})
+    with patch.object(MercadoPago, "reembolsar") as reembolsar:
+        _avisar_pago(client, {**pago(cobro), "id": 2})
+
+    cobro.refresh_from_db()
+    assert cobro.estado == CobroEnCurso.PROCESADO
+    assert Pedido.objects.count() == 1
+    assert TransaccionPago.objects.get().referencia == "mp-2"
+    reembolsar.assert_not_called()
+
+
+@override_settings(MERCADOPAGO_ACCESS_TOKEN="TEST-token")
+def test_CO089_E2_un_rechazo_repetido_se_registra_una_vez(navegador, client):
+    from apps.core.models import RegistroAuditoria
+
+    with responde({"id": "pref-1", "init_point": "https://mp.test/pagar"}):
+        _, cobro = confirmar(navegador)
+
+    _avisar_pago(client, {**pago(cobro, estado="rejected"), "id": 1})
+    _avisar_pago(client, {**pago(cobro, estado="rejected"), "id": 1})
+    _avisar_pago(client, {**pago(cobro, estado="rejected"), "id": 7})
+
+    rechazos = RegistroAuditoria.objects.filter(accion=RegistroAuditoria.PAGO_RECHAZADO)
+    assert rechazos.count() == 2
+    assert not Pedido.objects.exists()
+
+
+@override_settings(MERCADOPAGO_ACCESS_TOKEN="TEST-token")
+def test_CO089_el_resultado_muestra_el_rechazo_y_no_se_recarga(navegador, client):
+    with responde({"id": "pref-1", "init_point": "https://mp.test/pagar"}):
+        _, cobro = confirmar(navegador)
+    _avisar_pago(client, {**pago(cobro, estado="rejected"), "id": 1})
+
+    url = reverse("compra:resultado", args=[cobro.referencia])
+    rechazo = navegador.get(url).content.decode()
+    # Volvió de la pasarela con otro intento aprobado: espera el aviso.
+    en_camino = navegador.get(url, {"collection_status": "approved"}).content.decode()
+
+    assert "El pago no se aprobó" in rechazo
+    assert 'http-equiv="refresh"' not in rechazo
+    assert "Esperando la confirmación del pago" in en_camino
+    assert 'http-equiv="refresh"' in en_camino
+
+
+@override_settings(MERCADOPAGO_ACCESS_TOKEN="TEST-token")
+def test_CO088_un_intento_nuevo_reemplaza_al_cobro_rechazado(navegador, client):
+    with responde({"id": "pref-1", "init_point": "https://mp.test/pagar"}):
+        _, primero = confirmar(navegador)
+    _avisar_pago(client, {**pago(primero, estado="rejected"), "id": 1})
+
+    with responde({"id": "pref-2", "init_point": "https://mp.test/pagar"}):
+        _, segundo = confirmar(navegador)
+    # El primero se aprueba igual, tarde: no genera un segundo pedido.
+    with patch.object(MercadoPago, "reembolsar", return_value=True) as reembolsar:
+        _avisar_pago(client, {**pago(primero), "id": 3})
+
+    primero.refresh_from_db()
+    segundo.refresh_from_db()
+    assert primero.estado == CobroEnCurso.REEMBOLSADO
+    assert segundo.estado == CobroEnCurso.PENDIENTE
+    assert not Pedido.objects.exists()
+    reembolsar.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# B-07-045: la preferencia vence con el abandono (revisión integral, R-04)
+# ---------------------------------------------------------------------------
+
+
+@override_settings(MERCADOPAGO_ACCESS_TOKEN="TEST-token")
+def test_frontera_mp_la_preferencia_vence_cuando_el_cobro_se_abandona(navegador):
+    from datetime import datetime
+
+    from apps.tienda.compra import ABANDONO
+
+    with responde({"id": "pref-1", "init_point": "https://mp.test/pagar"}) as pedir:
+        _, cobro = confirmar(navegador)
+
+    cuerpo = pedir.call_args.kwargs["cuerpo"]
+    vence = datetime.fromisoformat(cuerpo["expiration_date_to"])
+    assert cuerpo["expires"] is True
+    assert cuerpo["date_of_expiration"] == cuerpo["expiration_date_to"]
+    assert abs(vence - (cobro.creado_en + ABANDONO)).total_seconds() < 1

@@ -565,3 +565,28 @@ def test_B06005_la_compra_en_el_local_va_al_historial_de_la_cuenta_sin_riel(clie
     assert pedidos.context["historial"][0].riel is None
     assert "Compra en el local" in propio
     assert "data-riel=" not in propio
+
+
+def test_CO103_mostrador_no_canjea_lo_comprometido_en_un_pago_online(caja, lector):
+    """B-10-013 (revisión integral, R-06): un pago online en curso ya reservó esos puntos."""
+    from apps.tienda.models import CobroEnCurso
+
+    dar_puntos(lector, 1500)
+    CobroEnCurso.objects.create(
+        referencia="online-en-curso",
+        pasarela="prueba",
+        usuario=lector,
+        costo_envio=0,
+        monto=1000,
+        puntos_a_debitar=1000,
+    )
+    prod = producto(precio="10000")
+    agregar(caja, prod)
+    vincular(caja, lector.codigo_cliente)
+
+    respuesta = canjear(caja, prod)
+
+    pantalla = caja.get(respuesta.url)
+    assert pantalla.context["ticket"].saldo == 500
+    assert pantalla.context["ticket"].puntos_aplicados == 0
+    assert any("hacen falta 1000 puntos y quedan 500" in m for m in mensajes(pantalla))

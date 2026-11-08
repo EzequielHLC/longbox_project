@@ -12,6 +12,8 @@ Volver sin confirmar es `cancelarOperacion` (`CO-156`): no cambia ni se audita.
 Exclusivas del Administrador, validado en el servidor (RNF-03).
 """
 
+from functools import cached_property
+
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -91,12 +93,14 @@ class PrecioModificarView(CatalogoAdminMixin, View):
     el precio: lo que se confirma es lo que viaja, no lo que se informó.
     """
 
-    def dispatch(self, request, *args, **kwargs):
-        self.fila = get_object_or_404(
+    @cached_property
+    def fila(self):
+        # Después del rol (revisión integral, R-09): buscarla en `dispatch` le
+        # contestaba 404 o 403 al rol equivocado según existiera o no.
+        return get_object_or_404(
             TablaPrecioReferencia.objects.select_related("editorial", "tipo", "formato"),
-            pk=kwargs["pk"],
+            pk=self.kwargs["pk"],
         )
-        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, pk):
         formulario = PrecioModificacionForm(initial={"pvp": self.fila.pvp})

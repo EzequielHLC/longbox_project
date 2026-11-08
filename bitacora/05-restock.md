@@ -573,3 +573,89 @@ impedía pedirle a un proveedor un tomo que trae otro.
 La ficha de `CU-RST-PDA`: el renglón por código, ISBN o título con su número; la excepción del
 producto que trae otro proveedor; y la regla de quién trae cada producto, que hoy sólo describe
 `CU-RST-PRO` paso 4 (B-05-003).
+
+---
+
+### B-05-019 · Lo que ya no se vende deja de esperarse, y si llega no vuelve a la venta
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CO-027`, `CO-034`, `CO-232`
+**Estado:** Abierta
+
+**Qué apareció.**
+Al confirmar una llegada, todo producto que no estuviera en pre-venta pasaba a Activo. Eso incluía
+uno Cancelado por editorial y uno Descatalogado. Además, cancelar una pre-venta o descatalogar un
+producto dejaba abierta su línea en el pedido al proveedor, y el producto seguía figurando en «Por
+llegar» (revisión integral, R-03).
+
+**Qué dice la especificación.**
+> `CO-027`, Notas: «El estado Cancelado por editorial es terminal […] Moverlo a un estado del que
+> sí se retorna borraría la única marca de que ese título no va a llegar nunca.»
+
+> `CO-036`, Responsabilidades: «Devolver al catálogo un producto descatalogado que vuelve a
+> comercializarse […]»: la reactivación es una acción explícita.
+
+Ninguno de los dos dice qué pasa con lo que ya se le pidió al proveedor.
+
+**Qué se hizo.**
+Al cancelar la pre-venta o descatalogar el producto, sus líneas abiertas en pedidos al proveedor
+(enviados o sin enviar) se cierran como no recibidas, con el motivo («La editorial canceló el
+título» o «El producto se dio de baja del catálogo»). La auditoría de la cancelación y de la baja
+dice cuántas se cerraron. Si igual llega mercadería de un producto así, suma al stock y conserva su
+estado: la revisión de la llegada lo marca como «No vuelve a la venta» y no se avisa a los
+suscriptores de reposición.
+
+**Qué habría que cambiar.**
+`CO-027` y `CO-034`, Postcondiciones: agregar el cierre de las líneas abiertas de pedidos al
+proveedor del producto. `CO-232`, Postcondiciones: lo que llega de un producto cancelado o
+descatalogado suma stock sin cambiar su estado (postcondición negativa).
+
+---
+
+### B-05-020 · Dejar el stock en cero por un cambio o por la edición también abre la pre-venta
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CO-030`, `CO-100` · B-05-001
+**Estado:** Abierta
+
+**Qué apareció.**
+La venta online y la de mostrador, al dejar un producto en cero con un pedido al proveedor en
+camino, lo pasan a pre-venta (B-05-001). El cambio por garantía y la edición manual del stock lo
+dejaban Agotado o Activo con stock cero, sin pre-venta. La tienda no ofrecía reservar lo que ya
+venía en camino (revisión integral, R-05).
+
+**Qué dice la especificación.**
+> `CO-100`: el stock del reemplazo baja una unidad y, en cero, pasa a Agotado.
+
+No dice nada de la pre-venta, que vino después con B-05-001.
+
+**Qué se hizo.**
+Los dos caminos siguen la misma regla que la venta. El cambio por garantía que se lleva la última
+unidad abre la pre-venta si hay un pedido en camino. La edición que baja el stock a cero deja el
+producto Agotado, y en pre-venta si hay un pedido en camino; el historial de la ficha registra el
+cambio de estado. Guardar una ficha que ya estaba en cero no cambia nada.
+
+**Qué habría que cambiar.**
+`CO-030` y `CO-100`, Postcondiciones: al quedar en cero con un pedido al proveedor en camino, el
+producto pasa a Pre-venta (la misma postcondición que B-05-001 agrega a `CO-082` y `CO-089`).
+
+---
+
+### B-05-021 · No se pide a mano un producto sin proveedor identificable
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** pedido al proveedor a mano · B-05-018
+**Estado:** Abierta
+
+**Qué apareció.**
+B-05-018 frenaba el pedido de un producto que trae otro proveedor, pero aceptaba uno del que no se
+sabe quién lo trae (sin proveedor propio y sin un único proveedor habitual de su editorial). Así se
+le podía pedir a un proveedor algo que no tiene.
+
+**Qué dice la especificación.**
+`Nada.` El pedido a mano no está especificado (B-05-018).
+
+**Qué se hizo.**
+Por decisión del responsable, ese renglón también frena el pedido. El mensaje pide asignarle el
+proveedor en la ficha del producto antes de pedirlo.
+
+**Qué habría que cambiar.**
+Donde se documente el pedido a mano (B-05-018): cada producto pedido tiene que tener un proveedor
+identificable, y tiene que ser el del pedido.

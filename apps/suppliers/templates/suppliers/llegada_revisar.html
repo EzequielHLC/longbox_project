@@ -60,6 +60,9 @@ sigue faltando, lo que llega de más). Volver no deja nada.
                   <span class="marca-estado marca-estado--apagado">Sin cambios</span>
                   <span class="texto-chico secundario">· sigue esperando</span>
                 {% endif %}
+              {% elif previa.unidades and previa.fuera_de_venta %}
+                <span class="marca-estado marca-estado--atencion">No vuelve a la venta</span>
+                <span class="texto-chico secundario">· suma al stock y sigue «{{ previa.producto.get_estado_display }}»</span>
               {% elif previa.unidades %}
                 <span class="marca-estado marca-estado--ok">Suma al stock</span>
                 <span class="texto-chico secundario">· se avisa a quien pidió el aviso de reposición</span>

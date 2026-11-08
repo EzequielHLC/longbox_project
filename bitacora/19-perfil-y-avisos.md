@@ -690,3 +690,32 @@ que el texto no diga, y si no se puede dibujar o mandar, el mensaje sale igual. 
 **Qué habría que cambiar.**
 `Nada` en el documento de análisis. Si el responsable quiere fijar a Long-bot como identidad del
 bot, los tokens visuales.
+
+---
+
+### B-19-021 · Una caída del servidor de correo se reintenta, y si no sale se avisa por Telegram
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** todos los avisos por correo
+**Estado:** Abierta
+
+**Qué apareció.**
+El 28/10 el servidor de correo (Gmail) cortó las conexiones durante unas tres horas. En la VM se
+perdieron al menos 25 correos sin reintento, entre confirmaciones de compra y cambios de estado de
+pedidos. Sólo el pedido al proveedor reintentaba (revisión integral, R-07).
+
+**Qué dice la especificación.**
+`Nada.` Los casos de uso dicen a quién se le avisa y qué; no qué pasa si el correo no sale.
+
+**Qué se hizo.**
+Una falla pasajera del servidor de correo (la conexión que se corta o no abre, o un rechazo
+temporal) se reintenta dos veces, a los 2 y a los 10 segundos. Un rechazo definitivo, como un
+destinatario que no existe, no se reintenta. Si fallan los tres intentos, los Administradores con
+Telegram vinculado reciben un aviso por ese canal, porque el correo es justo lo que no anda: qué
+correo no salió y a quién. Mientras dura la caída, el aviso se repite como mucho cada media hora.
+El pedido al proveedor conserva su propio reintento de tres intentos.
+
+**Qué habría que cambiar.**
+Requisitos no funcionales: los avisos por correo se reintentan ante fallas transitorias del
+servidor, y la falla persistente se avisa al Administrador por un canal que no sea el correo. Lo
+que este arreglo no cubre —una caída de horas o un reinicio de la VM durante los reintentos— queda
+en `docs/DEUDA.md` como cola persistente de correos.

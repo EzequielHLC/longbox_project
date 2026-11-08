@@ -161,7 +161,7 @@ def test_frontera_la_pasarela_de_prueba_rechaza_con_un_motivo_conocido(client):
     )
 
     cobro.refresh_from_db()
-    assert cobro.estado == CobroEnCurso.RECHAZADO
+    assert cobro.rechazado_y_abierto
     assert cobro.mensaje == "Fondos insuficientes."
 
 

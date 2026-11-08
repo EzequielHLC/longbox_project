@@ -159,3 +159,15 @@ def test_concurrencia_el_vencimiento_y_el_pedido_de_envio_no_se_pisan():
         # Pidió el envío primero: vence con el envío pendiente y se extiende.
         assert articulo.estado == ArticuloRetenido.PENDIENTE_DESPACHO
         assert producto.stock == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("ruta", ["almacen:retiro", "almacen:retiro_pedido"])
+def test_retirar_lo_que_no_existe_es_404_y_no_un_error(client_admin, ruta):
+    """Revisión integral, R-10: antes, `retiro` daba 500 y `retiro_pedido` 302."""
+    antes = RegistroAuditoria.objects.count()
+
+    respuesta = client_admin.post(reverse(ruta, args=[999999]), {"articulo": ["1"]})
+
+    assert respuesta.status_code == 404
+    assert RegistroAuditoria.objects.count() == antes

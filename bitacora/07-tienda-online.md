@@ -1225,3 +1225,92 @@ cuánto venía en camino porque lo pedido no estaba registrado (B-05-010).
 reembolsa. `CO-075`, precondiciones: el producto está Agotado **o en Pre-venta con el cupo
 completo**. `CU-CFG-PAR` y `CO-130`, sección Comercial: el margen del cupo de pre-venta. En el modelo
 de dominio, el estado Pre-venta se define por el pedido en camino (B-05-010).
+
+---
+
+### B-07-043 · Un pago rechazado no cierra el cobro: se puede reintentar en la pasarela
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-TDA-CMP`, `CU-TDA-INV`, `CO-088`, `CO-089`
+**Estado:** Abierta
+
+**Qué apareció.**
+En MercadoPago, cuando le rechazan la tarjeta, el Cliente sigue en la página de la pasarela y
+reintenta con otra. Cada intento es un pago distinto con la misma referencia del cobro. El sistema
+cerraba el cobro con el primer rechazo e ignoraba el aprobado que llegaba después: el Cliente
+pagaba y no se generaba pedido ni se reembolsaba (revisión integral, R-01, reproducido con una
+prueba).
+
+**Qué dice la especificación.**
+> `CO-089`, Excepciones: «Pago rechazado o fallido (E2): no se genera pedido, no se modifica stock
+> ni puntos. Se notifica al Cliente con el mensaje retornado por la pasarela y el carrito permanece
+> intacto.»
+
+No dice si después de un rechazo puede llegar un aprobado del mismo checkout.
+
+**Qué se hizo.**
+Un rechazo cumple E2 (no hay pedido ni cambios en stock o puntos, queda en la auditoría y el
+Cliente ve el mensaje), pero el checkout sigue abierto: si después llega un aprobado, el pedido se
+genera normalmente. Un aviso repetido del mismo pago rechazado se registra una sola vez. El
+checkout se cierra cuando llega un pago aprobado, cuando el Cliente confirma de nuevo desde la
+tienda o a las 24 horas, cuando se da por abandonado (B-07-039). Si el Cliente vuelve a confirmar,
+el cobro anterior se descarta: así no deja puntos comprometidos ni genera un segundo pedido, y si
+se aprobara igual, se reembolsa como cualquier pago tardío. La misma regla vale para el pago del
+envío de stock almacenado. Si la pasarela devuelve al Cliente con un aprobado antes de que llegue
+su aviso, la pantalla muestra la espera en vez del rechazo anterior.
+
+**Qué habría que cambiar.**
+`CO-089`, Excepciones (E2): agregar que un rechazo no cierra el checkout y que un pago aprobado
+posterior de la misma referencia se materializa. `CO-088`, Notas: confirmar de nuevo reemplaza el
+checkout abierto anterior.
+
+---
+
+### B-07-044 · Si el producto pasa a pre-venta mientras el invitado paga, se reembolsa
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-TDA-INV`, `CO-181`, `CO-089`
+**Estado:** Abierta
+
+**Qué apareció.**
+Mientras un invitado está en la pasarela, se puede vender la última unidad en el mostrador. Si hay
+un pedido al proveedor en camino, el producto pasa a pre-venta (B-05-001). Al aprobarse el pago,
+el pedido del invitado se generaba con una reserva. Sin cuenta, si la editorial cancela no hay a
+quién devolverle los puntos, y ante una demora nadie puede decidir.
+
+**Qué dice la especificación.**
+> `CO-089`, Notas: «En la compra como invitado (CU-TDA-INV) […] el pedido nace en Pendiente de
+> armado, porque el carrito de invitado no admite pre-ventas.»
+
+Se verifica al iniciar la compra (`CO-181`), no al materializar el pago.
+
+**Qué se hizo.**
+Al materializar el pago de un invitado, una línea cuyo producto quedó en pre-venta se trata como
+el stock perdido mientras se pagaba (E3): no se genera el pedido, se reembolsa y se le explica al
+invitado por qué.
+
+**Qué habría que cambiar.**
+`CO-089`, Excepciones (E3): agregar, como caso de fallo, que un producto de un pago de invitado
+haya pasado a pre-venta.
+
+---
+
+### B-07-045 · La preferencia de MercadoPago vence a las 24 horas, igual que el cobro
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CU-TDA-CMP`, `CO-089`
+**Estado:** Abierta
+
+**Qué apareció.**
+La preferencia de pago no tenía vencimiento. MercadoPago deja pagar un cupón en efectivo (Rapipago,
+Pago Fácil) días después, pero el sistema da el cobro por abandonado a las 24 horas (B-07-039) y
+reembolsa lo que llega tarde. El Cliente pagaba en una ventanilla y recibía un reembolso.
+
+**Qué dice la especificación.**
+`Nada.` La especificación no cubre el vencimiento del pago en la pasarela.
+
+**Qué se hizo.**
+La preferencia vence cuando el cobro se da por abandonado, y el cupón de pago en efectivo vence a
+la misma hora. MercadoPago deja de aceptar el pago después de ese momento, en vez de aceptarlo para
+que el sistema lo devuelva.
+
+**Qué habría que cambiar.**
+`CU-TDA-CMP`, requisitos de la integración con la pasarela: el plazo para pagar coincide con el de
+abandono del checkout.

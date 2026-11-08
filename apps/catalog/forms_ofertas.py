@@ -30,11 +30,11 @@ def opcion_de(producto):
 class OfertaForm(forms.Form):
     descripcion = forms.CharField(label="Descripción", max_length=200)
     fecha_inicio = forms.DateField(
-        label="Fecha de inicio", widget=forms.DateInput(attrs={"type": "date"})
+        label="Fecha de inicio", widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
     )
     fecha_vencimiento = forms.DateField(
         label="Fecha de vencimiento",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         help_text="La oferta descuenta hasta el final de ese día.",
     )
     tipo_descuento = forms.ChoiceField(

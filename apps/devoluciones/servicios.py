@@ -663,6 +663,11 @@ def resolver_con_cambio(caso_pk, producto_pk, actor, *, origen=""):
             estado=Producto.AGOTADO if queda == 0 else Producto.ACTIVO,
             actualizado_en=ahora,
         )
+        if queda == 0:
+            # B-05-020: como la venta, si hay un pedido en camino se abre la pre-venta.
+            from apps.suppliers import llegadas
+
+            llegadas.al_agotarse(producto)
         hoy = timezone.localdate()
         ArticuloRetenido.objects.create(
             usuario=caso.usuario,

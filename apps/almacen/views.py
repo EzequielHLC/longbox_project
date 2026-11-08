@@ -107,6 +107,7 @@ class RetiroView(AlmacenMixin, View):
         return render(request, "almacen/retiro.html", {"articulo": articulo})
 
     def post(self, request, pk):
+        _articulo(pk)  # 404 si no existe, como la pantalla (revisión integral, R-10)
         try:
             servicios.retirar(pk, request.user)
         except servicios.OperacionRechazada as rechazo:
@@ -183,6 +184,7 @@ class RetiroPedidoView(AlmacenMixin, View):
         )
 
     def post(self, request, pk):
+        self._pedido(pk)  # 404 si no existe, como la pantalla
         ids = [int(v) for v in request.POST.getlist("articulo") if v.isdigit()]
         try:
             entregados = servicios.retirar_pedido(pk, request.user, ids)

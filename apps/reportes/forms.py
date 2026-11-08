@@ -13,8 +13,12 @@ MENSAJE_FUTURO = "El rango no puede incluir fechas futuras."
 
 class ReporteForm(forms.Form):
     tipo = forms.ChoiceField(label="Reporte", choices=servicios.TIPOS)
-    desde = forms.DateField(label="Desde", widget=forms.DateInput(attrs={"type": "date"}))
-    hasta = forms.DateField(label="Hasta", widget=forms.DateInput(attrs={"type": "date"}))
+    desde = forms.DateField(
+        label="Desde", widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+    )
+    hasta = forms.DateField(
+        label="Hasta", widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+    )
     canal = forms.ChoiceField(
         label="Canal",
         required=False,

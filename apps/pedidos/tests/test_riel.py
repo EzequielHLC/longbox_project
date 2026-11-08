@@ -96,3 +96,28 @@ def test_el_cliente_ve_el_riel_animable_y_el_administrador_sin_animacion(client)
 
     assert 'class="riel' in detalle
     assert "data-riel=" not in detalle
+
+
+@pytest.mark.parametrize("vista", ["cuenta:pedido", "cuenta:pedidos"])
+def test_el_estado_interrumpido_se_dice_una_sola_vez_en_mi_cuenta(client, vista):
+    # La cinta del riel ya dice «Esperando stock de pre-venta»: el rótulo no la repite.
+    cliente = UsuarioFactory(rol="cliente")
+    pedido = crear_pedido(cliente, estado=Pedido.ESPERANDO_PRE_VENTA)
+    client.force_login(cliente)
+    args = [pedido.numero] if vista == "cuenta:pedido" else []
+
+    contenido = client.get(reverse(vista, args=args)).content.decode()
+
+    # Hasta los productos: los «Movimientos» del costado son el historial, no un rótulo.
+    cabecera = contenido.split('id="titulo-productos"')[0]
+    assert cabecera.count("Esperando stock de pre-venta") == 1
+
+
+def test_sin_interrupcion_el_estado_sigue_con_su_rotulo(client):
+    cliente = UsuarioFactory(rol="cliente")
+    pedido = crear_pedido(cliente, estado=Pedido.ARMADO)
+    client.force_login(cliente)
+
+    contenido = client.get(reverse("cuenta:pedido", args=[pedido.numero])).content.decode()
+
+    assert '<span class="marca-estado marca-estado--atencion">Armado</span>' in contenido

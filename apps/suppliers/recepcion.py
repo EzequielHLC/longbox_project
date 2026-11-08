@@ -318,6 +318,11 @@ class Previa:
     def en_preventa(self):
         return self.producto.estado == Producto.PRE_VENTA
 
+    @property
+    def fuera_de_venta(self):
+        """B-05-019: suma stock sin volver a la venta."""
+        return self.producto.estado in (Producto.DESCATALOGADO, *Producto.ESTADOS_TERMINALES)
+
 
 def _vigentes(lineas, productos):
     """Las líneas y las pre-ventas que siguen esperando, con su producto."""
@@ -374,7 +379,7 @@ def previsualizar(lineas, productos):
             previa.se_demora = ingreso.se_demora
             previa.sin_cambios = not unidades and not ingreso.se_demora
         else:
-            previa.a_la_venta = unidades
+            previa.a_la_venta = 0 if previa.fuera_de_venta else unidades
             previa.sin_cambios = not unidades
         previas.append(previa)
     previas.sort(key=lambda p: (p.sin_cambios, str(p.producto).lower()))

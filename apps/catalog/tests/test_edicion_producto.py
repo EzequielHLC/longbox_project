@@ -449,3 +449,37 @@ def test_los_dos_rubros_llegan_a_su_propia_ficha(client_admin):
 
     assert isinstance(client_admin.get(url(tomo)).context["producto"], ProductoEditorial)
     assert isinstance(client_admin.get(url(articulo)).context["producto"], ProductoNoEditorial)
+
+
+# ---------------------------------------------------------------------------
+# B-05-020: dejar el stock en cero (revisión integral, R-05)
+# ---------------------------------------------------------------------------
+
+
+def test_CO030_dejar_el_stock_en_cero_lo_pasa_a_agotado(client_admin):
+    producto = ProductoFactory(titulo="Berserk", stock=3, estado=Producto.ACTIVO)
+
+    client_admin.post(url(producto), datos_editoriales(producto, stock=0))
+
+    producto.refresh_from_db()
+    assert (producto.stock, producto.estado) == (0, Producto.AGOTADO)
+
+
+def test_CO030_dejar_el_stock_en_cero_con_un_pedido_en_camino_abre_la_preventa(client_admin):
+    from apps.suppliers import llegadas
+    from apps.suppliers.models import PedidoProveedor
+    from apps.suppliers.tests.factories import ProveedorFactory
+
+    producto = ProductoFactory(titulo="Berserk", stock=3, estado=Producto.ACTIVO)
+    llegadas.registrar(ProveedorFactory(), PedidoProveedor.MANUAL, [(producto, 5)])
+
+    client_admin.post(url(producto), datos_editoriales(producto, stock=0))
+
+    producto.refresh_from_db()
+    assert (producto.stock, producto.estado) == (0, Producto.PRE_VENTA)
+    detalle = (
+        RegistroAuditoria.objects.filter(accion=RegistroAuditoria.MODIFICACION_PRODUCTO)
+        .latest("pk")
+        .detalle
+    )
+    assert "«Pre-venta»" in detalle

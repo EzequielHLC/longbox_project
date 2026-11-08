@@ -625,6 +625,7 @@ class BajaDeProducto:
     ofertas_dadas_de_baja: list = field(default_factory=list)
     ofertas_desvinculadas: int = 0
     carritos: int = 0
+    lineas_cerradas: int = 0
 
 
 def confirmar_baja_de_producto(producto, *, actor, ip=None):
@@ -668,6 +669,13 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
             LineaCarrito.objects.filter(producto=producto).values("carrito").distinct().count()
         )
 
+        # B-05-019: lo pedido al proveedor de un producto que sale del catálogo ya no se espera.
+        from apps.suppliers import llegadas
+
+        hecho.lineas_cerradas = llegadas.cerrar_lineas_de(
+            producto, "El producto se dio de baja del catálogo.", actor
+        )
+
         RegistroAuditoria.registrar(
             RegistroAuditoria.BAJA_PRODUCTO,
             actor=actor,
@@ -680,6 +688,11 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
                 f"suscripciones canceladas: {hecho.suscripciones} · ofertas dadas de baja: "
                 f"{len(hecho.ofertas_dadas_de_baja)} · ofertas de su tipo que dejan de alcanzarlo: "
                 f"{hecho.ofertas_desvinculadas} · carritos marcados: {hecho.carritos}"
+                + (
+                    f" · líneas de pedido al proveedor cerradas: {hecho.lineas_cerradas}"
+                    if hecho.lineas_cerradas
+                    else ""
+                )
             ),
         )
         if clientes:

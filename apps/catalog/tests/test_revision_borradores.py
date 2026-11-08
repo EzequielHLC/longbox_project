@@ -583,7 +583,9 @@ def test_un_proveedor_caido_no_frena_al_resto(correo, administrador, editorial, 
     revisiones.confirmar(borrador_de(otro_correo, isbn="", volumen=2), actor=administrador)
     sesion = revisiones.sesion_abierta_de(administrador)
 
-    def falla_solo_el_primero(asunto, cuerpo, destinatarios, remitente=None, html=None):
+    def falla_solo_el_primero(
+        asunto, cuerpo, destinatarios, remitente=None, html=None, reintentar=True
+    ):
         if destinatarios == [correo.proveedor.correo_comercial]:
             raise OSError("smtp caído")
 

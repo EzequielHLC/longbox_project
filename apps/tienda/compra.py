@@ -206,7 +206,8 @@ def resumen(carrito, *, usuario=None, envio=None, retiro=False):
     hecho = Resumen(
         lineas=lineas,
         envio={} if retiro else dict(envio or {}),
-        saldo=puntos.saldo(usuario) if con_puntos else 0,
+        # B-10-013: lo que un pago en curso va a debitar no se puede canjear de nuevo.
+        saldo=puntos.debitable(usuario, excepto_carrito=carrito) if con_puntos else 0,
         minimo_envio_gratuito=configuracion.monto_minimo_envio_gratuito,
         con_puntos=con_puntos,
         retiro=retiro,
@@ -325,10 +326,12 @@ def aplicar_canje(linea, usuario):
     lo que ya comprometieron las otras líneas marcadas. **Ningún `LotePuntos`
     cambia** y no se audita: el débito es de `CO-089`.
     """
-    disponible = puntos.saldo(usuario)
-    if disponible <= 0:
-        raise CanjeRechazado("No tenés puntos disponibles para canjear.")
     hecho = resumen(linea.carrito, usuario=usuario)
+    if hecho.saldo <= 0:
+        raise CanjeRechazado(
+            "No tenés puntos disponibles para canjear."
+            + _comprometidos_en_texto(usuario, linea.carrito)
+        )
     propia = next((item for item in hecho.lineas if item.linea.pk == linea.pk), None)
     if propia is None or propia.cubierta:
         return hecho
@@ -336,10 +339,17 @@ def aplicar_canje(linea, usuario):
         raise CanjeRechazado(
             f"Para cubrir «{linea.producto.titulo}» hacen falta {propia.puntos_necesarios} "
             f"puntos y te quedan {hecho.saldo_restante}. No se puede canjear una parte "
-            "del precio: probá con otro producto."
+            "del precio: probá con otro producto." + _comprometidos_en_texto(usuario, linea.carrito)
         )
     LineaCarrito.objects.filter(pk=linea.pk).update(cubierta_con_puntos=True)
     return resumen(linea.carrito, usuario=usuario)
+
+
+def _comprometidos_en_texto(usuario, carrito):
+    reservados = puntos.comprometidos(usuario, excepto_carrito=carrito)
+    if not reservados:
+        return ""
+    return f" Otros {reservados} puntos están reservados por un pago en curso."
 
 
 def revertir_canje(linea, usuario):
@@ -369,8 +379,25 @@ class Confirmacion:
     pedido: Pedido | None = None
 
 
+def reemplazar_abiertos(**filtro):
+    """B-07-043: un intento de pago nuevo reemplaza al que seguía abierto.
+
+    Un rechazo deja el cobro abierto para que se reintente en la pasarela; si el
+    Cliente vuelve a la tienda y confirma de nuevo, el anterior se descarta. Así
+    no compromete puntos ni genera un segundo pedido: si se aprobara igual, se
+    reembolsa como cualquier pago que llega a un cobro descartado.
+    """
+    return CobroEnCurso.objects.filter(estado=CobroEnCurso.PENDIENTE, **filtro).update(
+        estado=CobroEnCurso.DESCARTADO,
+        mensaje="Reemplazado por un nuevo intento de pago.",
+        resuelto_en=timezone.now(),
+    )
+
+
 def _congelar(hecho, carrito, *, pasarela, request, usuario=None, correo_invitado=""):
     """El cobro en curso: lo que se cobra, como está en este momento (B-07-034)."""
+    if carrito is not None:
+        reemplazar_abiertos(tipo=CobroEnCurso.COMPRA, carrito=carrito)
     return CobroEnCurso.objects.create(
         referencia=secrets.token_hex(16),
         origen=request.build_absolute_uri("/").rstrip("/"),
@@ -443,7 +470,7 @@ def _solicitar_cobro(cobro, pasarela, request):
 def registrar_resultado_de_pago(aviso, pasarela):
     """El aviso de la pasarela. Idempotente: un cobro resuelto no se vuelve a tocar."""
     if not aviso.aprobado:
-        return registrar_rechazo(aviso.referencia, aviso.mensaje)
+        return registrar_rechazo(aviso.referencia, aviso.mensaje, aviso.referencia_pago)
     return registrar_resultado(
         aviso.referencia,
         referencia_pago=aviso.referencia_pago,
@@ -452,22 +479,34 @@ def registrar_resultado_de_pago(aviso, pasarela):
     )
 
 
-def registrar_rechazo(referencia, mensaje):
-    """E2: no se genera pedido ni se toca stock ni puntos. Queda en el log."""
+def registrar_rechazo(referencia, mensaje, referencia_pago=""):
+    """E2: no se genera pedido ni se toca stock ni puntos. Queda en el log.
+
+    B-07-043: **el rechazo no cierra el cobro.** En la pasarela el Cliente
+    reintenta con otra tarjeta, y cada intento es un pago con la misma
+    referencia del cobro: si el primero lo cerrara, el aprobado que viene
+    después se cobraría sin pedido. Lo cierran un pago aprobado, un intento
+    nuevo desde la tienda o el abandono a las 24 horas.
+    """
     with transaction.atomic():
         cobro = CobroEnCurso.objects.select_for_update().filter(referencia=referencia).first()
         if cobro is None or cobro.estado != CobroEnCurso.PENDIENTE:
             return cobro
-        cobro.estado = CobroEnCurso.RECHAZADO
+        pago = referencia_pago or "sin-referencia"
+        if cobro.pago_rechazado == pago:
+            return cobro  # el mismo aviso, repetido
+        cobro.pago_rechazado = pago
         cobro.mensaje = mensaje or "La pasarela rechazó el pago."
-        cobro.resuelto_en = timezone.now()
-        cobro.save(update_fields=["estado", "mensaje", "resuelto_en"])
+        cobro.save(update_fields=["pago_rechazado", "mensaje"])
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.PAGO_RECHAZADO,
             actor=cobro.usuario,
             actor_email=cobro.correo_de_contacto,
             objetivo=cobro,
-            detalle=f"Cobro {cobro.referencia} por {cobro.monto}: {cobro.mensaje}",
+            detalle=(
+                f"Cobro {cobro.referencia} por {cobro.monto}: {cobro.mensaje} "
+                "El cobro sigue abierto para otro intento."
+            ),
         )
     return cobro
 
@@ -597,6 +636,15 @@ def _materializar(cobro, referencia_pago):
         producto = productos.get(linea["producto"])
         if producto is None or producto.estado not in (Producto.ACTIVO, Producto.PRE_VENTA):
             raise FalloDeMaterializacion("Un producto del pedido dejó de estar a la venta.")
+        # B-07-044: el invitado no compra pre-ventas (CO-181). Si el producto pasó a
+        # pre-venta mientras pagaba —se vendió el último y viene más en camino—,
+        # se reembolsa: sin cuenta no hay a quién devolverle los puntos si la
+        # editorial cancela, ni quién decida ante una demora.
+        if not cobro.usuario_id and producto.estado == Producto.PRE_VENTA:
+            raise FalloDeMaterializacion(
+                f"«{producto.titulo}» pasó a pre-venta mientras pagabas, y la compra "
+                "como invitado no admite pre-ventas."
+            )
         if producto.estado == Producto.ACTIVO and producto.stock < linea["cantidad"]:
             raise FalloDeMaterializacion(f"Ya no hay stock suficiente de «{producto.titulo}».")
         # Plan 00 del circuito: el cupo se vuelve a contar con el producto bloqueado.

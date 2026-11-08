@@ -58,12 +58,15 @@ al plan o a la sección donde está desarrollada.
 | **P-05** · procesos periódicos | **Resuelta la forma** el 2026-10-03: `manage.py ejecutar_temporizador` es la puerta única; corre al arrancar `demostracion.bat` y se programa una vez por día (B-03-007). Hoy corre `CO-059`, `CO-011`, `CO-012`, `CO-096`, `CO-097`, `CO-154`, `CO-067`, `CO-105` con su aviso previo, `CO-016`, `CO-155` y el descarte de cobros abandonados. Falta sumar cada proceso cuando exista su caso de uso | Ninguno del alcance. La limpieza de carritos de invitado queda descartada (ver «Recorte para el cierre») | — |
 | ~~Parámetros de seguridad~~ | **Construido el 2026-10-19** (B-12-004) | — | — |
 | ~~Pedido como dependencia raíz~~ | **Resuelta el 2026-10-09**: la compra online crea `Pedido`, `LineaPedido`, `TransaccionPago`, `LotePuntos` y `MovimientoPuntos` (plan 07, sexta parte). El orden propuesto para lo que sigue está al final de ese plan | — | — |
-| MercadoPago sin probar contra su API | El adaptador está construido y probado contra respuestas declaradas (B-07-031). Falta cargar `MERCADOPAGO_ACCESS_TOKEN` de una cuenta de prueba y recorrer un pago real con el aviso llegando por el túnel | Mostrar un pago real en la demostración | 2026-10-09 |
+| ~~MercadoPago sin probar contra su API~~ | **Resuelto el 2026-11-07**: con la cuenta vendedora de prueba en la VM, el responsable completó una compra de punta a punta con un comprador de prueba | — | — |
 | Costo de envío por operador logístico | Hoy es un importe fijo de Parámetros (B-07-032). Cotizar con Correo Argentino (API MiCorreo o tabla por zona) exige una cuenta comercial y **el peso de cada producto**, que el modelo no tiene | Un costo de envío según peso y destino | 2026-10-09 |
 | ~~Cobros en curso abandonados~~ | **Resuelto el 2026-10-19**: el Temporizador los descarta y un pago tardío se reembolsa (B-07-039) | — | — |
 | ~~Carreras de unicidad no ensayadas~~ | **Resuelto el 2026-10-23** ([plan 00 de cierre de deuda](planes/00-cierre-de-deuda.md), D1): el alta y la edición de productos, la confirmación de borradores, el registro de clientes y el alta y la edición de personal responden con el aviso de su contrato cuando otro pedido gana el valor único después de validarlo. Las cinco daban 500 | — | — |
 | ~~Supresiones de `bandit` sin justificación escrita~~ | **Resuelto el 2026-10-23** (plan 00 de cierre de deuda, D4): cada `# nosec` nombra su regla y su motivo | — | — |
 | `04_RESUMEN.md` | `MODELO_DE_DOMINIO.md` lo cita y el archivo no está en el repositorio | Saber cuáles son las «cuatro operaciones con contrato pausado» | 2026-09-14 |
+| Cola persistente de correos | El correo se reintenta tres veces en unos 10 segundos y, si no sale, se avisa por Telegram (B-19-021, revisión integral R-07). Una caída de horas, o un reinicio de la VM durante los reintentos, todavía pierde el aviso: guardarlo y reintentarlo desde el reloj exige un concepto nuevo | Que ningún aviso por correo se pierda | 2026-11-07 |
+| Contracargos y reembolsos iniciados en MercadoPago | El sistema recibe los pagos aprobados y rechazados; un contracargo (`charged_back`) o un reembolso hecho desde el panel de MercadoPago no le llega, y el pedido sigue como pagado | Conciliar la caja con la pasarela | 2026-11-07 |
+| Escala del pedido a mano | La pantalla manda el catálogo entero como lista de sugerencias (revisión integral, R-14). Con 300 productos no se nota; con varios miles la página pesa cientos de KB. El autocompletado ya busca en el servidor: alcanzaría con dejar de mandar la lista | Un catálogo de miles de productos | 2026-11-07 |
 
 ---
 
@@ -253,6 +256,10 @@ alcance sigue pendiente.
 | `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 5 correcciones |
 | `bitacora/19-perfil-y-avisos.md` | 4 | 4 | 4 agregados |
 | **Total** | **236** | **173** | |
+
+El 2026-11-07, la [revisión integral](planes/00-revision-integral.md) sumó nueve entradas, todas
+agregados abiertos y fuera de la cuenta de la tabla: B-05-019 a B-05-021, B-07-043 a B-07-045,
+B-10-013, B-12-005 y B-19-021.
 
 Recontada el 2026-10-26 sobre las entradas `B-`, leyendo el tipo y el estado de cada una; las
 `R-` no entran en la cuenta. El plan 00 del circuito de proveedores y lo que se ajustó después suman trece

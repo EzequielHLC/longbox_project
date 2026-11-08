@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -10,10 +12,11 @@ from django.contrib.auth.views import (
     PasswordResetDoneView,
     PasswordResetView,
 )
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, resolve_url
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -40,6 +43,8 @@ from apps.core import georef
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import RegistroAuditoria
 from apps.core.utils import obtener_ip
+
+logger = logging.getLogger(__name__)
 
 # CU-AUT-INI paso 4: cada rol aterriza en su propio módulo.
 DESTINOS_POR_ROL = {
@@ -99,6 +104,40 @@ class RecuperarContrasenaView(PasswordResetView):
     # `PasswordResetForm` solo le manda el correo a cuentas activas y siempre
     # termina en la misma pantalla, exista o no el correo: eso es lo que evita
     # la enumeración de cuentas.
+
+    def form_valid(self, form):
+        """B-12-005: un tope de pedidos por correo y por IP, con la misma respuesta.
+
+        Sin tope, cualquiera usa el sistema para inundar el buzón de otro y gasta
+        el cupo del servidor de correo. Pasado el tope no se emite token ni sale
+        correo, y la pantalla es la de siempre: el tope tampoco revela si la
+        cuenta existe.
+        """
+        correo = form.cleaned_data["email"].strip().lower()
+        if not (
+            _dentro_del_tope(f"recuperar:correo:{correo}", TOPE_POR_CORREO)
+            & _dentro_del_tope(f"recuperar:ip:{obtener_ip(self.request)}", TOPE_POR_IP)
+        ):
+            logger.warning("Recuperación de contraseña frenada por el tope: %s", correo)
+            return HttpResponseRedirect(self.get_success_url())
+        return super().form_valid(form)
+
+
+# B-12-005: cuántos pedidos de recuperación por hora.
+TOPE_POR_CORREO = 3
+TOPE_POR_IP = 10
+VENTANA_DEL_TOPE = 60 * 60
+
+
+def _dentro_del_tope(clave, tope):
+    """Cuenta un pedido más en la ventana y dice si todavía entra en el tope."""
+    if cache.add(clave, 1, VENTANA_DEL_TOPE):
+        return True
+    try:
+        return cache.incr(clave) <= tope
+    except ValueError:  # venció entre el `add` y el `incr`
+        cache.add(clave, 1, VENTANA_DEL_TOPE)
+        return True
 
 
 class RecuperarContrasenaEnviadaView(PasswordResetDoneView):

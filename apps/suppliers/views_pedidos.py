@@ -438,7 +438,7 @@ class PedidoNuevoForm(forms.Form):
     fecha_estimada = forms.DateField(
         label="Llegada estimada",
         required=False,
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         help_text="Opcional. Lo que está agotado se ofrece en pre-venta con esta fecha.",
     )
 
@@ -556,8 +556,9 @@ def _de_otro_proveedor(proveedor, renglones):
     """B-05-018: no se le pide a un proveedor lo que trae otro.
 
     Quién trae cada producto es la regla de Restock (B-05-003): su proveedor, si
-    está activo, o el único habitual de su editorial. Si no se sabe, se acepta.
-    Marca el renglón y devuelve si hubo alguno.
+    está activo, o el único habitual de su editorial. Si no se sabe, tampoco se
+    pide (B-05-021): no hay cómo saber si este proveedor lo tiene. Marca el
+    renglón y devuelve si hubo alguno.
     """
     from apps.restock.servicios import proveedor_de
 
@@ -572,7 +573,14 @@ def _de_otro_proveedor(proveedor, renglones):
             if hasattr(producto, "editorial_id")
             else (producto.proveedor if producto.proveedor_id else None)
         )
-        if lo_trae is not None and lo_trae != proveedor:
+        if lo_trae is None:
+            renglon.add_error(
+                "producto",
+                f"No se sabe qué proveedor trae «{producto}». Asignale el proveedor en su "
+                "ficha antes de pedirlo.",
+            )
+            hubo = True
+        elif lo_trae != proveedor:
             renglon.add_error(
                 "producto",
                 f"«{producto}» lo trae {lo_trae.razon_social}, no {proveedor.razon_social}. "

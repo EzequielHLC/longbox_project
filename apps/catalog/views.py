@@ -62,6 +62,7 @@ from apps.pedidos import preventa
 from apps.puntos.servicios import puntos_por_monto
 from apps.restock import servicios as restock
 from apps.restock.models import SuscripcionReposicion
+from apps.suppliers import llegadas
 from apps.suppliers.models import Proveedor
 
 MENSAJE_BORRADOR_YA_RESUELTO = "Este borrador ya fue confirmado o rechazado."
@@ -1452,9 +1453,13 @@ class CerrarSesionRevisionView(CatalogoAdminMixin, View):
 # ---------------------------------------------------------------------------
 
 
-def _estado_por_stock(producto):
+def _estado_por_stock(producto, stock_anterior=None):
+    """B-05-006: el stock decide si está Agotado. Reponer lo vuelve a la venta y,
+    como la venta, dejarlo en cero lo agota (B-05-020)."""
     if producto.estado == Producto.AGOTADO and producto.stock > 0:
         return Producto.ACTIVO
+    if producto.estado == Producto.ACTIVO and producto.stock == 0 and (stock_anterior or 0) > 0:
+        return Producto.AGOTADO
     return producto.estado
 
 
@@ -1585,12 +1590,19 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             }
             partes = [cambios.describir(lo_que_cambio)] if lo_que_cambio else []
             # B-05-006: el stock decide si está Agotado. Reponer lo vuelve a la venta.
-            estado = _estado_por_stock(producto)
+            estado = _estado_por_stock(producto, anterior.stock)
             if estado != producto.estado:
                 nuevo = dict(Producto.ESTADO_CHOICES)[estado]
                 partes.append(f"estado: «{producto.get_estado_display()}» → «{nuevo}»")
                 Producto.objects.filter(pk=producto.pk).update(estado=estado)
                 producto.estado = estado
+            # B-05-020: como la venta, dejarlo en cero abre la pre-venta si hay
+            # un pedido al proveedor en camino (B-05-001).
+            if anterior.stock > 0 and producto.stock == 0 and llegadas.al_agotarse(producto):
+                producto.refresh_from_db(fields=["estado", "fecha_llegada"])
+                partes.append(
+                    "estado: «Agotado» → «Pre-venta», con un pedido al proveedor en camino"
+                )
             restock.al_subir_stock(
                 producto,
                 anterior.stock,

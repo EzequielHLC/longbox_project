@@ -14,6 +14,8 @@ Cuatro pantallas por catálogo, iguales para los cinco (R-17-002):
 Exclusivas del Administrador, validado del lado del servidor (RNF-03).
 """
 
+from functools import cached_property
+
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.db.models import Count
@@ -435,9 +437,10 @@ class EtiquetasDeGrupoView(CatalogoMixin, ListView):
     context_object_name = "registros"
     paginate_by = ETIQUETAS_POR_PAGINA
 
-    def dispatch(self, request, *args, **kwargs):
-        self.grupo = get_object_or_404(GrupoEtiqueta, pk=kwargs["pk"])
-        return super().dispatch(request, *args, **kwargs)
+    @cached_property
+    def grupo(self):
+        # Después del rol (revisión integral, R-09), no en `dispatch`.
+        return get_object_or_404(GrupoEtiqueta, pk=self.kwargs["pk"])
 
     @property
     def estado(self):

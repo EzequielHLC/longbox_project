@@ -137,7 +137,7 @@ def resultado_de_pago(request, cobro):
             "Te avisamos cuando salga.",
         )
         return redirect("cuenta:stock")
-    if cobro.estado == cobro.RECHAZADO:
+    if cobro.estado == cobro.RECHAZADO or cobro.rechazado_y_abierto:
         messages.error(
             request,
             (cobro.mensaje or "La pasarela rechazó el pago.")

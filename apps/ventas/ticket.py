@@ -133,7 +133,8 @@ def consultar(sesion):
         if datos["cliente"]
         else None
     )
-    return Ticket(items=items, cliente=cliente, saldo=puntos.saldo(cliente) if cliente else 0)
+    # B-10-013: lo que un pago online en curso va a debitar no se canjea en el local.
+    return Ticket(items=items, cliente=cliente, saldo=puntos.debitable(cliente) if cliente else 0)
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +294,7 @@ def confirmar(sesion, medio, actor):
                 raise VentaRechazada(
                     f"De «{producto.titulo}» quedan {producto.stock} unidad(es). Corregí el ticket."
                 )
-        if actual.cliente and actual.puntos_aplicados > puntos.saldo(actual.cliente):
+        if actual.cliente and actual.puntos_aplicados > puntos.debitable(actual.cliente):
             raise VentaRechazada("El saldo de puntos del cliente cambió. Revisá los canjes.")
 
         pedido = Pedido.objects.create(

@@ -3,7 +3,8 @@
 {% comment %}
 Cómo terminó el cobro. Procesado: la confirmación con el número de pedido y
 su estado inicial (CU-TDA-CMP paso 8, CU-TDA-INV paso 10). Rechazado: el
-mensaje de la pasarela y el carrito intacto (E2, E3). Reembolsado: el pedido no
+mensaje de la pasarela y el carrito intacto (E2, E3); el cobro puede seguir
+abierto para otro intento en la pasarela (B-07-043). Reembolsado: el pedido no
 se pudo generar y el cargo se revierte (E3, E4). Pendiente: todavía no llegó
 el aviso, y la pantalla se vuelve a pedir sola.
 {% endcomment %}
@@ -12,7 +13,7 @@ el aviso, y la pantalla se vuelve a pedir sola.
 
 {% block cabecera_extra %}
   {{ block.super }}
-  {% if cobro.estado == "pendiente" %}<meta http-equiv="refresh" content="3">{% endif %}
+  {% if cobro.estado == "pendiente" and not rechazado %}<meta http-equiv="refresh" content="3">{% endif %}
 {% endblock %}
 
 {% block contenido %}
@@ -40,14 +41,14 @@ el aviso, y la pantalla se vuelve a pedir sola.
     {% else %}
       <p><a href="{% url 'core:tienda_catalogo' %}" class="boton-primario">Seguir comprando</a></p>
     {% endif %}
-  {% elif cobro.estado == "rechazado" %}
+  {% elif rechazado %}
     <div class="pila-2">
       <p class="antetitulo">Tienda · Pago rechazado</p>
       <h1 class="titulo-1">El pago no se aprobó</h1>
     </div>
     <div class="panel panel--atencion pila-3" role="alert">
       <p>{{ cobro.mensaje|default:"La pasarela rechazó el pago." }}</p>
-      <p class="secundario">No se te cobró nada y tu carrito quedó como estaba.</p>
+      <p class="secundario">No se te cobró nada y tu carrito quedó como estaba. Podés volver a intentar con otro medio de pago.</p>
     </div>
     <p><a href="{% url volver %}" class="boton-primario">Volver a intentar</a></p>
   {% elif cobro.estado == "reembolsado" %}

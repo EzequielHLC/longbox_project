@@ -151,6 +151,7 @@ def enviar_pedido(proveedor, lineas):
                 cuerpo_de(proveedor, resultado.lineas),
                 [proveedor.correo_comercial],
                 html=html_de(proveedor, resultado.lineas),
+                reintentar=False,  # el reintento es este bucle
             )
         except OSError as fallo:
             # `OSError` cubre lo que levanta `smtplib` ante un servidor caído o

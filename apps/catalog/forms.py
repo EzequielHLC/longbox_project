@@ -220,7 +220,7 @@ def _campo_fecha(etiqueta):
     return forms.DateField(
         label=etiqueta,
         required=False,
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         validators=[_validar_fecha_no_pasada],
     )
 
@@ -1309,6 +1309,10 @@ class ProductoEditorialForm(CodigosQueIdentificanMixin, GaleriaFormMixin, forms.
             "tipo": "Tipo de material",
             "precio": "Precio de venta al público",
             "portada": "Portada",
+        }
+        # El mismo selector de fecha que en el resto del sistema (revisión integral, R-13).
+        widgets = {  # noqa: RUF012
+            "fecha_llegada": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, **kwargs):

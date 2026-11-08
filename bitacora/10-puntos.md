@@ -337,3 +337,33 @@ los puntos ganados con la compra».
 El módulo queda completo: `CU-PTS-CAD` y `CU-PTS-ADM` verificados con sus tres contratos, y el
 aviso previo que pidió el responsable. El Temporizador suma la caducidad. Las siete puertas pasan.
 Quedan abiertas las enmiendas de B-10-005 a B-10-009 y B-10-011.
+
+---
+
+### B-10-013 · El canje no usa los puntos que ya reservó un pago en curso
+
+**Tipo:** Agregado · **Fecha:** 2026-11-07 · **Alcance:** `CO-103`, `CO-082`, `CO-106` · B-10-005
+**Estado:** Abierta
+
+**Qué apareció.**
+B-10-005 protege los puntos que va a debitar un pago online en curso: el vencimiento (`CO-105`) no
+los toca y el débito manual (`CO-106`) no los alcanza. El canje no los descontaba: en el mostrador,
+o en otro checkout, se podían canjear los mismos puntos. Al aprobarse el pago online, el débito
+fallaba y se reembolsaba (revisión integral, R-06).
+
+**Qué dice la especificación.**
+> `CO-103`, Notas: «Los puntos NO se debitan acá. El saldo restante que se muestra es informativo.
+> El débito ocurre en la confirmación definitiva de la transacción […]».
+
+No dice qué pasa si hay otra transacción en curso.
+
+**Qué se hizo.**
+El canje, en la tienda y en el mostrador, se verifica contra el saldo menos lo comprometido por
+pagos online en curso, igual que el débito manual. El saldo que se muestra es ese, y si el canje no
+alcanza, el mensaje dice cuántos puntos están reservados. El pago abierto del mismo carrito no
+cuenta: confirmar de nuevo lo reemplaza (B-07-043), así que reintentar después de un rechazo no
+pierde los puntos.
+
+**Qué habría que cambiar.**
+`CO-103`, Precondiciones o Excepciones (E2): el saldo para el canje descuenta lo comprometido por
+pagos en curso (B-10-005).

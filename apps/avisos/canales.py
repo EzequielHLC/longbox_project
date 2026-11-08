@@ -189,3 +189,37 @@ def enlace(nombre_url, *args):
     from django.urls import reverse
 
     return settings.URL_PUBLICA + reverse(nombre_url, args=args) if settings.URL_PUBLICA else ""
+
+
+# Un aviso por caída, no uno por correo: la del 28/10 habría mandado 25.
+CLAVE_CORREO_CAIDO = "avisos:correo_caido"
+SILENCIO_CORREO_CAIDO = 30 * 60
+
+
+def avisar_correo_perdido(asunto, destinatarios_del_correo, fallo):
+    """B-19-021: un correo no salió tras los reintentos. Sólo por Telegram.
+
+    No pasa por `avisar_administradores`: ese caería al correo, que es lo que
+    no anda. Le llega a todo Administrador con el chat vinculado, sin mirar su
+    preferencia de canal. Mientras el servidor sigue caído, se avisa una vez
+    cada media hora.
+    """
+    from django.core.cache import cache
+
+    if not telegram.configurado() or not cache.add(CLAVE_CORREO_CAIDO, True, SILENCIO_CORREO_CAIDO):
+        return 0
+    texto = "\n".join(
+        [
+            "📭 <b>No sale el correo.</b>",
+            f"El servidor de correo falló tres veces seguidas ({html.escape(str(fallo))[:200]}).",
+            f"No llegó «{html.escape(asunto)}» a "
+            f"{html.escape(', '.join(destinatarios_del_correo))}. Los avisos de los próximos "
+            "minutos pueden perderse también: revisá la cuenta de correo del sistema.",
+        ]
+    )
+    enviados = 0
+    for usuario in _administradores():
+        chat = _chat_de(usuario)
+        if chat and telegram.enviar(chat, texto) is not None:
+            enviados += 1
+    return enviados

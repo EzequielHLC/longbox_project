@@ -153,7 +153,7 @@ def debitar(usuario, cantidad, *, pedido=None, motivo=""):
 VIGENCIA_DE_UN_CANJE = timedelta(hours=24)
 
 
-def comprometidos(usuario, ahora=None):
+def comprometidos(usuario, ahora=None, *, excepto_carrito=None):
     """Los puntos que un pago pendiente va a debitar al aprobarse.
 
     La compra no marca los lotes: debita al aprobarse el pago, en orden de
@@ -163,13 +163,20 @@ def comprometidos(usuario, ahora=None):
     """
     from apps.tienda.models import CobroEnCurso
 
+    if not getattr(usuario, "is_authenticated", False):
+        return 0
     desde = (ahora or timezone.now()) - VIGENCIA_DE_UN_CANJE
-    total = CobroEnCurso.objects.filter(
+    cobros = CobroEnCurso.objects.filter(
         usuario=usuario,
         tipo=CobroEnCurso.COMPRA,
         estado=CobroEnCurso.PENDIENTE,
         creado_en__gte=desde,
-    ).aggregate(total=Sum("puntos_a_debitar"))["total"]
+    )
+    if excepto_carrito is not None:
+        # El cobro abierto de este mismo carrito se reemplaza al confirmar de
+        # nuevo (B-07-043): no le quita los puntos al reintento.
+        cobros = cobros.exclude(carrito=excepto_carrito)
+    total = cobros.aggregate(total=Sum("puntos_a_debitar"))["total"]
     return total or 0
 
 
@@ -194,9 +201,10 @@ def _activos_bloqueados(usuario):
     )
 
 
-def debitable(usuario, ahora=None):
-    """El máximo que admite un débito manual: el saldo menos lo comprometido (`CO-106` E1)."""
-    return max(saldo(usuario) - comprometidos(usuario, ahora), 0)
+def debitable(usuario, ahora=None, *, excepto_carrito=None):
+    """El saldo menos lo comprometido: el máximo de un débito manual (`CO-106` E1) y
+    de un canje, en la tienda o en el mostrador (B-10-013)."""
+    return max(saldo(usuario) - comprometidos(usuario, ahora, excepto_carrito=excepto_carrito), 0)
 
 
 def debitar_no_comprometidos(usuario, cantidad, *, motivo="", pedido=None, linea=None):

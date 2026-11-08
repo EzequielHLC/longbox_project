@@ -320,3 +320,76 @@ def test_las_direcciones_viejas_llevan_a_por_llegar_sin_registrar_nada(client_ad
     assert vista.url == f"{URL}?mes=2026-12"
     assert envio.url == URL
     assert foto() == antes
+
+
+# ---------------------------------------------------------------------------
+# B-05-019: lo que ya no se vende (revisión integral, R-03)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("estado", [Producto.DESCATALOGADO, Producto.CANCELADO_EDITORIAL])
+def test_CO232_la_llegada_no_reactiva_un_producto_que_no_se_vende(
+    client_admin, ivrea, cliente, estado, django_capture_on_commit_callbacks
+):
+    akira = ProductoFactory(titulo="Akira", stock=0, estado=Producto.AGOTADO)
+    pedido = llegadas.registrar(ivrea, PedidoProveedor.MANUAL, [(akira, 3)])
+    SuscripcionReposicion.objects.create(usuario=cliente, producto=akira)
+    Producto.objects.filter(pk=akira.pk).update(estado=estado)
+    linea = pedido.lineas.get()
+
+    revision = client_admin.post(REVISAR, formulario((linea, 3))).content.decode()
+    with django_capture_on_commit_callbacks(execute=True):
+        client_admin.post(REVISAR, formulario((linea, 3), confirmar=True))
+
+    akira.refresh_from_db()
+    assert "No vuelve a la venta" in revision
+    # Postcondición negativa: el estado no cambia y nadie recibe el aviso de reposición.
+    assert (akira.estado, akira.stock) == (estado, 3)
+    assert SuscripcionReposicion.objects.get(producto=akira).estado != (
+        SuscripcionReposicion.NOTIFICADA
+    )
+
+
+def test_CO027_cancelar_la_preventa_cierra_lo_pedido_al_proveedor(
+    client_admin, ivrea, administrador
+):
+    from apps.pedidos import preventa
+
+    akira = agotado(ivrea, "Akira")
+    pedido = pedir(ivrea, (akira, 6))
+    akira.refresh_from_db()
+    assert akira.estado == Producto.PRE_VENTA
+
+    preventa.cancelar_preventa(akira.especifico, administrador)
+
+    linea = pedido.lineas.get()
+    pedido.refresh_from_db()
+    assert (linea.estado, linea.motivo_cierre) == (
+        LineaPedidoProveedor.SIN_RECIBIR,
+        "La editorial canceló el título.",
+    )
+    assert pedido.estado == PedidoProveedor.CERRADO
+    assert "Akira" not in client_admin.get(URL).content.decode()
+    assert "1 línea(s) de pedido al proveedor" in (
+        RegistroAuditoria.objects.get(accion=RegistroAuditoria.CANCELACION_PREVENTA_LOTE).detalle
+    )
+
+
+def test_CO034_descatalogar_cierra_lo_pedido_al_proveedor(ivrea, administrador):
+    from apps.catalog.services import confirmar_baja_de_producto
+
+    akira = ProductoFactory(titulo="Akira", stock=2, estado=Producto.ACTIVO)
+    otro = ProductoFactory(titulo="Berserk", stock=2, estado=Producto.ACTIVO)
+    pedido = llegadas.registrar(ivrea, PedidoProveedor.MANUAL, [(akira, 3), (otro, 3)])
+
+    hecho = confirmar_baja_de_producto(akira, actor=administrador)
+
+    pedido.refresh_from_db()
+    estados = dict(pedido.lineas.values_list("producto_id", "estado"))
+    assert hecho.lineas_cerradas == 1
+    assert estados == {
+        akira.pk: LineaPedidoProveedor.SIN_RECIBIR,
+        otro.pk: LineaPedidoProveedor.PENDIENTE,
+    }
+    # Lo demás del pedido se sigue esperando.
+    assert pedido.estado == PedidoProveedor.ABIERTO

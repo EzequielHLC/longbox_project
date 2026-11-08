@@ -15,6 +15,7 @@ consulta a su API.
 import hmac
 import json
 import logging
+import secrets
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
@@ -78,7 +79,12 @@ class PasarelaDePrueba:
         cuerpo = json.dumps(
             {
                 "referencia": cobro.referencia,
-                "pago": f"prueba-{cobro.referencia}",
+                # Como en MercadoPago, cada intento rechazado es un pago distinto.
+                "pago": (
+                    f"prueba-{cobro.referencia}"
+                    if aprobado
+                    else f"prueba-{cobro.referencia}-rechazo-{secrets.token_hex(4)}"
+                ),
                 "resultado": "aprobado" if aprobado else "rechazado",
                 "monto": str(cobro.monto),
                 "mensaje": mensaje,

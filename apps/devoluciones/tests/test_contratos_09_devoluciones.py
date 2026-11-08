@@ -518,6 +518,23 @@ def test_CO100_el_reemplazo_que_llega_a_cero_pasa_a_agotado(titular, administrad
 
 
 @pytest.mark.django_db
+def test_CO100_el_ultimo_con_un_pedido_en_camino_abre_la_preventa(titular, administrador):
+    """B-05-020 (revisión integral, R-05): como la venta, abre la pre-venta."""
+    from apps.suppliers import llegadas
+    from apps.suppliers.models import PedidoProveedor
+    from apps.suppliers.tests.factories import ProveedorFactory
+
+    ultimo = ProductoFactory(stock=1, precio=Decimal("10000"))
+    llegadas.registrar(ProveedorFactory(), PedidoProveedor.MANUAL, [(ultimo, 5)])
+    caso = caso_de(titular, como=ultimo)
+
+    servicios.resolver_con_cambio(caso.pk, ultimo.pk, administrador)
+
+    ultimo.refresh_from_db()
+    assert (ultimo.stock, ultimo.estado) == (0, Producto.PRE_VENTA)
+
+
+@pytest.mark.django_db
 def test_CO100_el_reemplazo_queda_a_nombre_del_cliente_en_el_stock_en_local(
     titular, administrador, reemplazo
 ):

@@ -299,6 +299,44 @@ def test_CO103_E1_saldo_insuficiente_no_cubre_y_lo_informa(navegador, comprador)
     assert "hacen falta 300 puntos y te quedan 299" in texto
 
 
+def test_CO103_no_canjea_lo_comprometido_en_otro_pago_en_curso(navegador, comprador):
+    """B-10-013 (revisión integral, R-06): lo reserva un pago de otro carrito."""
+    dar_puntos(comprador, 500)
+    CobroEnCurso.objects.create(
+        referencia="otro-pago-en-curso",
+        pasarela="prueba",
+        usuario=comprador,
+        costo_envio=0,
+        monto=1000,
+        puntos_a_debitar=300,
+    )
+    agregar(navegador, producto(precio="3000"))
+    linea = LineaCarrito.objects.get()
+
+    respuesta = canjear(navegador, linea)
+
+    linea.refresh_from_db()
+    assert linea.cubierta_con_puntos is False
+    texto = navegador.get(respuesta.url).content.decode()
+    assert "hacen falta 300 puntos y te quedan 200" in texto
+    assert "Otros 300 puntos están reservados por un pago en curso" in texto
+
+
+def test_CO103_reintentar_despues_de_un_rechazo_no_pierde_los_puntos(navegador, comprador):
+    """El cobro abierto del mismo carrito se reemplaza al confirmar (B-07-043)."""
+    dar_puntos(comprador, 500)
+    agregar(navegador, producto(precio="3000"))
+    canjear(navegador, LineaCarrito.objects.get())
+    primero = comprar(navegador, aprobado=False, mensaje="Fondos insuficientes.")
+
+    segundo = comprar(navegador)
+
+    primero.refresh_from_db()
+    assert primero.estado == CobroEnCurso.DESCARTADO
+    assert segundo.estado == CobroEnCurso.PROCESADO
+    assert segundo.puntos_a_debitar == 300
+
+
 def test_CO103_E1_no_hay_canje_parcial_entre_dos_lineas(navegador, comprador):
     dar_puntos(comprador, 500)
     agregar(navegador, producto(precio="3000"))
@@ -712,7 +750,8 @@ def test_CO089_E2_un_pago_rechazado_no_modifica_nada(navegador, comprador):
     cobro = comprar(navegador, aprobado=False, mensaje="Fondos insuficientes.")
 
     assert foto(prod) == antes
-    assert cobro.estado == CobroEnCurso.RECHAZADO
+    # B-07-043: el rechazo no cierra el cobro; se puede reintentar en la pasarela.
+    assert cobro.rechazado_y_abierto
 
 
 def test_CO089_E2_el_rechazo_se_informa_con_el_mensaje_de_la_pasarela(navegador):

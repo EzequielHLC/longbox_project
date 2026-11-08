@@ -334,7 +334,16 @@ class ResultadoView(View):
         )
         if not propio:
             raise Http404("No hay un pago con esa referencia.")
-        if cobro.tipo == CobroEnCurso.DESPACHO and cobro.estado != CobroEnCurso.PENDIENTE:
+        # La pasarela vuelve con el resultado en la dirección; el aviso puede
+        # llegar unos segundos después. Sólo cambia lo que se muestra mientras.
+        aprobado_en_camino = "approved" in (
+            request.GET.get("collection_status"),
+            request.GET.get("status"),
+        )
+        if cobro.tipo == CobroEnCurso.DESPACHO and (
+            cobro.estado != CobroEnCurso.PENDIENTE
+            or (cobro.rechazado_y_abierto and not aprobado_en_camino)
+        ):
             from apps.almacen.views_cuenta import resultado_de_pago
 
             return resultado_de_pago(request, cobro)
@@ -347,7 +356,13 @@ class ResultadoView(View):
         return render(
             request,
             "tienda/resultado.html",
-            {"cobro": cobro, "pedido": cobro.pedido, "volver": volver},
+            {
+                "cobro": cobro,
+                "pedido": cobro.pedido,
+                "volver": volver,
+                "rechazado": cobro.estado == CobroEnCurso.RECHAZADO
+                or (cobro.rechazado_y_abierto and not aprobado_en_camino),
+            },
         )
 
 

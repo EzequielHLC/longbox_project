@@ -271,9 +271,28 @@ def test_CO089_invitado_E3_rechazo_conserva_los_datos_del_formulario(client):
 
     cobro = comprar_como_invitado(client, aprobado=False)
 
-    assert cobro.estado == CobroEnCurso.RECHAZADO
+    assert cobro.rechazado_y_abierto
     assert Producto.objects.get(pk=prod.pk).stock == 5
     assert not Pedido.objects.exists()
     respuesta = client.get(reverse("compra:resultado", args=[cobro.referencia]))
     assert URL_INVITADO_RESUMEN in respuesta.content.decode()
     assert client.session[compra.CLAVE_INVITADO]["correo"] == "lector@correo.test"
+
+
+def test_CO181_si_el_producto_pasa_a_pre_venta_mientras_paga_se_reembolsa(client):
+    """B-07-044 (revisión integral, R-02): el invitado nunca termina con una reserva."""
+    prod = producto(stock=1)
+    agregar(client, prod)
+    declarar(client)
+    client.post(URL_INVITADO_CONFIRMAR)
+    cobro = CobroEnCurso.objects.get()
+    # Se vendió el último en el local y hay más en camino: abrió la pre-venta.
+    Producto.objects.filter(pk=prod.pk).update(stock=0, estado=Producto.PRE_VENTA)
+
+    avisar(client, cobro)
+
+    cobro.refresh_from_db()
+    assert cobro.estado == CobroEnCurso.REEMBOLSADO
+    assert "pasó a pre-venta" in cobro.mensaje
+    assert not Pedido.objects.exists()
+    assert not TransaccionPago.objects.exists()

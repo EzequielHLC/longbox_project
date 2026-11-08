@@ -464,3 +464,26 @@ Con movimiento reducido no hay nada de eso: el calendario queda como estaba.
 
 **Qué habría que cambiar.**
 `Nada` en el documento de análisis.
+
+---
+
+### B-00-034 · El estado de un pedido interrumpido se decía dos veces en «Mi cuenta»
+
+**Tipo:** Corrección · **Fecha:** 2026-11-07 · **Alcance:** `CU-CLI-HIS`
+**Estado:** Resuelta el 2026-11-07
+
+**Qué apareció.**
+El responsable, probando una compra con MercadoPago en la VM: el detalle del pedido decía «Esperando
+stock de pre-venta» dos veces seguidas, en el rótulo de arriba y en la cinta del riel. En la lista de
+pedidos pasaba lo mismo, con el rótulo al costado.
+
+**Qué dice la especificación.**
+`Nada`.
+
+**Qué se hizo.**
+Cuando el riel se interrumpe (esperando una pre-venta, un artículo demorado, o cancelado), su cinta
+ya dice el estado y el rótulo no se muestra. Sin interrupción, el rótulo sigue. La tabla del
+Administrador no cambia: ahí estado y recorrido van en columnas separadas a propósito (P7).
+
+**Qué habría que cambiar.**
+`Nada`.

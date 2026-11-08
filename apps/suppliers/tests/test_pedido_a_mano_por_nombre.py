@@ -116,12 +116,15 @@ def test_manda_el_proveedor_propio_del_producto_antes_que_el_de_su_editorial(
     assert PedidoProveedor.objects.get().proveedor == ivrea
 
 
-def test_si_no_se_sabe_quien_lo_trae_se_acepta(client_admin, ivrea, mailoutbox):
+def test_si_no_se_sabe_quien_lo_trae_no_se_pide(client_admin, ivrea, mailoutbox):
+    """B-05-021: sin proveedor identificable no hay cómo saber si este lo tiene."""
     sin_dueno = tomo(ivrea, "Sin dueño", 1, editorial=EditorialFactory())
 
-    pedir(client_admin, ivrea, (sin_dueno.codigo, 1))
+    respuesta = pedir(client_admin, ivrea, (sin_dueno.codigo, 1))
 
-    assert PedidoProveedor.objects.get().lineas.get().producto_id == sin_dueno.pk
+    assert "No se sabe qué proveedor trae" in respuesta.content.decode()
+    assert not PedidoProveedor.objects.exists()
+    assert not mailoutbox
 
 
 def test_un_renglon_de_otro_proveedor_frena_todo_el_pedido(client_admin, ivrea, panini):

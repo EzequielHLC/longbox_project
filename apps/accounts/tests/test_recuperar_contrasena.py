@@ -191,3 +191,49 @@ def test_el_cambio_queda_registrado_en_auditoria(client, cliente):
 
     registro = RegistroAuditoria.objects.get(accion=RegistroAuditoria.CAMBIO_CONTRASENA)
     assert registro.actor == cliente
+
+
+# ---------------------------------------------------------------------------
+# B-12-005: el tope de pedidos (revisión integral, R-08)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_CO117_pasado_el_tope_por_correo_no_sale_nada_y_la_respuesta_es_la_misma(client):
+    from apps.accounts.models import TokenRecuperacion
+    from apps.accounts.views import TOPE_POR_CORREO
+
+    usuario = UsuarioFactory(email="lectora@correo.test")
+    respuestas = [
+        client.post(URL_PEDIR_ENLACE, {"email": "Lectora@Correo.test"})
+        for _ in range(TOPE_POR_CORREO + 2)
+    ]
+
+    assert len(mail.outbox) == TOPE_POR_CORREO
+    assert TokenRecuperacion.objects.filter(usuario=usuario).count() == TOPE_POR_CORREO
+    assert {r.url for r in respuestas} == {reverse("accounts:password_reset_done")}
+
+
+@pytest.mark.django_db
+def test_CO117_el_tope_por_ip_frena_aunque_cambie_el_correo(client):
+    from apps.accounts.views import TOPE_POR_IP
+
+    for i in range(TOPE_POR_IP + 3):
+        UsuarioFactory(email=f"cuenta{i}@correo.test")
+        client.post(URL_PEDIR_ENLACE, {"email": f"cuenta{i}@correo.test"})
+
+    assert len(mail.outbox) == TOPE_POR_IP
+
+
+@pytest.mark.django_db
+def test_CO117_el_tope_vence_a_la_hora(client):
+    from apps.accounts.views import TOPE_POR_CORREO
+
+    UsuarioFactory(email="lectora@correo.test")
+    with freeze_time("2026-11-07 10:00"):
+        for _ in range(TOPE_POR_CORREO + 1):
+            client.post(URL_PEDIR_ENLACE, {"email": "lectora@correo.test"})
+    with freeze_time("2026-11-07 11:01"):
+        client.post(URL_PEDIR_ENLACE, {"email": "lectora@correo.test"})
+
+    assert len(mail.outbox) == TOPE_POR_CORREO + 1
