@@ -7,6 +7,11 @@ mensaje de la pasarela y el carrito intacto (E2, E3); el cobro puede seguir
 abierto para otro intento en la pasarela (B-07-043). Reembolsado: el pedido no
 se pudo generar y el cargo se revierte (E3, E4). Pendiente: todavía no llegó
 el aviso, y la pantalla se vuelve a pedir sola.
+
+Plan 07, novena parte: la compra aprobada es un ticket que sale impreso de la
+máquina, con las portadas de lo comprado y el sello «Pagado»; la espera, una
+cinta que se rebobina; el rechazo y el reembolso, un televisor con la señal
+cortada. Los textos que informan no cambian.
 {% endcomment %}
 
 {% block titulo %}{% if pedido %}Pedido {{ pedido.numero }}{% else %}Tu pago{% endif %} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
@@ -17,21 +22,40 @@ el aviso, y la pantalla se vuelve a pedir sola.
 {% endblock %}
 
 {% block contenido %}
-<div class="pila-5">
+<div class="pila-5 resultado-compra">
   {% if cobro.estado == "procesado" %}
     <div class="pila-2">
       {% include "tienda/_pasos_compra.html" with paso=4 %}
       <p class="antetitulo">Tienda · Compra confirmada</p>
       <h1 class="titulo-1">¡Gracias por tu compra!</h1>
     </div>
-    <div class="panel pila-3">
-      <p>Pedido <span class="datos">{{ pedido.numero }}</span> · <span class="marca-estado marca-estado--ok">{{ pedido.get_estado_display }}</span></p>
-      <p class="secundario">Te mandamos el detalle a <span class="datos">{{ pedido.correo_de_contacto }}</span>.</p>
-      {% if pedido.estado == "esperando_pre_venta" %}
-        <p class="secundario">El pedido incluye pre-ventas: lo armamos cuando llegue todo.</p>
-      {% endif %}
-      <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobro.monto|pesos }}</span></p>
-      {% if cobro.puntos_a_debitar %}<p class="texto-chico secundario">Usaste {{ cobro.puntos_a_debitar }} puntos.</p>{% endif %}
+    <div class="maquina-ticket">
+      <div class="maquina-ticket__ranura" aria-hidden="true"><span class="osd"><i></i>Imprimiendo ticket</span></div>
+      <div class="ticket-compra panel pila-3">
+        <span class="ticket-compra__sello" aria-hidden="true">Pagado</span>
+        <p class="ticket-compra__tienda osd" aria-hidden="true">{% firstof identidad_tienda.nombre_tienda "Longbox" %} · comprobante</p>
+        <p>Pedido <span class="datos">{{ pedido.numero }}</span> · <span class="marca-estado marca-estado--ok">{{ pedido.get_estado_display }}</span></p>
+        {% with lineas=pedido.lineas.all %}
+          {% if lineas %}
+            <ul class="ticket-compra__portadas" aria-label="Productos del pedido">
+              {% for linea in lineas|slice:":6" %}
+                <li title="{{ linea.producto.titulo }}">
+                  {% if linea.producto.portada %}<img src="{{ linea.producto.portada.url }}" alt="{{ linea.producto.titulo }}">{% else %}<span class="portada-mini__vacia">{% include "_iconos.html" with icono="libro" %}<span class="sr-only">{{ linea.producto.titulo }}</span></span>{% endif %}
+                  {% if linea.cantidad > 1 %}<b aria-label="{{ linea.cantidad }} unidades">×{{ linea.cantidad }}</b>{% endif %}
+                </li>
+              {% endfor %}
+              {% if lineas|length > 6 %}<li class="ticket-compra__mas">+{{ lineas|length|add:"-6" }}</li>{% endif %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        <p class="secundario">Te mandamos el detalle a <span class="datos">{{ pedido.correo_de_contacto }}</span>.</p>
+        {% if pedido.estado == "esperando_pre_venta" %}
+          <p class="secundario">El pedido incluye pre-ventas: lo armamos cuando llegue todo.</p>
+        {% endif %}
+        <p class="resumen-carrito__total"><span class="etiqueta">Pagaste</span> <span class="sin-envolver">{{ cobro.monto|pesos }}</span></p>
+        {% if cobro.puntos_a_debitar %}<p class="texto-chico secundario">Usaste {{ cobro.puntos_a_debitar }} puntos.</p>{% endif %}
+        <span class="ticket-compra__barras" aria-hidden="true"></span>
+      </div>
     </div>
     {% if pedido.usuario_id %}
       <div class="fila-5">
@@ -46,7 +70,7 @@ el aviso, y la pantalla se vuelve a pedir sola.
       <p class="antetitulo">Tienda · Pago rechazado</p>
       <h1 class="titulo-1">El pago no se aprobó</h1>
     </div>
-    <div class="panel panel--atencion pila-3" role="alert">
+    <div class="panel panel--atencion pila-3 resultado-compra__corte" role="alert">
       <p>{{ cobro.mensaje|default:"La pasarela rechazó el pago." }}</p>
       <p class="secundario">No se te cobró nada y tu carrito quedó como estaba. Podés volver a intentar con otro medio de pago.</p>
     </div>
@@ -56,7 +80,7 @@ el aviso, y la pantalla se vuelve a pedir sola.
       <p class="antetitulo">Tienda · Compra no completada</p>
       <h1 class="titulo-1">No pudimos completar tu compra</h1>
     </div>
-    <div class="panel panel--atencion pila-3" role="alert">
+    <div class="panel panel--atencion pila-3 resultado-compra__corte" role="alert">
       <p>El pago se aprobó, pero no pudimos generar el pedido. <strong>El cargo se revierte</strong>: lo vas a ver en tu medio de pago en los próximos días.</p>
       <p class="secundario">Tu carrito quedó como estaba.</p>
     </div>
@@ -65,6 +89,10 @@ el aviso, y la pantalla se vuelve a pedir sola.
     <div class="pila-2">
       <p class="antetitulo">Tienda · Pago en curso</p>
       <h1 class="titulo-1">Esperando la confirmación del pago</h1>
+    </div>
+    <div class="resultado-compra__espera" aria-hidden="true">
+      <span class="casete__ventana"><i class="casete__carrete"></i><i class="casete__cinta"></i><i class="casete__carrete"></i></span>
+      <span class="osd">◀◀ Rebobinando</span>
     </div>
     <p class="secundario" role="status">Esta pantalla se actualiza sola en unos segundos.</p>
   {% endif %}

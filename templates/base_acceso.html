@@ -16,25 +16,51 @@ Las pantallas llenan `contenido`; el título va adentro, como siempre.
 {% block busqueda_encabezado %}{% endblock %}
 {% block globo_ayuda %}{% endblock %}
 
+{% comment %}
+Plan 07, novena parte: la escena muestra la credencial de socio que se está
+emitiendo —la misma que el carnet de «Mi cuenta»—, con el logo o el nombre de
+la tienda; la imagen del ingreso, si la hay, queda de fondo. El formulario es
+una solicitud de socio impresa en papel, con su encabezado de planilla.
+{% endcomment %}
 {% block secciones %}
+{% with vista=request.resolver_match.url_name %}
 <div class="acceso">
   <div class="acceso__escena superficie-noche{% if textos_tienda.imagen_acceso %} acceso__escena--imagen{% endif %}" aria-hidden="true">
     {% if textos_tienda.imagen_acceso %}
       <img src="{{ textos_tienda.imagen_acceso.url }}" alt="" class="acceso__imagen">
-    {% elif textos_tienda.logo %}
-      <div class="acceso__cuadro"><img src="{{ textos_tienda.logo.url }}" alt="" class="acceso__logo"></div>
-    {% else %}
-      <div class="acceso__cuadro">
-        <span class="acceso__nombre">{% firstof textos_tienda.nombre_tienda "Longbox" %}</span>
-        <span class="sticker acceso__sticker">¡BIENVENIDO!</span>
-      </div>
     {% endif %}
+    <div class="acceso__cuadro">
+      <div class="credencial">
+        <span class="cinta-adhesiva credencial__cinta"></span>
+        <div class="credencial__barra osd"><span><i></i>Socio</span><span>{% if vista == "registro_cliente" %}En emisión{% else %}Nº · · · · · ·{% endif %}</span></div>
+        <div class="credencial__cabeza">
+          <div class="credencial__retrato">
+            {% if textos_tienda.logo and not textos_tienda.imagen_acceso %}<img src="{{ textos_tienda.logo.url }}" alt="" class="acceso__logo">{% else %}<span>?</span>{% endif %}
+          </div>
+          <div class="credencial__identidad">
+            <span class="credencial__rotulo osd">Carnet de cliente</span>
+            {% if not textos_tienda.logo or textos_tienda.imagen_acceso %}<span class="acceso__nombre">{% firstof textos_tienda.nombre_tienda "Longbox" %}</span>{% else %}<span class="credencial__tienda">{% firstof textos_tienda.nombre_tienda "Longbox" %}</span>{% endif %}
+            <span class="credencial__renglon"></span>
+            <span class="credencial__renglon credencial__renglon--corto"></span>
+          </div>
+        </div>
+        <div class="credencial__codigo"><span class="osd">Código de cliente</span><b>— — — — — —</b><span class="credencial__barras"></span></div>
+        <div class="credencial__beneficios">
+          <span>{% include "_iconos.html" with icono="puntos" %}Puntos en cada compra</span>
+          <span>{% include "_iconos.html" with icono="reloj" %}Reservá pre-ventas</span>
+          <span>{% include "_iconos.html" with icono="local" %}Guardamos tus tomos</span>
+        </div>
+      </div>
+      <span class="sticker acceso__sticker">{% if vista == "registro_cliente" %}¡SUMATE!{% else %}¡BIENVENIDO!{% endif %}</span>
+    </div>
   </div>
   <div class="acceso__formulario superficie-papel">
     <div class="acceso__columna">
+      <div class="solicitud__cabeza osd" aria-hidden="true"><span>{% firstof textos_tienda.nombre_tienda "Longbox" %} · {% if vista == "registro_cliente" %}Solicitud de socio{% else %}Acceso de socio{% endif %}</span><span>Form. {% if vista == "registro_cliente" %}02{% else %}01{% endif %}</span></div>
       {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}
       {% block contenido %}{% endblock %}
     </div>
   </div>
 </div>
+{% endwith %}
 {% endblock %}

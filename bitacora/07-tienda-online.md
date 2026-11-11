@@ -1712,3 +1712,42 @@ quitar el sello giratorio del hero.
 `CU-TDA-CAT`, paso de la ficha: el aviso al llegar al tope de unidades. `identidad_visual.md`:
 el cajón, el visor, la barra de desplazamiento y las piezas del Cliente en los patrones del modo
 público.
+
+---
+
+### B-07-057 · La tarjeta de producto es un ticket; pago aprobado, ingreso y registro con el lenguaje nuevo
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-CAT` (`CO-176`), `CU-TDA-CMP` (paso 8), `CU-TDA-INV` (paso 10), `CU-AUT-INI`, `CU-CLI-ALT`
+**Estado:** Abierta — pedidos explícitos del responsable el 2026-11-11
+
+**Qué apareció.**
+El responsable aprobó rediseñar la tarjeta de producto, la pantalla del pago aprobado y las de
+ingreso y registro. Una primera versión de la tarjeta, como caja de cinta con lomo y precio en
+etiqueta, le resultó sobrecargada y pidió algo como los tickets o cuadros de película de la
+referencia. Señaló además el selector de cantidad, el vacío del catálogo y el ticket de su cabeza.
+
+**Qué dice la especificación.**
+> «Estado: rótulo en la esquina superior izquierda de la portada, sesgado: «Disponible» (borde,
+> sin relleno), «Pre-venta» […], «Sin stock» […]» (`identidad_visual.md`, Estantería y tarjeta).
+
+**Qué se hizo.**
+- **La tarjeta es un ticket**: la portada limpia arriba; una línea de corte punteada con dos
+  muescas; el talón con el título (dos líneas), la editorial (una) y el precio, y «Agregar» como
+  botón redondo con la bolsa, que conserva su nombre para el lector de pantalla. **«Disponible»
+  ya no se dibuja**: es el estado de casi todo y recargaba la tarjeta; «Pre-venta» y «Sin stock»
+  siguen. En el celular las estanterías van de a dos.
+- **Pago aprobado**: un ticket que sale de la ranura de la máquina con las portadas de lo comprado
+  y un sello «Pagado»; la espera, una cinta que se rebobina; rechazo y reembolso, con la franja de
+  señal cortada. Los textos que informan no cambian.
+- **Ingreso y registro**: a la izquierda, la credencial de socio en emisión con lo que da ser
+  socio; a la derecha, la solicitud de socio impresa en papel rayado. La imagen y el logo de la
+  identidad visual se respetan.
+- **Selector de cantidad**: una píldora con teclas redondas y el número en el visor.
+- **Vacío sobre papel**: toma los colores de la noche; «Limpiar filtros» volvía invisible.
+- **Ticket del catálogo**: dice «En la estantería · N productos» y no aparece sin resultados.
+- **Barra a 360 px**: «Ingresar» queda sólo con el ícono.
+- Recorrida de desbordes repetida, con el resultado del pago: sin hallazgos.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Estantería y tarjeta: la tarjeta como ticket y el estado «Disponible» sin
+rótulo. Registro e inicio de sesión: la credencial y la solicitud.

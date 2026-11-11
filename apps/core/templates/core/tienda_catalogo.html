@@ -28,10 +28,12 @@ panel de filtros como aparato (noche, con los interruptores encendidos).
   La pila: las tres primeras portadas de lo que se está viendo, sueltas sobre la
   mesa con cinta y un ticket de alquiler. Decorativa; cambia con la página.
   {% endcomment %}
-  <div class="catalogo-pila" aria-hidden="true">
-    {% for producto in productos|slice:":3" %}{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" class="catalogo-pila__tapa">{% endif %}{% endfor %}
-    <span class="catalogo-pila__ticket osd">Ticket Nº {{ pagina.paginator.count|stringformat:"05d" }}<b>{{ pagina.paginator.count }} títulos en la estantería</b></span>
-  </div>
+  {% if productos %}
+    <div class="catalogo-pila" aria-hidden="true">
+      {% for producto in productos|slice:":3" %}{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" class="catalogo-pila__tapa">{% endif %}{% endfor %}
+      <span class="catalogo-pila__ticket osd">En la estantería<b>{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</b></span>
+    </div>
+  {% endif %}
   <div class="columna-publica">
     <div class="lomo">
       <span class="lomo__numero" aria-hidden="true">▶</span>

@@ -119,7 +119,7 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
             </div>
           </details>
         {% else %}
-          <a href="{% url 'accounts:login' %}" class="botonera__ingresar" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="usuario" %}<span>Ingresar</span></a>
+          <a href="{% url 'accounts:login' %}" class="botonera__ingresar" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="usuario" %}<span class="botonera__ingresar-texto">Ingresar</span></a>
         {% endif %}
       {% endblock %}
     </nav>
