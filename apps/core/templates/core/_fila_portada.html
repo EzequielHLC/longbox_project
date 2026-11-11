@@ -8,13 +8,22 @@ o, sin ella, con un abanico de las primeras portadas. Las flechas van sobre los
 bordes de la pista y se esconden en cada extremo (sin contador, B-07-029); debajo, la barra de recorrido
 reemplaza a la barra del navegador (una sola barra, no dos). Todo eso lo pone
 el guion de la portada: sin él, la pista se recorre con su barra nativa.
+
+En la portada, la sección trae su `numero` y el título va en el lomo de una
+cinta (`core/_lomo.html`, plan 07, novena parte); en la ficha, sin número,
+sigue el título de sección de siempre.
 {% endcomment %}
 <div class="fila-portada" data-fila-portada>
   <div class="fila fila-entre fila-abajo">
-    <div class="titulo-seccion">
-      <p class="antetitulo">{{ fila.antetitulo }}</p>
-      <h2 id="fila-{{ fila.pk }}">{{ fila.titulo_visible }}</h2>
-    </div>
+    {% if fila.numero %}
+      {% firstof fila.antetitulo_visible fila.antetitulo as antetitulo %}
+      {% include "core/_lomo.html" with numero=fila.numero antetitulo=antetitulo titulo=fila.titulo_visible %}
+    {% else %}
+      <div class="titulo-seccion">
+        <p class="antetitulo">{% firstof fila.antetitulo_visible fila.antetitulo %}</p>
+        <h2 id="fila-{{ fila.pk }}">{{ fila.titulo_visible }}</h2>
+      </div>
+    {% endif %}
     <div class="fila-portada__mandos">
       <a href="{{ fila.ver_todo }}" class="boton-texto">Ver todo →</a>
     </div>
@@ -23,7 +32,7 @@ el guion de la portada: sin él, la pista se recorre con su barra nativa.
     <button type="button" class="fila-portada__flecha fila-portada__flecha--atras" data-desplazar="-1" aria-label="Ver los anteriores de {{ fila.titulo_visible }}" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" class="icono"><path d="M13 5l-7 7 7 7M19 5l-7 7 7 7"/></svg>
     </button>
-    <div class="fila-portada__pista" data-pista tabindex="0" aria-labelledby="fila-{{ fila.pk }}">
+    <div class="fila-portada__pista" data-pista tabindex="0" aria-labelledby="{% if fila.numero %}titulo-seccion-{{ fila.numero }}{% else %}fila-{{ fila.pk }}{% endif %}">
       <a href="{{ fila.ver_todo }}" class="fila-portada__titular{% if not fila.imagen %} fila-portada__titular--sin-imagen{% endif %}">
         {% if fila.imagen %}
           <img src="{{ fila.imagen.url }}" alt="" loading="lazy">

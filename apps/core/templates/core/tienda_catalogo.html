@@ -10,6 +10,10 @@ Plan 07, quinta parte: arriba sólo la búsqueda; los filtros, en un panel al
 costado con interruptores, y se aplican mientras se cambian, sin botón
 (B-07-013). La búsqueda pertenece al mismo formulario (`form=`). Sin
 JavaScript, el panel muestra «Aplicar filtros» y funciona como antes.
+
+Plan 07, novena parte: el título en un lomo de cinta sobre el nombre gigante, el
+buscador como aparato, una cinta en marcha con los tipos de material, y el
+panel de filtros como aparato (noche, con los interruptores encendidos).
 {% endcomment %}
 
 {% block titulo %}Catálogo · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
@@ -19,10 +23,23 @@ JavaScript, el panel muestra «Aplicar filtros» y funciona como antes.
 
 {% block secciones %}
 <section class="seccion-publica seccion-publica--trama superficie-noche catalogo-cabeza" aria-labelledby="titulo-catalogo">
+  <span class="catalogo-cabeza__fondo" aria-hidden="true">Catálogo · Catálogo</span>
+  {% comment %}
+  La pila: las tres primeras portadas de lo que se está viendo, sueltas sobre la
+  mesa con cinta y un ticket de alquiler. Decorativa; cambia con la página.
+  {% endcomment %}
+  <div class="catalogo-pila" aria-hidden="true">
+    {% for producto in productos|slice:":3" %}{% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" class="catalogo-pila__tapa">{% endif %}{% endfor %}
+    <span class="catalogo-pila__ticket osd">Ticket Nº {{ pagina.paginator.count|stringformat:"05d" }}<b>{{ pagina.paginator.count }} títulos en la estantería</b></span>
+  </div>
   <div class="columna-publica">
-    <div class="titulo-seccion">
-      <p class="antetitulo">Catálogo</p>
-      <h1 id="titulo-catalogo">Toda la tienda</h1>
+    <div class="lomo">
+      <span class="lomo__numero" aria-hidden="true">▶</span>
+      <span class="lomo__franjas" aria-hidden="true"></span>
+      <div class="lomo__texto">
+        <p class="antetitulo">Catálogo</p>
+        <h1 id="titulo-catalogo">Toda la tienda</h1>
+      </div>
     </div>
     <div class="buscador-catalogo" role="search">
       <label for="q" class="sr-only">Buscar en el catálogo</label>
@@ -32,13 +49,17 @@ JavaScript, el panel muestra «Aplicar filtros» y funciona como antes.
   </div>
 </section>
 
-<div class="union-cinta" aria-hidden="true"></div>
+{% if tipos %}
+  <div class="cinta-marcha" aria-hidden="true"><div class="cinta-marcha__pista">{% for vez in "123" %}{% for tipo in tipos %}<span>{{ tipo.nombre }}</span>{% endfor %}{% endfor %}</div></div>
+{% else %}
+  <div class="union-cinta" aria-hidden="true"></div>
+{% endif %}
 
 <section class="seccion-publica superficie-papel" aria-label="Resultados">
   <div class="columna-publica catalogo">
     <details class="catalogo__panel" open data-panel-filtros>
       <summary class="catalogo__abrir-panel">{% include "_iconos.html" with icono="filtro" %}<span>Filtros</span></summary>
-      <form id="filtros-catalogo" method="get" class="panel-filtros" data-filtros>
+      <form id="filtros-catalogo" method="get" class="panel-filtros superficie-noche" data-filtros>
         <input type="hidden" name="f" value="1">
         {% if filtros.grupo %}<input type="hidden" name="grupo" value="{{ filtros.grupo }}">{% endif %}
         <div class="panel-filtros__cabeza">

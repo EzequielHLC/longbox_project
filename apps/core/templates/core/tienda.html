@@ -1,11 +1,13 @@
 {% extends "base_publico.html" %}
 {% comment %}
-La portada de la tienda (`identidad_visual.md` y la guía `Viñeta Nocturna.html`:
-Portada, Ticker, Estantería): escena noche en diagonal con el título y la
-portada destacada, el ticker inclinado, el carrusel de banners (CU-CFG-BNC) y la
-estantería de recién llegados sobre papel, que entra en diagonal.
+La portada de la tienda (`CU-TDA-POR`; plan 07, novena parte: el escaparate
+vivo). Arriba, la escena noche en diagonal con el título y el televisor, donde
+corre el carrusel de banners (CU-CFG-BNC); sin banners, la portada destacada.
+Debajo, la radio con lo que llegó (el ticker de siempre) y las secciones que
+arma el Administrador (`CU-CFG-SEC`) en su orden, con su número en el lomo y el
+riel que dice dónde se está.
 
-El antetítulo, el título, la bajada y los mensajes del ticker los escribe el
+El antetítulo, el título, la bajada y los mensajes de la radio los escribe el
 Administrador en la identidad visual (B-17-015). Los datos —precios, estados—
 siguen la voz del sistema.
 {% endcomment %}
@@ -14,6 +16,7 @@ siguen la voz del sistema.
 
 {% block secciones %}
 <section class="portada-tienda superficie-noche" aria-labelledby="titulo-portada">
+  <span class="portada-tienda__fondo" aria-hidden="true">{% firstof identidad_tienda.nombre_tienda "Longbox" %} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
   <div class="columna-publica">
     <div class="portada-tienda__textos">
       <p class="antetitulo">— {{ textos_tienda.portada_antetitulo }}</p>
@@ -25,88 +28,91 @@ siguen la voz del sistema.
       </div>
     </div>
 
-    {% if destacado %}
-      <a href="{% url 'core:tienda_producto' destacado.pk %}" class="portada-tienda__destacada" aria-label="{{ destacado.titulo }}">
+    {% if banners %}
+      <div class="portada-tienda__tele">
+        {% include "_carrusel.html" with banners=banners intervalo=intervalo tele=1 %}
+        {% comment %}La pila: dos televisores chicos detrás, con lo último que llegó. Decorativos.{% endcomment %}
+        {% for producto in recien_llegados|slice:"1:3" %}{% if producto.portada %}
+          <span class="tele-mini {% if forloop.first %}tele-mini--a{% else %}tele-mini--b{% endif %}" aria-hidden="true">
+            <span class="tele-mini__pantalla"><span class="tele-mini__rotulo">CH {{ forloop.counter|add:3|stringformat:"02d" }}</span><img src="{{ producto.portada.url }}" alt="" loading="lazy"></span>
+            <span class="tele-mini__perillas"><i></i><i></i><i></i></span>
+          </span>
+        {% endif %}{% endfor %}
+        {% if destacado %}<span class="sticker" aria-hidden="true">{% if destacado.estado_publico == "pre_venta" %}¡PRE-VENTA!{% else %}¡NUEVO!{% endif %}</span>{% endif %}
+      </div>
+    {% elif destacado %}
+      {# Sin banners, el televisor pasa la portada destacada. #}
+      <div class="portada-tienda__tele">
+        <a href="{% url 'core:tienda_producto' destacado.pk %}" class="tele tele--fija" aria-label="{{ destacado.titulo }}">
+          <span class="tele__pantalla">
+            <img src="{{ destacado.portada.url }}" alt="Portada de {{ destacado.titulo }}" class="tele__portada">
+            <span class="tele__barrido" aria-hidden="true"></span>
+            <span class="tele__osd osd" aria-hidden="true"><span><b>▶ PLAY</b>&nbsp;&nbsp;SP</span></span>
+          </span>
+          <span class="tele__perillas" aria-hidden="true"><span class="perilla"></span><span class="perilla perilla--b"></span><span class="parlante"><i></i><i></i><i></i><i></i><i></i></span></span>
+        </a>
         <span class="sticker" aria-hidden="true">{% if destacado.estado_publico == "pre_venta" %}¡PRE-VENTA!{% else %}¡NUEVO!{% endif %}</span>
-        <img src="{{ destacado.portada.url }}" alt="Portada de {{ destacado.titulo }}">
-      </a>
+        {% comment %}La pila: dos televisores chicos detrás, con lo último que llegó. Decorativos.{% endcomment %}
+        {% for producto in recien_llegados|slice:"1:3" %}{% if producto.portada %}
+          <span class="tele-mini {% if forloop.first %}tele-mini--a{% else %}tele-mini--b{% endif %}" aria-hidden="true">
+            <span class="tele-mini__pantalla"><span class="tele-mini__rotulo">CH {{ forloop.counter|add:3|stringformat:"02d" }}</span><img src="{{ producto.portada.url }}" alt="" loading="lazy"></span>
+            <span class="tele-mini__perillas"><i></i><i></i><i></i></span>
+          </span>
+        {% endif %}{% endfor %}
+      </div>
     {% endif %}
   </div>
 </section>
 
 {% comment %}
-El ticker repite sus mensajes dos veces para que el bucle no tenga corte; la
-segunda vuelta no la leen los lectores de pantalla. Se detiene con el puntero,
-con el foco y con «Pausar»; con movimiento reducido no corre.
+La radio: el ticker de siempre, con su rótulo «En rotación» y un ecualizador.
+Repite sus mensajes dos veces para que el bucle no tenga corte; la segunda
+vuelta no la leen los lectores de pantalla. Se detiene con el puntero, con el
+foco y con «Pausar» —el ecualizador también—; con movimiento reducido no corre.
 {% endcomment %}
 {% with mensajes=textos_tienda.mensajes_del_ticker %}
   {% if mensajes or recien_llegados %}
     <div class="ticker" data-ticker>
-      <div class="ticker__pista">
-        {% if mensajes %}
-          {% for mensaje in mensajes %}<span>{{ mensaje }}</span>{% endfor %}
-          {% for mensaje in mensajes %}<span aria-hidden="true">{{ mensaje }}</span>{% endfor %}
-        {% else %}
-          {% for titulo in llegaron %}<span>Llegó {{ titulo }}</span>{% endfor %}
-          {% for titulo in llegaron %}<span aria-hidden="true">Llegó {{ titulo }}</span>{% endfor %}
-        {% endif %}
+      <span class="ticker__rotulo osd" aria-hidden="true"><span class="ecualizador"><i></i><i></i><i></i><i></i></span>En rotación</span>
+      <div class="ticker__ventana">
+        <div class="ticker__pista">
+          {% if mensajes %}
+            {% for mensaje in mensajes %}<span>{{ mensaje }}</span>{% endfor %}
+            {% for mensaje in mensajes %}<span aria-hidden="true">{{ mensaje }}</span>{% endfor %}
+          {% else %}
+            {% for titulo in llegaron %}<span>Llegó {{ titulo }}</span>{% endfor %}
+            {% for titulo in llegaron %}<span aria-hidden="true">Llegó {{ titulo }}</span>{% endfor %}
+          {% endif %}
+        </div>
       </div>
       <button type="button" class="ticker__pausa" data-ticker-pausa aria-pressed="false">Pausar</button>
     </div>
   {% endif %}
 {% endwith %}
 
-{% if banners %}
-  <section class="seccion-publica superficie-noche" aria-label="Novedades">
-    <div class="columna-publica">
-      {% include "_carrusel.html" with banners=banners intervalo=intervalo %}
-    </div>
-  </section>
-{% endif %}
-
-<section class="seccion-publica seccion-publica--diagonal superficie-papel" aria-labelledby="titulo-llegados">
-  <div class="columna-publica">
-    {% include "_mensajes.html" %}
-    <div class="fila fila-entre fila-abajo">
-      <div class="titulo-seccion">
-        <p class="antetitulo">Estantería</p>
-        <h2 id="titulo-llegados">Recién llegados</h2>
-      </div>
-      <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Todo el catálogo →</a>
-    </div>
-
-    {% if recien_llegados %}
-      {% include "core/_estanteria.html" with productos=recien_llegados %}
-    {% else %}
-      <div class="vacio">
-        {% include "_iconos.html" with icono="tienda" %}
-        <p>Todavía no hay productos disponibles en la tienda.</p>
-      </div>
-    {% endif %}
-
-  </div>
-</section>
+{% for seccion in secciones %}
+  {% include "core/_seccion_portada.html" with seccion=seccion primera=forloop.first %}
+{% endfor %}
 
 {% comment %}
-«Lo que se viene» (B-07-015) y las filas que elige el Administrador (B-07-009,
-B-07-010): cada una se recorre de costado. El guion muestra las flechas sólo si
-la fila no entra entera, las esconde en cada extremo y mueve la barra de
-recorrido, que reemplaza a la del navegador.
+El riel de secciones (de la referencia web): en escritorio ancho, el número y el
+nombre de la sección que se está viendo, con flechas para ir a la anterior y a
+la siguiente. Es un atajo: las secciones también se recorren bajando.
 {% endcomment %}
-{% if se_viene or filas %}
-<section class="seccion-publica superficie-noche seccion-publica--trama" aria-label="Recorré la tienda">
-  <div class="columna-publica pila-6">
-    {% if se_viene %}{% include "core/_fila_portada.html" with fila=se_viene %}{% endif %}
-    {% for fila in filas %}
-      {% include "core/_fila_portada.html" with fila=fila %}
-    {% endfor %}
-  </div>
-</section>
-{% include "core/_fila_portada_js.html" %}
+{% if secciones|length > 1 %}
+  <nav class="riel-secciones" aria-label="Secciones de la portada" data-riel hidden>
+    <button type="button" data-riel-ir="-1" title="Sección anterior">{% include "_iconos.html" with icono="anterior" %}<span class="sr-only">Sección anterior</span></button>
+    <b data-riel-numero aria-hidden="true">{{ secciones.0.numero }}</b>
+    <span data-riel-nombre aria-live="polite">{{ secciones.0.titulo_visible }}</span>
+    <button type="button" data-riel-ir="1" title="Sección siguiente">{% include "_iconos.html" with icono="adelante" %}<span class="sr-only">Sección siguiente</span></button>
+  </nav>
 {% endif %}
+
+{% include "core/_fila_portada_js.html" %}
 
 <script>
   (function () {
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // El glitch del título: una vez al cargar y otra al pasar el puntero.
     const titulo = document.querySelector("[data-glitch]");
     if (titulo) {
@@ -118,7 +124,7 @@ recorrido, que reemplaza a la del navegador.
       window.setTimeout(glitch, 650);
       titulo.addEventListener("mouseenter", glitch);
     }
-    // «Pausar» detiene el ticker sin depender del puntero.
+    // «Pausar» detiene la radio sin depender del puntero.
     const ticker = document.querySelector("[data-ticker]");
     const pausa = document.querySelector("[data-ticker-pausa]");
     if (ticker && pausa) {
@@ -127,6 +133,78 @@ recorrido, que reemplaza a la del navegador.
         pausa.setAttribute("aria-pressed", pausado ? "true" : "false");
         pausa.textContent = pausado ? "Seguir" : "Pausar";
       });
+    }
+    // La cinta de fotos: «Pausar» aparece sólo cuando la cinta corre.
+    for (const boton of document.querySelectorAll("[data-cinta-pausa]")) {
+      const cinta = boton.closest("section").querySelector("[data-cinta-fotos]");
+      if (!cinta || reducido) continue;
+      boton.hidden = false;
+      boton.addEventListener("click", function () {
+        const pausada = cinta.classList.toggle("cinta-fotos--pausada");
+        boton.setAttribute("aria-pressed", pausada ? "true" : "false");
+        boton.textContent = pausada ? "Seguir" : "Pausar";
+      });
+    }
+    // La vitrina: las miniaturas y las flechas eligen qué producto se ve.
+    for (const vitrina of document.querySelectorAll("[data-vitrina]")) {
+      const diapositivas = Array.from(vitrina.querySelectorAll("[data-vitrina-diapositiva]"));
+      const controles = vitrina.querySelector("[data-vitrina-controles]");
+      if (!controles || diapositivas.length < 2) continue;
+      const miniaturas = Array.from(vitrina.querySelectorAll("[data-vitrina-elegir]"));
+      let actual = 0;
+      const mostrar = function (indice) {
+        actual = (indice + diapositivas.length) % diapositivas.length;
+        diapositivas.forEach(function (d, i) {
+          d.hidden = i !== actual;
+          d.classList.toggle("vitrina__diapositiva--entra", i === actual && !reducido);
+        });
+        miniaturas.forEach(function (m, i) { m.setAttribute("aria-pressed", i === actual ? "true" : "false"); });
+      };
+      miniaturas.forEach(function (m, i) { m.addEventListener("click", function () { mostrar(i); }); });
+      for (const flecha of vitrina.querySelectorAll("[data-vitrina-mover]")) {
+        flecha.addEventListener("click", function () { mostrar(actual + Number(flecha.dataset.vitrinaMover)); });
+      }
+      controles.hidden = false;
+    }
+    // Lo que entra al aparecer en pantalla: una sola vez.
+    const revelar = document.querySelectorAll("[data-revela]");
+    // El retraso escalonado de cada uno sale de su lugar, como en la estantería.
+    for (const hijo of document.querySelectorAll("[data-revela] > [data-indice]")) {
+      hijo.style.setProperty("--i", hijo.dataset.indice);
+    }
+    if (!reducido && "IntersectionObserver" in window) {
+      const observador = new IntersectionObserver(function (entradas) {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          entrada.target.classList.add("revelado");
+          observador.unobserve(entrada.target);
+        }
+      }, { threshold: 0.15 });
+      revelar.forEach(function (el) { el.classList.add("por-revelar"); observador.observe(el); });
+    }
+    // El riel: qué sección se ve, y las flechas para saltar.
+    const riel = document.querySelector("[data-riel]");
+    if (riel && "IntersectionObserver" in window) {
+      const secciones = Array.from(document.querySelectorAll("[data-seccion]"));
+      let actual = 0;
+      const numero = riel.querySelector("[data-riel-numero]");
+      const nombre = riel.querySelector("[data-riel-nombre]");
+      const vigia = new IntersectionObserver(function (entradas) {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          actual = secciones.indexOf(entrada.target);
+          numero.textContent = entrada.target.dataset.seccion;
+          nombre.textContent = entrada.target.dataset.nombre;
+        }
+      }, { rootMargin: "-45% 0px -45% 0px" });
+      secciones.forEach(function (s) { vigia.observe(s); });
+      for (const flecha of riel.querySelectorAll("[data-riel-ir]")) {
+        flecha.addEventListener("click", function () {
+          const destino = secciones[Math.min(secciones.length - 1, Math.max(0, actual + Number(flecha.dataset.rielIr)))];
+          destino.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
+        });
+      }
+      riel.hidden = false;
     }
   })();
 </script>

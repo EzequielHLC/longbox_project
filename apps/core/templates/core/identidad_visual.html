@@ -229,6 +229,8 @@ cambios» vuelve a cargar lo guardado (A1).
         const valor = formulario.elements[`color_${nombre}`]?.value.trim();
         if (valor && hex.test(valor)) valores[nombre] = valor;
       }
+      // El lima de los aparatos sale de los tokens (`--ok`), no se escribe acá.
+      valores.lima = getComputedStyle(document.documentElement).getPropertyValue("--ok").trim();
       return valores;
     }
     function aplicarMapa() {
@@ -243,7 +245,7 @@ cambios» vuelve a cargar lo guardado (A1).
           vista.style.setProperty(`${rol}-texto`, "var(--texto-fuerte)");
           continue;
         }
-        vista.style.setProperty(rol, `var(--tienda-${opcion})`);
+        vista.style.setProperty(rol, opcion === "lima" ? "var(--ok)" : `var(--tienda-${opcion})`);
         vista.style.setProperty(`${rol}-sobre`, masLegible(color));
         const legible = colores.fondo && contraste(color, colores.fondo) >= 3;
         vista.style.setProperty(`${rol}-texto`, legible || !colores.fondo ? color : masLegible(colores.fondo));

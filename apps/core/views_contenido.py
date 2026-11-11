@@ -18,17 +18,19 @@ from apps.core.forms import (
     BannerEdicionForm,
     BannerForm,
     FaqForm,
-    FilasPortadaFormSet,
     IdentidadVisualForm,
+    ImagenesDeSeccionFormSet,
+    SeccionesPortadaFormSet,
 )
 from apps.core.mixins import RolRequeridoMixin
 from apps.core.models import (
     Banner,
     ConfiguracionSistema,
     ContenidoFAQ,
-    FilaPortada,
     IdentidadVisual,
+    ImagenDeSeccion,
     RegistroAuditoria,
+    SeccionPortada,
 )
 from apps.core.utils import obtener_ip
 
@@ -242,59 +244,167 @@ class TiendaCssView(View):
         return respuesta
 
 
-def _lista(filas):
-    return " · ".join(filas) or "ninguna"
+def _lista(partes):
+    return " · ".join(partes) or "ninguna"
 
 
-def _resumen_de_filas():
-    return [
-        f"{fila.titulo_visible}{'' if fila.activa else ' (inactiva)'}"
-        f"{' (con imagen)' if fila.imagen else ''}"
-        for fila in FilaPortada.objects.select_related("etiqueta", "grupo")
-    ]
+def _resumen_de_secciones():
+    """Cada sección en una línea, con lo que la auditoría tiene que poder comparar."""
+    resumen = []
+    secciones = SeccionPortada.objects.select_related("etiqueta", "grupo").prefetch_related(
+        "imagenes"
+    )
+    for seccion in secciones:
+        linea = f"{seccion.titulo_visible} ({seccion.get_tipo_display().lower()})"
+        if not seccion.activa:
+            linea += " (inactiva)"
+        if seccion.imagen:
+            linea += " (con imagen)"
+        if seccion.presentacion == SeccionPortada.VITRINA:
+            linea += " (vitrina)"
+        if seccion.tipo in SeccionPortada.IMAGENES_POR_TIPO:
+            imagenes = [
+                f"{imagen}→{imagen.get_destino_display().lower()}"
+                for imagen in seccion.imagenes.all()
+            ]
+            linea += f": {_lista(imagenes)}"
+        resumen.append(linea)
+    return resumen
 
 
-class FilasPortadaView(ContenidoAdminMixin, View):
-    """Las filas de la portada de la tienda (plan 07, tercera parte; B-07-009).
+class SeccionesPortadaView(ContenidoAdminMixin, View):
+    """Las secciones de la portada de la tienda (`CU-CFG-SEC`; plan 07, novena parte).
 
-    Una tarjeta por fila, que se reordena arrastrándola (B-07-010); «Agregar
-    fila» suma una vacía. Se guardan juntas y el cambio queda auditado con la
-    lista anterior y la nueva. Cambiar sólo la imagen de una fila también se
-    audita, aunque la lista quede igual.
+    Una tarjeta por sección, que se reordena arrastrándola (B-07-010); «Agregar
+    sección» suma una del tipo elegido. Las que llevan imágenes tienen adentro
+    sus propias tarjetas, que también se reordenan. Todo se guarda junto y el
+    cambio queda auditado con la lista anterior y la nueva; cambiar sólo una
+    imagen también se audita, aunque la lista quede igual.
+
+    Lo que pide cada tipo lo valida el servidor: cuántas imágenes lleva, el
+    destino de cada una y que Recién llegados y Lo que se viene no se quiten.
     """
 
-    template_name = "core/filas_portada.html"
+    template_name = "core/secciones_portada.html"
 
     def get(self, request):
-        return self._pantalla(request, FilasPortadaFormSet(queryset=FilaPortada.objects.all()))
+        secciones = SeccionesPortadaFormSet(queryset=SeccionPortada.objects.all())
+        return self._pantalla(request, secciones, self._imagenes(secciones))
 
     def post(self, request):
-        formularios = FilasPortadaFormSet(
-            request.POST, request.FILES, queryset=FilaPortada.objects.all()
+        secciones = SeccionesPortadaFormSet(
+            request.POST, request.FILES, queryset=SeccionPortada.objects.all()
         )
-        if not formularios.is_valid():
-            return self._pantalla(request, formularios)
-        antes = _resumen_de_filas()
+        imagenes = self._imagenes(secciones, request)
+        validas = secciones.is_valid()
+        validas = all([imagen.is_valid() for imagen in imagenes.values()]) and validas
+        if validas:
+            validas = self._cantidades(secciones, imagenes)
+        if not validas:
+            return self._pantalla(request, secciones, imagenes)
+        antes = _resumen_de_secciones()
         with transaction.atomic():
-            formularios.save()
-            despues = _resumen_de_filas()
-            imagenes = [
-                f.instance.titulo_visible
-                for f in formularios.forms
-                if f not in formularios.deleted_forms and f.has_changed() and f.cambio_la_imagen
-            ]
-            if antes != despues or imagenes:
+            secciones.save()
+            cambiadas = []
+            for formulario in secciones.forms:
+                if formulario in secciones.deleted_forms:
+                    continue
+                if formulario.has_changed() and formulario.cambio_la_imagen:
+                    cambiadas.append(formulario.instance.titulo_visible)
+                propias = imagenes[formulario.prefix]
+                propias.instance = formulario.instance
+                propias.save()
+                cambiadas.extend(
+                    str(f.instance)
+                    for f in propias.forms
+                    if f not in propias.deleted_forms and f.has_changed() and f.cambio_la_imagen
+                )
+            despues = _resumen_de_secciones()
+            if antes != despues or cambiadas:
                 detalle = f"{_lista(antes)} → {_lista(despues)}"
-                if imagenes:
-                    detalle += f"; imagen cambiada en {_lista(imagenes)}"
+                if cambiadas:
+                    detalle += f"; imagen cambiada en {_lista(cambiadas)}"
                 RegistroAuditoria.registrar(
-                    accion=RegistroAuditoria.MODIFICACION_FILAS_PORTADA,
+                    accion=RegistroAuditoria.MODIFICACION_SECCIONES_PORTADA,
                     actor=request.user,
                     ip=obtener_ip(request),
                     detalle=detalle,
                 )
-        messages.success(request, "Se guardaron las filas de la portada.")
-        return redirect("core:filas_portada")
+        messages.success(request, "Se guardaron las secciones de la portada.")
+        return redirect("core:secciones_portada")
 
-    def _pantalla(self, request, formularios):
-        return render(request, self.template_name, {"formularios": formularios})
+    @staticmethod
+    def _imagenes(secciones, request=None):
+        """Las imágenes de cada tarjeta, con el prefijo de su sección."""
+        salida = {}
+        for formulario in secciones.forms:
+            argumentos = (request.POST, request.FILES) if request else ()
+            salida[formulario.prefix] = ImagenesDeSeccionFormSet(
+                *argumentos,
+                instance=formulario.instance,
+                prefix=f"{formulario.prefix}-img",
+            )
+        return salida
+
+    @staticmethod
+    def _cantidades(secciones, imagenes):
+        """Cada tipo con imágenes, dentro de su mínimo y su máximo."""
+        validas = True
+        for formulario in secciones.forms:
+            if formulario in secciones.deleted_forms:
+                continue
+            tipo = formulario.cleaned_data["tipo"]
+            if tipo not in SeccionPortada.IMAGENES_POR_TIPO:
+                continue
+            minimo, maximo = SeccionPortada.IMAGENES_POR_TIPO[tipo]
+            propias = imagenes[formulario.prefix]
+            # La onomatopeya sin imagen es sólo de la página de historieta: en
+            # las demás, la imagen es lo que se dibuja.
+            if tipo != SeccionPortada.PAGINA:
+                for imagen in propias.forms:
+                    if imagen in propias.deleted_forms or not imagen.has_changed():
+                        continue
+                    if imagen.cleaned_data.get("forma_texto") == ImagenDeSeccion.GRITO:
+                        imagen.add_error(
+                            "imagen",
+                            "Falta la imagen: la onomatopeya sin imagen es sólo de la "
+                            "página de historieta.",
+                        )
+                        validas = False
+            cantidad = propias.cantidad()
+            if not minimo <= cantidad <= maximo:
+                nombre = dict(SeccionPortada.TIPOS)[tipo]
+                rango = f"{minimo}" if minimo == maximo else f"entre {minimo} y {maximo}"
+                formulario.add_error(None, f"{nombre} lleva {rango} imágenes y tiene {cantidad}.")
+                validas = False
+        return validas
+
+    def _pantalla(self, request, secciones, imagenes):
+        tarjetas = [(f, imagenes[f.prefix]) for f in secciones.forms]
+        for formulario, propias in tarjetas:
+            propias.limite = SeccionPortada.IMAGENES_POR_TIPO.get(formulario.tipo_elegido)
+        # Una tarjeta vacía por tipo: «Agregar sección» copia la del tipo elegido.
+        plantillas = []
+        for valor, nombre in SeccionPortada.TIPOS:
+            if valor in SeccionPortada.FIJAS:
+                continue
+            vacia = secciones.form(
+                prefix=secciones.add_prefix("__prefix__"),
+                initial={"tipo": valor},
+                empty_permitted=True,
+                use_required_attribute=False,
+            )
+            propias = ImagenesDeSeccionFormSet(
+                instance=SeccionPortada(tipo=valor), prefix=f"{vacia.prefix}-img"
+            )
+            propias.limite = SeccionPortada.IMAGENES_POR_TIPO.get(valor)
+            plantillas.append((valor, nombre, vacia, propias))
+        return render(
+            request,
+            self.template_name,
+            {
+                "formularios": secciones,
+                "tarjetas": tarjetas,
+                "plantillas": plantillas,
+            },
+        )

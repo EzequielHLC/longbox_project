@@ -51,19 +51,21 @@ def _hay_faq():
 
 
 def _accesos(request):
-    """«Novedades», «Pre-ventas» y una entrada por fila activa de la portada.
+    """«Novedades», «Pre-ventas» y una entrada por sección de productos activa de la portada.
 
     Cada fila lleva al catálogo con el mismo filtro que su «Ver todo». La entrada
     actual es la que coincide con la dirección pedida.
     """
-    from apps.core.models import FilaPortada
+    from apps.core.models import SeccionPortada
 
     catalogo = reverse("core:tienda_catalogo")
     accesos = [
         ("Novedades", f"{catalogo}?estado=todos"),
         ("Pre-ventas", f"{catalogo}?estado=pre_venta"),
     ]
-    filas = FilaPortada.objects.filter(activa=True).select_related("etiqueta__grupo", "grupo")
+    filas = SeccionPortada.objects.filter(
+        activa=True, tipo=SeccionPortada.PRODUCTOS
+    ).select_related("etiqueta__grupo", "grupo")
     for fila in filas:
         if not fila.disponible:
             continue

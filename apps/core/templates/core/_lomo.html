@@ -1,0 +1,17 @@
+{% comment %}
+El título de una sección de la portada, como el lomo de una cinta de video
+(plan 07, novena parte): el número de la sección en una etiqueta, tres franjas
+de color y el antetítulo con el título.
+
+    {% include "core/_lomo.html" with numero=seccion.numero antetitulo=... titulo=... %}
+
+El número es decorativo: el título ya nombra la sección.
+{% endcomment %}
+<div class="lomo">
+  <span class="lomo__numero" aria-hidden="true">{{ numero }}</span>
+  <span class="lomo__franjas" aria-hidden="true"></span>
+  <div class="lomo__texto">
+    {% if antetitulo %}<p class="antetitulo">{{ antetitulo }}</p>{% endif %}
+    <h2 id="titulo-seccion-{{ numero }}">{{ titulo }}</h2>
+  </div>
+</div>

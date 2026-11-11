@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load moneda %}
+{% load moneda estaticos %}
 {% comment %}
 Cáscara del **modo público** (Escaparate): tienda, registro, inicio de sesión y
 demás pantallas de cara al cliente (`identidad_visual.md`, Modo público).
@@ -14,6 +14,8 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
 {% endcomment %}
 
 {% block cabecera_extra %}
+  {# El escaparate vivo (plan 07, novena parte): sólo el modo público la carga. #}
+  <link rel="stylesheet" href="{% estatico 'css/escaparate.css' %}">
   {% if identidad_tienda %}
     <link rel="stylesheet" href="{% url 'core:tienda_css' %}?v={{ identidad_tienda.version }}">
   {% endif %}
@@ -26,6 +28,15 @@ están en `tokens.css`; cuando el Administrador guarda una identidad visual
 
 {% block cuerpo_inicio %}
 {% include "_capa_carga.html" %}
+{% comment %}
+El telón (plan 07, novena parte): el cambio de página es un barrido en negro.
+Al llegar, el telón ya está cerrado y se abre solo, con CSS: si el guion falla,
+igual se abre. Al hacer clic en un enlace de la tienda, el guion lo cierra y,
+mientras el servidor responde, dice «Cargando». No depende de la transición
+nativa del navegador, que Firefox no tiene y que Chrome cancela si la página
+tarda. Con movimiento reducido no hay barrido.
+{% endcomment %}
+<div class="telon" data-telon aria-hidden="true"><span class="telon__rotulo osd"><span class="ecualizador"><i></i><i></i><i></i><i></i></span>Cargando</span></div>
 {% endblock %}
 
 {% block encabezado %}
@@ -39,8 +50,8 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
 <header class="encabezado-publico" data-encabezado-publico>
   <div class="columna-publica encabezado-publico__barra">
     {# La portada es pública (C-20, resuelta el 2026-10-05). #}
-    <a href="{% url 'core:tienda' %}" class="marca{% if identidad_tienda.logo %} marca--con-logo{% endif %}">
-      {% if identidad_tienda.logo %}<img src="{{ identidad_tienda.logo.url }}" alt="">{% endif %}
+    <a href="{% url 'core:tienda' %}" class="marca pestana-marca{% if identidad_tienda.logo %} marca--con-logo{% endif %}">
+      {% if identidad_tienda.logo %}<img src="{{ identidad_tienda.logo.url }}" alt="">{% else %}<span class="pestana-marca__insignia" aria-hidden="true">{% firstof identidad_tienda.nombre_tienda "Longbox" as nombre %}{{ nombre|slice:":1" }}</span>{% endif %}
       <span>{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
     </a>
 
@@ -56,23 +67,32 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
     </form>
     {% endblock %}
 
-    <nav aria-label="Tienda">
+    {% comment %}
+    La botonera (plan 07, novena parte): un ícono por destino, con su nombre en
+    un globo al pasar o al tomar foco, y el actual encendido. El nombre sigue en
+    el enlace, así que el lector de pantalla y las pruebas lo leen igual.
+    {% endcomment %}
+    <nav aria-label="Tienda" class="botonera">
       {% block navegacion_publica %}
-        <a href="{% url 'core:tienda' %}" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>Inicio</a>
-        <a href="{% url 'core:tienda_catalogo' %}" {% if actual == 'core:tienda_catalogo' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>Catálogo</a>
-        {# Plan 00, C1: visible en la primera pantalla y sin registración (Res. 424/2020). #}
-        {% with unidades=unidades_en_carrito %}
-          {% if unidades is not None %}
-            <a href="{% url 'tienda:carrito' %}" class="encabezado-publico__carrito" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>
-              <span>Carrito</span>{% if unidades %} <span class="contador" aria-label="{{ unidades }} unidades">{{ unidades }}</span>{% endif %}
-            </a>
-          {% endif %}
+        {% with preventas=request.GET.estado %}
+        <a href="{% url 'core:tienda' %}" class="boton-aparato boton-aparato--escritorio" {% if actual == 'core:tienda' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="inicio" %}<span class="boton-aparato__nombre">Inicio</span></a>
+        <a href="{% url 'core:tienda_catalogo' %}" class="boton-aparato" {% if actual == 'core:tienda_catalogo' and preventas != 'pre_venta' or actual == 'core:tienda_producto' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="catalogo" %}<span class="boton-aparato__nombre">Catálogo</span></a>
+        <a href="{% url 'core:tienda_catalogo' %}?estado=pre_venta&amp;orden=llegada" class="boton-aparato boton-aparato--escritorio" {% if actual == 'core:tienda_catalogo' and preventas == 'pre_venta' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="reloj" %}<span class="boton-aparato__nombre">Pre-ventas</span></a>
         {% endwith %}
+        <span class="botonera__separador" aria-hidden="true"></span>
         {% with puntos=puntos_del_cliente %}
           {% if puntos is not None %}
             {% comment %}El saldo siempre a la vista (B-10-002): ¿me alcanza para canjear algo?{% endcomment %}
             <a href="{% url 'cuenta:puntos' %}" class="encabezado-publico__puntos" {% if actual == 'cuenta:puntos' %}aria-current="page"{% endif %} aria-label="Tus puntos: {{ puntos.saldo }}, equivalen a {{ puntos.en_pesos|pesos }}">
-              <span class="contador">{{ puntos.saldo }}</span> <span>pts</span>
+              {% include "_iconos.html" with icono="puntos" %}<span class="contador">{{ puntos.saldo }}</span> <span>pts</span>
+            </a>
+          {% endif %}
+        {% endwith %}
+        {# Plan 00, C1: visible en la primera pantalla y sin registración (Res. 424/2020). #}
+        {% with unidades=unidades_en_carrito %}
+          {% if unidades is not None %}
+            <a href="{% url 'tienda:carrito' %}" class="boton-aparato encabezado-publico__carrito" {% if actual == 'tienda:carrito' %}aria-current="page"{% endif %}>
+              {% include "_iconos.html" with icono="bolsa" %}<span class="boton-aparato__nombre">Carrito</span>{% if unidades %} <span class="contador" aria-label="{{ unidades }} unidades">{{ unidades }}</span>{% endif %}
             </a>
           {% endif %}
         {% endwith %}
@@ -82,7 +102,7 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
           Cerrar sesión es un POST (CU-AUT-FIN).
           {% endcomment %}
           <details class="menu-de-cuenta">
-            <summary>{% include "_iconos.html" with icono="usuario" %}<span>Mi cuenta</span></summary>
+            <summary class="boton-aparato">{% include "_iconos.html" with icono="usuario" %}<span class="boton-aparato__nombre">Mi cuenta</span></summary>
             <div class="menu-de-cuenta__panel">
               <p class="menu-de-cuenta__correo">{{ user.email }}</p>
               {% if puntos_del_cliente is not None %}
@@ -99,7 +119,7 @@ JavaScript. La cinta de accesos que iba debajo se quitó (B-07-021).
             </div>
           </details>
         {% else %}
-          <a href="{% url 'accounts:login' %}" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>Ingresar</a>
+          <a href="{% url 'accounts:login' %}" class="botonera__ingresar" {% if actual == 'accounts:login' %}aria-current="page"{% endif %}>{% include "_iconos.html" with icono="usuario" %}<span>Ingresar</span></a>
         {% endif %}
       {% endblock %}
     </nav>
@@ -138,38 +158,59 @@ propia página de preguntas ni si no hay nada publicado.
 
 {# Plan 00 de interfaz, U2: el carrito lateral. Lo llena el guion al agregar desde una tarjeta. #}
 {% if unidades_en_carrito is not None %}
+  {% comment %}
+  Plan 07, novena parte: el cajón es un aparato. Arriba el rótulo de grabación;
+  la portada sujeta con cinta; el ticket con las unidades y el total; el medidor
+  del envío gratis; las dos acciones a lo ancho; y abajo el pie del ticket.
+  {% endcomment %}
   <dialog class="dialogo cajon-carrito" aria-labelledby="cajon-titulo" data-cajon-carrito>
-    <div class="pila-4">
+    <div class="cajon-carrito__cuerpo">
+      <div class="cajon-carrito__rotulo osd" aria-hidden="true"><span><i></i>REC · Grabado en tu carrito</span></div>
       <div class="dialogo__cabeza">
         <h2 id="cajon-titulo">{% include "_iconos.html" with icono="listo" %} En tu carrito</h2>
         <p class="secundario" data-cajon-mensaje></p>
         <button type="button" class="dialogo__cerrar" aria-label="Cerrar" data-cajon-cerrar>×</button>
       </div>
       <div class="cajon-carrito__producto">
-        <span class="portada-mini" data-cajon-portada aria-hidden="true"></span>
-        <div class="pila-1">
+        <span class="cajon-carrito__foto"><span class="cinta-adhesiva cinta-adhesiva--cajon" aria-hidden="true"></span><span class="portada-mini" data-cajon-portada aria-hidden="true"></span></span>
+        <div class="pila-1 min-0">
           <span class="cajon-carrito__titulo" data-cajon-titulo></span>
-          <span class="datos" data-cajon-precio></span>
+          <span class="cajon-carrito__precio datos" data-cajon-precio></span>
         </div>
       </div>
-      <dl class="resumen-compra">
-        <div><dt>Unidades</dt><dd class="datos" data-cajon-unidades></dd></div>
+      <dl class="cajon-carrito__ticket">
+        <div><dt>Unidades en el carrito</dt><dd class="datos" data-cajon-unidades></dd></div>
         <div><dt>Total</dt><dd class="datos" data-cajon-total></dd></div>
       </dl>
-      <p class="texto-chico secundario" data-cajon-falta hidden>Te faltan <span class="datos"></span> para el envío gratis.</p>
-      <div class="pila-2 resumen-carrito--acciones">
-        <a href="{% url 'tienda:carrito' %}" class="boton-primario" data-cajon-ir>Ir al carrito</a>
-        <button type="button" class="boton-texto" data-cajon-cerrar>Seguir comprando</button>
+      <div class="cajon-carrito__envio" data-cajon-envio>
+        {# El medidor: el rol de barra de avance lo pone el guion al abrir el cajón. #}
+        <span class="cajon-carrito__medidor" aria-label="Avance hacia el envío gratis" data-cajon-medidor><i></i></span>
+        <p class="texto-chico" data-cajon-falta hidden>Te faltan <span class="datos"></span> para el envío gratis.</p>
+        <p class="texto-chico" data-cajon-gratis hidden><strong>Tenés envío gratis.</strong></p>
       </div>
+      <div class="cajon-carrito__acciones">
+        <a href="{% url 'tienda:carrito' %}" class="boton-primario" data-cajon-ir>Ir al carrito</a>
+        <button type="button" class="boton-seccion" data-cajon-cerrar>Seguir comprando</button>
+      </div>
+    </div>
+    <div class="cajon-carrito__pie" aria-hidden="true">
+      <span class="osd">{% firstof identidad_tienda.nombre_tienda "Longbox" %} · gracias por pasar</span>
+      <span class="cajon-carrito__barras"></span>
     </div>
   </dialog>
 {% endif %}
 
+{% comment %}
+El pie (plan 07, novena parte): el final de la cinta. Mismo contenido de
+siempre —marca, botón de arrepentimiento, tienda, ayuda y contacto—; arriba la
+línea «■ STOP», abajo «Rebobinar» y el nombre de la tienda gigante, cortado.
+{% endcomment %}
 <footer class="pie-publico superficie-noche">
   <div class="pie-publico__cinta" aria-hidden="true"></div>
+  <div class="columna-publica pie-publico__fin osd" aria-hidden="true"><span><b>■ STOP</b>&nbsp;&nbsp;Fin de la cinta</span><span>Gracias por pasar</span></div>
   <div class="columna-publica pie-publico__contenido">
     <div class="pie-publico__marca">
-      <span class="marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
+      <span class="marca pestana-marca"><span class="pestana-marca__insignia" aria-hidden="true">{% firstof identidad_tienda.nombre_tienda "Longbox" as nombre %}{{ nombre|slice:":1" }}</span><span>{% firstof identidad_tienda.nombre_tienda "Longbox" %}</span></span>
       <p>{{ textos_tienda.descripcion_tienda }}</p>
       {# Res. 424/2020: visible y de fácil acceso desde todas las páginas, sin registrarse. #}
       <p><a href="{% url 'devoluciones_tienda:inicio' %}" class="boton-seccion boton-arrepentimiento">{% include "_iconos.html" with icono="volver" %}<span>Botón de arrepentimiento</span></a></p>
@@ -200,8 +241,8 @@ propia página de preguntas ni si no hay nada publicado.
       <div class="pie-publico__columna">
         <p class="antetitulo">Contacto</p>
         <ul>
-          {% if identidad_tienda.correo_contacto %}<li class="datos">{{ identidad_tienda.correo_contacto }}</li>{% endif %}
-          {% if identidad_tienda.telefono %}<li class="datos">{{ identidad_tienda.telefono }}</li>{% endif %}
+          {% if identidad_tienda.correo_contacto %}<li class="datos">{% include "_iconos.html" with icono="correo" %}<span>{{ identidad_tienda.correo_contacto }}</span></li>{% endif %}
+          {% if identidad_tienda.telefono %}<li class="datos">{% include "_iconos.html" with icono="telefono" %}<span>{{ identidad_tienda.telefono }}</span></li>{% endif %}
         </ul>
         {% if identidad_tienda.redes %}
           <ul class="pie-publico__redes">
@@ -220,9 +261,12 @@ propia página de preguntas ni si no hay nada publicado.
   </div>
   <div class="columna-publica pie-publico__base">
     <span class="datos">© {% now "Y" %} {% firstof identidad_tienda.nombre_tienda "Longbox" %}</span>
-    <a href="#" class="boton-texto">Volver arriba ↑</a>
+    <a href="#" class="pie-publico__rebobinar" title="Volver arriba"><span aria-hidden="true">◀◀</span> Rebobinar</a>
   </div>
+  <p class="pie-publico__nombre" aria-hidden="true">{% firstof identidad_tienda.nombre_tienda "Longbox" %}</p>
 </footer>
+{# «Rebobinar»: mientras la página sube, la pantalla rebobina (plan 07, novena parte). #}
+<div class="rebobinado" data-rebobinado aria-hidden="true" hidden><span class="rebobinado__rotulo osd">◀◀ REW</span></div>
 
 <script>
   // Pasada la portada, el encabezado se compacta (B-07-011). En una pantalla
@@ -244,6 +288,61 @@ propia página de preguntas ni si no hay nada publicado.
     };
     window.addEventListener("scroll", revisar, { passive: true });
     revisar();
+    // El telón: un enlace a otra pantalla de la tienda lo cierra. Se espera un
+    // instante para saber si otro guion se quedó con el clic (el carrito, los
+    // filtros del catálogo, la paginación).
+    const telon = document.querySelector("[data-telon]");
+    if (telon && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.addEventListener("click", function (evento) {
+        if (evento.button !== 0 || evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+        const enlace = evento.target.closest("a[href]");
+        if (!enlace || enlace.hasAttribute("download") || enlace.hasAttribute("data-sin-capa")) return;
+        if (enlace.target && enlace.target !== "_self") return;
+        const destino = new URL(enlace.href, location.href);
+        if (destino.origin !== location.origin) return;
+        if (destino.pathname === location.pathname && destino.search === location.search) return;
+        window.setTimeout(function () {
+          if (evento.defaultPrevented) return;
+          telon.classList.remove("telon--abre");
+          telon.classList.add("telon--cierra");
+        }, 0);
+      });
+      // Al volver con «atrás», la página vuelve tal como quedó: el telón se abre.
+      window.addEventListener("pageshow", function (evento) {
+        if (!evento.persisted) return;
+        telon.classList.remove("telon--cierra");
+        telon.classList.add("telon--abre");
+      });
+    }
+    // «Rebobinar»: la página sube deslizándose con el rótulo de rebobinado, y al
+    // llegar arriba el foco vuelve a la marca. Con movimiento reducido, de golpe.
+    const rebobinar = document.querySelector(".pie-publico__rebobinar");
+    const rebobinado = document.querySelector("[data-rebobinado]");
+    if (rebobinar && rebobinado) {
+      rebobinar.addEventListener("click", function (evento) {
+        evento.preventDefault();
+        const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const marca = encabezado.querySelector(".marca");
+        const llegar = function () {
+          rebobinado.hidden = true;
+          if (marca) marca.focus({ preventScroll: true });
+        };
+        if (reducido) {
+          window.scrollTo(0, 0);
+          llegar();
+          return;
+        }
+        rebobinado.hidden = false;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        const vigilar = window.setInterval(function () {
+          if (window.scrollY > 2) return;
+          window.clearInterval(vigilar);
+          window.setTimeout(llegar, 250);
+        }, 60);
+        // Por si el desplazamiento se interrumpe: el rótulo no queda colgado.
+        window.setTimeout(function () { window.clearInterval(vigilar); llegar(); }, 4000);
+      });
+    }
     // Agregar al carrito desde una tarjeta, sin salir de la pantalla
     // (B-07-014). Si algo falla, el formulario se envía como siempre.
     const avisos = document.querySelector("[data-avisos-flotantes]");
@@ -331,6 +430,20 @@ propia página de preguntas ni si no hay nada publicado.
       const falta = cajon.querySelector("[data-cajon-falta]");
       falta.hidden = !c.falta_envio_gratis;
       falta.querySelector("span").textContent = c.falta_envio_gratis;
+      // El medidor del envío gratis: se llena desde cero hasta el avance.
+      const medidor = cajon.querySelector("[data-cajon-medidor]");
+      const gratis = cajon.querySelector("[data-cajon-gratis]");
+      if (medidor) {
+        const avance = Math.max(0, Math.min(100, Number(c.envio_porcentaje) || 0));
+        medidor.setAttribute("role", "progressbar");
+        medidor.setAttribute("aria-valuemin", "0");
+        medidor.setAttribute("aria-valuemax", "100");
+        medidor.setAttribute("aria-valuenow", String(avance));
+        medidor.style.setProperty("--avance", "0");
+        window.setTimeout(function () { medidor.style.setProperty("--avance", String(avance / 100)); }, 250);
+        medidor.classList.toggle("cajon-carrito__medidor--completo", Boolean(c.envio_gratis));
+      }
+      if (gratis) gratis.hidden = !c.envio_gratis;
       const portada = cajon.querySelector("[data-cajon-portada]");
       portada.replaceChildren();
       if (c.portada) {

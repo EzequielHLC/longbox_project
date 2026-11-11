@@ -7,20 +7,56 @@ las flechas de lo que se dibuja después (el carrito que se actualiza solo,
 B-07-028). `mostrarFlechasDeCantidad(raiz)` las muestra en lo nuevo.
 {% endcomment %}
 <script>
+  // Cada flecha se apaga en su extremo (`aria-disabled`, no `disabled`: así el
+  // clic llega igual y el «+» puede decir por qué no sube).
+  function marcarTopes(selector) {
+    const campo = selector.querySelector("input");
+    const minimo = Number(campo.min || 1);
+    const maximo = campo.max ? Number(campo.max) : Infinity;
+    const actual = Number(campo.value) || minimo;
+    for (const boton of selector.querySelectorAll("[data-paso]")) {
+      const alTope = Number(boton.dataset.paso) > 0 ? actual >= maximo : actual <= minimo;
+      boton.setAttribute("aria-disabled", alTope ? "true" : "false");
+    }
+  }
   window.mostrarFlechasDeCantidad = function (raiz) {
     for (const boton of (raiz || document).querySelectorAll("[data-selector-cantidad] [data-paso]")) {
       boton.hidden = false;
     }
+    for (const selector of (raiz || document).querySelectorAll("[data-selector-cantidad]")) marcarTopes(selector);
   };
   document.addEventListener("DOMContentLoaded", function () { window.mostrarFlechasDeCantidad(); });
   document.addEventListener("click", function (evento) {
     const boton = evento.target.closest("[data-selector-cantidad] [data-paso]");
     if (!boton) return;
-    const campo = boton.closest("[data-selector-cantidad]").querySelector("input");
+    const selector = boton.closest("[data-selector-cantidad]");
+    const campo = selector.querySelector("input");
     const minimo = Number(campo.min || 1);
     const maximo = campo.max ? Number(campo.max) : Infinity;
     const actual = Number(campo.value) || minimo;
+    const aviso = selector.parentElement.querySelector("[data-aviso-tope]");
+    if (Number(boton.dataset.paso) > 0 && actual >= maximo) {
+      // Ya no sube: el aviso aparece (y vuelve a sacudirse si se insiste).
+      if (aviso) {
+        aviso.hidden = false;
+        aviso.classList.remove("selector-cantidad__aviso--sacude");
+        void aviso.offsetWidth;
+        aviso.classList.add("selector-cantidad__aviso--sacude");
+        window.clearTimeout(aviso._oculta);
+        aviso._oculta = window.setTimeout(function () { aviso.hidden = true; }, 5000);
+      }
+      return;
+    }
+    if (aviso) aviso.hidden = true;
     campo.value = Math.min(maximo, Math.max(minimo, actual + Number(boton.dataset.paso)));
     campo.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  document.addEventListener("input", function (evento) {
+    const selector = evento.target.closest("[data-selector-cantidad]");
+    if (selector) marcarTopes(selector);
+  });
+  document.addEventListener("change", function (evento) {
+    const selector = evento.target.closest("[data-selector-cantidad]");
+    if (selector) marcarTopes(selector);
   });
 </script>

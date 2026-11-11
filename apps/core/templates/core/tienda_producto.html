@@ -8,19 +8,39 @@ La acción depende del estado: Disponible → «Agregar al carrito»; Agotado �
 Agregar y reservar inician CU-TDA-CRA (CO-083). El aviso de stock es
 CU-RST-SUS (CO-075, CO-076), del Cliente; el invitado va al ingreso (B-05-002).
 El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
+
+Plan 07, novena parte: la ficha con el lenguaje del escaparate. El título de
+la serie gigante en contorno detrás, la portada en escena sobre la trama, el
+número del tomo rayado, la compra en una caja de aparato y la sinopsis en un
+recuadro. Lo que se puede hacer en la ficha no cambia.
 {% endcomment %}
 
 {% block titulo %}{{ producto.titulo }} · {% firstof identidad_tienda.nombre_tienda "Longbox" %}{% endblock %}
 
 {% block secciones %}
-<section class="seccion-publica superficie-noche" aria-labelledby="titulo-producto">
+<section class="seccion-publica superficie-noche ficha-escena" aria-labelledby="titulo-producto">
+  <span class="ficha-escena__fondo" aria-hidden="true">{{ producto.titulo }}</span>
   <div class="columna-publica">
-    <span class="miga">
-      <a href="{% url 'core:tienda_catalogo' %}{% if volver %}?{{ volver }}{% endif %}" class="boton-texto boton-texto--atras"><span aria-hidden="true">←</span>&nbsp;<span>Volver al catálogo</span></a>
-    </span>
+    <div class="ficha-publica__barra">
+      <span class="miga">
+        <a href="{% url 'core:tienda_catalogo' %}{% if volver %}?{{ volver }}{% endif %}" class="boton-texto boton-texto--atras"><span aria-hidden="true">←</span>&nbsp;<span>Volver al catálogo</span></a>
+      </span>
+      {# El rótulo del expediente: decorativo, el código está en los datos de la ficha. #}
+      <span class="ficha-publica__expediente osd" aria-hidden="true"><i></i>Expediente Nº {{ producto.codigo }}<span class="ficha-publica__barras"></span></span>
+    </div>
 
     <div class="ficha-publica">
-      <div class="pila-5">
+      {% comment %}
+      La hoja del expediente (plan 07, novena parte): la portada sujeta con
+      cinta sobre una hoja de papel, con la pestaña del tomo, el sello del
+      estado y el pie de la foto. Lo que dice ya está en la ficha: es decoración.
+      {% endcomment %}
+      <div class="ficha-publica__escena">
+        <div class="hoja-expediente">
+          <span class="cinta-adhesiva cinta-adhesiva--hoja-a" aria-hidden="true"></span>
+          <span class="cinta-adhesiva cinta-adhesiva--hoja-b" aria-hidden="true"></span>
+          {% if editorial.volumen or editorial.volumen == 0 %}<span class="hoja-expediente__pestana" aria-hidden="true">Tomo<b>{{ editorial.volumen|stringformat:"02d" }}</b></span>{% endif %}
+          <span class="hoja-expediente__sello {% if producto.estado_publico == "pre_venta" %}hoja-expediente__sello--pre_venta{% elif producto.estado_publico == "agotado" %}hoja-expediente__sello--agotado{% else %}hoja-expediente__sello--disponible{% endif %}" aria-hidden="true">{% if producto.estado_publico == "pre_venta" %}Pre-venta{% elif producto.estado_publico == "agotado" %}Sin stock{% else %}En stock{% endif %}</span>
         {% if producto.portada or producto.imagenes.exists %}
           {# El visor compartido con la ficha del backoffice (B-00-026). #}
           {% include "_visor_imagenes.html" with producto=producto %}
@@ -35,11 +55,13 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
             </div>
           </div>
         {% endif %}
+          <p class="hoja-expediente__pie" aria-hidden="true"><span>{{ producto.tipo.nombre }}{% if editorial %} · {{ editorial.editorial.nombre }}{% endif %}</span><span>Nº {{ producto.codigo }}</span></p>
+        </div>
       </div>
 
-      <div class="pila-5">
-        <div class="pila-3">
-          <p class="antetitulo">{{ producto.tipo.nombre }}</p>
+      <div class="pila-5 ficha-publica__info">
+        <div class="pila-3 ficha-publica__cabeza">
+          <p class="antetitulo">{{ producto.tipo.nombre }}{% if editorial %} · {{ editorial.editorial.nombre }}{% endif %}</p>
           <h1 id="titulo-producto">{{ producto.titulo }}{% if editorial.volumen %} #{{ editorial.volumen }}{% endif %}</h1>
           {% if producto.estado_publico == "pre_venta" %}
             <span class="rotulo-estado rotulo-estado--en-linea rotulo-estado--pre-venta"><span>Pre-venta</span></span>
@@ -50,6 +72,8 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
           {% endif %}
         </div>
 
+        <div class="ficha-publica__compra pila-3">
+        <p class="ficha-publica__compra-rotulo osd" aria-hidden="true"><i></i>{% if producto.estado_publico == "pre_venta" %}Pre-venta{% elif producto.estado_publico == "agotado" %}Sin stock{% else %}En venta{% endif %}</p>
         <p class="ficha-publica__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</p>
         {% if producto.oferta_aplicada %}<p class="texto-chico">{{ producto.oferta_aplicada.descripcion }} · hasta el <span class="datos">{{ producto.oferta_aplicada.fecha_vencimiento|date:"d/m/Y" }}</span></p>{% endif %}
 
@@ -74,14 +98,17 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
             <p class="texto-chico secundario">La compra es para cuentas de cliente.</p>
           {% elif reserva and not reserva.quedan %}
             <p class="texto-chico">Ya tenés reservado el máximo por Cliente: <span class="datos">{{ reserva.maximo }}</span> unidades, contando tus pedidos.</p>
+          {% elif producto.estado_publico == "disponible" and not quedan %}
+            {# Todo el stock ya está en su carrito: no hay nada más que agregar. #}
+            <p class="texto-chico">Ya tenés en el carrito todo el stock: <span class="datos">{{ en_carrito }}</span> unidad{{ en_carrito|pluralize:"es" }}. <a href="{% url 'tienda:carrito' %}">Ver carrito</a></p>
           {% else %}
             <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="fila-2 fila-abajo">
               {% csrf_token %}
               <input type="hidden" name="volver" value="{{ request.get_full_path }}">
               {% if producto.estado_publico == "disponible" %}
-                {% include "_cantidad.html" with id="cantidad" valor=1 maximo=producto.stock %}
+                {% if en_carrito %}{% with en=en_carrito|stringformat:"d" total=producto.stock|stringformat:"d" %}{% include "_cantidad.html" with id="cantidad" valor=1 maximo=quedan aviso="no hay más unidades. Hay "|add:total|add:" en stock y ya tenés "|add:en|add:" en el carrito." %}{% endwith %}{% else %}{% with total=producto.stock|stringformat:"d" %}{% include "_cantidad.html" with id="cantidad" valor=1 maximo=quedan aviso="no hay más unidades: hay "|add:total|add:" en stock." %}{% endwith %}{% endif %}
               {% elif reserva %}
-                {% include "_cantidad.html" with id="cantidad" valor=1 maximo=reserva.quedan %}
+                {% with tope=reserva.maximo|stringformat:"d" %}{% include "_cantidad.html" with id="cantidad" valor=1 maximo=reserva.quedan aviso="es el máximo por Cliente: "|add:tope|add:" unidades, contando tus pedidos y tu carrito." %}{% endwith %}
               {% else %}
                 {% include "_cantidad.html" with id="cantidad" valor=1 %}
               {% endif %}
@@ -96,6 +123,7 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
               <p class="texto-chico">Tenés <span class="datos">{{ en_carrito }}</span> en el carrito · <a href="{% url 'tienda:carrito' %}">Ver carrito</a></p>
             {% endif %}
           {% endif %}
+        </div>
         </div>
 
         <dl class="datos-de-ficha">
@@ -115,7 +143,7 @@ El personal no tiene carrito (plan 07, segunda parte, ambigüedad 3).
         </dl>
 
         {% if producto.descripcion %}
-          <div class="pila-2">
+          <div class="pila-2 ficha-publica__sinopsis">
             <p class="antetitulo">Descripción</p>
             <p class="lectura">{{ producto.descripcion|linebreaksbr }}</p>
           </div>

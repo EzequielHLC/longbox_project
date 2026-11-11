@@ -1,0 +1,23 @@
+{% comment %}
+Los accesos con foto (plan 07, novena parte): paneles inclinados que encastran,
+cada uno con su imagen, su nombre, cuántos productos hay y un rótulo de cinta.
+Llevan al filtro del catálogo o a la ficha que eligió el Administrador. Los
+que no llevan a nada no llegan hasta acá (`views_tienda._con_imagenes`).
+
+En el celular la fila se recorre de costado y cada panel se detiene en su lugar.
+
+    {% include "core/_accesos.html" with imagenes=seccion.lista %}
+{% endcomment %}
+<div class="atajos" data-revela>
+  {% for atajo in imagenes %}
+    <a href="{{ atajo.url }}" class="atajo" data-indice="{{ forloop.counter0 }}">
+      <span class="atajo__forma"><img src="{{ atajo.imagen.url }}" alt="" loading="lazy"></span>
+      <span class="atajo__etiqueta osd" aria-hidden="true"><i></i>Cinta {{ forloop.counter|stringformat:"02d" }}</span>
+      <span class="atajo__play" aria-hidden="true">{% include "_iconos.html" with icono="reproducir" %}</span>
+      <span class="atajo__nombre">
+        <span>{{ atajo.titulo }}</span>
+        {% if atajo.cantidad %}<small>{{ atajo.cantidad }} producto{{ atajo.cantidad|pluralize }}</small>{% endif %}
+      </span>
+    </a>
+  {% endfor %}
+</div>

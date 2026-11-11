@@ -9,11 +9,46 @@ puntero, al tomar foco y con movimiento reducido (ahí el cambio es sólo manual
 
     {% include "_carrusel.html" with banners=banners intervalo=intervalo %}
 
+Con `tele=1` se dibuja dentro del televisor del hero (plan 07, novena parte):
+la pantalla con el rótulo de reproducción y el canal, las perillas, un botón
+por banner que lo elige y los controles de cinta. Los ganchos `data-*` y el
+guion son los mismos; cambiar de banner pasa una banda de ruido por la
+pantalla (`banda-ruido`) y la imagen entra por bandas (`cambio-canal`).
+
 Sin JavaScript se ven todas las imágenes, una debajo de la otra, y los
 controles no se dibujan. La galería de administración lo incluye tal cual: la
 vista previa es exactamente lo que ve el cliente.
 {% endcomment %}
 {% if banners %}
+{% if tele %}
+<section class="carrusel tele" data-carrusel data-intervalo="{{ intervalo }}" aria-roledescription="carrusel" aria-label="Novedades">
+  <div class="tele__pantalla">
+    <div class="pila-3" data-marco>
+      {% for banner in banners %}
+        <img src="{{ banner.imagen.url }}" alt="Banner {{ forloop.counter }} de {{ banners|length }}" class="carrusel__imagen" data-diapositiva>
+      {% endfor %}
+    </div>
+    <span class="tele__barrido" aria-hidden="true"></span>
+    <span class="tele__ruido" data-ruido aria-hidden="true"></span>
+    <span class="tele__osd osd" aria-hidden="true"><span><b data-osd-estado>▶ PLAY</b>&nbsp;&nbsp;SP</span><span data-osd-tiempo>0:00:00</span></span>
+    <span class="tele__osd-pie osd" aria-hidden="true">CH <span data-osd-canal>01</span></span>
+  </div>
+  <span class="tele__perillas" aria-hidden="true"><span class="perilla"></span><span class="perilla perilla--b"></span><span class="parlante"><i></i><i></i><i></i><i></i><i></i></span></span>
+  {% if banners|length > 1 %}
+    <div class="tele__mandos" data-controles hidden>
+      <span class="canales" role="group" aria-label="Elegir banner">
+        {% for banner in banners %}<button type="button" class="canal" data-indicador aria-label="Banner {{ forloop.counter }}">CH {{ forloop.counter|stringformat:"02d" }}</button>{% endfor %}
+      </span>
+      <span class="datos sr-only" data-contador aria-live="polite">1 de {{ banners|length }}</span>
+      <span class="cinta-mandos" role="group" aria-label="Controles del carrusel">
+        <button type="button" data-anterior title="Anterior">{% include "_iconos.html" with icono="anterior" %}<span class="sr-only">Anterior</span></button>
+        <button type="button" data-pausar aria-pressed="false" class="reproduciendo" title="Pausar"><span class="icono-de-estado" data-icono-pausar>{% include "_iconos.html" with icono="pausar" %}</span><span class="icono-de-estado" data-icono-reanudar hidden>{% include "_iconos.html" with icono="reproducir" %}</span><span class="sr-only" data-texto>Pausar</span></button>
+        <button type="button" data-siguiente title="Siguiente">{% include "_iconos.html" with icono="adelante" %}<span class="sr-only">Siguiente</span></button>
+      </span>
+    </div>
+  {% endif %}
+</section>
+{% else %}
 <section class="carrusel" data-carrusel data-intervalo="{{ intervalo }}" aria-roledescription="carrusel" aria-label="Novedades">
   <div class="pila-3" data-marco>
     {% for banner in banners %}
@@ -32,6 +67,7 @@ vista previa es exactamente lo que ve el cliente.
     </div>
   {% endif %}
 </section>
+{% endif %}
 <script>
   (function () {
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -46,10 +82,16 @@ vista previa es exactamente lo que ve el cliente.
       const indicadores = Array.from(raiz.querySelectorAll("[data-indicador]"));
       const contador = raiz.querySelector("[data-contador]");
       const pausar = raiz.querySelector("[data-pausar]");
+      // Lo que sólo tiene el televisor: la banda de ruido y el rótulo de pantalla.
+      const ruido = raiz.querySelector("[data-ruido]");
+      const osdEstado = raiz.querySelector("[data-osd-estado]");
+      const osdCanal = raiz.querySelector("[data-osd-canal]");
+      const osdTiempo = raiz.querySelector("[data-osd-tiempo]");
       const segundos = Math.max(1, parseInt(raiz.dataset.intervalo, 10) || 10);
       let actual = 0;
       let reloj = null;
       let pausadoAMano = false;
+      let reproducido = 0;
 
       function mostrar(indice, conBarrido) {
         actual = (indice + diapositivas.length) % diapositivas.length;
@@ -59,25 +101,50 @@ vista previa es exactamente lo que ve el cliente.
         });
         indicadores.forEach((cuadro, i) => cuadro.setAttribute("aria-current", i === actual ? "true" : "false"));
         contador.textContent = `${actual + 1} de ${diapositivas.length}`;
+        if (osdCanal) osdCanal.textContent = String(actual + 1).padStart(2, "0");
+        if (ruido && conBarrido && !reducido) {
+          ruido.classList.remove("tele__ruido--pasa");
+          void ruido.offsetWidth;
+          ruido.classList.add("tele__ruido--pasa");
+        }
       }
 
+      // El contador del rótulo sólo corre mientras el carrusel corre.
+      function tictac() {
+        reproducido += 1;
+        if (!osdTiempo) return;
+        const m = Math.floor(reproducido / 60);
+        osdTiempo.textContent = `0:${String(m).padStart(2, "0")}:${String(reproducido % 60).padStart(2, "0")}`;
+      }
+
+      let segundero = null;
       function arrancar() {
         if (reducido || reloj || pausadoAMano) return;
         reloj = window.setInterval(() => mostrar(actual + 1, true), segundos * 1000);
+        if (osdTiempo) segundero = window.setInterval(tictac, 1000);
+        if (osdEstado) osdEstado.textContent = "▶ PLAY";
       }
 
       function detener() {
         window.clearInterval(reloj);
+        window.clearInterval(segundero);
         reloj = null;
+        if (osdEstado) osdEstado.textContent = "❚❚ PAUSA";
       }
 
       raiz.querySelector("[data-anterior]").addEventListener("click", () => mostrar(actual - 1, true));
       raiz.querySelector("[data-siguiente]").addEventListener("click", () => mostrar(actual + 1, true));
+      // En el televisor, cada canal es un botón que elige su banner.
+      indicadores.forEach((cuadro, i) => {
+        if (cuadro.tagName === "BUTTON") cuadro.addEventListener("click", () => mostrar(i, true));
+      });
       pausar.addEventListener("click", () => {
         pausadoAMano = !pausadoAMano;
         pausar.setAttribute("aria-pressed", pausadoAMano ? "true" : "false");
+        pausar.classList.toggle("reproduciendo", !pausadoAMano);
         // El ícono dice lo que hace el botón, igual que el texto: pausado, ofrece reanudar.
         pausar.querySelector("[data-texto]").textContent = pausadoAMano ? "Reanudar" : "Pausar";
+        if (pausar.title) pausar.title = pausadoAMano ? "Reanudar" : "Pausar";
         pausar.querySelector("[data-icono-pausar]").hidden = pausadoAMano;
         pausar.querySelector("[data-icono-reanudar]").hidden = !pausadoAMano;
         pausadoAMano ? detener() : arrancar();
@@ -89,6 +156,7 @@ vista previa es exactamente lo que ve el cliente.
 
       controles.hidden = false;
       mostrar(0, false);
+      if (reducido && osdEstado) osdEstado.textContent = "❚❚ PAUSA";
       arrancar();
     }
   })();

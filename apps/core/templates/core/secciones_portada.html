@@ -1,0 +1,292 @@
+{% extends "base_operativo.html" %}
+{% comment %}
+Las secciones de la portada de la tienda (`CU-CFG-SEC`; plan 07, novena parte).
+Nació como el gestor de filas (tercera y cuarta parte; B-07-009, B-07-010).
+
+Una tarjeta por sección. El orden es el de las tarjetas: se cambia arrastrándolas
+por el asa o con «Subir» y «Bajar», que sirven con teclado y lector de pantalla.
+Al guardar, el guion numera los campos ocultos `orden` según la posición; nada
+se guarda al soltar. Las secciones que llevan imágenes tienen adentro sus
+propias tarjetas, que se ordenan igual, dentro de su sección.
+
+«Agregar sección» ofrece los tipos y copia la tarjeta vacía del elegido. Una
+tarjeta marcada para quitar queda a la vista, tachada, hasta guardar.
+Recién llegados y Lo que se viene no se quitan: se apagan.
+{% endcomment %}
+
+{% block titulo %}Secciones de la portada · Longbox{% endblock %}
+{% block seccion %}Tienda{% endblock %}
+
+{% block cabecera_extra %}{% include "_archivo.html" %}{% endblock %}
+
+{% block contenido %}
+<header class="encabezado-de-pantalla">
+  <div class="encabezado-de-pantalla__textos">
+    <h1>Secciones de la portada</h1>
+    <p>Lo que muestra la portada debajo del hero, en este orden. Arrastre las tarjetas para ordenarlas.</p>
+  </div>
+  <a href="{% url 'core:tienda' %}" class="boton-seccion" target="_blank" rel="noopener">{% include "_iconos.html" with icono="ver" %}<span>Ver la portada</span></a>
+</header>
+
+{% if formularios.non_form_errors %}
+  <ul class="mensajes">
+    {% for error in formularios.non_form_errors %}
+      <li class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate class="formulario" data-gestor-filas>
+  {% csrf_token %}
+  {{ formularios.management_form }}
+
+  <div class="paso fila-entre">
+    <p class="secundario"><span data-contador-filas class="fuerte">{{ formularios.total_form_count }}</span> en la portada, en este orden.</p>
+    <details class="menu-agregar" data-menu-agregar>
+      <summary class="boton-seccion">{% include "_iconos.html" with icono="agregar" %}<span>Agregar sección</span></summary>
+      <div class="menu-agregar__panel" role="group" aria-label="Tipo de sección">
+        {% for valor, nombre, vacia, propias in plantillas %}
+          <button type="button" class="boton-texto" data-agregar-fila="{{ valor }}">{{ nombre }}</button>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+
+  <ol class="gestor-filas" data-lista-filas>
+    {% for formulario, imagenes in tarjetas %}
+      {% include "core/_tarjeta_seccion.html" with formulario=formulario imagenes=imagenes numero=forloop.counter %}
+    {% empty %}
+      <li class="vacio" data-sin-filas>
+        {% include "_iconos.html" with icono="tienda" %}
+        <p>La portada todavía no tiene secciones. Agregue la primera.</p>
+      </li>
+    {% endfor %}
+  </ol>
+
+  {% for valor, nombre, vacia, propias in plantillas %}
+    <template data-plantilla-fila="{{ valor }}">
+      {% include "core/_tarjeta_seccion.html" with formulario=vacia imagenes=propias numero="" %}
+    </template>
+  {% endfor %}
+
+  <p class="sr-only" aria-live="polite" data-anuncio-filas></p>
+
+  <div class="acciones">
+    <button type="submit" class="boton-primario">Guardar las secciones</button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const formulario = document.querySelector("[data-gestor-filas]");
+    const lista = formulario.querySelector("[data-lista-filas]");
+    const total = formulario.querySelector('input[name="form-TOTAL_FORMS"]');
+    const anuncio = formulario.querySelector("[data-anuncio-filas]");
+    const contador = formulario.querySelector("[data-contador-filas]");
+
+    // Las tarjetas directas de una lista: las de imágenes no son secciones.
+    const hijas = (contenedor, selector) => Array.from(contenedor.children).filter((el) => el.matches(selector));
+    const tarjetas = () => hijas(lista, "[data-tarjeta-fila]");
+
+    // El número visible y el campo `orden` siguen la posición de la tarjeta.
+    function renumerar() {
+      const todas = tarjetas();
+      todas.forEach(function (tarjeta, indice) {
+        tarjeta.querySelector("[data-numero]").textContent = String(indice + 1).padStart(2, "0");
+        tarjeta.querySelector("[data-orden]").value = indice + 1;
+        tarjeta.querySelector("[data-subir]").disabled = indice === 0;
+        tarjeta.querySelector("[data-bajar]").disabled = indice === todas.length - 1;
+        renumerarImagenes(tarjeta);
+      });
+      contador.textContent = todas.length;
+    }
+
+    function renumerarImagenes(tarjeta) {
+      const gestor = tarjeta.querySelector("[data-gestor-imagenes]");
+      if (!gestor) return;
+      const imagenes = hijas(gestor.querySelector("[data-lista-imagenes]"), "[data-tarjeta-imagen]");
+      imagenes.forEach(function (imagen, indice) {
+        imagen.querySelector("[data-numero-imagen]").textContent = String(indice + 1).padStart(2, "0");
+        imagen.querySelector("[data-orden-imagen]").value = indice + 1;
+        imagen.querySelector("[data-subir-imagen]").disabled = indice === 0;
+        imagen.querySelector("[data-bajar-imagen]").disabled = indice === imagenes.length - 1;
+      });
+      const cuenta = gestor.querySelector("[data-contador-imagenes]");
+      if (cuenta) cuenta.textContent = imagenes.length;
+      const agregar = gestor.querySelector("[data-agregar-imagen]");
+      if (agregar) agregar.disabled = imagenes.length >= Number(gestor.dataset.maximo);
+    }
+
+    function nombre(tarjeta, selector) {
+      return tarjeta.querySelector(selector).textContent.trim();
+    }
+
+    function mover(contenedor, selector, tarjeta, destino, rotulo) {
+      const todas = hijas(contenedor, selector);
+      const desde = todas.indexOf(tarjeta);
+      if (destino < 0 || destino >= todas.length || destino === desde) return;
+      contenedor.insertBefore(tarjeta, destino > desde ? todas[destino].nextSibling : todas[destino]);
+      renumerar();
+      anuncio.textContent = nombre(tarjeta, rotulo) + ": lugar " + (destino + 1) + " de " + todas.length + ".";
+    }
+
+    // Arrastrar sólo desde el asa: arrastrar desde un campo seleccionaría texto.
+    function arrastrable(tarjeta, asa, contenedor, selector, rotulo) {
+      asa.addEventListener("mousedown", function () { tarjeta.draggable = true; });
+      tarjeta.addEventListener("dragstart", function (evento) {
+        if (evento.target !== tarjeta) return;
+        evento.stopPropagation();
+        evento.dataTransfer.effectAllowed = "move";
+        evento.dataTransfer.setData("text/plain", "");
+        tarjeta.classList.add("tarjeta-fila--arrastrando");
+      });
+      tarjeta.addEventListener("dragend", function (evento) {
+        if (evento.target !== tarjeta) return;
+        evento.stopPropagation();
+        tarjeta.draggable = false;
+        tarjeta.classList.remove("tarjeta-fila--arrastrando");
+        for (const otra of hijas(contenedor, selector)) otra.classList.remove("tarjeta-fila--destino");
+        renumerar();
+        anuncio.textContent = nombre(tarjeta, rotulo) + ": lugar " + (hijas(contenedor, selector).indexOf(tarjeta) + 1) + ".";
+      });
+    }
+
+    function soltable(contenedor, selector) {
+      contenedor.addEventListener("dragover", function (evento) {
+        const arrastrada = hijas(contenedor, selector).find((t) => t.classList.contains("tarjeta-fila--arrastrando"));
+        if (!arrastrada) return;
+        evento.preventDefault();
+        evento.stopPropagation();
+        const debajo = hijas(contenedor, selector).find(function (tarjeta) {
+          const caja = tarjeta.getBoundingClientRect();
+          return tarjeta !== arrastrada && evento.clientY < caja.top + caja.height / 2;
+        });
+        for (const otra of hijas(contenedor, selector)) otra.classList.toggle("tarjeta-fila--destino", otra === debajo);
+        contenedor.insertBefore(arrastrada, debajo || null);
+      });
+      contenedor.addEventListener("drop", function (evento) { evento.preventDefault(); });
+    }
+
+    // Quitar: la tarjeta queda tachada hasta guardar.
+    function quitable(tarjeta) {
+      const quitar = Array.from(tarjeta.querySelectorAll('input[name$="-DELETE"]')).find((c) => c.closest("[data-tarjeta-fila], [data-tarjeta-imagen]") === tarjeta);
+      if (quitar) {
+        quitar.addEventListener("change", function () {
+          tarjeta.classList.toggle("tarjeta-fila--quitada", quitar.checked);
+        });
+      }
+    }
+
+    function prepararImagen(seccion, imagen) {
+      const listaImagenes = imagen.parentElement;
+      imagen.querySelector("[data-subir-imagen]").addEventListener("click", function () {
+        mover(listaImagenes, "[data-tarjeta-imagen]", imagen, hijas(listaImagenes, "[data-tarjeta-imagen]").indexOf(imagen) - 1, "[data-nombre-imagen]");
+        this.focus();
+      });
+      imagen.querySelector("[data-bajar-imagen]").addEventListener("click", function () {
+        mover(listaImagenes, "[data-tarjeta-imagen]", imagen, hijas(listaImagenes, "[data-tarjeta-imagen]").indexOf(imagen) + 1, "[data-nombre-imagen]");
+        this.focus();
+      });
+      arrastrable(imagen, imagen.querySelector("[data-asa-imagen]"), listaImagenes, "[data-tarjeta-imagen]", "[data-nombre-imagen]");
+      quitable(imagen);
+      // «Código del producto» sólo cuando «Lleva a» es un producto.
+      const llevaA = imagen.querySelector('select[name$="-lleva_a"]');
+      const codigo = imagen.querySelector("[data-codigo-producto]");
+      const mostrarCodigo = function () { codigo.hidden = llevaA.value !== "producto"; };
+      llevaA.addEventListener("change", mostrarCodigo);
+      mostrarCodigo();
+      const titulo = imagen.querySelector('input[name$="-titulo"]');
+      titulo.addEventListener("input", function () {
+        imagen.querySelector("[data-nombre-imagen]").textContent = titulo.value.trim() || "Nueva imagen";
+      });
+    }
+
+    function preparar(tarjeta) {
+      tarjeta.querySelector("[data-subir]").addEventListener("click", function () {
+        mover(lista, "[data-tarjeta-fila]", tarjeta, tarjetas().indexOf(tarjeta) - 1, "[data-nombre-fila]");
+        this.disabled ? tarjeta.querySelector("[data-bajar]").focus() : this.focus();
+      });
+      tarjeta.querySelector("[data-bajar]").addEventListener("click", function () {
+        mover(lista, "[data-tarjeta-fila]", tarjeta, tarjetas().indexOf(tarjeta) + 1, "[data-nombre-fila]");
+        this.disabled ? tarjeta.querySelector("[data-subir]").focus() : this.focus();
+      });
+      arrastrable(tarjeta, tarjeta.querySelector("[data-asa]"), lista, "[data-tarjeta-fila]", "[data-nombre-fila]");
+      quitable(tarjeta);
+
+      const titulo = tarjeta.querySelector('input[name$="-titulo"]');
+      const origen = tarjeta.querySelector('select[name$="-origen"]');
+      const rotulo = tarjeta.querySelector("[data-nombre-fila]");
+      const original = rotulo.textContent;
+      function rotular() {
+        const elegido = origen && origen.value ? origen.selectedOptions[0].textContent.replace(" (todas sus etiquetas)", "") : "";
+        rotulo.textContent = titulo.value.trim() || elegido || original;
+      }
+      titulo.addEventListener("input", rotular);
+      if (origen) origen.addEventListener("change", rotular);
+
+      const gestor = tarjeta.querySelector("[data-gestor-imagenes]");
+      if (!gestor) return;
+      const listaImagenes = gestor.querySelector("[data-lista-imagenes]");
+      soltable(listaImagenes, "[data-tarjeta-imagen]");
+      hijas(listaImagenes, "[data-tarjeta-imagen]").forEach((imagen) => prepararImagen(tarjeta, imagen));
+      const agregar = gestor.querySelector("[data-agregar-imagen]");
+      if (agregar) {
+        agregar.addEventListener("click", function () {
+          const totalImagenes = gestor.querySelector('input[name$="-img-TOTAL_FORMS"]');
+          const indice = Number(totalImagenes.value);
+          const plantilla = gestor.querySelector("[data-plantilla-imagen]");
+          listaImagenes.insertAdjacentHTML("beforeend", plantilla.innerHTML.replace(/__imagen__/g, String(indice)));
+          totalImagenes.value = indice + 1;
+          const nueva = hijas(listaImagenes, "[data-tarjeta-imagen]").at(-1);
+          prepararImagen(tarjeta, nueva);
+          mejorarArchivos(nueva);
+          renumerar();
+          nueva.querySelector('input[type="file"]').focus();
+        });
+      }
+    }
+
+    soltable(lista, "[data-tarjeta-fila]");
+
+    // Una tarjeta copiada de su plantilla no ejecuta los guiones que trae: los
+    // interruptores de estado (`_casilla.html`) se arman acá.
+    function interruptores(raiz) {
+      for (const estado of raiz.querySelectorAll("[data-estado-de]")) {
+        const casilla = document.getElementById(estado.dataset.estadoDe);
+        if (!casilla) continue;
+        casilla.setAttribute("role", "switch");
+        const pintar = () => { estado.textContent = casilla.checked ? estado.dataset.encendido : estado.dataset.apagado; };
+        casilla.addEventListener("change", pintar);
+        pintar();
+      }
+    }
+
+    const menu = formulario.querySelector("[data-menu-agregar]");
+    for (const boton of formulario.querySelectorAll("[data-agregar-fila]")) {
+      boton.addEventListener("click", function () {
+        const indice = Number(total.value);
+        const plantilla = formulario.querySelector('[data-plantilla-fila="' + boton.dataset.agregarFila + '"]');
+        const html = plantilla.innerHTML.replace(/__prefix__/g, String(indice));
+        lista.querySelector("[data-sin-filas]")?.remove();
+        lista.insertAdjacentHTML("beforeend", html);
+        total.value = indice + 1;
+        const nueva = tarjetas().at(-1);
+        preparar(nueva);
+        mejorarArchivos(nueva);
+        interruptores(nueva);
+        renumerar();
+        menu.open = false;
+        nueva.scrollIntoView({ block: "center" });
+        (nueva.querySelector("select") || nueva.querySelector('input[type="text"]')).focus();
+      });
+    }
+    document.addEventListener("click", function (evento) {
+      if (!menu.contains(evento.target)) menu.open = false;
+    });
+
+    formulario.addEventListener("submit", renumerar);
+    tarjetas().forEach(preparar);
+    renumerar();
+  })();
+</script>
+{% endblock %}

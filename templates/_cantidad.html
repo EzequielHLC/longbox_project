@@ -1,12 +1,15 @@
 {% comment %}
 Un campo de cantidad con flechas − y + (tienda: ficha y carrito).
 
-    {% include "_cantidad.html" with id="cantidad" valor=1 maximo=producto.stock %}
+    {% include "_cantidad.html" with id="cantidad" valor=1 maximo=producto.stock aviso="..." %}
 
 Las flechas son botones comunes que suben o bajan el número sin pasar del mínimo
 (1) ni del máximo, si lo hay. Sin JavaScript el campo sigue siendo un número que
 se escribe a mano. El servidor vuelve a validar la cantidad igual (CO-083, CO-084):
 las flechas son comodidad, no el control.
+
+Al llegar al máximo, el «+» se ve apagado y, si se lo aprieta igual, dice por qué
+no sube (`aviso`; sin él, uno general). Plan 07, novena parte.
 {% endcomment %}
 <div class="campo campo--cantidad">
   <label for="{{ id }}" class="etiqueta">Cantidad</label>
@@ -15,4 +18,5 @@ las flechas son comodidad, no el control.
     <input type="number" id="{{ id }}" name="cantidad" value="{{ valor|default:1 }}" min="1"{% if maximo %} max="{{ maximo }}"{% endif %} inputmode="numeric" required>
     <button type="button" class="selector-cantidad__paso" data-paso="1" aria-label="Uno más" hidden>+</button>
   </div>
+  <p class="selector-cantidad__aviso" data-aviso-tope role="status" hidden><span class="mensaje__prefijo">Atención:</span> {% firstof aviso "no hay más unidades para agregar." %}</p>
 </div>

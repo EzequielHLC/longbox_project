@@ -57,6 +57,8 @@ un formulario. Si el guion falla, nunca queda tapando la pantalla.
       const esLaMismaPantalla =
         destino.pathname === location.pathname && destino.search === location.search;
       if (destino.origin !== location.origin || esLaMismaPantalla) return;
+      // En la tienda, el telón ya tapa y dice «Cargando» (plan 07, novena parte).
+      if (document.querySelector("[data-telon]") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
       mostrar(evento, true);
     });

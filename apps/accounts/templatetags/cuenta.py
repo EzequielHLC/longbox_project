@@ -26,6 +26,9 @@ def carnet(context):
     guardados = list(del_cliente(usuario))
     return {
         "user": usuario,
+        # El retrato del carnet (plan 07, novena parte): las iniciales del nombre,
+        # o la primera letra del correo si no lo cargó.
+        "iniciales": _iniciales(usuario),
         "saldo": puntos.saldo(usuario),
         "proximo_lote": proximo,
         "proximo_hasta": usable_hasta(proximo) if proximo else None,
@@ -35,3 +38,10 @@ def carnet(context):
         ),
         "seccion": context.get("seccion", ""),
     }
+
+
+def _iniciales(usuario):
+    partes = [p for p in (usuario.first_name, usuario.last_name) if p and p.strip()]
+    if partes:
+        return "".join(p.strip()[0] for p in partes).upper()
+    return (usuario.email or "?")[0].upper()

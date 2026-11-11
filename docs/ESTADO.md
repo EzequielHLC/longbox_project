@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-11-07**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-11-11**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -10,6 +10,25 @@ enlazan a éste.
 ---
 
 ## Resumen
+
+Del 2026-11-11: **el escaparate vivo** ([plan 07, novena parte](planes/07-tienda-online.md),
+aprobado con las recomendaciones). Cambia la parte pública; el mostrador no se toca:
+
+- **Las filas de la portada pasan a secciones** de siete tipos, en un solo orden (`CU-CFG-SEC`,
+  B-07-046): productos en fila o en vitrina, accesos con foto, página de historieta, cinta de
+  fotos, panel destacado, y Recién llegados y Lo que se viene, que se mueven y se apagan pero no se
+  borran. Las filas que había se conservaron con la migración.
+- **La portada** (`CU-TDA-POR`): el carrusel de banners en un televisor dentro del hero
+  (B-07-047), la radio, las secciones numeradas con su lomo, el casete de la vitrina y el riel.
+- **La cáscara pública**: la barra de arriba con botonera de íconos (B-07-048), el pie, la regla
+  de aparatos e impresos con el rol «Aparatos encendidos» (B-07-049, B-17-021), el barrido en negro
+  entre páginas, la barra de progreso y las cintas en marcha (B-07-053).
+- **El catálogo, la ficha de producto y el carnet del Cliente** con el lenguaje nuevo (B-07-052,
+  B-07-053). Lo que se puede hacer en cada pantalla no cambia.
+- **Corregido**: el precio de las tarjetas sobre papel no se veía (B-07-051).
+- **Pendiente del responsable**: el número del contrato `guardarSeccionesDeLaPortada`, las fichas
+  de `CU-CFG-SEC` y `CU-TDA-POR`, y las enmiendas a `TOKENS_VISUALES.md` e `identidad_visual.md`
+  que listan B-07-049, B-07-052 y B-07-053.
 
 Del 2026-11-07, más tarde: **la revisión integral antes del cierre**
 ([plan](planes/00-revision-integral.md), aprobado con las recomendaciones). Corrige lo construido
@@ -399,6 +418,8 @@ arriba ni en `COBERTURA.md` hasta que el documento tenga su ficha y sus contrato
 | `CU-TDA-CMP` | Verificado | 6 / 6 | **Con el retiro en el local** (plan 07, octava parte; B-07-038): la modalidad en el checkout, el cobro y el pedido que nacen con ella, D4 en el servidor y en la base. `apps/tienda/compra.py`, `views_compra.py`, `pasarelas.py`, `mercadopago.py`. **Todos sus contratos verificados**, con idempotencia, E2, E3 y la carrera del último ejemplar (B-07-035). A2 sólo con envío gratuito (B-07-033). El correo de confirmación lleva el enlace al pedido en «Mi cuenta». Plan 07, sexta parte; barra del envío gratis en la séptima (B-07-037). Con el producto bloqueado se vuelve a contar el cupo de la pre-venta, y si se llenó mientras se pagaba el cobro se reembolsa (B-07-042). |
 | `CU-TDA-INV` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Sin pre-ventas (precondición), sin puntos, pedido asociado al correo; la sugerencia de iniciar sesión aparece dos veces (B-07-036). Plan 07, sexta parte. |
 
+**`CU-TDA-POR` Consultar la Portada de la Tienda: Construido, sin contrato** (plan 07, novena parte: el escaparate vivo; B-07-046 a B-07-053). El hero con el carrusel en el televisor, la radio y las secciones de `CU-CFG-SEC` en su orden; sólo lee, y nunca muestra un producto que el catálogo no mostraría. Falta su ficha. Lo que sigue describe lo construido antes de esa parte, que sigue valiendo salvo donde la novena parte lo reemplaza: las filas son ahora secciones, y el menú volvió a llevar íconos (B-07-048).
+
 **Sin caso de uso todavía:** las **filas de la portada** (plan 07, tercera y cuarta parte;
 B-07-009, B-07-010). El Administrador las arma por etiqueta o por grupo de etiquetas en «Tienda →
 Filas de la portada», en tarjetas que se reordenan arrastrando y con imagen opcional; el Cliente
@@ -502,6 +523,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | `CU-CFG-BNB` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Confirmación y eliminación con reajuste; sin confirmar no hay eliminación. |
 | `CU-CFG-FAQ` | Verificado | 3 / 3 | **Todos sus contratos verificados.** Editor Markdown con vista previa que no publica (B-17-014), publicación sin HTML crudo (C-16) y FAQ vacía con confirmación. Página pública de preguntas frecuentes. |
 | `CU-CFG-VIS` | Verificado | 2 / 2 | **Todos sus contratos verificados.** Tres secciones, vista previa en vivo, HEX validados, logo y fondo de imagen procesados (C-07; SVG no admitido, B-17-011). Pinta sólo las cuatro `--tienda-*`. |
+| `CU-CFG-SEC` | Construido, sin contrato | — | `SeccionesPortadaView` (plan 07, novena parte; B-07-046): las secciones de la portada en siete tipos y un solo orden, con sus imágenes y el destino de cada una en una lista cerrada. Reemplaza a `CU-CFG-FIL`, retirado sin llegar al documento. `guardarSeccionesDeLaPortada` (`NUEVO-CO-23`) está probado por sus postcondiciones, las negativas, el rol equivocado por la dirección real y las restricciones en la base (`test_secciones_portada.py`, 65 casos); le falta el número, la ficha y el DSS. |
 
 ### `18` Stock Almacenado en Local
 
@@ -551,6 +573,23 @@ no tiene fila.
 ---
 
 ## Las siete puertas
+
+Medición del **2026-11-11**, al cerrar la [novena parte del plan 07](planes/07-tienda-online.md):
+**3880 pruebas pasan**, 0 fallos, en paralelo (4 min 32 s); cobertura **97 %** (17410 sentencias,
+571 sin cubrir); `ruff` y `black` sin hallazgos ni cambios; `bandit` sin hallazgos; `pip-audit` sin
+vulnerabilidades; `check --deploy` sin advertencias. **Contratos**: `COBERTURA.md` regenerado, sin
+contratos sin prueba; `guardarSeccionesDeLaPortada` no figura porque todavía no tiene número (sus
+pruebas llevan `NUEVOCO23`). `core.0051` a `core.0054` aplicaron sobre la base de desarrollo, con un
+respaldo previo en `respaldos/antes-de-secciones/`: las seis filas que había quedaron como
+secciones, detrás de las dos fijas; `migrate --check` no deja nada pendiente y `makemigrations
+--check` no detecta cambios. Las cuatro restricciones nuevas están en `pg_constraint`
+(`seccion_portada_origen_solo_en_productos`, `seccion_portada_vitrina_solo_en_productos`,
+`imagen_seccion_destino_con_su_dato`, `imagen_seccion_con_imagen_salvo_grito`) y la de unicidad de
+las fijas, `seccion_portada_fija_unica`, en `pg_indexes`. La portada, el gestor de secciones, el
+catálogo, la ficha, el carrito, las seis pantallas de «Mi cuenta», el ingreso, el registro, el
+arrepentimiento y la política se revisaron con capturas de Chrome en escritorio y a 390 px; el
+cajón del carrito desde la vitrina, «Rebobinar» y el barrido entre páginas, con el navegador
+manejado por guion. Textos de 130 letras y palabras de 60 en cada campo no desbordan.
 
 Medición del **2026-11-07**, al cerrar la [revisión integral](planes/00-revision-integral.md):
 **3825 pruebas pasan**, 0 fallos, en paralelo (3 min 44 s); **contratos**: 219 de 219 con prueba

@@ -529,6 +529,7 @@ class RegistroAuditoria(models.Model):
     BAJA_OFERTA = "baja_oferta"
     VENCIMIENTO_AUTOMATICO_OFERTA = "vencimiento_automatico_oferta"
     MODIFICACION_FILAS_PORTADA = "modificacion_filas_portada"
+    MODIFICACION_SECCIONES_PORTADA = "modificacion_secciones_portada"
     # Plan 07, sexta parte: la compra online (CU-TDA-CMP, CU-TDA-INV).
     COMPRA_ONLINE = "compra_online"
     PAGO_RECHAZADO = "pago_rechazado"
@@ -644,6 +645,7 @@ class RegistroAuditoria(models.Model):
         (BAJA_OFERTA, "Baja de oferta"),
         (VENCIMIENTO_AUTOMATICO_OFERTA, "Vencimiento automático de oferta"),
         (MODIFICACION_FILAS_PORTADA, "Modificación de las filas de la portada"),
+        (MODIFICACION_SECCIONES_PORTADA, "Modificación de las secciones de la portada"),
         (COMPRA_ONLINE, "Compra online"),
         (PAGO_RECHAZADO, "Pago rechazado por la pasarela"),
         (INCIDENTE_COMPRA, "Compra fallida con reembolso"),
@@ -889,6 +891,10 @@ class IdentidadVisual(InstanciaUnica):
     color_rol_encabezado = models.CharField(
         "encabezado y pie", max_length=10, choices=colores.OPCIONES, default=colores.FONDO
     )
+    # Plan 07, novena parte: los aparatos del escaparate, en lima salvo otra elección.
+    color_rol_encendido = models.CharField(
+        "aparatos encendidos", max_length=10, choices=colores.OPCIONES, default=colores.LIMA
+    )
     # La que acompaña al formulario en las pantallas de acceso (B-07-020). Sin
     # ella, el logo; sin logo, el nombre de la tienda en grande.
     imagen_acceso = models.ImageField("imagen del ingreso", upload_to="identidad/", blank=True)
@@ -1002,51 +1008,113 @@ class Banner(models.Model):
         return self.posicion + 1
 
 
-class FilaPortada(models.Model):
-    """Una fila de productos de la portada de la tienda (plan 07, tercera parte; B-07-009).
+class SeccionPortada(models.Model):
+    """Una sección de la portada de la tienda (`CU-CFG-SEC`; plan 07, novena parte).
 
-    Sale de una etiqueta («Shonen») o de un grupo de etiquetas entero
-    («Demografía»): nunca de las dos. La fila se recorre de costado y muestra los
-    productos visibles en la tienda más nuevos de ese origen.
+    Nació como la fila de productos de la tercera parte (B-07-009) y absorbió a
+    `FilaPortada`: la tabla es la misma, renombrada. El tipo decide qué dibuja
+    la portada, por eso es un campo (regla 3 del dominio):
+
+    - **Productos**: los de una etiqueta («Shonen») o de un grupo entero
+      («Demografía»), nunca de los dos, en una fila que se recorre de costado o
+      en una vitrina.
+    - **Accesos**, **Página de historieta**, **Cinta de fotos** y **Panel
+      destacado**: imágenes que carga el Administrador (`ImagenDeSeccion`).
+    - **Recién llegados** y **Lo que se viene**: las arma el sistema. Hay una de
+      cada una; se mueven y se apagan, pero no se borran.
     """
 
+    PRODUCTOS = "productos"
+    ACCESOS = "accesos"
+    PAGINA = "pagina"
+    CINTA = "cinta"
+    PANEL = "panel"
+    RECIEN_LLEGADOS = "recien_llegados"
+    SE_VIENE = "se_viene"
+    TIPOS = [  # noqa: RUF012
+        (PRODUCTOS, "Productos"),
+        (ACCESOS, "Accesos con foto"),
+        (PAGINA, "Página de historieta"),
+        (CINTA, "Cinta de fotos"),
+        (PANEL, "Panel destacado"),
+        (RECIEN_LLEGADOS, "Recién llegados"),
+        (SE_VIENE, "Lo que se viene"),
+    ]
+    FIJAS = (RECIEN_LLEGADOS, SE_VIENE)
+    # Cuántas imágenes admite cada tipo que las lleva: (mínimo, máximo).
+    IMAGENES_POR_TIPO = {  # noqa: RUF012
+        ACCESOS: (3, 8),
+        PAGINA: (3, 6),
+        CINTA: (4, 12),
+        PANEL: (1, 1),
+    }
+
+    FILA = "fila"
+    VITRINA = "vitrina"
+    PRESENTACIONES = [(FILA, "Fila"), (VITRINA, "Vitrina")]  # noqa: RUF012
+
+    tipo = models.CharField("tipo", max_length=20, choices=TIPOS, default=PRODUCTOS)
+    presentacion = models.CharField(
+        "presentación", max_length=10, choices=PRESENTACIONES, default=FILA
+    )
     titulo = models.CharField(
         "título",
         max_length=80,
         blank=True,
-        help_text="Vacío, usa el nombre de la etiqueta o del grupo.",
+        help_text="Vacío, usa el nombre de la etiqueta, del grupo o del tipo de sección.",
     )
+    antetitulo = models.CharField("antetítulo", max_length=40, blank=True)
+    # El llamado del panel destacado: su bajada y el texto del botón.
+    texto = models.CharField("texto", max_length=200, blank=True)
+    texto_boton = models.CharField("texto del botón", max_length=40, blank=True)
     etiqueta = models.ForeignKey(
         "catalog.Etiqueta",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name="filas_portada",
+        related_name="secciones_portada",
     )
     grupo = models.ForeignKey(
         "catalog.GrupoEtiqueta",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name="filas_portada",
+        related_name="secciones_portada",
     )
-    # Abre la fila en la portada, en una tarjeta con su título (B-07-010).
-    # Llega ya procesada por RNF-05, como toda imagen del sistema.
+    # Abre la fila de productos en la portada, en una tarjeta con su título
+    # (B-07-010). Llega ya procesada por RNF-05, como toda imagen del sistema.
     imagen = models.ImageField("imagen", upload_to="filas/", blank=True)
     orden = models.PositiveIntegerField("orden", default=0)
     activa = models.BooleanField("activa", default=True)
 
     class Meta:
-        verbose_name = "fila de la portada"
-        verbose_name_plural = "filas de la portada"
+        verbose_name = "sección de la portada"
+        verbose_name_plural = "secciones de la portada"
         ordering = ["orden", "pk"]  # noqa: RUF012
         constraints = [  # noqa: RUF012
+            # Sólo la de productos tiene origen, y es una etiqueta o un grupo.
             models.CheckConstraint(
                 condition=(
-                    models.Q(etiqueta__isnull=False, grupo__isnull=True)
-                    | models.Q(etiqueta__isnull=True, grupo__isnull=False)
+                    models.Q(tipo="productos")
+                    & (
+                        models.Q(etiqueta__isnull=False, grupo__isnull=True)
+                        | models.Q(etiqueta__isnull=True, grupo__isnull=False)
+                    )
+                )
+                | (
+                    ~models.Q(tipo="productos")
+                    & models.Q(etiqueta__isnull=True, grupo__isnull=True)
                 ),
-                name="fila_portada_de_etiqueta_o_de_grupo",
+                name="seccion_portada_origen_solo_en_productos",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(presentacion="fila") | models.Q(tipo="productos"),
+                name="seccion_portada_vitrina_solo_en_productos",
+            ),
+            models.UniqueConstraint(
+                fields=["tipo"],
+                condition=models.Q(tipo__in=("recien_llegados", "se_viene")),
+                name="seccion_portada_fija_unica",
             ),
         ]
 
@@ -1054,16 +1122,170 @@ class FilaPortada(models.Model):
         return self.titulo_visible
 
     @property
+    def fija(self):
+        return self.tipo in self.FIJAS
+
+    @property
     def origen(self):
         return self.etiqueta or self.grupo
 
     @property
     def titulo_visible(self):
-        return self.titulo or (self.origen.nombre if self.origen else "")
+        if self.titulo:
+            return self.titulo
+        if self.origen:
+            return self.origen.nombre
+        return dict(self.TIPOS).get(self.tipo, "")
 
     @property
     def disponible(self):
-        """Sin la etiqueta o el grupo dados de baja (decisión 5)."""
+        """Una de productos, sin la etiqueta o el grupo dados de baja (decisión 5)."""
         if self.etiqueta_id:
             return self.etiqueta.activa and self.etiqueta.grupo.activo
-        return self.grupo.activo
+        if self.grupo_id:
+            return self.grupo.activo
+        return True
+
+
+class ImagenDeSeccion(models.Model):
+    """Una imagen de una sección de la portada (`CU-CFG-SEC`; plan 07, novena parte).
+
+    Un acceso, una viñeta, una foto de la cinta o la imagen del panel. Puede
+    llevar a una parte de la tienda: el destino es una lista cerrada (ambigüedad
+    4), y cada uno lleva al filtro del catálogo o a la ficha que ya existen. La
+    base exige que el destino tenga exactamente el dato que le corresponde.
+    """
+
+    RECUADRO = "recuadro"
+    GLOBO = "globo"
+    GRITO = "grito"
+    FORMAS_TEXTO = [  # noqa: RUF012
+        (RECUADRO, "Recuadro de narración"),
+        (GLOBO, "Globo de diálogo"),
+        (GRITO, "Onomatopeya"),
+    ]
+
+    SIN_ENLACE = "ninguno"
+    ETIQUETA = "etiqueta"
+    GRUPO = "grupo"
+    TIPO = "tipo"
+    EDITORIAL = "editorial"
+    PREVENTAS = "preventas"
+    PRODUCTO = "producto"
+    DESTINOS = [  # noqa: RUF012
+        (SIN_ENLACE, "Sin enlace"),
+        (ETIQUETA, "Una etiqueta"),
+        (GRUPO, "Un grupo de etiquetas"),
+        (TIPO, "Un tipo de producto"),
+        (EDITORIAL, "Una editorial"),
+        (PREVENTAS, "Las pre-ventas"),
+        (PRODUCTO, "Un producto"),
+    ]
+    # El dato que necesita cada destino; los demás quedan vacíos.
+    CAMPO_DEL_DESTINO = {  # noqa: RUF012
+        ETIQUETA: "etiqueta",
+        GRUPO: "grupo",
+        TIPO: "tipo_producto",
+        EDITORIAL: "editorial",
+        PRODUCTO: "producto",
+    }
+
+    seccion = models.ForeignKey(SeccionPortada, on_delete=models.CASCADE, related_name="imagenes")
+    imagen = models.ImageField("imagen", upload_to="secciones/", blank=True)
+    titulo = models.CharField("título", max_length=80, blank=True)
+    texto = models.CharField("texto", max_length=120, blank=True)
+    forma_texto = models.CharField(
+        "cómo va el texto", max_length=10, choices=FORMAS_TEXTO, default=RECUADRO
+    )
+    destino = models.CharField("lleva a", max_length=10, choices=DESTINOS, default=SIN_ENLACE)
+    etiqueta = models.ForeignKey(
+        "catalog.Etiqueta", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    grupo = models.ForeignKey(
+        "catalog.GrupoEtiqueta",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    tipo_producto = models.ForeignKey(
+        "catalog.Tipo", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    editorial = models.ForeignKey(
+        "catalog.Editorial", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    producto = models.ForeignKey(
+        "catalog.Producto", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    orden = models.PositiveIntegerField("orden", default=0)
+
+    class Meta:
+        verbose_name = "imagen de una sección"
+        verbose_name_plural = "imágenes de las secciones"
+        ordering = ["orden", "pk"]  # noqa: RUF012
+        constraints = [  # noqa: RUF012
+            models.CheckConstraint(
+                condition=models.Q(
+                    destino__in=("ninguno", "preventas"),
+                    etiqueta__isnull=True,
+                    grupo__isnull=True,
+                    tipo_producto__isnull=True,
+                    editorial__isnull=True,
+                    producto__isnull=True,
+                )
+                | models.Q(
+                    destino="etiqueta",
+                    etiqueta__isnull=False,
+                    grupo__isnull=True,
+                    tipo_producto__isnull=True,
+                    editorial__isnull=True,
+                    producto__isnull=True,
+                )
+                | models.Q(
+                    destino="grupo",
+                    etiqueta__isnull=True,
+                    grupo__isnull=False,
+                    tipo_producto__isnull=True,
+                    editorial__isnull=True,
+                    producto__isnull=True,
+                )
+                | models.Q(
+                    destino="tipo",
+                    etiqueta__isnull=True,
+                    grupo__isnull=True,
+                    tipo_producto__isnull=False,
+                    editorial__isnull=True,
+                    producto__isnull=True,
+                )
+                | models.Q(
+                    destino="editorial",
+                    etiqueta__isnull=True,
+                    grupo__isnull=True,
+                    tipo_producto__isnull=True,
+                    editorial__isnull=False,
+                    producto__isnull=True,
+                )
+                | models.Q(
+                    destino="producto",
+                    etiqueta__isnull=True,
+                    grupo__isnull=True,
+                    tipo_producto__isnull=True,
+                    editorial__isnull=True,
+                    producto__isnull=False,
+                ),
+                name="imagen_seccion_destino_con_su_dato",
+            ),
+            # Sin imagen, sólo una onomatopeya: la viñeta de color con el grito.
+            models.CheckConstraint(
+                condition=~models.Q(imagen="") | models.Q(forma_texto="grito"),
+                name="imagen_seccion_con_imagen_salvo_grito",
+            ),
+        ]
+
+    def __str__(self):
+        return self.titulo or self.texto or f"Imagen {self.orden}"
+
+    @property
+    def dato_del_destino(self):
+        campo = self.CAMPO_DEL_DESTINO.get(self.destino)
+        return getattr(self, campo) if campo else None

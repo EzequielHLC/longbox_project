@@ -528,3 +528,184 @@ Los casos de uso que se mueven: `CU-TDA-CMP` (alternativo nuevo), `CU-PED-EST` (
 - **Pagar en el local**: el pago sigue siendo online, por la pasarela o con puntos.
 - El retiro para invitados (D4).
 - Elegir otra sucursal: el local es uno.
+
+---
+---
+
+# Plan — `07` Tienda Online · novena parte: el escaparate vivo
+
+**Estado del plan:** Aprobado el 2026-11-11, con las recomendaciones de la sección 3 · **Fecha:** 2026-11-11
+
+**Pedido del responsable** (2026-11-11): la tienda «está muy plana y poco llamativa, hay que hacerla
+una experiencia». Que el diseño de la portada admita, además de las filas de productos, **filas o
+carruseles de fotos** que se ordenen igual que ellas, **una fila de botones con foto debajo de las
+novedades** que lleve directo a un grupo de productos, más imágenes y más animaciones. Inspiración:
+tiendas existentes, Viñeta Nocturna y la estética de Zenless Zone Zero (dos conceptos de Figma en
+`.contexto-ia/referencias-pantallas/`). Condición explícita: **se puede cambiar todo el diseño
+siempre que la funcionalidad construida quede igual o mejor.** El modo operativo no se toca.
+
+**Segunda vuelta del responsable** (2026-11-11, sobre la primera maqueta): vigilar que nada de lo
+que funciona se rompa (los botones de agregar al carrito, entre otros); **se admiten esquinas
+redondeadas, verde lima, desenfoques y animaciones si son coherentes**; quitar las cifras del
+hero («a un cliente no le interesa»); arreglar el pie; mejorar la barra de arriba con íconos; y
+sumar lo **retro, musical y de VHS** de la referencia.
+
+Antes del plan se armó una maqueta navegable con datos e imágenes reales del sistema, con los
+tokens y las fuentes del repositorio, que replica también la cáscara pública de hoy (encabezado,
+tarjeta, cajón del carrito, avisos, globo de ayuda y pie) con su comportamiento. Las decisiones
+visuales de este plan salen de su segunda versión.
+
+## La regla de forma y de color del escaparate
+
+Para que lo redondeado y el lima no queden sueltos, una sola regla:
+
+| | Los aparatos | Lo impreso |
+| --- | --- | --- |
+| **Qué es** | La barra de arriba, el televisor, los controles de cinta, la botonera, el riel, el globo de ayuda, el cajón del carrito | Portadas, tarjetas de producto, viñetas, fotos, títulos de sección, papel |
+| **Forma** | Redondeada (16px los contenedores, píldora los botones) | Recta, con cortes y sombras duras, como hoy |
+| **Color propio** | **Lima** para «encendido / reproduciendo / elegido» | El acento de siempre |
+| **Desenfoque** | Detrás de la barra fija y del telón del cajón | Nunca |
+
+El **naranja sigue siendo la acción** (agregar, reservar, comprar, buscar) en las dos familias.
+
+## Qué se tomó de las referencias, y qué no
+
+| De la referencia | Cómo entra en LongBox |
+| --- | --- |
+| El televisor retro con perillas y un collage de viñetas | El carrusel de banners pasa al hero, dentro de un **televisor** con pantalla en VHS («▶ PLAY · SP», contador, «CH 01»), perillas, botones de canal y controles de cinta; el cambio de banner es un **cambio de canal** con una banda de ruido |
+| La barra en pestañas: marca, botonera de íconos, el actual encendido | La **barra de arriba**: pestaña de marca, buscador en píldora y botonera de íconos con su nombre al pasar; el actual en lima |
+| Lo retro y musical: VHS, cintas, ecualizadores | El ticker pasa a **«En rotación»** con un ecualizador; los títulos de sección son **lomos de cinta** numerados; los accesos llevan rótulo de cinta («● CINTA 01»); la vitrina, controles de reproductor; el pie, **«■ STOP · Fin de la cinta»** y «◀◀ Rebobinar»; líneas de barrido muy tenues sobre todo el escaparate; el título del hero con el corrimiento de color de una cinta gastada |
+| La tarjeta de personaje: bloque de color en diagonal, número gigante rayado, figura que desborda las dos bandas, selector de miniaturas | La **vitrina**: un producto destacado con su número, la portada desbordando, y miniaturas para cambiarlo |
+| Retratos recortados en paralelogramo (selector de personajes) | Los **accesos con foto**: paneles inclinados que encastran |
+| El texto gigante cortado al pie de cada marco | El nombre de la tienda en contorno, detrás del hero, que se corre con el desplazamiento |
+| El riel lateral con el número de la sección y flechas | El **riel de secciones** en escritorio |
+| Las esquinas redondeadas y el verde lima | **Entran con una regla** (la tabla de arriba): sólo en los aparatos |
+| Los íconos, logos, personajes y nombres del juego | **No entran**: los íconos son los de `_iconos.html` más dos nuevos (inicio y pre-ventas), y nada remite a una marca (`identidad_visual.md`, «Inspiración, no copia») |
+
+## Lo que no se puede romper
+
+La cáscara pública de hoy, entera. Cada punto se verifica en el sistema con su prueba o su captura
+antes de cerrar cada paso:
+
+- **Barra de arriba:** la marca y el logo configurables; el buscador con sus sugerencias desde la
+  segunda letra, las flechas, Enter, Escape y el atajo «/»; el saldo de puntos del Cliente; el
+  carrito con su contador, que rebota al agregar, y que no aparece para el personal; el menú de
+  cuenta (correo, mis pedidos, mis puntos, mis datos, mi carrito, preguntas frecuentes, cerrar
+  sesión por POST) o «Ingresar»; la barra que se compacta al bajar.
+- **Tarjeta de producto:** los rótulos Disponible, Pre-venta y Sin stock; los carteles «¡TOMO 1!» y
+  «¡NOVEDAD!»; la tapa dibujada sin imagen; la oferta con el precio anterior tachado; la fecha de
+  llegada de la pre-venta; el botón **Agregar** o **Reservar** fuera del enlace, que no aparece sin
+  stock ni para el personal; la portada que vuela a la ficha.
+- **Al agregar:** el cajón del carrito con lo agregado, las unidades, el total, lo que falta para el
+  envío gratis, «Ir al carrito» y «Seguir comprando»; el aviso «Listo:»; y si el guion falla, el
+  formulario se envía como siempre.
+- **El resto:** el globo de preguntas frecuentes, que se pliega al bajar y no aparece sin
+  contenido; el ticker y el carrusel pausables; las filas con sus flechas y su barra de recorrido;
+  «Lo que se viene»; los mensajes.
+- **Pie:** el **botón de arrepentimiento** a la vista (Res. 424/2020); los accesos de la tienda; la
+  ayuda; el correo, el teléfono y las redes de la identidad visual; «Volver arriba».
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Qué cambia | Contratos |
+| --- | --- | --- |
+| `CU-CFG-FIL` Administrar Filas de la Portada (código del 2026-11-08, sin ficha todavía; `NUEVO-CO-23 guardarFilasDeLaPortada`) | Pasa de filas de productos a **secciones de la portada** de varios tipos, en un único orden (ambigüedad 1) | `NUEVO-CO-23`, ampliado |
+| `CU-TDA-POR` Consultar la Portada de la Tienda (sin ficha todavía) | Dibuja las secciones por tipo y en su orden; el hero suma el televisor | Sólo lectura |
+| `CU-CFG-BNC` Consultar Banners | **Ninguno de efecto.** La galería se ve en el televisor del hero en lugar de una sección propia; intervalo, «Anterior», «Siguiente», «Pausar», indicadores y movimiento reducido quedan como están | `CO-132`, sin cambios |
+| `CU-TDA-CAT` Consultar Catálogo Público | **Ninguno.** Los accesos y las imágenes llevan a filtros que el catálogo ya tiene (etiqueta, grupo, tipo, editorial, pre-venta) | `CO-176`, `CO-177`, sin cambios |
+| Agregar al carrito desde la tarjeta | La vitrina usa el mismo camino que las tarjetas | `CO-083`, sin cambios |
+
+**Total:** un contrato ampliado (todavía sin número definitivo) y ninguno modificado.
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `SeccionPortada` | **No** | Lo crea y **absorbe a `FilaPortada`**: tipo, título, antetítulo, orden, activa. Las filas de hoy pasan por migración de datos con su orden, título, imagen y estado |
+| `ImagenDeSeccion` | **No** | Lo crea: imagen (RNF-05), título, texto, destino (ambigüedad 4) y orden dentro de su sección |
+| `FilaPortada` | Sí | Se reemplaza; la tabla se quita en una segunda migración, después de copiar |
+| `Banner`, `IdentidadVisual` | Sí | Sólo los lee (el televisor; los textos del hero) |
+| `Etiqueta`, `GrupoEtiqueta`, `Tipo`, `Editorial`, `Producto` | Sí | Los lee: origen de las secciones de productos y destino de las imágenes |
+| `RegistroAuditoria` | Sí | Una acción nueva: «Modificación de las secciones de la portada». Los registros viejos conservan la suya |
+
+**Los tipos de sección.** Cada tipo cambia lo que el sistema muestra, así que es un campo y no
+una etiqueta (regla 3 del dominio):
+
+| Tipo | Qué es | Qué carga el Administrador |
+| --- | --- | --- |
+| **Productos** | La fila de hoy, que se recorre de costado, o la **vitrina** (campo *presentación*) | Etiqueta **o** grupo, como hoy |
+| **Accesos con foto** | De 3 a 8 paneles inclinados con foto, nombre y cuántos productos hay | Una imagen por acceso, con su nombre y su destino |
+| **Página de historieta** | De 3 a 6 viñetas de tamaños distintos, con recuadro de narración o globo | Una imagen por viñeta, con texto opcional y destino opcional |
+| **Cinta de fotos** | Fotos con marco que corren de costado, pausables | De 4 a 12 imágenes con su epígrafe |
+| **Panel destacado** | Una imagen grande y un llamado con botón, partido en diagonal | Una imagen, título, texto y destino |
+| **Recién llegados** · **Lo que se viene** | Las dos secciones de hoy | Nada: el sistema las arma. Se mueven y se apagan, no se borran |
+
+La restricción de hoy («etiqueta o grupo, nunca los dos») sigue en la base, ahora condicionada al
+tipo Productos. La cantidad de imágenes por tipo se valida en el servidor.
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Qué se necesita para destrabarla |
+| --- | --- | --- | --- |
+| 1 | **El caso de uso.** `CU-CFG-FIL` nació para filas de productos y su ficha no está escrita | **(a)** Se amplía y se renombra **«Administrar Secciones de la Portada»**, con el código **`CU-CFG-SEC`** (verificado libre contra los vigentes y los retirados); `CU-CFG-FIL` queda retirado sin haber llegado al documento. El contrato pasa a `guardarSeccionesDeLaPortada`. **(b)** Se conserva `CU-CFG-FIL` con su nombre y las secciones nuevas se describen como filas de otro tipo | **Recomiendo (a)**: «filas» deja de describir lo que hace, y renombrarlo ahora cuesta una línea de `CODIGOS.md`. El número del contrato se confirma con el responsable |
+| 2 | **El carrusel en el hero.** Hoy es una sección aparte debajo del ticker | **(a)** Pasa al televisor del hero, con todos sus controles; sin banners, el televisor muestra la portada destacada de hoy. **(b)** Queda donde está y el hero conserva sólo la portada destacada | **Recomiendo (a)**: hoy el hero es texto sobre un fondo vacío y el carrusel queda debajo del pliegue |
+| 3 | **El lima y la identidad configurable.** `TOKENS_VISUALES.md` reserva el lima (`--ok`) al modo operativo, y el mapa de colores (B-17-019) no tiene un rol para él | **(a)** Un rol nuevo, **«Aparatos encendidos»** (`--rol-encendido`), con el lima como valor inicial y elegible entre los colores de la paleta como los demás roles; el modo operativo sigue con su `--ok`. **(b)** El lima fijo, fuera de la identidad configurable | **Recomiendo (a)**: si el Administrador cambia la paleta, el lima no queda desentonando. Requiere la enmienda de los tokens (ambigüedad 8). *Las cifras del hero que se proponían acá se descartaron en la segunda vuelta* |
+| 4 | **El destino de una imagen** o de un acceso | **(a)** Una lista cerrada: etiqueta, grupo, tipo, editorial, pre-ventas, un producto o sin enlace; cada uno lleva al filtro del catálogo o a la ficha que ya existen, y el servidor rechaza cualquier otra cosa. **(b)** Una dirección libre | **Recomiendo (a)**: la restricción vive en el servidor y no hay enlaces rotos ni salidas a otros sitios |
+| 5 | **Un destino que no muestra nada** (etiqueta dada de baja, producto descatalogado, filtro sin productos visibles) | **(a)** Ese acceso o esa imagen no se dibuja, como la fila sin productos de hoy (decisión 2 de la tercera parte). **(b)** Se dibuja sin enlace | **Recomiendo (a)** para accesos y productos; las viñetas y fotos sin destino válido se muestran sin enlace |
+| 6 | **Texto alternativo** de las imágenes nuevas | **(a)** El título es obligatorio en accesos y en la cinta y sirve de alternativo; las viñetas sin texto son decorativas (`alt=""`). **(b)** Un campo propio de texto alternativo | **Recomiendo (a)** |
+| 7 | **Superficie de cada sección** (noche o papel) | **(a)** La alterna el sistema según la posición, como páginas de una revista. **(b)** La elige el Administrador | **Recomiendo (a)**: dos noches seguidas no pierden la unión diagonal ni la cinta |
+| 8 | **Enmiendas a la guía visual.** `TOKENS_VISUALES.md` prohíbe el radio, el lima en el público y el desenfoque fuera del `<dialog>`, y `identidad_visual.md` no admite animaciones fuera de su catálogo | Se piden, para que el responsable las agregue a los dos documentos: **la regla de aparatos e impresos** (radios `--radio-aparato` 16px y píldora; lima por `--rol-encendido`; desenfoque de 12px detrás de la barra fija); los patrones **barra de aparato**, **televisor**, **radio** (ticker con ecualizador), **lomo de cinta**, **vitrina con reproductor**, **acceso inclinado**, **página de viñetas**, **foto con cinta**, **riel de secciones** y **pie «fin de la cinta»**; las animaciones **`cambio-canal`** (la imagen entra por bandas en tres cuadros, `--dur-4`, `--curva-cuadro`; reducido: cambio instantáneo), **`banda-ruido`** (una franja de ruido cruza la pantalla una vez por cambio, 700ms; reducido: no ocurre), **`tracking`** (el título del hero se corre por bandas al pasar el puntero, como `titulo-glitch`; reducido: no ocurre), **`texto-deriva`** (atada al desplazamiento, nunca se mueve sola; reducido: quieta), **`vitrina-entra`** (la portada entra 40px desde la derecha, `--dur-3`; reducido: aparece) y **`cajon-entra`** (el cajón del carrito entra 40px desde la derecha, `--dur-3`). El ecualizador reutiliza `barras-carga`, la cinta de fotos `ticker` y la página `barrido-diagonal`; el ecualizador se detiene con la radio | **Aprobación de la lista**; mientras tanto se registra como agregado en la bitácora |
+| 9 | **Proporción del acento** (10 % de la pantalla) | **(a)** El bloque de color de la vitrina y la marca del acceso bajo el puntero cuentan; la vitrina usa el acento sólo en el bloque del número, y el resto en neutros. **(b)** Se relaja la regla para el escaparate | **Recomiendo (a)** |
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `SeccionPortada` e `ImagenDeSeccion`, la migración de datos desde `FilaPortada` y las dos secciones fijas | — | Todo lo demás los lee. Las pruebas de las filas de hoy tienen que seguir en verde sobre el modelo nuevo |
+| 2 | El gestor: «Secciones de la portada» con «Agregar sección» por tipo, la tarjeta de cada tipo y las imágenes de una sección como sub-tarjetas que también se arrastran | 1 | Mismo componente que hoy (B-07-010); el operativo no cambia de estilo |
+| 3 | La cáscara: la barra de arriba con la botonera de íconos, el pie, el globo de ayuda, el cajón del carrito y el rol `--rol-encendido` | — | Se ve en todas las pantallas de la tienda, no sólo en la portada; se verifica contra la lista de lo que no se puede romper |
+| 4 | La portada que dibuja por tipo y en orden; el hero con el televisor y el texto de fondo; la radio | 1, 3 | `CU-TDA-POR` |
+| 5 | Los cinco tipos nuevos en el escaparate: accesos, vitrina, página, cinta y panel | 4 | Uno por vez, cada uno con su captura en escritorio y a 390 px |
+| 6 | Lomos de cinta, riel de secciones, líneas de barrido y animaciones (ambigüedad 8) | 5 | Lo último: es lo que más se puede recortar si falta tiempo |
+| 7 | El hueco de papel debajo de «Recién llegados» cuando hay pocos productos | 4 | Se ve en la captura del estado actual |
+
+**Pruebas.** El contrato ampliado, por sus postcondiciones: secciones creadas, ordenadas, apagadas
+y borradas; imágenes con su destino; la auditoría. Las negativas: un destino fuera de la lista, un
+tipo con más o menos imágenes de las admitidas, una sección fija que se intenta borrar, una
+sección de productos con etiqueta y grupo a la vez, y que nada de lo que dibuja la portada sea un
+producto que el catálogo no mostraría. El rol equivocado entra por la dirección real del gestor.
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde aparece | Cómo se cubre |
+| --- | --- | --- |
+| **La entrega es el 15/11** y el documento está en pleno ciclo de sincronización | Todo el plan | Los pasos 1 a 5 son el núcleo; el 6 y el 7 se recortan si hace falta. El impacto en el documento es la ficha de un caso de uso que todavía no está escrita (ambigüedad 1) |
+| **Romper algo que funciona al cambiar la cáscara** (pasó en la primera maqueta con los botones de agregar) | Pasos 3 a 5 | La lista de lo que no se puede romper, punto por punto, con la suite de la tienda en verde y capturas del cajón, las sugerencias, el menú de cuenta y una tarjeta de cada estado, en escritorio y a 390 px. Las clases y los atributos `data-*` que leen los guiones de hoy no cambian de nombre |
+| Perder filas configuradas al migrar | Paso 1 | Migración de datos con prueba sobre filas existentes; la tabla vieja se quita en una migración aparte, y se verifica a mano sobre la base de desarrollo |
+| Romper la portada pública, que está verificada | Paso 3 | La suite de la tienda corre sin cambios de comportamiento; capturas antes y después |
+| Que una paleta configurada deje ilegible algo nuevo | Pasos 3 y 4 | Los componentes nuevos leen sólo semánticos y roles del mapa de colores (`--acento`, `--rol-*`), nunca `--senal` directo; captura con una paleta distinta de la inicial |
+| Muchas consultas en la portada (una cuenta por acceso, una lista por sección) | Paso 3 | Cuentas agrupadas en una consulta por tipo de destino; tope de secciones activas; prueba que cuenta consultas |
+| Movimiento que no se puede detener | Pasos 4 a 6 | La radio, la cinta de fotos y el televisor se pausan con el puntero, el foco y un botón; `prefers-reduced-motion` los apaga (regla 7) |
+| Que las líneas de barrido o el corrimiento de color dificulten leer | Paso 6 | Las líneas van a 10 % de opacidad y nunca sobre texto corrido; el corrimiento de color sólo en el título del hero; se revisa el contraste con ellas puestas |
+| La hoja de estilos vieja en caché del navegador | Pasos 3 a 7 | La hoja sube de versión, como en el plan 00 de interfaz |
+
+---
+
+## 6. Fuera de alcance
+
+- La ficha de producto, el catálogo y la cuenta del Cliente con el lenguaje nuevo: es la segunda
+  etapa natural de este pedido y conviene planearla aparte, después de la entrega.
+- Secciones con vigencia (que aparezcan y desaparezcan solas por fecha).
+- Video en las secciones.
+- Editar la portada arrastrando sobre la propia portada: el gestor sigue en el operativo.
+- Fotos subidas por los clientes.

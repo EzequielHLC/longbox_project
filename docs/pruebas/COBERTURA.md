@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-11-07, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-11-11, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 

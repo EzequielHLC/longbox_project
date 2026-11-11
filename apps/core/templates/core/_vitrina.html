@@ -1,0 +1,84 @@
+{% load moneda %}
+{% comment %}
+La vitrina (plan 07, novena parte): un producto destacado por vez, con el
+número de su lugar rayado sobre un bloque en diagonal, la portada que desborda
+el marco y los datos de la tarjeta —estado, precio con la oferta, llegada de la
+pre-venta y el mismo botón de agregar (`_agregar_rapido.html`)—. Debajo, un
+reproductor con una miniatura por producto para elegir cuál se ve.
+
+Sin guion se ve sólo el primero y el reproductor no aparece: los demás siguen en
+la grilla o en el catálogo.
+
+    {% include "core/_vitrina.html" with productos=seccion.vitrina numero=seccion.numero %}
+{% endcomment %}
+<div class="vitrina" data-vitrina>
+  <div class="vitrina__escena">
+    {% for producto in productos %}
+      {% with volumen=producto.productoeditorial.volumen ficha=producto.pk %}
+      <div class="vitrina__diapositiva" data-vitrina-diapositiva{% if not forloop.first %} hidden{% endif %}>
+        {% comment %}
+        El casete recortado (pedido del responsable): suelto sobre la escena, con
+        el borde blanco de una figura recortada de revista y un trozo de cinta
+        adhesiva. Sin el título del tomo, que ya está a la derecha: la etiqueta
+        lleva la marca de la tienda, el lado y el número de pista.
+        {% endcomment %}
+        <div class="vitrina__bloque" aria-hidden="true">
+          <span class="casete casete--recortado">
+            <span class="casete__tornillos"><i></i><i></i><i></i><i></i></span>
+            <span class="casete__etiqueta">
+              <span class="casete__franjas"></span>
+              <span class="casete__marca">{% firstof identidad_tienda.nombre_tienda "Longbox" %} · mixtape</span>
+              <span class="casete__lado">A</span>
+              <b class="casete__pista">{{ forloop.counter|stringformat:"02d" }}</b>
+              <span class="casete__renglones"></span>
+              <span class="casete__duracion">C-{{ productos|length|stringformat:"02d" }}0</span>
+            </span>
+            <span class="casete__ventana"><i class="casete__carrete"></i><i class="casete__cinta"></i><i class="casete__carrete"></i></span>
+            <span class="casete__base"><i></i><i></i></span>
+            <span class="cinta-adhesiva cinta-adhesiva--casete"></span>
+          </span>
+          <span class="vitrina__pista osd">▶ Pista {{ forloop.counter|stringformat:"02d" }} / {{ productos|length|stringformat:"02d" }}</span>
+        </div>
+        <span class="vitrina__banda" aria-hidden="true"></span>
+        <a href="{% url 'core:tienda_producto' producto.pk %}" class="vitrina__tapa" tabindex="-1" aria-hidden="true">
+          {% if producto.cartel %}{% if producto.cartel != "¡NOVEDAD!" or not sin_novedad %}<span class="cartel-tomo{% if producto.cartel == "¡TOMO 1!" %} cartel-tomo--primero{% endif %}">{{ producto.cartel }}</span>{% endif %}{% endif %}
+          {% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" data-portada="{{ producto.pk }}">{% endif %}
+        </a>
+        <div class="vitrina__datos superficie-noche">
+          {% if producto.estado_publico == "pre_venta" %}
+            <span class="rotulo-estado rotulo-estado--pre-venta"><span>Pre-venta</span></span>
+          {% else %}
+            <span class="rotulo-estado rotulo-estado--disponible">Disponible</span>
+          {% endif %}
+          <h3><a href="{% url 'core:tienda_producto' producto.pk %}">{{ producto.titulo }}{% if volumen or volumen == 0 %} #{{ volumen }}{% endif %}</a></h3>
+          <span class="vitrina__editorial">{% firstof producto.productoeditorial.editorial.nombre producto.productonoeditorial.marca %} · {{ producto.tipo.nombre }}</span>
+          {% if producto.estado_publico == "pre_venta" %}
+            {% with llegada=producto.productoeditorial.llegada_vigente %}
+              {% if llegada %}<span class="tarjeta-producto__llegada">Llega el <span class="datos">{{ llegada|date:"d/m" }}</span></span>{% endif %}
+            {% endwith %}
+          {% endif %}
+          <span class="vitrina__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</span>
+          <div class="vitrina__acciones">
+            {% include "core/_agregar_rapido.html" with producto=producto volumen=volumen clase="tarjeta-producto__agregar vitrina__agregar" %}
+            <a href="{% url 'core:tienda_producto' producto.pk %}" class="boton-seccion">Ver la ficha</a>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+  {% if productos|length > 1 %}
+    <div class="reproductor" data-vitrina-controles hidden>
+      <div class="reproductor__caja" role="group" aria-label="Elegir el producto destacado">
+        <button type="button" class="reproductor__boton" data-vitrina-mover="-1" title="Anterior">{% include "_iconos.html" with icono="anterior" %}<span class="sr-only">Anterior</span></button>
+        {% for producto in productos %}
+          <button type="button" class="miniatura" data-vitrina-elegir="{{ forloop.counter0 }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}" title="{{ producto.titulo }}">
+            {% if producto.portada %}<img src="{{ producto.portada.url }}" alt="" loading="lazy">{% endif %}
+            <span class="sr-only">{{ producto.titulo }}</span>
+          </button>
+        {% endfor %}
+        <button type="button" class="reproductor__boton" data-vitrina-mover="1" title="Siguiente">{% include "_iconos.html" with icono="adelante" %}<span class="sr-only">Siguiente</span></button>
+      </div>
+    </div>
+  {% endif %}
+</div>

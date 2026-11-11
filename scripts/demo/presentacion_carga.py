@@ -11,7 +11,9 @@ resistencia).
   contraseña, así siguen entrando igual), la identidad visual y los parámetros.
 - **cargar** lo vuelve a crear en la base nueva y suma el catálogo real de Ivrea
   (sólo Ivrea, nada sintético), el proveedor, unos correos de novedades, unas
-  ofertas, tres banners armados con portadas y las filas de la portada.
+  ofertas, tres banners armados con portadas y las secciones de la portada: una
+  fila por demografía, los accesos con foto y un panel de pre-ventas (plan 07,
+  novena parte).
 
 Lo raspado se limpia al cargar (`limpias()`, `sinopsis()`): fuera las páginas que
 agrupan una franquicia, la cabecera comercial y el código de la galería del sitio
@@ -281,8 +283,9 @@ def cargar(origen):
         Banner,
         ConfiguracionSistema,
         ContenidoFAQ,
-        FilaPortada,
         IdentidadVisual,
+        ImagenDeSeccion,
+        SeccionPortada,
     )
     from apps.suppliers import services
     from apps.suppliers.models import Proveedor
@@ -450,32 +453,68 @@ def cargar(origen):
             estado=Oferta.ACTIVA,
         )
 
+    # Recién llegados y Lo que se viene ya están (los crea la migración, en los
+    # lugares 1 y 2): los accesos van entre ellas y las filas.
+    atajos = SeccionPortada.objects.create(
+        tipo=SeccionPortada.ACCESOS, titulo="¿Qué andás buscando?", antetitulo="Atajos", orden=2
+    )
+    SeccionPortada.objects.filter(tipo=SeccionPortada.SE_VIENE).update(orden=3)
     filas = []
-    for orden, demografia in enumerate(DEMOGRAFIAS, start=1):
-        fila = FilaPortada(etiqueta=etiquetas[("Demografía", demografia)], orden=orden)
+    for indice, demografia in enumerate(DEMOGRAFIAS):
+        orden = 4 + indice
+        etiqueta = etiquetas[("Demografía", demografia)]
+        fila = SeccionPortada(etiqueta=etiqueta, orden=orden)
         rutas = [DATOS / "portadas" / s["portada_archivo"] for s in destacadas(demografia, 8)]
-        if orden == 1:
+        if indice == 0:
             # Una fila con imagen propia; las demás muestran el abanico de portadas.
             fila.imagen = _titular(rutas[:3], demografia.lower())
             fila.save()
         filas.append(fila)
-        Banner.objects.create(imagen=_banner(rutas, demografia.lower()), posicion=orden - 1)
+        Banner.objects.create(imagen=_banner(rutas, demografia.lower()), posicion=indice)
+        ImagenDeSeccion.objects.create(
+            seccion=atajos,
+            imagen=ContentFile(rutas[0].read_bytes(), name=f"acceso-{demografia.lower()}.webp"),
+            titulo=demografia,
+            destino=ImagenDeSeccion.ETIQUETA,
+            etiqueta=etiqueta,
+            orden=indice + 1,
+        )
+    ImagenDeSeccion.objects.create(
+        seccion=atajos,
+        imagen=ContentFile(rutas[1].read_bytes(), name="acceso-preventas.webp"),
+        titulo="Pre-ventas",
+        destino=ImagenDeSeccion.PREVENTAS,
+        orden=len(DEMOGRAFIAS) + 1,
+    )
     filas.append(
-        FilaPortada(
+        SeccionPortada(
             etiqueta=etiquetas[("Estado de la serie", "Serie completa")],
             titulo="Series completas",
-            orden=len(filas) + 1,
+            orden=4 + len(filas),
         )
     )
-    filas.append(FilaPortada(grupo=grupos["Género"], titulo="BL y Yuri", orden=len(filas) + 1))
-    FilaPortada.objects.bulk_create([f for f in filas if f.pk is None])
+    filas.append(SeccionPortada(grupo=grupos["Género"], titulo="BL y Yuri", orden=4 + len(filas)))
+    SeccionPortada.objects.bulk_create([f for f in filas if f.pk is None])
+    panel = SeccionPortada.objects.create(
+        tipo=SeccionPortada.PANEL,
+        antetitulo="Pre-ventas",
+        titulo="Reservá lo que se viene",
+        texto="Asegurá tu ejemplar. Te avisamos cuando llega al local.",
+        texto_boton="Ver las pre-ventas",
+        orden=4 + len(filas),
+    )
+    ImagenDeSeccion.objects.create(
+        seccion=panel,
+        imagen=ContentFile(Banner.objects.last().imagen.read(), name="panel-preventas.webp"),
+        destino=ImagenDeSeccion.PREVENTAS,
+    )
 
     print(
         f"Cargado: {Usuario.objects.count()} cuentas, {len(series)} series, {len(altas)} tomos "
         f"de Ivrea ({len(procesadas)} con portada propia), "
         f"{preventas} pre-ventas con su pedido en camino, "
         f"{Oferta.objects.count()} ofertas, {Banner.objects.count()} banners, "
-        f"{FilaPortada.objects.count()} filas de portada"
+        f"{SeccionPortada.objects.count()} secciones de portada"
     )
 
 

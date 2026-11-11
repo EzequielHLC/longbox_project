@@ -321,6 +321,7 @@ GANCHOS_SIN_ESTILO = {
     "cifra-derivada",  # el guion del alta de lotes escribe ahí el valor calculado
     "linea-carrito__datos",  # columna de la línea: la reparte la grilla del padre
     "cuenta__principal",  # columna de «Mi cuenta»: la reparte la grilla del padre
+    "tarjeta-seccion",  # gancho de las pruebas del gestor de secciones de la portada
 }
 
 
@@ -330,6 +331,7 @@ def test_ninguna_plantilla_usa_una_clase_que_la_hoja_no_define():
     simplemente no dibuja nada."""
     raiz = Path(settings.BASE_DIR)
     hojas = [raiz / "static/css/longbox.css", raiz / "static/css/tokens.css"]
+    hojas.append(raiz / "static/css/escaparate.css")  # plan 07, novena parte
     hojas.append(raiz / "apps/core/templates/core/tienda.css")
     definidas = set(
         re.findall(r"\.([a-zA-Z][\w-]*)", "".join(h.read_text(encoding="utf-8") for h in hojas))

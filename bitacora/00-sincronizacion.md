@@ -57,3 +57,46 @@ filas «Sin registro», con la decisión que piden.
 **Contradicciones.** No hay contradicciones entre entradas sin resolver: en todos los casos la
 posterior dice qué reemplaza. La más grande: B-09-008 retira `DevolucionFisica`, que R-09-001 había
 decidido conservar.
+
+### Nota · 2026-11-08 · Segunda pasada: decisiones del responsable y códigos nuevos
+
+**Documento comparado.** El mismo de la nota anterior: versión 13 de la Lista de Cambios, archivo del
+2026-09-30. La pasada completa el inventario del 2026-10-30 con las 13 entradas del 2026-11-07 y
+verifica las decisiones abiertas de ciclos anteriores contra lo construido.
+
+**Regla nueva del ciclo.** Lo construido es final: el documento de análisis se corrige para describirlo.
+
+**Decisiones del responsable.**
+
+- **Códigos de caso de uso**, asignados por Claude por delegación del responsable, con la forma
+  `CU-###-!!!`: `CU-RST-RSP` (respuesta del proveedor), `CU-CFG-FIL` (filas de la portada),
+  `CU-CAJ-HIS` (cierres de caja anteriores), `CU-TDA-POR` (portada pública), `CU-TDA-PFR` (preguntas
+  frecuentes públicas), `CU-CLI-POL` (política de privacidad) y `CU-REP-PAN` (panel del Administrador,
+  con `CO-219`). Se conservan `CU-RST-PRC`, `CU-RST-PDA`, `CU-RST-LLE` (C-23) y los once `CU-AVI-*`
+  (B-19-001). «Volver a anunciar» queda como flujo alternativo del alta, sin código.
+- **Se retiran**, y sus códigos no se reutilizan: `CU-RST-ING` (lo cubre `CU-RST-LLE`), `CU-DEV-PRU`,
+  `CO-222`, `CO-223`, `CO-224`, `CO-225` y `CO-226`; el estado «Pendiente de verificación» de
+  `TransaccionPago` y `CU-CAJ-CIE` A1, que ningún flujo usa; DME-16.
+- **Reservados sin construir:** `CO-230` y `CO-231` (ingreso con Google).
+- **RNF-09** declara la excepción: suscribirse a un aviso de reposición, cancelarlo, canjear puntos y
+  anular el canje no se auditan (`CO-075`, `CO-076`, `CO-103`, `CO-104`), como ya hace el sistema.
+- **Lo construido sin registro entra al documento**: los cierres de caja anteriores y la política de
+  privacidad, con caso de uso, DSS y contratos; los datos que el modelo no declaraba, al modelo; el
+  despliegue en la VM, al alcance.
+- **Casos de prueba:** `CP-MOD-AAA-NN`.
+- Las decisiones de ciclos anteriores (M6, N3, N7, `CO-155` en PA-04, la sección 5) se resuelven como
+  lo construido.
+
+**Pendiente de confirmar:** la numeración de los contratos nuevos desde `CO-233`, y la de requisitos,
+invariantes y máquinas de estado a continuación de las vigentes.
+
+**Para quien programe.** Ningún código cambia por esta pasada. Los códigos nuevos todavía no están en
+`.contexto-ia/`: llegan cuando el responsable aplique las correcciones y se regenere el contexto.
+
+### Nota · 2026-11-08 · Confirmación de la numeración
+
+El responsable confirmó lo que la nota anterior dejaba pendiente: los contratos nuevos se numeran desde
+`CO-233`, sin reutilizar huecos; siguen `RF-28` a `RF-30`, `RNF-13`, `I-24` a `I-26`, `DME-19` y
+`DME-20`. Confirmó también que la relación entre cada caso de prueba y sus pruebas vive en la ficha del
+caso, que `CO-228` es un paso de `CU-ALT-NOV` E2, que los contracargos de MercadoPago son un límite
+declarado y que `CU-TDA-POR`, `CU-TDA-PFR` y `CU-REP-PAN` son casos de uso.

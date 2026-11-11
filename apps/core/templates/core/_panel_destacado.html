@@ -1,0 +1,18 @@
+{% comment %}
+El panel destacado (plan 07, novena parte): una imagen grande y un llamado con
+su botón, partido en diagonal. El título de la sección es el del panel. Sin
+destino válido, el panel se muestra sin botón (ambigüedad 5).
+
+    {% include "core/_panel_destacado.html" with seccion=seccion imagen=seccion.panel %}
+{% endcomment %}
+<div class="panel-destacado">
+  <div class="panel-destacado__imagen">
+    {% if imagen.imagen %}<img src="{{ imagen.imagen.url }}" alt="{{ imagen.titulo }}" loading="lazy">{% endif %}
+  </div>
+  <div class="panel-destacado__texto superficie-noche">
+    {% if seccion.antetitulo_visible %}<p class="antetitulo">— {{ seccion.antetitulo_visible }}</p>{% endif %}
+    <h2 id="titulo-seccion-{{ seccion.numero }}">{{ seccion.titulo_visible }}</h2>
+    {% if seccion.texto %}<p>{{ seccion.texto }}</p>{% endif %}
+    {% if imagen.url %}<div><a href="{{ imagen.url }}" class="boton-primario">{% firstof seccion.texto_boton "Ver más" %}</a></div>{% endif %}
+  </div>
+</div>

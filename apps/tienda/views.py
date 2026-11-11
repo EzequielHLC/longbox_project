@@ -88,14 +88,18 @@ class AgregarView(CarritoMixin, View):
                 linea = next(
                     (item for item in consultado.lineas if item.producto.pk == producto.pk), None
                 )
+                volumen = getattr(getattr(producto, "productoeditorial", None), "volumen", None)
                 datos["carrito"] = {
-                    "titulo": producto.titulo,
+                    "titulo": producto.titulo + (f" #{volumen}" if volumen is not None else ""),
                     "precio": pesos(linea.precio) if linea else "",
                     "portada": producto.portada.url if producto.portada else "",
                     "total": pesos(consultado.total),
                     "falta_envio_gratis": (
                         pesos(consultado.envio.falta) if consultado.envio.falta else ""
                     ),
+                    # El medidor del envío gratis del carrito lateral (plan 07, novena parte).
+                    "envio_porcentaje": consultado.envio.porcentaje,
+                    "envio_gratis": consultado.envio.gratis,
                 }
             return JsonResponse(datos, status=400 if nivel == "error" else 200)
         {"error": messages.error, "atencion": messages.warning, "exito": messages.success}[nivel](

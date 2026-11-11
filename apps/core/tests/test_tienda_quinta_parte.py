@@ -151,7 +151,8 @@ def test_lo_que_se_viene_trae_las_pre_ventas_la_mas_proxima_primero(client):
     )
     ProductoFactory(titulo="Ya está", stock=4)
 
-    se_viene = client.get(URL_PORTADA).context["se_viene"]
+    secciones = client.get(URL_PORTADA).context["secciones"]
+    se_viene = next(s for s in secciones if s.tipo == "se_viene")
 
     assert [p.titulo for p in se_viene.productos] == ["Cerca", "Lejos"]
     assert "orden=llegada" in se_viene.ver_todo
@@ -160,7 +161,8 @@ def test_lo_que_se_viene_trae_las_pre_ventas_la_mas_proxima_primero(client):
 def test_sin_pre_ventas_no_hay_lo_que_se_viene(client):
     ProductoFactory(stock=4)
 
-    assert client.get(URL_PORTADA).context["se_viene"] is None
+    secciones = client.get(URL_PORTADA).context["secciones"]
+    assert "se_viene" not in [s.tipo for s in secciones]
 
 
 def test_carteles_de_tomo_1_y_de_novedad(client):
@@ -229,9 +231,12 @@ def test_CO083_agregar_desde_la_tarjeta_responde_json_con_las_unidades(client, c
         "mensaje": "Se agregó «Berserk» en el carrito.",
         "unidades": 2,
     }
-    # Plan 00 de interfaz, U2: lo que muestra el carrito lateral.
-    assert carrito["titulo"] == "Berserk"
+    # Plan 00 de interfaz, U2: lo que muestra el carrito lateral. Con el tomo y el
+    # avance del envío gratis (plan 07, novena parte).
+    assert carrito["titulo"] == "Berserk #1"
     assert carrito["total"] and carrito["precio"]
+    assert 0 <= carrito["envio_porcentaje"] <= 100
+    assert carrito["envio_gratis"] is False
     assert LineaCarrito.objects.get(producto=producto).cantidad == 2
 
 
@@ -309,13 +314,17 @@ def test_el_ticker_nombra_cada_serie_una_vez(client):
     assert respuesta.content.decode().count("<span>Llegó Blue Exorcist</span>") == 1
 
 
-def test_el_menu_de_la_tienda_es_todo_texto(client):
-    """B-07-027: los enlaces del menú público son rótulos, sin íconos."""
+def test_el_menu_de_la_tienda_es_una_botonera_de_iconos_con_su_nombre(client):
+    """B-07-027 decía «rótulos, sin íconos»; el responsable pidió íconos el
+    2026-11-11 (plan 07, novena parte; B-07-046). Cada destino lleva su ícono y
+    su nombre, que se lee igual aunque se muestre al pasar el puntero."""
     contenido = client.get(URL_CATALOGO).content.decode()
-    menu = contenido.partition('<nav aria-label="Tienda">')[2].partition("</nav>")[0]
+    menu = contenido.partition('<nav aria-label="Tienda" class="botonera">')[2]
+    menu = menu.partition("</nav>")[0]
 
-    assert "Carrito" in menu
-    assert "<svg" not in menu.partition("<details")[0]
+    for nombre in ("Inicio", "Catálogo", "Pre-ventas", "Carrito"):
+        enlace = menu.partition(f">{nombre}</span>")[0].rpartition("<a ")[2]
+        assert "<svg" in enlace, nombre
 
 
 # ---------------------------------------------------------------------------

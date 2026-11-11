@@ -12,7 +12,7 @@ from django.core.validators import MaxValueValidator
 
 from apps.core import colores, imagenes
 from apps.core.contraste import MINIMO_TEXTO, contraste
-from apps.core.models import Banner, FilaPortada, IdentidadVisual
+from apps.core.models import Banner, IdentidadVisual, ImagenDeSeccion, SeccionPortada
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -252,18 +252,51 @@ class IdentidadVisualForm(forms.ModelForm):
         return datos
 
 
-class FilaPortadaForm(forms.ModelForm):
-    """Una fila de la portada: una etiqueta o un grupo entero (B-07-009).
+def _opciones_de_etiquetas(etiqueta_actual=None, grupo_actual=None, texto_grupo="{}"):
+    """Grupos enteros y etiquetas por grupo, vigentes, para un desplegable agrupado.
 
-    El origen es un solo desplegable con las dos clases de opción, agrupadas:
-    primero los grupos enteros y después las etiquetas de cada grupo. Sólo se
-    ofrecen las vigentes; la que ya tiene la fila se sigue ofreciendo aunque se
-    haya dado de baja, para que la edición no la pierda en silencio.
+    La etiqueta o el grupo que ya tiene el registro se sigue ofreciendo aunque se
+    haya dado de baja, para que la edición no lo pierda en silencio.
+    """
+    from apps.catalog.models import Etiqueta, GrupoEtiqueta
+
+    grupos = GrupoEtiqueta.objects.filter(activo=True) | GrupoEtiqueta.objects.filter(
+        pk=grupo_actual or 0
+    )
+    etiquetas = Etiqueta.objects.filter(activa=True, grupo__activo=True) | Etiqueta.objects.filter(
+        pk=etiqueta_actual or 0
+    )
+    opciones = [
+        (
+            "Grupos enteros",
+            [(f"g:{g.pk}", texto_grupo.format(g.nombre)) for g in grupos.order_by("nombre")],
+        )
+    ]
+    por_grupo = {}
+    for etiqueta in etiquetas.select_related("grupo").order_by("grupo__nombre", "nombre"):
+        por_grupo.setdefault(etiqueta.grupo.nombre, []).append(
+            (f"e:{etiqueta.pk}", etiqueta.nombre)
+        )
+    opciones.extend(por_grupo.items())
+    return opciones
+
+
+class SeccionPortadaForm(forms.ModelForm):
+    """Una sección de la portada (`CU-CFG-SEC`; plan 07, novena parte).
+
+    El tipo se elige al agregarla y después no cambia: cambiar una cinta de fotos
+    por una fila de productos dejaría imágenes huérfanas. Lo que pide cada tipo
+    lo valida el servidor, no la pantalla: el origen, sólo en las de productos;
+    la presentación en vitrina, también; las fijas no se borran.
+
+    El origen de las de productos es un solo desplegable con las dos clases de
+    opción, agrupadas: primero los grupos enteros y después las etiquetas de
+    cada grupo (B-07-009).
     """
 
-    origen = forms.ChoiceField(label="Etiqueta o grupo")
-    # La imagen de la tarjeta titular (B-07-010). Archivo y «quitar» van por
-    # separado: el control de Django que junta los dos no se dibuja con `_campo`.
+    origen = forms.ChoiceField(label="Etiqueta o grupo", required=False)
+    # La imagen de la tarjeta titular de una fila (B-07-010). Archivo y «quitar»
+    # van por separado: el control de Django que junta los dos no se dibuja con `_campo`.
     imagen = forms.FileField(
         label="Imagen del título",
         required=False,
@@ -272,58 +305,89 @@ class FilaPortadaForm(forms.ModelForm):
     quitar_imagen = forms.BooleanField(label="Quitar la imagen", required=False)
 
     class Meta:
-        model = FilaPortada
-        fields = ["titulo", "orden", "activa"]
+        model = SeccionPortada
+        fields = [
+            "tipo",
+            "presentacion",
+            "titulo",
+            "antetitulo",
+            "texto",
+            "texto_boton",
+            "orden",
+            "activa",
+        ]
         # El orden lo pone la pantalla al arrastrar las tarjetas (B-07-010).
-        widgets = {"orden": forms.HiddenInput(attrs={"data-orden": ""})}  # noqa: RUF012
+        widgets = {  # noqa: RUF012
+            "orden": forms.HiddenInput(attrs={"data-orden": ""}),
+            "tipo": forms.Select(attrs={"data-tipo-seccion": ""}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from apps.catalog.models import Etiqueta, GrupoEtiqueta
-
         # El interruptor ya dice «Activa» o «Inactiva»: el rótulo no lo repite.
         self.fields["activa"].label = "Estado"
+        self.fields["presentacion"].required = False
+        # Las fijas existen siempre: no se agregan desde «Agregar sección».
+        self.fields["tipo"].choices = [
+            (valor, nombre)
+            for valor, nombre in SeccionPortada.TIPOS
+            if valor not in SeccionPortada.FIJAS or valor == self.instance.tipo
+        ]
         actual = self.instance
-        grupos = GrupoEtiqueta.objects.filter(activo=True) | GrupoEtiqueta.objects.filter(
-            pk=actual.grupo_id or 0
-        )
-        etiquetas = Etiqueta.objects.filter(
-            activa=True, grupo__activo=True
-        ) | Etiqueta.objects.filter(pk=actual.etiqueta_id or 0)
-        opciones = [("", "Elegí una etiqueta o un grupo")]
-        opciones.append(
-            (
-                "Grupos enteros",
-                [
-                    (f"g:{g.pk}", f"{g.nombre} (todas sus etiquetas)")
-                    for g in grupos.order_by("nombre")
-                ],
-            )
-        )
-        por_grupo = {}
-        for etiqueta in etiquetas.select_related("grupo").order_by("grupo__nombre", "nombre"):
-            por_grupo.setdefault(etiqueta.grupo.nombre, []).append(
-                (f"e:{etiqueta.pk}", etiqueta.nombre)
-            )
-        opciones.extend(por_grupo.items())
-        self.fields["origen"].choices = opciones
+        self.fields["origen"].choices = [
+            ("", "Elegí una etiqueta o un grupo"),
+            *_opciones_de_etiquetas(
+                actual.etiqueta_id, actual.grupo_id, "{} (todas sus etiquetas)"
+            ),
+        ]
         if actual.etiqueta_id:
             self.initial["origen"] = f"e:{actual.etiqueta_id}"
         elif actual.grupo_id:
             self.initial["origen"] = f"g:{actual.grupo_id}"
 
+    @property
+    def tipo_elegido(self):
+        """El tipo con que se dibuja la tarjeta: el guardado, o el elegido al agregarla."""
+        if self.instance.pk:
+            return self.instance.tipo
+        if self.is_bound:
+            return self.data.get(self.add_prefix("tipo")) or SeccionPortada.PRODUCTOS
+        return self.initial.get("tipo", SeccionPortada.PRODUCTOS)
+
+    def clean_tipo(self):
+        tipo = self.cleaned_data["tipo"]
+        if self.instance.pk and tipo != self.instance.tipo:
+            raise forms.ValidationError("El tipo de una sección no se cambia: agregue otra.")
+        return tipo
+
     def clean_imagen(self):
         archivo = self.cleaned_data.get("imagen")
         return _imagen(archivo) if archivo else None
 
-    def clean_origen(self):
-        clase, _, pk = self.cleaned_data["origen"].partition(":")
-        if clase not in ("e", "g") or not pk.isdigit():
-            raise forms.ValidationError("Elegí una etiqueta o un grupo de la lista.")
-        return clase, int(pk)
+    def clean(self):
+        datos = super().clean()
+        tipo = datos.get("tipo")
+        if tipo is None:
+            return datos
+        if tipo == SeccionPortada.PRODUCTOS:
+            clase, _, pk = (datos.get("origen") or "").partition(":")
+            if clase not in ("e", "g") or not pk.isdigit():
+                self.add_error("origen", "Elegí una etiqueta o un grupo de la lista.")
+            else:
+                datos["origen"] = (clase, int(pk))
+            datos["presentacion"] = datos.get("presentacion") or SeccionPortada.FILA
+        else:
+            datos["origen"] = None
+            datos["presentacion"] = SeccionPortada.FILA
+        if datos.get("DELETE") and self.instance.fija:
+            raise forms.ValidationError(
+                f"«{self.instance.titulo_visible}» no se puede quitar: se puede apagar."
+            )
+        return datos
 
     def save(self, commit=True):
-        clase, pk = self.cleaned_data["origen"]
+        origen = self.cleaned_data.get("origen")
+        clase, pk = origen if origen else (None, None)
         self.instance.etiqueta_id = pk if clase == "e" else None
         self.instance.grupo_id = pk if clase == "g" else None
         if self.cleaned_data.get("imagen"):
@@ -337,7 +401,181 @@ class FilaPortadaForm(forms.ModelForm):
         return bool(self.cleaned_data.get("imagen") or self.cleaned_data.get("quitar_imagen"))
 
 
-# Sin formulario vacío fijo: «Agregar fila» copia `empty_form` (B-07-010).
-FilasPortadaFormSet = forms.modelformset_factory(
-    FilaPortada, form=FilaPortadaForm, extra=0, can_delete=True
+class _SeccionesBase(forms.BaseModelFormSet):
+    def clean(self):
+        super().clean()
+        borradas = [f for f in self.deleted_forms if f.instance.pk and f.instance.fija]
+        if borradas:
+            raise forms.ValidationError("Recién llegados y Lo que se viene no se quitan.")
+
+
+# Sin formulario vacío fijo: «Agregar sección» copia `empty_form` (B-07-010).
+SeccionesPortadaFormSet = forms.modelformset_factory(
+    SeccionPortada,
+    form=SeccionPortadaForm,
+    formset=_SeccionesBase,
+    extra=0,
+    can_delete=True,
+)
+
+
+class ImagenDeSeccionForm(forms.ModelForm):
+    """Una imagen de una sección: un acceso, una viñeta, una foto o la del panel.
+
+    «Lleva a» es una lista cerrada (ambigüedad 4): sin enlace, las pre-ventas,
+    un grupo, una etiqueta, un tipo, una editorial o un producto, que se indica
+    por su código porque es lo que lo identifica (regla 1 del dominio).
+    Cualquier otro valor se rechaza, y la base exige además que el destino
+    tenga su dato.
+    """
+
+    lleva_a = forms.ChoiceField(label="Lleva a", required=False)
+    codigo_producto = forms.CharField(
+        label="Código del producto",
+        required=False,
+        max_length=40,
+        help_text="El código de la ficha del producto.",
+    )
+    imagen = forms.FileField(
+        label="Imagen",
+        required=False,
+        help_text="Se guarda en WebP, con 1920 px en el lado mayor.",
+    )
+
+    class Meta:
+        model = ImagenDeSeccion
+        fields = ["titulo", "texto", "forma_texto", "orden"]
+        widgets = {"orden": forms.HiddenInput(attrs={"data-orden-imagen": ""})}  # noqa: RUF012
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.catalog.models import Editorial, Tipo
+
+        actual = self.instance
+        tipos = Tipo.objects.filter(activo=True) | Tipo.objects.filter(
+            pk=actual.tipo_producto_id or 0
+        )
+        editoriales = Editorial.objects.filter(activa=True) | Editorial.objects.filter(
+            pk=actual.editorial_id or 0
+        )
+        self.fields["lleva_a"].choices = [
+            (ImagenDeSeccion.SIN_ENLACE, "Sin enlace"),
+            (ImagenDeSeccion.PREVENTAS, "Las pre-ventas"),
+            (ImagenDeSeccion.PRODUCTO, "Un producto (por su código)"),
+            *_opciones_de_etiquetas(actual.etiqueta_id, actual.grupo_id, "{} (grupo entero)"),
+            ("Tipos de producto", [(f"t:{t.pk}", t.nombre) for t in tipos.order_by("nombre")]),
+            ("Editoriales", [(f"d:{e.pk}", e.nombre) for e in editoriales.order_by("nombre")]),
+        ]
+        prefijos = {
+            ImagenDeSeccion.ETIQUETA: "e",
+            ImagenDeSeccion.GRUPO: "g",
+            ImagenDeSeccion.TIPO: "t",
+            ImagenDeSeccion.EDITORIAL: "d",
+        }
+        if actual.destino in prefijos:
+            dato = actual.dato_del_destino
+            self.initial["lleva_a"] = f"{prefijos[actual.destino]}:{dato.pk}"
+        else:
+            self.initial["lleva_a"] = actual.destino
+        if actual.producto_id:
+            self.initial["codigo_producto"] = actual.producto.codigo
+
+    def clean_imagen(self):
+        archivo = self.cleaned_data.get("imagen")
+        return _imagen(archivo) if archivo else None
+
+    def clean(self):
+        from apps.catalog.models import Editorial, Etiqueta, GrupoEtiqueta, Producto, Tipo
+
+        datos = super().clean()
+        elegido = datos.get("lleva_a") or ImagenDeSeccion.SIN_ENLACE
+        destino = {"destino": elegido}
+        clase, _, pk = elegido.partition(":")
+        modelos = {
+            "e": (ImagenDeSeccion.ETIQUETA, "etiqueta", Etiqueta),
+            "g": (ImagenDeSeccion.GRUPO, "grupo", GrupoEtiqueta),
+            "t": (ImagenDeSeccion.TIPO, "tipo_producto", Tipo),
+            "d": (ImagenDeSeccion.EDITORIAL, "editorial", Editorial),
+        }
+        if clase in modelos and pk.isdigit():
+            valor, campo, modelo = modelos[clase]
+            objeto = modelo.objects.filter(pk=int(pk)).first()
+            if objeto is None:
+                self.add_error("lleva_a", "Elegí un destino de la lista.")
+            destino = {"destino": valor, campo: objeto}
+        elif elegido == ImagenDeSeccion.PRODUCTO:
+            codigo = (datos.get("codigo_producto") or "").strip()
+            producto = Producto.objects.filter(codigo__iexact=codigo).first() if codigo else None
+            if producto is None:
+                self.add_error(
+                    "codigo_producto",
+                    (
+                        "No hay ningún producto con ese código."
+                        if codigo
+                        else "Indique el código del producto."
+                    ),
+                )
+            destino["producto"] = producto
+        elif elegido not in (ImagenDeSeccion.SIN_ENLACE, ImagenDeSeccion.PREVENTAS):
+            self.add_error("lleva_a", "Elegí un destino de la lista.")
+        datos["destino"] = destino
+        tiene_imagen = datos.get("imagen") or self.instance.imagen
+        if not tiene_imagen and datos.get("forma_texto") != ImagenDeSeccion.GRITO:
+            self.add_error("imagen", "Falta la imagen. Sólo una onomatopeya puede ir sin imagen.")
+        if datos.get("forma_texto") == ImagenDeSeccion.GRITO and not datos.get("texto"):
+            self.add_error("texto", "Una onomatopeya necesita su texto.")
+        return datos
+
+    def save(self, commit=True):
+        destino = self.cleaned_data["destino"]
+        for campo in ("etiqueta", "grupo", "tipo_producto", "editorial", "producto"):
+            setattr(self.instance, campo, destino.get(campo))
+        self.instance.destino = destino["destino"]
+        if self.cleaned_data.get("imagen"):
+            self.instance.imagen = self.cleaned_data["imagen"]
+        return super().save(commit=commit)
+
+    @property
+    def cambio_la_imagen(self):
+        return bool(self.cleaned_data.get("imagen"))
+
+
+class _ImagenesBase(forms.BaseInlineFormSet):
+    """Las imágenes de una sección, dentro de la tarjeta de la sección.
+
+    El formulario vacío usa `__imagen__` y no `__prefix__`: la tarjeta de una
+    sección nueva también es un formulario vacío, y el guion que la copia
+    reemplaza `__prefix__` en todo su contenido.
+    """
+
+    @property
+    def empty_form(self):
+        formulario = self.form(
+            auto_id=self.auto_id,
+            prefix=self.add_prefix("__imagen__"),
+            empty_permitted=True,
+            use_required_attribute=False,
+            **self.get_form_kwargs(None),
+            renderer=self.renderer,
+        )
+        self.add_fields(formulario, None)
+        return formulario
+
+    def cantidad(self):
+        """Cuántas quedan al guardar: las que no se quitan y no están vacías."""
+        return sum(
+            1
+            for f in self.forms
+            if not (self.can_delete and self._should_delete_form(f))
+            and (f.instance.pk or f.has_changed())
+        )
+
+
+ImagenesDeSeccionFormSet = forms.inlineformset_factory(
+    SeccionPortada,
+    ImagenDeSeccion,
+    form=ImagenDeSeccionForm,
+    formset=_ImagenesBase,
+    extra=0,
+    can_delete=True,
 )

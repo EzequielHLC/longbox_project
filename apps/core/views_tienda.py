@@ -374,6 +374,9 @@ class FichaPublicaView(View):
                 "serie": _mas_de_la_serie(producto),
                 "producto": producto,
                 "en_carrito": en_carrito,
+                # Lo que todavía se puede agregar sin pasarse del stock: el tope
+                # del selector de cantidad, que avisa al llegar (plan 07, novena parte).
+                "quedan": max(0, producto.stock - en_carrito),
                 "reserva": _reserva(request, producto, en_carrito),
                 "editorial": getattr(producto, "productoeditorial", None),
                 "aviso": _aviso(request, producto),
@@ -474,33 +477,173 @@ def recien_llegados(cantidad=8):
 PRODUCTOS_POR_FILA = 12
 
 
-def filas_de_portada():
-    """Las filas de la portada, cada una con sus productos (plan 07, tercera parte).
+def _fila_de_productos(seccion):
+    """Los productos de una sección de productos, o `None` si no tiene nada visible.
 
-    Sólo las activas, con su etiqueta o su grupo vigentes, y con algún producto
-    visible: una fila vacía no se dibuja.
+    Sólo con su etiqueta o su grupo vigentes, hasta doce, de lo más nuevo a lo
+    más viejo (tercera parte, decisiones 1, 2 y 5).
     """
-    from apps.core.models import FilaPortada
+    if not seccion.disponible:
+        return None
+    productos = visibles()
+    if seccion.etiqueta_id:
+        productos = productos.filter(etiquetas=seccion.etiqueta_id)
+    else:
+        productos = productos.filter(etiquetas__grupo=seccion.grupo_id, etiquetas__activa=True)
+    productos = list(productos.distinct().order_by("-creado_en", "-pk")[:PRODUCTOS_POR_FILA])
+    if not productos:
+        return None
+    seccion.productos = _marcar(productos)
+    seccion.antetitulo_visible = seccion.antetitulo or (
+        seccion.etiqueta.grupo.nombre if seccion.etiqueta_id else "Explorá"
+    )
+    filtro = (
+        f"etiqueta={seccion.etiqueta_id}" if seccion.etiqueta_id else f"grupo={seccion.grupo_id}"
+    )
+    seccion.ver_todo = f"{reverse('core:tienda_catalogo')}?{filtro}&estado=todos"
+    return seccion
 
-    filas = []
-    for fila in FilaPortada.objects.filter(activa=True).select_related("etiqueta__grupo", "grupo"):
-        if not fila.disponible:
-            continue
-        productos = visibles()
-        if fila.etiqueta_id:
-            productos = productos.filter(etiquetas=fila.etiqueta_id)
+
+def destino_de(imagen):
+    """Adónde lleva una imagen, y qué productos hay ahí.
+
+    Devuelve `(dirección, productos)`. Sin enlace, `(None, None)`. Si el destino
+    dejó de existir para el cliente —la etiqueta, el grupo, el tipo o la
+    editorial se dieron de baja, o el producto ya no se muestra—, `None`: la
+    portada no lo dibuja como enlace (ambigüedad 5).
+    """
+    from apps.core.models import ImagenDeSeccion as I
+
+    catalogo = reverse("core:tienda_catalogo")
+    if imagen.destino == I.SIN_ENLACE:
+        return None, None
+    if imagen.destino == I.PREVENTAS:
+        return f"{catalogo}?estado=pre_venta&orden={LLEGADA}", visibles().filter(
+            estado=Producto.PRE_VENTA
+        )
+    if imagen.destino == I.PRODUCTO:
+        producto = imagen.producto
+        if producto.estado not in ESTADOS_VISIBLES or producto.solo_adultos:
+            return None
+        return reverse("core:tienda_producto", args=[producto.pk]), None
+    if imagen.destino == I.ETIQUETA:
+        if not (imagen.etiqueta.activa and imagen.etiqueta.grupo.activo):
+            return None
+        filtro, productos = f"etiqueta={imagen.etiqueta_id}", visibles().filter(
+            etiquetas=imagen.etiqueta_id
+        )
+    elif imagen.destino == I.GRUPO:
+        if not imagen.grupo.activo:
+            return None
+        filtro, productos = f"grupo={imagen.grupo_id}", visibles().filter(
+            etiquetas__grupo=imagen.grupo_id, etiquetas__activa=True
+        )
+    elif imagen.destino == I.TIPO:
+        if not imagen.tipo_producto.activo:
+            return None
+        filtro, productos = f"tipo={imagen.tipo_producto_id}", visibles().filter(
+            tipo=imagen.tipo_producto_id
+        )
+    else:
+        if not imagen.editorial.activa:
+            return None
+        filtro, productos = f"editorial={imagen.editorial_id}", visibles().filter(
+            productoeditorial__editorial=imagen.editorial_id
+        )
+    return f"{catalogo}?{filtro}&estado=todos", productos.distinct()
+
+
+def _con_imagenes(seccion):
+    """Las imágenes de la sección que se dibujan, cada una con su enlace.
+
+    Un acceso sin destino válido o sin productos no se dibuja: un atajo que no
+    lleva a nada es un callejón (ambigüedad 5). Una viñeta, una foto o el panel
+    con el destino caído se muestran sin enlace. Sin imágenes, la sección no se
+    dibuja.
+    """
+    from apps.core.models import SeccionPortada
+
+    imagenes = []
+    for imagen in seccion.imagenes.all():
+        destino = destino_de(imagen)
+        if seccion.tipo == SeccionPortada.ACCESOS:
+            if destino is None or destino[0] is None:
+                continue
+            if destino[1] is not None:
+                imagen.cantidad = destino[1].count()
+                if not imagen.cantidad:
+                    continue
+        imagen.url = destino[0] if destino else None
+        imagenes.append(imagen)
+    if not imagenes:
+        return None
+    if seccion.tipo == SeccionPortada.PANEL:
+        seccion.panel = imagenes[0]
+    if seccion.tipo == SeccionPortada.CINTA:
+        # Cada vuelta de la cinta tiene que llenar una pantalla ancha: con pocas
+        # fotos, se repiten. Las copias no se anuncian (`_cinta_fotos.html`).
+        seccion.repeticiones = range(-(-FOTOS_POR_VUELTA // len(imagenes)))
+    seccion.lista = imagenes
+    return seccion
+
+
+def secciones_de_portada(recien_llegados_de_hoy):
+    """Las secciones activas de la portada, en su orden, listas para dibujar.
+
+    Cada una sabe su número («01»), su superficie —noche y papel alternados como
+    páginas de una revista (ambigüedad 7)— y lo que dibuja. Una sección que no
+    tiene nada para mostrar se saltea y no consume número.
+    """
+    from apps.core.models import SeccionPortada
+
+    secciones = (
+        SeccionPortada.objects.filter(activa=True)
+        .select_related("etiqueta__grupo", "grupo")
+        .prefetch_related(
+            "imagenes__etiqueta__grupo",
+            "imagenes__grupo",
+            "imagenes__tipo_producto",
+            "imagenes__editorial",
+            "imagenes__producto",
+        )
+    )
+    salida = []
+    for seccion in secciones:
+        if seccion.tipo == SeccionPortada.RECIEN_LLEGADOS:
+            seccion.productos = recien_llegados_de_hoy
+            seccion.vitrina = [p for p in recien_llegados_de_hoy if p.portada][:VITRINA]
+            elegidos = {p.pk for p in seccion.vitrina}
+            seccion.grilla = [p for p in recien_llegados_de_hoy if p.pk not in elegidos]
+            seccion.antetitulo_visible = seccion.antetitulo or "Estantería"
+            lista = seccion
+        elif seccion.tipo == SeccionPortada.SE_VIENE:
+            se_viene = lo_que_se_viene()
+            lista = None
+            if se_viene:
+                seccion.productos = se_viene.productos
+                seccion.ver_todo = se_viene.ver_todo
+                seccion.antetitulo_visible = seccion.antetitulo or se_viene.antetitulo
+                lista = seccion
+        elif seccion.tipo == SeccionPortada.PRODUCTOS:
+            lista = _fila_de_productos(seccion)
+            if lista and seccion.presentacion == SeccionPortada.VITRINA:
+                seccion.vitrina = [p for p in seccion.productos if p.portada][:VITRINA]
         else:
-            productos = productos.filter(etiquetas__grupo=fila.grupo_id, etiquetas__activa=True)
-        productos = list(productos.distinct().order_by("-creado_en", "-pk")[:PRODUCTOS_POR_FILA])
-        if productos:
-            fila.productos = _marcar(productos)
-            fila.antetitulo = fila.etiqueta.grupo.nombre if fila.etiqueta_id else "Explorá"
-            filtro = (
-                f"etiqueta={fila.etiqueta_id}" if fila.etiqueta_id else f"grupo={fila.grupo_id}"
-            )
-            fila.ver_todo = f"{reverse('core:tienda_catalogo')}?{filtro}&estado=todos"
-            filas.append(fila)
-    return filas
+            lista = _con_imagenes(seccion)
+            if lista:
+                seccion.antetitulo_visible = seccion.antetitulo
+        if lista is None:
+            continue
+        seccion.numero = f"{len(salida) + 1:02d}"
+        seccion.superficie = "noche" if len(salida) % 2 == 0 else "papel"
+        salida.append(seccion)
+    return salida
+
+
+# Cuántos productos caben en una vitrina: los que el selector muestra en una línea.
+VITRINA = 6
+# Cuántas fotos lleva como mínimo cada vuelta de la cinta, para que no quede hueco.
+FOTOS_POR_VUELTA = 10
 
 
 def lo_que_se_viene(cantidad=PRODUCTOS_POR_FILA):

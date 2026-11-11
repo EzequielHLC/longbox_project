@@ -25,7 +25,8 @@ invitado o cliente, nunca el personal. Sin stock, no hay botón.
       {% else %}
         <span class="rotulo-estado rotulo-estado--disponible">Disponible</span>
       {% endif %}
-      {% if producto.cartel %}<span class="cartel-tomo{% if producto.cartel == "¡TOMO 1!" %} cartel-tomo--primero{% endif %}">{{ producto.cartel }}</span>{% endif %}
+      {# En «Recién llegados» todo es nuevo: ahí «¡NOVEDAD!» sobra (`sin_novedad`). #}
+      {% if producto.cartel %}{% if producto.cartel != "¡NOVEDAD!" or not sin_novedad %}<span class="cartel-tomo{% if producto.cartel == "¡TOMO 1!" %} cartel-tomo--primero{% else %} cartel-tomo--novedad{% endif %}">{{ producto.cartel }}</span>{% endif %}{% endif %}
       {% if producto.portada %}
         <img src="{{ producto.portada.url }}" alt="Portada de {{ producto.titulo }}" loading="lazy" data-portada="{{ producto.pk }}">
       {% else %}
@@ -48,16 +49,6 @@ invitado o cliente, nunca el personal. Sin stock, no hay botón.
       <span class="tarjeta-producto__precio">{% if producto.oferta_aplicada %}<s class="precio-anterior"><span class="sr-only">Antes </span>{{ producto.precio|pesos }}</s> {% endif %}{{ producto.precio_visible|pesos }}</span>
     </div>
   </a>
-  {% if unidades_en_carrito is not None and producto.estado_publico != "agotado" %}
-    <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="tarjeta-producto__agregar" data-agregar-rapido>
-      {% csrf_token %}
-      <input type="hidden" name="cantidad" value="1">
-      <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-      <button type="submit" title="{% if producto.estado_publico == 'pre_venta' %}Reservar{% else %}Agregar al carrito{% endif %}">
-        {% include "_iconos.html" with icono="bolsa" %}<span>{% if producto.estado_publico == "pre_venta" %}Reservar{% else %}Agregar{% endif %}</span>
-        <span class="sr-only"> «{{ producto.titulo }}{% if volumen or volumen == 0 %} #{{ volumen }}{% endif %}» al carrito</span>
-      </button>
-    </form>
-  {% endif %}
+  {% include "core/_agregar_rapido.html" with producto=producto volumen=volumen clase="tarjeta-producto__agregar" %}
 </article>
 {% endwith %}

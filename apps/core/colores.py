@@ -25,17 +25,23 @@ SECUNDARIO = "secundario"
 ACENTO = "acento"
 NEUTRO = "neutro"
 FONDO = "fondo"
+# El color de los aparatos encendidos del escaparate (plan 07, novena parte):
+# la barra, el televisor, los controles. No es de la paleta: es el lima del
+# sistema, y el Administrador lo puede cambiar por uno de la paleta.
+LIMA = "lima"
 NOMBRES = {
     PRIMARIO: "Primario",
     SECUNDARIO: "Secundario",
     ACENTO: "Acento",
     NEUTRO: "Neutro (sin color)",
     FONDO: "Fondo",
+    LIMA: "Lima",
 }
 OPCIONES = [(clave, nombre) for clave, nombre in NOMBRES.items()]
 
 NOCHE = "#0A0A0C"
 BLANCO = "#FFFFFF"
+LIMA_HEX = "#B6F23C"  # `--ok` en tokens.css
 MINIMO_TEXTO_GRANDE = 3
 
 PALETA = (PRIMARIO, SECUNDARIO, ACENTO)
@@ -98,6 +104,14 @@ ROLES = (
         FONDO,
         (FONDO, *PALETA),
     ),
+    Rol(
+        "encendido",
+        "Aparatos encendidos",
+        "La barra de arriba, el televisor y los controles: lo encendido, lo que se "
+        "reproduce y lo elegido.",
+        LIMA,
+        (LIMA, *PALETA),
+    ),
 )
 POR_CLAVE = {rol.clave: rol for rol in ROLES}
 
@@ -108,6 +122,7 @@ def _hex(identidad, opcion):
         SECUNDARIO: identidad.color_secundario,
         ACENTO: identidad.color_acento,
         FONDO: identidad.color_fondo,
+        LIMA: LIMA_HEX,
     }.get(opcion)
 
 
@@ -115,6 +130,8 @@ def _referencia(opcion):
     """La variable de la paleta: así la vista previa la cambia en vivo."""
     if opcion == NEUTRO:
         return "var(--texto-fuerte)"
+    if opcion == LIMA:
+        return "var(--ok)"
     return f"var(--tienda-{opcion})"
 
 

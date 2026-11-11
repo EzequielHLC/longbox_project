@@ -27,7 +27,9 @@ urlpatterns = [
     # El contenido de la tienda (CU-CFG-FAQ, BN*, VIS).
     path("configuracion/faq/", contenido.FaqView.as_view(), name="faq_editor"),
     path("configuracion/banners/", contenido.BannerListaView.as_view(), name="banner_lista"),
-    path("configuracion/portada/", contenido.FilasPortadaView.as_view(), name="filas_portada"),
+    path(
+        "configuracion/portada/", contenido.SeccionesPortadaView.as_view(), name="secciones_portada"
+    ),
     path("configuracion/banners/nuevo/", contenido.BannerCrearView.as_view(), name="banner_crear"),
     path(
         "configuracion/banners/<int:pk>/",

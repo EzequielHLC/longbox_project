@@ -1,0 +1,2329 @@
+/* =====================================================================
+   El escaparate vivo (plan 07, novena parte): Viñeta Nocturna + videoclub.
+
+   Sólo la carga la cáscara pública (`base_publico.html`) y todo va bajo
+   `.modo-publico`: el mostrador no cambia.
+
+   La regla que ordena esta hoja: los APARATOS —la barra de arriba, el
+   televisor, la botonera, los controles de cinta, el riel, el globo de ayuda—
+   son redondeados y usan `--rol-encendido` (lima) para «encendido /
+   reproduciendo / elegido»; lo IMPRESO —portadas, tarjetas, viñetas, fotos,
+   títulos— sigue recto, con cortes y sombras duras. La acción (agregar,
+   comprar, buscar) sigue siendo `--rol-boton` y el acento sigue siendo el de
+   la identidad configurable: con otra paleta, la tienda acompaña.
+   ===================================================================== */
+
+.modo-publico {
+  /* El color de los aparatos encendidos. La identidad visual lo reemplaza
+     cuando el Administrador elige otro (rol «Aparatos encendidos»). */
+  --rol-encendido: var(--ok);
+  --rol-encendido-sobre: var(--noche);
+  --radio-aparato: 16px;
+  --radio-control: 12px;
+  --radio-pildora: 999px;
+}
+
+/* Las líneas de barrido de una pantalla vieja, muy tenues, sobre todo el
+   escaparate. Nunca tapan la lectura: 10 % de noche, una línea cada tres. */
+.modo-publico::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.1) 0 1px, transparent 1px 3px);
+}
+
+.modo-publico .osd {
+  font: 500 0.75rem / 1 var(--fuente-datos);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------
+   La barra de arriba: pestaña de marca, buscador en píldora y botonera.
+   Sobre la barra, un velo con desenfoque: el contenido pasa por debajo.
+   --------------------------------------------------------------------- */
+.modo-publico .encabezado-publico {
+  background: color-mix(in srgb, var(--rol-encabezado) 78%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgb(255 255 255 / 0.06);
+}
+.modo-publico .encabezado-publico__barra { gap: var(--esp-3); min-height: 76px; }
+.modo-publico .encabezado-publico--compacto .encabezado-publico__barra { min-height: 64px; }
+
+.modo-publico .pestana-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-3);
+  height: 52px;
+  padding: 0 var(--esp-5) 0 var(--esp-2);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--asfalto);
+  font: italic 800 1.375rem / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  color: var(--blanco);
+}
+.modo-publico .pestana-marca::before { content: none; }
+.modo-publico .pestana-marca img { max-height: 36px; border-radius: 8px; }
+.pestana-marca__insignia {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: italic 900 1.25rem / 1 var(--fuente-display);
+  box-shadow: 2px 2px 0 var(--blanco);
+  transform: rotate(-6deg);
+  transition: transform var(--dur-2) var(--curva-resorte);
+}
+.pestana-marca:hover .pestana-marca__insignia { transform: rotate(6deg) scale(1.08); }
+
+/* El buscador deja el marco sesgado por una píldora: es un aparato. */
+.modo-publico .buscador-publico {
+  height: 52px;
+  max-width: 560px;
+  padding: 0 6px 0 var(--esp-4);
+  border: var(--trazo) var(--control);
+  border-radius: var(--radio-pildora);
+  background: var(--hormigon);
+  transition: border-color var(--dur-1) var(--curva-golpe);
+}
+.modo-publico .buscador-publico::before { content: none; }
+.modo-publico .buscador-publico:hover { border-color: var(--tiza); }
+.modo-publico .buscador-publico:focus-within { border-color: var(--rol-encendido); box-shadow: 0 0 0 1px var(--rol-encendido); }
+.modo-publico .buscador-publico input[type="search"] { color: var(--blanco); }
+.modo-publico .buscador-publico__ir {
+  align-self: center;
+  height: 40px;
+  padding-inline: var(--esp-5);
+  border-radius: var(--radio-pildora);
+  background: var(--rol-boton);
+  color: var(--rol-boton-sobre);
+  transition: background-color var(--dur-1) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe);
+}
+.modo-publico .buscador-publico__ir::before { content: none; }
+.modo-publico .buscador-publico__ir:hover,
+.modo-publico .buscador-publico__ir:focus-visible { background: var(--rol-boton-vivo); color: var(--rol-boton-sobre); }
+.modo-publico .buscador-publico .sugerencias-capa { top: calc(100% + var(--esp-2)); }
+
+/* La botonera: un ícono por destino, el actual encendido. */
+.modo-publico .encabezado-publico nav.botonera {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  padding: 0 6px;
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--asfalto);
+}
+.modo-publico .encabezado-publico nav.botonera :is(a, summary)::after { content: none; }
+.modo-publico .boton-aparato,
+.modo-publico .encabezado-publico nav .boton-aparato {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio-control);
+  background: none;
+  color: var(--tiza);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.modo-publico .boton-aparato .icono { width: 20px; height: 20px; }
+.modo-publico .boton-aparato:hover { background: var(--hormigon); color: var(--blanco); }
+.modo-publico .encabezado-publico nav .boton-aparato[aria-current="page"],
+.modo-publico .menu-de-cuenta[open] > summary.boton-aparato {
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+}
+/* El nombre del destino, en un globo debajo del ícono al pasar o con foco. */
+.boton-aparato__nombre {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 70;
+  padding: 5px var(--esp-2);
+  border-radius: 6px;
+  background: var(--blanco);
+  color: var(--noche);
+  font: 700 0.6875rem / 1 var(--fuente-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition: opacity var(--dur-1) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe);
+}
+.boton-aparato:hover > .boton-aparato__nombre,
+.boton-aparato:focus-visible > .boton-aparato__nombre { opacity: 1; transform: translate(-50%, 0); }
+.menu-de-cuenta[open] > summary > .boton-aparato__nombre { opacity: 0; }
+/* En los botones del borde derecho el globo se ancla a la derecha: centrado,
+   se saldría de la pantalla (y, aunque invisible, sumaría una barra horizontal). */
+.modo-publico .encabezado-publico__carrito > .boton-aparato__nombre,
+.modo-publico .menu-de-cuenta > summary > .boton-aparato__nombre { left: auto; right: 0; transform: translateY(-4px); }
+.modo-publico .encabezado-publico__carrito:hover > .boton-aparato__nombre,
+.modo-publico .encabezado-publico__carrito:focus-visible > .boton-aparato__nombre,
+.modo-publico .menu-de-cuenta > summary:hover > .boton-aparato__nombre,
+.modo-publico .menu-de-cuenta > summary:focus-visible > .boton-aparato__nombre { transform: none; }
+.botonera__separador { width: 1px; height: 24px; margin-inline: 4px; background: var(--cable); }
+/* La cantidad del carrito, como una insignia sobre el ícono. */
+.modo-publico .encabezado-publico .boton-aparato > .contador {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0 4px;
+  border: 2px solid var(--asfalto);
+  border-radius: 9px;
+  font-size: 0.625rem;
+  line-height: 14px;
+  transform: none;
+}
+.modo-publico .encabezado-publico .encabezado-publico__puntos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 var(--esp-3);
+  border-radius: var(--radio-control);
+  color: var(--rol-encendido);
+  font: 700 0.8125rem / 1 var(--fuente-datos);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.modo-publico .encabezado-publico__puntos .icono { width: 16px; height: 16px; }
+.modo-publico .encabezado-publico__puntos .contador { margin: 0; padding: 0; background: none; color: inherit; font: inherit; transform: none; }
+.modo-publico .encabezado-publico__puntos:hover { background: var(--hormigon); }
+.modo-publico .encabezado-publico .menu-de-cuenta > summary.boton-aparato { border: 0; }
+.modo-publico .menu-de-cuenta__panel { right: -6px; top: calc(100% + var(--esp-4)); box-shadow: 6px 6px 0 var(--acento); }
+.modo-publico .encabezado-publico nav .botonera__ingresar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  height: 40px;
+  padding: 0 var(--esp-4);
+  border-radius: var(--radio-control);
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+  font: 700 0.75rem / 1 var(--fuente-display);
+  letter-spacing: var(--tracking-rotulo);
+  text-transform: uppercase;
+}
+.modo-publico .encabezado-publico nav .botonera__ingresar .icono { width: 18px; height: 18px; }
+.modo-publico .encabezado-publico nav .botonera__ingresar:hover { background: color-mix(in oklch, var(--rol-encendido), var(--blanco) 20%); }
+@media (max-width: 860px) {
+  .modo-publico .encabezado-publico__barra { flex-wrap: wrap; min-height: 0; padding-block: var(--esp-2); }
+  .modo-publico .pestana-marca { height: 44px; padding-right: var(--esp-3); gap: var(--esp-2); font-size: 1.1rem; }
+  .modo-publico .pestana-marca__insignia { width: 28px; height: 28px; font-size: 1rem; }
+  .modo-publico .encabezado-publico nav.botonera { height: 44px; gap: 0; padding: 0 4px; margin-left: auto; }
+  .modo-publico .boton-aparato,
+  .modo-publico .encabezado-publico nav .boton-aparato { width: 38px; height: 34px; }
+  .modo-publico .encabezado-publico nav .boton-aparato--escritorio,
+  .modo-publico .botonera__separador,
+  .modo-publico .encabezado-publico__puntos .icono,
+  .modo-publico .encabezado-publico__puntos > span:last-child { display: none; }
+  .modo-publico .encabezado-publico .encabezado-publico__puntos { padding: 0 6px; }
+  .modo-publico .buscador-publico { height: 44px; }
+  .modo-publico .buscador-publico__ir { height: 34px; }
+  .modo-publico .encabezado-publico nav .botonera__ingresar { height: 34px; padding: 0 var(--esp-3); }
+}
+
+/* ---------------------------------------------------------------------
+   El hero: el título y el televisor, sobre el nombre de la tienda gigante.
+   --------------------------------------------------------------------- */
+.portada-tienda__fondo {
+  position: absolute;
+  left: 0;
+  bottom: -1vw;
+  white-space: nowrap;
+  pointer-events: none;
+  font: italic 900 clamp(7rem, 19vw, 19rem) / 0.8 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.08);
+}
+/* Se corre con el desplazamiento, nunca solo (`texto-deriva`). */
+@supports (animation-timeline: view()) {
+  .portada-tienda__fondo { animation: texto-deriva linear both; animation-timeline: view(); }
+}
+@media (min-width: 900px) {
+  .modo-publico .portada-tienda > .columna-publica { grid-template-columns: 5fr 7fr; }
+}
+.modo-publico .portada-tienda > .columna-publica > * { min-width: 0; }
+/* El corrimiento de color de una cinta gastada, sólo en el título del hero. */
+.modo-publico .portada-tienda .titulo-mega {
+  text-shadow: -3px 0 color-mix(in srgb, var(--acento) 55%, transparent), 3px 0 color-mix(in srgb, var(--rol-encendido) 45%, transparent);
+}
+.portada-tienda__tele {
+  position: relative;
+  animation: portada-entra var(--dur-5) var(--curva-golpe) calc(6 * var(--escalonado)) both;
+}
+.portada-tienda__tele::before {
+  content: "";
+  position: absolute;
+  right: -10%;
+  top: -16%;
+  z-index: -1;
+  width: 60%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, var(--acento) 2.2px, transparent 2.8px) 0 0 / 14px 14px;
+  clip-path: circle(50%);
+  opacity: 0.5;
+}
+/* El cartel, pegado en la carcasa arriba de las perillas, como una etiqueta de
+   alquiler: no tapa la pantalla ni la esquina del aparato. */
+.portada-tienda__tele > .sticker {
+  position: absolute;
+  z-index: 3;
+  left: -18px;
+  top: -20px;
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  box-shadow: 3px 3px 0 var(--noche);
+  transform: rotate(5deg);
+}
+@media (max-width: 720px) { .portada-tienda__tele > .sticker { left: -6px; top: -18px; } }
+
+/* El televisor: un aparato. Pantalla con su rótulo, perillas y mandos. */
+.modo-publico .tele {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  border: var(--trazo-grueso) var(--blanco);
+  border-radius: 22px;
+  background: var(--asfalto);
+  box-shadow: 10px 10px 0 var(--acento);
+  color: var(--tiza);
+  text-decoration: none;
+}
+.modo-publico .tele--fija { transition: transform var(--dur-2) var(--curva-golpe), box-shadow var(--dur-2) var(--curva-golpe); }
+.modo-publico .tele--fija:hover { transform: translate(-3px, -3px); box-shadow: 13px 13px 0 var(--acento); }
+.tele__pantalla {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: var(--trazo-fuerte) var(--noche);
+  border-radius: 14px;
+  background: var(--noche);
+}
+.modo-publico .tele .carrusel__marco { position: absolute; inset: 0; aspect-ratio: auto; border: 0; box-shadow: none; }
+.modo-publico .tele .carrusel__imagen { aspect-ratio: auto; }
+.modo-publico .tele .carrusel__imagen--entra { animation: cambio-canal var(--dur-4) var(--curva-cuadro) both; }
+.tele__portada { width: 100%; height: 100%; object-fit: contain; padding: var(--esp-3); }
+.tele__barrido {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px);
+}
+.tele__ruido {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 18%;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.35) 0 2px, transparent 2px 7px), rgb(255 255 255 / 0.06);
+}
+.tele__ruido--pasa { animation: banda-ruido 700ms linear 1; }
+.tele__osd,
+.tele__osd-pie {
+  position: absolute;
+  left: 14px;
+  color: var(--blanco);
+  text-shadow: 2px 2px 0 var(--noche);
+  pointer-events: none;
+}
+.tele__osd { right: 14px; top: 12px; display: flex; justify-content: space-between; }
+.tele__osd b { font-weight: 500; color: var(--rol-encendido); }
+.tele__osd-pie { bottom: 12px; }
+.tele__perillas { display: grid; align-content: space-between; justify-items: center; padding: var(--esp-2) 0; }
+.perilla {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: var(--trazo-grueso) var(--blanco);
+  border-radius: 50%;
+  background: var(--noche);
+  transition: transform var(--dur-3) var(--curva-golpe);
+}
+.perilla::after { content: ""; position: absolute; left: 50%; top: 4px; width: 3px; height: 15px; margin-left: -1.5px; background: var(--blanco); }
+.perilla--b { transform: rotate(45deg); }
+.tele:hover .perilla { transform: rotate(40deg); }
+.tele:hover .perilla--b { transform: rotate(-20deg); }
+.parlante { display: grid; gap: 4px; width: 44px; }
+.parlante i { height: 3px; border-radius: 2px; background: var(--cable); }
+.tele__mandos { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--esp-3); }
+.modo-publico .tele .canales { display: flex; flex-wrap: wrap; gap: 6px; }
+.modo-publico .tele .canal {
+  height: 30px;
+  padding: 0 var(--esp-3);
+  border: var(--trazo) var(--control);
+  border-radius: var(--radio-pildora);
+  background: none;
+  color: var(--tiza);
+  font: 500 0.6875rem / 1 var(--fuente-datos);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.modo-publico .tele .canal:hover { border-color: var(--blanco); color: var(--blanco); }
+.modo-publico .tele .canal[aria-current="true"] { border-color: var(--rol-encendido); background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+.cinta-mandos { display: flex; gap: 4px; padding: 4px; border-radius: var(--radio-pildora); background: var(--noche); }
+.modo-publico .cinta-mandos button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio-pildora);
+  background: var(--hormigon);
+  color: var(--tiza);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.modo-publico .cinta-mandos .icono { width: 16px; height: 16px; }
+.modo-publico .cinta-mandos button:hover { background: var(--cable); color: var(--blanco); }
+.modo-publico .cinta-mandos button.reproduciendo { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+@media (max-width: 720px) {
+  .modo-publico .tele { grid-template-columns: 1fr; padding: var(--esp-3); }
+  .tele__perillas { display: none; }
+}
+
+/* ---------------------------------------------------------------------
+   La radio: el ticker con su rótulo y un ecualizador que se detiene con él.
+   --------------------------------------------------------------------- */
+.modo-publico .ticker { padding: 0; }
+.ticker__rotulo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0 var(--esp-4);
+  background: var(--noche);
+  color: var(--rol-encendido);
+  white-space: nowrap;
+}
+.ticker__ventana { flex: 1; min-width: 0; overflow: hidden; }
+.modo-publico .ticker .ticker__pausa { position: static; align-self: stretch; color: var(--blanco); }
+.ecualizador { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.ecualizador i { width: 3px; height: 100%; background: currentColor; transform-origin: bottom; animation: barras-carga 800ms var(--curva-cuadro) infinite; }
+.ecualizador i:nth-child(2) { animation-delay: -200ms; }
+.ecualizador i:nth-child(3) { animation-delay: -450ms; }
+.ecualizador i:nth-child(4) { animation-delay: -650ms; }
+.ticker:hover .ecualizador i,
+.ticker:focus-within .ecualizador i,
+.ticker--pausado .ecualizador i { animation-play-state: paused; }
+@media (max-width: 600px) { .ticker__rotulo { padding: 0 var(--esp-3); } .ticker__rotulo .osd, .ticker__rotulo { font-size: 0.625rem; } }
+
+/* ---------------------------------------------------------------------
+   Las secciones: noche y papel alternados, con su unión, y el lomo.
+   --------------------------------------------------------------------- */
+.seccion-portada { position: relative; padding-block: var(--esp-8); overflow: hidden; }
+@media (min-width: 1024px) { .seccion-portada { padding-block: var(--esp-9); } }
+.seccion-portada > .columna-publica { display: flex; flex-direction: column; gap: var(--esp-6); }
+.seccion-portada--diagonal { clip-path: var(--forma-diagonal-arriba); margin-top: -4vw; padding-top: calc(var(--esp-9) + 4vw); }
+.seccion-portada.superficie-papel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  height: 60%;
+  background: var(--trama-puntos);
+  mask-image: linear-gradient(to bottom left, #000, transparent 70%);
+  pointer-events: none;
+}
+.seccion-portada.superficie-papel > .columna-publica { position: relative; z-index: 1; }
+.franja-cinta { height: 12px; background: var(--cinta); }
+.cabeza-seccion { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--esp-4); }
+
+/* El lomo de una cinta: el número en su etiqueta, tres franjas y el título. */
+.lomo { display: flex; align-items: stretch; min-width: 0; }
+.lomo__numero {
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  padding: 0 var(--esp-3);
+  background: var(--texto-fuerte);
+  color: var(--fondo);
+  font: 800 1.75rem / 1 var(--fuente-datos);
+}
+.lomo__franjas { width: 22px; flex: none; background: linear-gradient(90deg, var(--acento) 0 33%, var(--rol-encendido) 33% 66%, var(--hueso) 66%); }
+.superficie-papel .lomo__franjas { background: linear-gradient(90deg, var(--acento) 0 33%, var(--noche) 33% 66%, var(--rol-encendido) 66%); }
+.lomo__texto { min-width: 0; padding: var(--esp-2) var(--esp-4); border: var(--trazo-fuerte) var(--texto-fuerte); border-left: 0; }
+.lomo__texto .antetitulo { margin: 0 0 2px; color: var(--rol-titulos-texto, var(--acento-texto)); }
+.lomo__texto h2 {
+  margin: 0;
+  font: italic 800 var(--pub-titulo-2) / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  letter-spacing: var(--tracking-titulo);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) { .lomo__numero { min-width: 46px; font-size: 1.25rem; } .lomo__franjas { width: 14px; } }
+
+/* ---------------------------------------------------------------------
+   Lo que entra al aparecer en pantalla (`aparece`, `barrido-diagonal`).
+   El guion marca `por-revelar` sólo si va a poder revelar: sin guion o con
+   movimiento reducido, todo está a la vista desde el principio.
+   --------------------------------------------------------------------- */
+.por-revelar > * { opacity: 0; }
+.por-revelar.revelado > * { animation: aparece var(--dur-3) var(--curva-golpe) both; animation-delay: calc(min(var(--i, 0), 8) * var(--escalonado)); }
+.pagina-historieta.por-revelar > * { opacity: 1; clip-path: polygon(0 0, 0 0, 0 0, 0 0); }
+.pagina-historieta.por-revelar.revelado > * { animation: barrido-diagonal var(--dur-4) var(--curva-golpe) both; animation-delay: calc(var(--i, 0) * 110ms); }
+
+/* ---------------------------------------------------------------------
+   Accesos con foto: paneles inclinados que encastran.
+   --------------------------------------------------------------------- */
+.atajos { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-inline: -14px; }
+.atajo {
+  position: relative;
+  display: block;
+  height: 420px;
+  margin-inline: -14px;
+  isolation: isolate;
+  color: var(--blanco);
+  text-decoration: none;
+  outline-offset: -8px;
+  transition: transform var(--dur-2) var(--curva-golpe);
+}
+.atajo__forma { position: absolute; inset: 0; overflow: hidden; background: var(--asfalto); clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); }
+.atajo__forma::after { content: ""; position: absolute; inset: 0; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); box-shadow: inset 0 0 0 3px var(--noche); }
+.atajo__forma img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.02); transition: transform var(--dur-3) var(--curva-golpe); }
+.atajo__etiqueta {
+  position: absolute;
+  z-index: 2;
+  top: var(--esp-4);
+  left: 22%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--esp-2);
+  border-radius: 4px;
+  background: var(--hueso);
+  color: var(--noche);
+  box-shadow: 2px 2px 0 var(--noche);
+}
+.atajo__etiqueta i { width: 6px; height: 6px; border-radius: 50%; background: var(--alarma); }
+.atajo__play {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 42%;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+  box-shadow: 3px 3px 0 var(--noche);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--dur-2) var(--curva-golpe), transform var(--dur-2) var(--curva-resorte);
+}
+.atajo__play .icono { width: 26px; height: 26px; }
+.atajo__nombre {
+  position: absolute;
+  z-index: 2;
+  left: 8%;
+  right: 22%;
+  bottom: var(--esp-5);
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--trazo-fuerte) var(--blanco);
+  background: var(--noche);
+  transform: skewX(var(--sesgo));
+  transition: background-color var(--dur-2) var(--curva-golpe);
+}
+.atajo__nombre > * { display: block; transform: skewX(8deg); }
+.atajo__nombre > span {
+  font: italic 800 1.5rem / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--blanco);
+  overflow-wrap: anywhere;
+}
+.atajo__nombre small { margin-top: 4px; font: 500 0.75rem / 1 var(--fuente-datos); color: var(--humo); }
+.atajo:hover,
+.atajo:focus-visible { z-index: 2; transform: translateY(-10px); }
+.atajo:hover .atajo__forma img,
+.atajo:focus-visible .atajo__forma img { transform: scale(1.1); }
+.atajo:hover .atajo__nombre,
+.atajo:focus-visible .atajo__nombre { background: var(--acento); }
+.atajo:hover .atajo__nombre > *,
+.atajo:focus-visible .atajo__nombre > * { color: var(--sobre-acento); }
+.atajo:hover .atajo__play,
+.atajo:focus-visible .atajo__play { opacity: 1; transform: none; }
+@media (max-width: 960px) {
+  .atajos { grid-auto-columns: 62%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 14px 0 var(--esp-4); scrollbar-width: thin; }
+  .atajo { height: 380px; scroll-snap-align: start; }
+}
+
+/* ---------------------------------------------------------------------
+   La vitrina: la tarjeta de personaje, para un producto.
+   --------------------------------------------------------------------- */
+.vitrina { position: relative; }
+.vitrina__escena {
+  position: relative;
+  border: var(--trazo-grueso) var(--noche);
+  background: repeating-linear-gradient(-45deg, rgb(10 10 12 / 0.06) 0 2px, transparent 2px 10px), var(--fondo-3);
+}
+.superficie-noche .vitrina__escena { border-color: var(--blanco); background: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 10px), var(--asfalto); }
+/* El alto manda: de él sale el ancho de la portada (2:3 de su alto, que desborda
+   28px arriba y abajo) y, de ese ancho, dónde empiezan los datos. */
+.vitrina__diapositiva { --x-tapa: 35%; --alto-vitrina: 440px; --ancho-tapa: calc((var(--alto-vitrina) + 56px) * 2 / 3); position: relative; height: var(--alto-vitrina); }
+@media (max-width: 1199px) { .vitrina__diapositiva { --alto-vitrina: 380px; } }
+.vitrina__diapositiva--entra .vitrina__tapa { animation: vitrina-entra var(--dur-3) var(--curva-golpe) both; }
+.vitrina__banda { position: absolute; left: var(--x-tapa); right: 0; top: 16%; bottom: 16%; background: var(--noche); clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%); }
+.vitrina__tapa {
+  position: absolute;
+  z-index: 2;
+  left: var(--x-tapa);
+  top: -28px;
+  height: calc(100% + 56px);
+  aspect-ratio: 2 / 3;
+  border: var(--trazo-grueso) var(--noche);
+  background: var(--noche);
+  box-shadow: 10px 10px 0 var(--noche);
+  transform: rotate(-3deg);
+}
+.superficie-noche .vitrina__tapa { border-color: var(--blanco); box-shadow: 10px 10px 0 var(--rol-tarjetas); }
+.vitrina__tapa img { width: 100%; height: 100%; object-fit: cover; }
+.vitrina__tapa .cartel-tomo { right: -18px; bottom: auto; top: 18px; font-size: var(--pub-titulo-2); }
+.vitrina__datos {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--x-tapa) + var(--ancho-tapa) + var(--esp-6));
+  right: var(--esp-5);
+  top: 16%;
+  bottom: 16%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  background: transparent;
+}
+.vitrina__datos .rotulo-estado { position: static; }
+.vitrina__datos h3 { margin: 0; font: italic 800 clamp(1.5rem, 1rem + 1.2vw, 2.25rem) / 0.95 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.vitrina__datos h3 a { color: var(--blanco); text-decoration: none; }
+.vitrina__datos h3 a:hover { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.vitrina__editorial { font-size: var(--pub-chico); color: var(--humo); }
+.vitrina__precio { margin: var(--esp-1) 0 var(--esp-2); font: 700 1.5rem / 1 var(--fuente-datos); color: var(--rol-precios-texto, var(--blanco)); }
+.vitrina__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-3); }
+.vitrina__acciones .tarjeta-producto__agregar { padding: 0; }
+.vitrina__acciones .tarjeta-producto__agregar button { min-height: 46px; padding-inline: var(--esp-5); white-space: nowrap; }
+.vitrina__acciones .boton-seccion { white-space: nowrap; }
+/* El reproductor: un aparato, con las miniaturas recortadas en paralelogramo. */
+.reproductor { position: relative; z-index: 2; display: flex; justify-content: center; margin-top: -28px; }
+.reproductor__caja { display: flex; align-items: center; gap: var(--esp-2); max-width: 100%; padding: 6px; border-radius: var(--radio-aparato); background: var(--noche); box-shadow: 4px 4px 0 var(--acento); overflow-x: auto; }
+.reproductor__boton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 52px;
+  border: 0;
+  border-radius: var(--radio-control);
+  background: var(--hormigon);
+  color: var(--blanco);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.reproductor__boton:hover { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+.miniatura {
+  position: relative;
+  flex: none;
+  width: 70px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  background: var(--hormigon);
+  clip-path: polygon(16% 0, 100% 0, 84% 100%, 0 100%);
+  cursor: pointer;
+  transition: transform var(--dur-2) var(--curva-golpe);
+}
+.miniatura img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.miniatura::after { content: ""; position: absolute; inset: 0; clip-path: polygon(16% 0, 100% 0, 84% 100%, 0 100%); box-shadow: inset 0 0 0 3px var(--noche); }
+.miniatura:hover { transform: translateY(-3px); }
+.miniatura[aria-pressed="true"] { transform: translateY(-6px); }
+.miniatura[aria-pressed="true"]::after { box-shadow: inset 0 0 0 4px var(--rol-encendido); }
+.miniatura:focus-visible { outline: 2px solid var(--rol-encendido); outline-offset: 2px; clip-path: none; }
+@media (max-width: 720px) {
+  .vitrina__diapositiva { height: auto; display: grid; gap: var(--esp-4); padding: var(--esp-5) var(--esp-4) var(--esp-7); }
+  .vitrina__banda { display: none; }
+  .vitrina__tapa { position: relative; left: auto; top: auto; justify-self: center; width: 62%; height: auto; margin-top: 56px; }
+  .vitrina__datos { position: static; margin: 0 calc(-1 * var(--esp-4)); padding: var(--esp-4); background: var(--noche); }
+  .miniatura { width: 46px; height: 46px; }
+  .reproductor__boton { width: 34px; }
+}
+
+/* En el celular, la estantería de la portada va de a dos, como una vidriera. */
+@media (max-width: 600px) {
+  .seccion-portada .estanteria { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--esp-4); }
+  .seccion-portada .estanteria .tarjeta-producto__cuerpo { padding: var(--esp-3); }
+  .seccion-portada .estanteria .tarjeta-producto__titulo { font-size: 1rem; }
+  .seccion-portada .estanteria .tarjeta-producto__agregar { padding: 0 var(--esp-3) var(--esp-3); }
+}
+/* La grilla de recién llegados, debajo de la vitrina. */
+.seccion-portada[data-tipo="recien_llegados"] .vitrina + .estanteria { margin-top: var(--esp-6); }
+
+/* ---------------------------------------------------------------------
+   La página de historieta: viñetas de tamaños distintos.
+   --------------------------------------------------------------------- */
+.pagina-historieta { display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 150px; gap: var(--esp-4); }
+.vineta {
+  position: relative;
+  display: block;
+  grid-column: span 3;
+  grid-row: span 2;
+  overflow: hidden;
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--fondo-2);
+  color: var(--noche);
+  text-decoration: none;
+  transition: box-shadow var(--dur-2) var(--curva-golpe);
+}
+.vineta img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-3) var(--curva-golpe); }
+a.vineta:hover img { transform: scale(1.05); }
+a.vineta:hover,
+a.vineta:focus-visible { box-shadow: 6px 6px 0 var(--rol-tarjetas); }
+.vineta--color { background: var(--rol-encendido); }
+/* El tamaño sale del lugar: la primera es la grande. */
+.vineta:nth-child(1) { grid-column: span 4; grid-row: span 3; }
+.vineta:nth-child(2) { grid-column: span 2; grid-row: span 2; }
+.vineta:nth-child(3) { grid-column: span 2; grid-row: span 1; }
+.vineta:nth-child(5) { transform: rotate(1deg); }
+.pagina-historieta[data-cantidad="3"] .vineta:nth-child(3) { grid-column: span 6; grid-row: span 2; }
+.pagina-historieta[data-cantidad="4"] .vineta:nth-child(4) { grid-column: span 6; }
+.pagina-historieta[data-cantidad="6"] .vineta:nth-child(6) { grid-column: span 6; }
+.vineta__recuadro {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 60%;
+  padding: var(--esp-2) var(--esp-3);
+  border-right: var(--trazo-fuerte) var(--noche);
+  border-bottom: var(--trazo-fuerte) var(--noche);
+  background: var(--hueso);
+  font: 700 var(--pub-chico) / 1.3 var(--fuente-display);
+  font-stretch: var(--ancho-semi);
+  text-transform: uppercase;
+}
+.vineta__globo {
+  position: absolute;
+  right: var(--esp-4);
+  bottom: var(--esp-5);
+  max-width: 70%;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--trazo-fuerte) var(--noche);
+  border-radius: 18px;
+  background: var(--blanco);
+  font: 400 1.4rem / 1 var(--fuente-grito);
+}
+.vineta__globo::after { content: ""; position: absolute; right: 26px; bottom: -13px; width: 16px; height: 13px; background: var(--noche); clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.vineta__globo::before { content: ""; position: absolute; z-index: 1; right: 29px; bottom: -8px; width: 10px; height: 9px; background: var(--blanco); clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.vineta__grito {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: var(--esp-3);
+  text-align: center;
+  font: 400 clamp(2.5rem, 5vw, 4rem) / 0.9 var(--fuente-grito);
+  color: var(--noche);
+  transform: rotate(-6deg);
+}
+.vineta img + .vineta__grito { color: var(--blanco); -webkit-text-stroke: 2px var(--noche); text-shadow: 4px 4px 0 var(--noche); }
+.vineta__grito small { display: block; margin-top: var(--esp-2); font: 700 var(--pub-rotulo) / 1.2 var(--fuente-display); letter-spacing: var(--tracking-rotulo); text-transform: uppercase; -webkit-text-stroke: 0; text-shadow: none; }
+@media (max-width: 720px) {
+  .pagina-historieta { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 120px; }
+  .vineta,
+  .pagina-historieta .vineta { grid-column: span 1; grid-row: span 2; }
+  .pagina-historieta .vineta:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+  .pagina-historieta .vineta:nth-child(3) { grid-column: span 2; grid-row: span 1; }
+}
+
+/* ---------------------------------------------------------------------
+   La cinta de fotos: fotos con marco que corren, y se detienen.
+   --------------------------------------------------------------------- */
+.seccion-portada[data-tipo="cinta"] > .columna-publica { overflow: visible; }
+.cinta-fotos { margin-inline: calc(50% - 50vw); padding: var(--esp-5) 0 var(--esp-6); overflow: hidden; }
+/* Sin `gap`: cada foto lleva su margen, así la mitad de la pista mide justo una
+   vuelta y el bucle no salta. */
+.cinta-fotos__pista { display: flex; width: max-content; animation: ticker 90s linear infinite; }
+.cinta-fotos__pista > .foto { flex: none; margin-right: var(--esp-6); }
+.cinta-fotos:hover .cinta-fotos__pista,
+.cinta-fotos:focus-within .cinta-fotos__pista,
+.cinta-fotos--pausada .cinta-fotos__pista { animation-play-state: paused; }
+.foto {
+  position: relative;
+  width: 260px;
+  margin: 0;
+  padding: var(--esp-2) var(--esp-2) var(--esp-4);
+  border: var(--trazo-grueso) var(--noche);
+  background: var(--blanco);
+  box-shadow: 6px 6px 0 var(--noche);
+  transform: rotate(-2deg);
+  transition: transform var(--dur-2) var(--curva-golpe);
+}
+.foto:nth-child(even) { transform: rotate(2.5deg) translateY(12px); }
+.foto:hover { transform: rotate(0) translateY(-6px); }
+.foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border: var(--trazo) var(--noche); }
+.foto a { display: block; }
+.foto figcaption { display: flex; justify-content: space-between; gap: var(--esp-2); margin-top: var(--esp-2); font: 500 0.75rem / 1.3 var(--fuente-datos); color: var(--grafito); }
+/* El trozo de cinta adhesiva: un aparato no, un objeto; va en lima. */
+.foto::before { content: ""; position: absolute; z-index: 1; top: -12px; left: 50%; width: 80px; height: 22px; margin-left: -40px; background: color-mix(in srgb, var(--rol-encendido) 75%, transparent); transform: rotate(-4deg); }
+
+/* ---------------------------------------------------------------------
+   El panel destacado: imagen grande y llamado, partido en diagonal.
+   --------------------------------------------------------------------- */
+.panel-destacado {
+  display: grid;
+  border: var(--trazo-grueso) var(--texto-fuerte);
+  background: var(--asfalto);
+  box-shadow: 10px 10px 0 var(--rol-tarjetas);
+}
+@media (min-width: 960px) { .panel-destacado { grid-template-columns: 7fr 5fr; } }
+.panel-destacado__imagen { position: relative; min-height: 340px; overflow: hidden; }
+@media (min-width: 960px) { .panel-destacado__imagen { clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%); } }
+.panel-destacado__imagen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.panel-destacado__texto { position: relative; display: flex; flex-direction: column; justify-content: center; gap: var(--esp-4); padding: var(--esp-7) var(--esp-6); background: transparent; }
+.panel-destacado__texto::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 8px; background: var(--cinta); }
+.panel-destacado__texto h2 { margin: 0; font: italic 800 var(--pub-titulo-1) / 0.95 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; color: var(--blanco); }
+.panel-destacado__texto p { margin: 0; color: var(--humo); }
+.panel-destacado__texto .antetitulo { color: var(--acento-texto); }
+
+/* ---------------------------------------------------------------------
+   El riel de secciones: en escritorio ancho, dónde se está.
+   --------------------------------------------------------------------- */
+.riel-secciones {
+  position: fixed;
+  left: var(--esp-4);
+  top: 50%;
+  z-index: 40;
+  display: none;
+  justify-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--asfalto);
+  transform: translateY(-50%);
+}
+@media (min-width: 1440px) { .riel-secciones { display: grid; } }
+.riel-secciones button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+  cursor: pointer;
+}
+.riel-secciones button .icono { width: 16px; height: 16px; transform: rotate(90deg); }
+.riel-secciones button:first-child .icono { transform: rotate(90deg); }
+.riel-secciones b { padding-top: var(--esp-2); writing-mode: vertical-rl; transform: rotate(180deg); font: 800 1.5rem / 1 var(--fuente-datos); color: var(--blanco); }
+.riel-secciones span { max-height: 160px; overflow: hidden; padding-bottom: var(--esp-2); writing-mode: vertical-rl; transform: rotate(180deg); font: 700 0.625rem / 1 var(--fuente-display); letter-spacing: var(--tracking-rotulo); text-transform: uppercase; color: var(--humo); white-space: nowrap; text-overflow: ellipsis; }
+
+/* ---------------------------------------------------------------------
+   El pie: el final de la cinta.
+   --------------------------------------------------------------------- */
+.modo-publico .pie-publico { position: relative; overflow: hidden; padding-bottom: 0; }
+.modo-publico .pie-publico .pie-publico__cinta { margin-bottom: 0; }
+.pie-publico__fin {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-7);
+  padding-block: var(--esp-4);
+  border-bottom: var(--trazo) var(--linea);
+  color: var(--texto-2);
+}
+.pie-publico__fin b { font-weight: 500; color: var(--rol-encendido); }
+@media (max-width: 600px) { .pie-publico__fin span:last-child { display: none; } }
+.modo-publico .pie-publico__marca .marca.pestana-marca { align-self: flex-start; font-size: 1.375rem; }
+.modo-publico .pie-publico__columna > .antetitulo { display: flex; align-items: center; gap: var(--esp-2); color: var(--texto-fuerte); }
+.modo-publico .pie-publico__columna > .antetitulo::before { content: ""; width: 10px; height: 10px; background: var(--acento); transform: skewX(var(--sesgo)); }
+.modo-publico .pie-publico__columna li.datos { display: flex; align-items: center; gap: var(--esp-2); }
+.modo-publico .pie-publico__columna li.datos .icono { width: 18px; height: 18px; color: var(--texto-2); }
+.modo-publico .pie-publico__redes a { border: var(--trazo) var(--cable); border-radius: var(--radio-control); background: var(--asfalto); }
+.modo-publico .pie-publico__redes a:hover { border-color: var(--rol-encendido); background: var(--rol-encendido); color: var(--rol-encendido-sobre); box-shadow: none; transform: translateY(-3px); }
+.modo-publico .pie-publico__base { margin-top: var(--esp-7); }
+.pie-publico__rebobinar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  height: 40px;
+  padding: 0 var(--esp-4);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-pildora);
+  background: var(--asfalto);
+  color: var(--tiza);
+  font: 500 0.75rem / 1 var(--fuente-datos);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background-color var(--dur-1) var(--curva-golpe), color var(--dur-1) var(--curva-golpe);
+}
+.pie-publico__rebobinar:hover { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+.pie-publico__nombre {
+  margin: var(--esp-4) 0 -5.5vw;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  font: italic 900 clamp(5rem, 17vw, 16rem) / 0.8 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  text-transform: uppercase;
+  color: var(--asfalto);
+  -webkit-text-stroke: 1px var(--cable);
+}
+
+/* Mientras rebobina: el rótulo de la cinta y líneas de rebobinado que suben. */
+.rebobinado {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.12) 0 2px, transparent 2px 22px);
+  background-size: 100% 220px;
+  animation: rebobina 380ms linear infinite;
+}
+.rebobinado__rotulo {
+  position: absolute;
+  top: calc(var(--esp-9) + var(--esp-2));
+  left: var(--esp-5);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: 6px;
+  background: var(--noche);
+  color: var(--rol-encendido);
+  font-size: 1rem;
+  animation: latido 760ms steps(2, end) infinite;
+}
+.pie-publico__rebobinar:active { transform: translateY(-3px); }
+
+/* ---------------------------------------------------------------------
+   Lo flotante: el globo de ayuda y el cajón del carrito son aparatos.
+   --------------------------------------------------------------------- */
+.modo-publico .globo-ayuda__icono::before { border-radius: 50%; background: var(--rol-encendido); transform: none; }
+.modo-publico .globo-ayuda__icono { color: var(--rol-encendido-sobre); }
+.modo-publico .globo-ayuda__texto { border-radius: 18px 18px 4px 18px; box-shadow: 4px 4px 0 var(--acento); }
+.modo-publico .cajon-carrito::backdrop { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.modo-publico .cajon-carrito[open] { animation: cajon-entra var(--dur-3) var(--curva-golpe) both; }
+.modo-publico .cajon-carrito .dialogo__cabeza h2 .icono { color: var(--rol-encendido); }
+.modo-publico .barra-envio progress::-webkit-progress-value { background: var(--rol-encendido); }
+
+/* ---------------------------------------------------------------------
+   El casete recortado (pedido del responsable, 2026-11-11): suelto sobre la
+   escena de la vitrina, con el borde blanco de una figura recortada de una
+   revista, sombra dura y un trozo de cinta adhesiva. La carcasa lleva sus
+   tornillos, la etiqueta con las franjas, la marca, el lado y la pista, la
+   ventana con los carretes —que giran al cambiar de producto
+   (`carrete-gira`)— y la base trapezoidal con sus agujeros.
+   --------------------------------------------------------------------- */
+.vitrina__bloque {
+  position: absolute;
+  z-index: 1;
+  left: 2.5%;
+  top: 50%;
+  width: min(30%, 360px);
+  transform: translateY(-50%) rotate(-7deg);
+  pointer-events: none;
+}
+.vitrina__pista {
+  position: absolute;
+  left: 8%;
+  bottom: -40px;
+  padding: 4px var(--esp-2);
+  border-radius: 4px;
+  background: var(--noche);
+  color: var(--rol-encendido);
+  transform: rotate(7deg);
+}
+.casete {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.6;
+  padding: 7% 6% 0;
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 2px, transparent 2px 6px),
+    linear-gradient(var(--hormigon), var(--hormigon)) 0 0 / 100% 10% no-repeat,
+    var(--asfalto);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.12),
+    inset 0 -3px 0 rgb(0 0 0 / 0.5);
+}
+/* El recorte: borde blanco de papel y la sombra dura de la viñeta. */
+.casete--recortado {
+  outline: 6px solid var(--blanco);
+  filter: drop-shadow(8px 8px 0 var(--noche));
+}
+.casete__tornillos i {
+  position: absolute;
+  width: 9px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    linear-gradient(45deg, transparent 42%, var(--noche) 42% 58%, transparent 58%),
+    var(--control);
+}
+.casete__tornillos i:nth-child(1) { left: 2.5%; top: 4%; }
+.casete__tornillos i:nth-child(2) { right: 2.5%; top: 4%; }
+.casete__tornillos i:nth-child(3) { left: 2.5%; bottom: 5%; }
+.casete__tornillos i:nth-child(4) { right: 2.5%; bottom: 5%; }
+.casete__etiqueta {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  column-gap: var(--esp-2);
+  height: 66%;
+  padding: 0 var(--esp-3) var(--esp-2);
+  border-radius: 6px;
+  background: var(--hueso);
+  color: var(--noche);
+  overflow: hidden;
+}
+.casete__franjas {
+  grid-column: 1 / -1;
+  height: 16px;
+  margin: 0 calc(-1 * var(--esp-3)) var(--esp-2);
+  background:
+    linear-gradient(var(--acento), var(--acento)) 0 0 / 100% 7px no-repeat,
+    linear-gradient(var(--noche), var(--noche)) 0 7px / 100% 2px no-repeat,
+    linear-gradient(var(--rol-encendido), var(--rol-encendido)) 0 9px / 100% 5px no-repeat;
+}
+.casete__marca {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  font: 500 clamp(0.5rem, 0.4rem + 0.3vw, 0.75rem) / 1 var(--fuente-datos);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.casete__lado {
+  grid-column: 3;
+  grid-row: 2 / 4;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: clamp(28px, 2.4vw, 40px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--noche);
+  color: var(--hueso);
+  font: italic 900 clamp(1rem, 0.8rem + 0.6vw, 1.5rem) / 1 var(--fuente-display);
+}
+.casete__pista {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  align-self: center;
+  font: italic 900 clamp(1.75rem, 1rem + 2vw, 3.25rem) / 0.8 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  -webkit-text-stroke: 1px var(--noche);
+  color: transparent;
+  background: repeating-linear-gradient(-45deg, var(--noche) 0 2px, transparent 2px 6px);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+/* Los renglones donde se escribe a mano el nombre de la cinta. */
+.casete__renglones {
+  grid-column: 2;
+  grid-row: 3;
+  height: 20px;
+  margin-top: 4px;
+  background: repeating-linear-gradient(180deg, transparent 0 9px, var(--linea-papel) 9px 10px);
+}
+.casete__duracion {
+  position: absolute;
+  right: var(--esp-3);
+  bottom: 6px;
+  font: 700 0.625rem / 1 var(--fuente-datos);
+  color: var(--grafito);
+}
+.casete__ventana {
+  position: absolute;
+  left: 23%;
+  right: 23%;
+  top: 50%;
+  height: 21%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4%;
+  border: 3px solid var(--noche);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--asfalto) 70%, var(--rol-encendido));
+}
+.casete__carrete {
+  position: relative;
+  z-index: 1;
+  width: 24%;
+  aspect-ratio: 1;
+  border: 3px solid var(--blanco);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--asfalto) 0 22%, transparent 24%),
+    conic-gradient(var(--blanco) 0 10%, transparent 10% 33%, var(--blanco) 33% 43%, transparent 43% 66%, var(--blanco) 66% 76%, transparent 76%);
+}
+.casete__cinta { position: absolute; left: 18%; right: 18%; top: 50%; height: 44%; background: var(--grafito); transform: translateY(-50%); }
+.casete__base {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 0;
+  height: 19%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-inline: 18%;
+  background: var(--hormigon);
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+}
+.casete__base i { width: 10px; aspect-ratio: 1; border-radius: 50%; background: var(--noche); }
+/* La cinta adhesiva que lo sostiene: un objeto, translúcida en lima. */
+.cinta-adhesiva {
+  position: absolute;
+  width: 34%;
+  height: 22px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.18) 0 3px, transparent 3px 7px),
+    color-mix(in srgb, var(--rol-encendido) 72%, transparent);
+  clip-path: polygon(3% 0, 97% 6%, 100% 50%, 96% 100%, 2% 94%, 0 40%);
+}
+.cinta-adhesiva--casete { top: -16px; left: 33%; transform: rotate(4deg); }
+.vitrina__diapositiva--entra .casete__carrete { animation: carrete-gira 700ms var(--curva-golpe) 1; }
+.vitrina__diapositiva--entra .vitrina__bloque { animation: casete-entra var(--dur-3) var(--curva-resorte) both; }
+@media (max-width: 1199px) {
+  .vitrina__diapositiva { --x-tapa: 33%; }
+  .vitrina__bloque { width: 28%; left: 2%; }
+}
+@media (max-width: 720px) {
+  /* En el celular el casete va arriba, sobre la escena, y la portada debajo. */
+  .vitrina .vitrina__bloque { position: relative; left: auto; top: auto; width: 74%; margin: var(--esp-3) auto 0; transform: rotate(-5deg); }
+  .vitrina__diapositiva--entra .vitrina__bloque { animation: aparece var(--dur-3) var(--curva-golpe) both; }
+  .vitrina .vitrina__tapa { margin-top: var(--esp-6); }
+  .vitrina__pista { bottom: -34px; }
+}
+
+/* ---------------------------------------------------------------------
+   El carnet de socio (plan 07, novena parte): la ficha de un personaje.
+   --------------------------------------------------------------------- */
+.modo-publico .carnet {
+  gap: 0;
+  padding: 0 0 var(--esp-4);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--trama-puntos), var(--asfalto);
+  overflow: hidden;
+}
+.modo-publico .carnet::before,
+.modo-publico .carnet::after { content: none; }
+/* La hoja general lo parte en dos columnas en el celular: acá cada parte va a lo ancho. */
+.modo-publico .carnet > * { grid-column: 1 / -1; }
+.carnet__barra {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-4);
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+}
+.carnet__barra i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--alarma); vertical-align: middle; }
+.carnet__cabeza { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: var(--esp-3); align-items: end; padding: var(--esp-4) var(--esp-4) var(--esp-3); }
+.carnet__retrato {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  background: radial-gradient(circle, rgb(10 10 12 / 0.28) 2px, transparent 2.6px) 0 0 / 10px 10px, var(--acento);
+  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+}
+.carnet__retrato span {
+  font: italic 900 2.75rem / 1 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  color: var(--sobre-acento);
+  text-shadow: 3px 3px 0 var(--blanco);
+}
+.carnet__identidad { min-width: 0; }
+.modo-publico .carnet__rotulo { margin: 0; font: 500 0.6875rem / 1.2 var(--fuente-datos); letter-spacing: 0.14em; text-transform: uppercase; color: var(--rol-encendido); }
+.modo-publico .carnet__nombre {
+  margin: var(--esp-1) 0 0;
+  font: italic 800 1.5rem / 0.95 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  color: var(--blanco);
+  overflow-wrap: anywhere;
+}
+.carnet__desde { margin: var(--esp-1) 0 0; font-size: var(--pub-chico); color: var(--humo); }
+.modo-publico .carnet__codigo { display: grid; gap: 2px; margin: 0; padding: var(--esp-3) var(--esp-4); border-block: var(--trazo) var(--cable); background: var(--noche); }
+.carnet__barras {
+  display: block;
+  height: 22px;
+  margin-top: var(--esp-1);
+  background: repeating-linear-gradient(90deg, var(--tiza) 0 2px, transparent 2px 4px, var(--tiza) 4px 7px, transparent 7px 9px, var(--tiza) 9px 10px, transparent 10px 13px, var(--tiza) 13px 16px, transparent 16px 17px);
+  opacity: 0.8;
+}
+.modo-publico .carnet__datos { gap: 0; padding: 0 var(--esp-4); }
+.carnet__estadistica { padding-block: var(--esp-3); border-bottom: var(--trazo) var(--cable); }
+.carnet__estadistica:last-child { border-bottom: 0; }
+.modo-publico .carnet__datos dt { display: flex; align-items: center; gap: var(--esp-2); font: 500 0.6875rem / 1.2 var(--fuente-datos); letter-spacing: 0.14em; text-transform: uppercase; color: var(--humo); }
+.modo-publico .carnet__datos dt .icono { width: 16px; height: 16px; color: var(--rol-encendido); }
+.modo-publico .carnet__datos dd a { font: 700 1.25rem / 1.2 var(--fuente-datos); color: var(--blanco); text-decoration: none; }
+.modo-publico .carnet__datos dd a .datos { color: var(--rol-encendido); }
+.modo-publico .carnet .barra-proporcion::-webkit-progress-value { background: var(--rol-encendido); }
+.modo-publico .carnet .barra-proporcion::-moz-progress-bar { background: var(--rol-encendido); }
+/* Las secciones de la cuenta: la botonera de un aparato. */
+.modo-publico .secciones-cuenta { gap: 4px; padding: 6px; border: var(--trazo) var(--cable); border-radius: var(--radio-aparato); background: var(--asfalto); }
+.modo-publico .secciones-cuenta a { border-radius: var(--radio-control); }
+.modo-publico .secciones-cuenta a[aria-current="page"] { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+.modo-publico .secciones-cuenta a[aria-current="page"]::before { content: none; }
+
+/* ---------------------------------------------------------------------
+   La ficha de producto (plan 07, novena parte).
+   --------------------------------------------------------------------- */
+.ficha-escena { position: relative; overflow: hidden; }
+.ficha-escena::before { content: ""; position: absolute; inset: 0; background: var(--trama-rayas); pointer-events: none; }
+.ficha-escena__fondo {
+  position: absolute;
+  left: 0;
+  bottom: 2vw;
+  white-space: nowrap;
+  pointer-events: none;
+  font: italic 900 clamp(6rem, 16vw, 16rem) / 0.8 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.07);
+}
+@supports (animation-timeline: view()) {
+  .ficha-escena__fondo { animation: texto-deriva linear both; animation-timeline: view(); }
+}
+.ficha-escena > .columna-publica { position: relative; z-index: 1; }
+.ficha-publica__info { min-width: 0; }
+.ficha-publica__cabeza { position: relative; isolation: isolate; }
+.ficha-publica__cabeza h1 {
+  font: italic 800 var(--pub-titulo-1) / 0.95 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 var(--noche);
+}
+/* La compra es un aparato: caja redondeada con su rótulo encendido. */
+.ficha-publica__compra {
+  padding: var(--esp-5);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--asfalto);
+  box-shadow: 6px 6px 0 var(--rol-tarjetas);
+}
+.ficha-publica__compra-rotulo { display: flex; align-items: center; gap: var(--esp-2); margin: 0; color: var(--rol-encendido); }
+.ficha-publica__compra-rotulo i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: latido 2s ease-in-out infinite; }
+.ficha-publica__compra .ficha-publica__precio { margin: 0; }
+.modo-publico .datos-de-ficha dt { font-family: var(--fuente-datos); font-weight: 500; letter-spacing: 0.12em; }
+.ficha-publica__sinopsis { padding: var(--esp-5); border-left: 4px solid var(--acento); background: var(--asfalto); }
+.ficha-publica__sinopsis .lectura { margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .ficha-escena__fondo,
+  .ficha-publica__compra-rotulo i,
+  .vitrina__diapositiva--entra .casete__carrete,
+  .vitrina__diapositiva--entra .vitrina__bloque { animation: none; }
+}
+
+@keyframes casete-entra {
+  from { opacity: 0; transform: translateY(-50%) rotate(-18deg) scale(1.15); }
+  to   { opacity: 1; transform: translateY(-50%) rotate(-7deg); }
+}
+@keyframes carrete-gira {
+  from { transform: rotate(0); }
+  to   { transform: rotate(-720deg); }
+}
+
+/* ---------------------------------------------------------------------
+   Lo que se mueve mientras se baja (plan 07, novena parte; pedido del
+   responsable): la barra de progreso de la lectura y las cintas en marcha
+   entre secciones. Las dos están atadas al desplazamiento: se mueven cuando
+   la persona baja y se quedan quietas cuando se detiene, así que no hace
+   falta pausarlas (regla 7). Sin soporte de `animation-timeline`, quedan
+   quietas: la barra no se ve y la cinta muestra su texto.
+   --------------------------------------------------------------------- */
+.modo-publico .encabezado-publico::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  background: var(--rol-encendido);
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .modo-publico .encabezado-publico::after { animation: progreso-lectura linear both; animation-timeline: scroll(root); }
+}
+
+.cinta-marcha {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  overflow: hidden;
+  background: var(--cinta);
+  transform: rotate(-1.2deg) scale(1.03);
+}
+.cinta-marcha__pista {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  /* Más ancha que la pantalla: al avanzar el 35 % no deja ver su final. */
+  min-width: 170vw;
+  gap: var(--esp-6);
+  padding: 6px var(--esp-5);
+  background: var(--noche);
+  color: var(--hueso);
+  white-space: nowrap;
+  font: 800 1rem / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cinta-marcha__pista span::before { content: "▶ "; color: var(--rol-encendido); }
+@supports (animation-timeline: view()) {
+  .cinta-marcha__pista { animation: cinta-avanza linear both; animation-timeline: view(); }
+}
+
+@keyframes progreso-lectura {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes cinta-avanza {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-35%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modo-publico .encabezado-publico::after,
+  .cinta-marcha__pista { animation: none; }
+}
+
+/* ---------------------------------------------------------------------
+   El catálogo (plan 07, novena parte).
+   --------------------------------------------------------------------- */
+.modo-publico .catalogo-cabeza { position: relative; overflow: hidden; }
+.catalogo-cabeza__fondo {
+  position: absolute;
+  left: 0;
+  bottom: -2vw;
+  white-space: nowrap;
+  pointer-events: none;
+  font: italic 900 clamp(6rem, 15vw, 15rem) / 0.8 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.07);
+}
+@supports (animation-timeline: view()) {
+  .catalogo-cabeza__fondo { animation: texto-deriva linear both; animation-timeline: view(); }
+}
+.lomo__texto h1 {
+  margin: 0;
+  font: italic 800 var(--pub-titulo-1) / 0.95 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  letter-spacing: var(--tracking-titulo);
+  text-transform: uppercase;
+  color: var(--texto-fuerte);
+}
+/* El buscador grande, como el de la barra: una píldora de aparato. */
+.modo-publico .buscador-catalogo {
+  max-width: 720px;
+  padding: 0 var(--esp-5);
+  border: var(--trazo) var(--control);
+  border-radius: var(--radio-pildora);
+  background: var(--hormigon);
+  transition: border-color var(--dur-1) var(--curva-golpe), box-shadow var(--dur-1) var(--curva-golpe);
+}
+.modo-publico .buscador-catalogo::before { content: none; }
+.modo-publico .buscador-catalogo:focus-within { border-color: var(--rol-encendido); box-shadow: 0 0 0 1px var(--rol-encendido), 6px 6px 0 var(--acento); }
+.modo-publico .buscador-catalogo .icono { color: var(--rol-encendido); }
+/* El panel de filtros, un aparato: lo que está prendido, en lima. */
+.modo-publico .panel-filtros.superficie-noche {
+  --acento: var(--rol-encendido);
+  --acento-vivo: var(--rol-encendido);
+  --sobre-acento: var(--rol-encendido-sobre);
+  --acento-suave: color-mix(in srgb, var(--rol-encendido) 16%, transparent);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--trama-puntos), var(--asfalto);
+  box-shadow: 6px 6px 0 var(--noche);
+}
+.modo-publico .panel-filtros__grupo > legend { font-family: var(--fuente-datos); font-weight: 500; letter-spacing: 0.14em; color: var(--humo); }
+.modo-publico .panel-filtros .casilla:has(input:checked) > span { color: var(--blanco); font-weight: 700; }
+.modo-publico .catalogo__abrir-panel { border-radius: var(--radio-control); }
+/* La cantidad, como el contador de una cinta. */
+.modo-publico .catalogo__cuenta { display: inline-flex; align-items: center; gap: var(--esp-2); align-self: flex-start; padding: 6px var(--esp-3); border-radius: 6px; background: var(--noche); color: var(--rol-encendido); font: 500 0.75rem / 1 var(--fuente-datos); letter-spacing: 0.14em; }
+.modo-publico .catalogo__cuenta::before { content: "▶"; }
+@media (prefers-reduced-motion: reduce) { .catalogo-cabeza__fondo { animation: none; } }
+
+/* ---------------------------------------------------------------------
+   Textos largos (prueba del 2026-11-11): una palabra sin espacios se parte
+   en lugar de salirse, y los títulos de tarjeta se acotan para que una fila
+   no quede el doble de alta por un solo producto. El título entero sigue en
+   la ficha.
+   --------------------------------------------------------------------- */
+.modo-publico .tarjeta-producto__titulo {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+.modo-publico .tarjeta-producto__cuerpo { min-width: 0; }
+.modo-publico .fila-portada__titular-nombre { max-width: 100%; overflow-wrap: break-word; hyphens: auto; font-size: clamp(1.125rem, 0.9rem + 0.5vw, 1.375rem); }
+.modo-publico .ficha-publica__cabeza h1 { overflow-wrap: anywhere; }
+.vineta__globo { overflow-wrap: anywhere; }
+.vineta__recuadro { display: -webkit-box; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.atajo__nombre > span { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.modo-publico .carnet__nombre { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.foto figcaption span:first-child { overflow-wrap: anywhere; }
+.panel-destacado__texto h2 { overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------------
+   La ciudad (segunda vuelta del responsable: «retro, con personalidad
+   urbana, con pequeños detalles, lleno de vida»).
+   --------------------------------------------------------------------- */
+.modo-publico {
+  /* El muro: palabras grandes en contorno, rótulos chicos y garabatos, casi
+     invisibles, como un paredón pintado muchas veces. Nunca detrás de texto
+     corrido: sólo en el hero, la cabeza del catálogo, la ficha y las
+     secciones de la portada. */
+  --muro-noche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='480' viewBox='0 0 800 480'%3E %3Cg fill='none' stroke='%23FFFFFF' stroke-opacity='0.07' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' font-family='Arial Black,Impact,sans-serif' font-style='italic' font-weight='900'%3E %3Ctext x='40' y='150' font-size='92' transform='rotate(-4 40 150)'%3ELONGBOX%3C/text%3E %3Ctext x='400' y='330' font-size='62' transform='rotate(-4 400 330)'%3EMANGA!!%3C/text%3E %3Ctext x='60' y='440' font-size='48'%3EC%C3%93MICS%3C/text%3E %3Cpath stroke-width='2' d='M700 40l10 22 24 3-18 16 5 24-21-12-21 12 5-24-18-16 24-3z'/%3E %3Cpath stroke-width='2' d='M60 230l18-30 8 20 18-28'/%3E %3Cpath stroke-width='2' d='M440 70c20-14 40 14 60 0s40 14 60 0'/%3E %3Cpath stroke-width='2' d='M740 200l-30 40h22l-14 34 34-46h-22l12-28z'/%3E %3Ccircle stroke-width='2' cx='300' cy='240' r='20'/%3E%3Cpath stroke-width='2' d='M288 228l24 24M312 228l-24 24'/%3E %3Cpath stroke-width='2' d='M170 300h40m-20-20v40'/%3E%3Cpath stroke-width='2' d='M620 420h26m-13-13v26'/%3E %3Cpath stroke-width='2' d='M330 410l40-10-6 30z'/%3E %3Cpath stroke-width='2' d='M720 380c-16 0-16 24 0 24s16-24 0-24zm-6 10v4m12-4v4'/%3E %3C/g%3E %3Cg fill='%23FFFFFF' fill-opacity='0.07' font-family='Courier New,monospace' font-size='11' letter-spacing='3'%3E %3Ctext x='420' y='190'%3ENO. 042 %C2%B7 NEW STOCK%3C/text%3E %3Ctext x='40' y='270'%3ECOMIC STORE %C2%B7 OPEN%3C/text%3E %3Ctext x='520' y='460'%3E%E2%98%85 LONGBOX %E2%98%85%3C/text%3E %3C/g%3E%3C/svg%3E");
+  --muro-papel: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='480' viewBox='0 0 800 480'%3E %3Cg fill='none' stroke='%230A0A0C' stroke-opacity='0.07' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' font-family='Arial Black,Impact,sans-serif' font-style='italic' font-weight='900'%3E %3Ctext x='40' y='150' font-size='92' transform='rotate(-4 40 150)'%3ELONGBOX%3C/text%3E %3Ctext x='400' y='330' font-size='62' transform='rotate(-4 400 330)'%3EMANGA!!%3C/text%3E %3Ctext x='60' y='440' font-size='48'%3EC%C3%93MICS%3C/text%3E %3Cpath stroke-width='2' d='M700 40l10 22 24 3-18 16 5 24-21-12-21 12 5-24-18-16 24-3z'/%3E %3Cpath stroke-width='2' d='M60 230l18-30 8 20 18-28'/%3E %3Cpath stroke-width='2' d='M440 70c20-14 40 14 60 0s40 14 60 0'/%3E %3Cpath stroke-width='2' d='M740 200l-30 40h22l-14 34 34-46h-22l12-28z'/%3E %3Ccircle stroke-width='2' cx='300' cy='240' r='20'/%3E%3Cpath stroke-width='2' d='M288 228l24 24M312 228l-24 24'/%3E %3Cpath stroke-width='2' d='M170 300h40m-20-20v40'/%3E%3Cpath stroke-width='2' d='M620 420h26m-13-13v26'/%3E %3Cpath stroke-width='2' d='M330 410l40-10-6 30z'/%3E %3Cpath stroke-width='2' d='M720 380c-16 0-16 24 0 24s16-24 0-24zm-6 10v4m12-4v4'/%3E %3C/g%3E %3Cg fill='%230A0A0C' fill-opacity='0.07' font-family='Courier New,monospace' font-size='11' letter-spacing='3'%3E %3Ctext x='420' y='190'%3ENO. 042 %C2%B7 NEW STOCK%3C/text%3E %3Ctext x='40' y='270'%3ECOMIC STORE %C2%B7 OPEN%3C/text%3E %3Ctext x='520' y='460'%3E%E2%98%85 LONGBOX %E2%98%85%3C/text%3E %3C/g%3E%3C/svg%3E");
+}
+.modo-publico .portada-tienda,
+.modo-publico .seccion-portada.superficie-noche,
+.modo-publico .catalogo-cabeza,
+.modo-publico .ficha-escena { background-image: var(--muro-noche); background-size: 800px 480px; }
+.modo-publico .seccion-portada.superficie-papel { background-image: var(--muro-papel); background-size: 800px 480px; }
+@supports (animation-timeline: view()) {
+  /* El muro se corre apenas al bajar: la ciudad pasa detrás. */
+  .modo-publico .portada-tienda,
+  .modo-publico .seccion-portada { animation: muro-pasa linear both; animation-timeline: view(); }
+}
+
+/* El número de pista del casete, lleno y con su sombra: se lee de lejos. */
+.casete__pista {
+  color: var(--noche);
+  background: none;
+  -webkit-text-stroke: 0;
+  text-shadow: 2px 2px 0 var(--acento);
+}
+
+/* La cinta de película: lima con sus perforaciones arriba y abajo, y los
+   nombres en cuadros. Avanza al bajar (`cinta-avanza`). */
+.cinta-marcha {
+  height: 66px;
+  background:
+    repeating-linear-gradient(90deg, var(--noche) 0 12px, transparent 12px 26px) 0 7px / 100% 8px no-repeat,
+    repeating-linear-gradient(90deg, var(--noche) 0 12px, transparent 12px 26px) 0 calc(100% - 7px) / 100% 8px no-repeat,
+    var(--rol-encendido);
+  border-block: 3px solid var(--noche);
+  transform: rotate(-1.6deg) scale(1.04);
+}
+.cinta-marcha__pista {
+  gap: 0;
+  padding: 0;
+  background: none;
+  color: var(--rol-encendido-sobre);
+}
+.cinta-marcha__pista span { padding: 4px var(--esp-6); border-left: 3px solid var(--noche); }
+.cinta-marcha__pista span::before { content: "▶ "; color: var(--rol-encendido-sobre); }
+
+/* La pila de televisores: dos más chicos detrás del principal, con lo que
+   llegó. Son decorativos y no se mueven solos. */
+.portada-tienda__tele > .tele { position: relative; z-index: 1; }
+.tele-mini {
+  position: absolute;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: 1fr 14px;
+  gap: 6px;
+  width: 34%;
+  padding: 8px;
+  border: 3px solid var(--blanco);
+  border-radius: 14px;
+  background: var(--hormigon);
+  box-shadow: 6px 6px 0 var(--noche), inset 0 2px 0 rgb(255 255 255 / 0.1);
+}
+.tele-mini__pantalla { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; background: var(--noche); }
+.tele-mini__pantalla img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.tele-mini__pantalla::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.25) 0 1px, transparent 1px 3px); }
+.tele-mini__perillas { display: grid; align-content: start; gap: 6px; }
+.tele-mini__perillas i { width: 12px; aspect-ratio: 1; border: 2px solid var(--blanco); border-radius: 50%; }
+.tele-mini__perillas i:last-child { height: 26px; border-radius: 3px; background: repeating-linear-gradient(0deg, var(--cable) 0 2px, transparent 2px 4px); }
+.tele-mini--a { left: -14%; bottom: -16%; transform: rotate(-7deg); }
+.tele-mini--b { right: -11%; top: 6%; width: 24%; transform: rotate(6deg); }
+.tele-mini__rotulo { position: absolute; left: 6px; top: 5px; z-index: 1; font: 500 0.5625rem / 1 var(--fuente-datos); letter-spacing: 0.12em; color: var(--blanco); text-shadow: 1px 1px 0 var(--noche); }
+@media (max-width: 959px) { .tele-mini { display: none; } }
+
+
+/* Los aparatos tienen relieve: un filo de luz arriba y uno de sombra abajo,
+   sin desenfoque. */
+.modo-publico .pestana-marca,
+.modo-publico .encabezado-publico nav.botonera,
+.modo-publico .cinta-mandos,
+.modo-publico .secciones-cuenta { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 -2px 0 rgb(0 0 0 / 0.45); }
+.modo-publico .ficha-publica__compra { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 -2px 0 rgb(0 0 0 / 0.45), 6px 6px 0 var(--rol-tarjetas); }
+.modo-publico .reproductor__caja { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 4px 4px 0 var(--acento); }
+.modo-publico .boton-aparato,
+.modo-publico .tele .canal,
+.modo-publico .cinta-mandos button,
+.modo-publico .reproductor__boton { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -2px 0 rgb(0 0 0 / 0.5); }
+.modo-publico .boton-aparato:active,
+.modo-publico .cinta-mandos button:active,
+.modo-publico .reproductor__boton:active { box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.5); transform: translateY(1px); }
+
+/* El margen de la página: texto chico en vertical y marcas de registro, como
+   el pie de imprenta de una revista. Decorativo. */
+.seccion-portada__margen {
+  position: absolute;
+  right: var(--esp-4);
+  top: var(--esp-8);
+  bottom: var(--esp-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  color: var(--texto-2);
+  opacity: 0.6;
+}
+.seccion-portada__margen span { writing-mode: vertical-rl; font: 500 0.5625rem / 1 var(--fuente-datos); letter-spacing: 0.24em; text-transform: uppercase; white-space: nowrap; }
+.seccion-portada__margen b { font: 400 1rem / 1 var(--fuente-datos); }
+@media (max-width: 1100px) { .seccion-portada__margen { display: none; } }
+/* Un código de barras chico en el lomo de cada sección. */
+.seccion-portada .lomo__texto { position: relative; padding-right: 62px; }
+.seccion-portada .lomo__texto::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 38px;
+  height: 26px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, var(--texto-fuerte) 0 2px, transparent 2px 4px, var(--texto-fuerte) 4px 5px, transparent 5px 8px, var(--texto-fuerte) 8px 11px, transparent 11px 12px);
+  opacity: 0.7;
+}
+@media (max-width: 600px) { .seccion-portada .lomo__texto { padding-right: var(--esp-4); } .seccion-portada .lomo__texto::after { content: none; } }
+
+@keyframes muro-pasa {
+  from { background-position: 0 0; }
+  to   { background-position: -160px -60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modo-publico .portada-tienda,
+  .modo-publico .seccion-portada { animation: none; }
+}
+
+/* ---------------------------------------------------------------------
+   El telón: el barrido en negro entre páginas. Al cargar la página se abre
+   solo (`telon-abre`): con la ventana que se corta en diagonal hacia la
+   derecha. Al hacer clic en un enlace se cierra (`telon-cierra`) desde la
+   izquierda. Reemplaza a la transición nativa, que en la tienda se apaga.
+   --------------------------------------------------------------------- */
+@view-transition { navigation: none; }
+.telon {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 3px),
+    var(--noche);
+  pointer-events: none;
+  clip-path: polygon(110% 0, 125% 0, 125% 100%, 125% 100%);
+  animation: telon-abre 520ms var(--curva-golpe) 60ms both;
+}
+.telon--cierra { animation: telon-cierra 300ms var(--curva-entrada) both; pointer-events: auto; }
+.telon--abre { animation: telon-abre 520ms var(--curva-golpe) both; }
+.telon__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: 6px;
+  background: var(--asfalto);
+  color: var(--rol-encendido);
+  opacity: 0;
+}
+.telon--cierra .telon__rotulo { animation: aparece var(--dur-2) var(--curva-golpe) 320ms both; }
+@keyframes telon-abre {
+  from { clip-path: polygon(0 0, 125% 0, 110% 100%, -15% 100%); }
+  to   { clip-path: polygon(125% 0, 125% 0, 125% 100%, 110% 100%); }
+}
+@keyframes telon-cierra {
+  from { clip-path: polygon(-15% 0, -15% 0, -30% 100%, -30% 100%); }
+  to   { clip-path: polygon(-15% 0, 125% 0, 110% 100%, -30% 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .telon { display: none; }
+}
+
+/* ---------------------------------------------------------------------
+   La ficha como expediente (plan 07, novena parte; referencias del
+   responsable): la barra con el número de expediente y su código de
+   barras; la hoja de papel con la portada sujeta con cinta, la pestaña del
+   tomo, el sello del estado y el pie mecanografiado.
+   --------------------------------------------------------------------- */
+.ficha-publica__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-6);
+  padding-bottom: var(--esp-3);
+  border-bottom: 1px dashed var(--cable);
+}
+.ficha-publica__expediente { display: inline-flex; align-items: center; gap: var(--esp-2); color: var(--texto-2); }
+.ficha-publica__expediente i { width: 8px; height: 8px; background: var(--acento); transform: skewX(var(--sesgo)); }
+.ficha-publica__barras {
+  display: inline-block;
+  width: 64px;
+  height: 18px;
+  margin-left: var(--esp-2);
+  background: repeating-linear-gradient(90deg, var(--tiza) 0 2px, transparent 2px 4px, var(--tiza) 4px 5px, transparent 5px 8px, var(--tiza) 8px 11px, transparent 11px 12px);
+  opacity: 0.7;
+}
+.ficha-publica__escena { position: relative; padding: var(--esp-5) var(--esp-4) 0; }
+.hoja-expediente {
+  position: relative;
+  padding: var(--esp-5) var(--esp-5) var(--esp-4);
+  background:
+    linear-gradient(90deg, transparent 0 38px, rgb(255 106 19 / 0.35) 38px 39px, transparent 39px),
+    repeating-linear-gradient(180deg, transparent 0 27px, rgb(10 10 12 / 0.06) 27px 28px),
+    var(--hueso);
+  color: var(--noche);
+  box-shadow: 10px 10px 0 var(--noche), 10px 10px 0 2px var(--cable);
+  transform: rotate(-1.5deg);
+}
+/* El borde de abajo, recortado con tijera. */
+.hoja-expediente::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 9px;
+  background: var(--hueso);
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 96% 100%, 90% 30%, 83% 90%, 76% 20%, 68% 100%, 60% 40%, 52% 90%, 44% 20%, 36% 100%, 28% 30%, 20% 90%, 12% 20%, 5% 100%, 0 40%);
+}
+.hoja-expediente .visor { position: relative; z-index: 1; }
+.hoja-expediente .visor__principal { border: 3px solid var(--noche); box-shadow: 5px 5px 0 var(--acento); }
+.cinta-adhesiva--hoja-a { z-index: 3; top: -10px; left: -18px; width: 120px; transform: rotate(-32deg); }
+.cinta-adhesiva--hoja-b { z-index: 3; top: -8px; right: -20px; width: 110px; transform: rotate(28deg); }
+/* La pestaña del tomo, como la de una carpeta. */
+.hoja-expediente__pestana {
+  position: absolute;
+  z-index: 0;
+  right: 32%;
+  top: -34px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px var(--esp-3) 10px;
+  border-radius: 8px 8px 0 0;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font: 700 0.6875rem / 1 var(--fuente-datos);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hoja-expediente__pestana b { font: italic 900 1.75rem / 0.8 var(--fuente-display); letter-spacing: 0; }
+/* El sello de goma: doble borde, tinta un poco gastada, girado. */
+.hoja-expediente__sello {
+  position: absolute;
+  z-index: 4;
+  right: -16px;
+  top: 34%;
+  padding: 6px var(--esp-3);
+  border: 3px double currentColor;
+  border-radius: 6px;
+  color: var(--senal-hondo);
+  font: 900 1.25rem / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgb(242 239 232 / 0.75);
+  transform: rotate(-12deg);
+  mask-image: repeating-linear-gradient(35deg, #000 0 6px, rgb(0 0 0 / 0.75) 6px 8px);
+  animation: sello var(--dur-2) var(--curva-resorte) 500ms both;
+}
+.hoja-expediente__sello--disponible { color: var(--noche); }
+.hoja-expediente__sello--agotado { color: var(--grafito); }
+.hoja-expediente__sello--pre_venta { color: var(--senal-hondo); }
+.hoja-expediente__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin: var(--esp-3) 0 0;
+  font: 500 0.75rem / 1.3 var(--fuente-datos);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grafito);
+}
+/* Los datos como planilla: rótulo, puntos y valor. */
+.modo-publico .datos-de-ficha dt { position: relative; }
+.modo-publico .datos-de-ficha dt::after { content: ""; position: absolute; left: calc(100% + 6px); right: -100%; bottom: 0.4em; border-bottom: 1px dotted var(--cable); z-index: -1; }
+@media (max-width: 720px) {
+  .ficha-publica__escena { padding-inline: var(--esp-2); }
+  .hoja-expediente { padding: var(--esp-4) var(--esp-3) var(--esp-3); }
+  .hoja-expediente__sello { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .hoja-expediente__sello { animation: none; } }
+
+/* ---------------------------------------------------------------------
+   El catálogo, segunda vuelta: la pila de portadas con su ticket en la
+   cabeza, el panel de filtros que acompaña al bajar, y «¡NOVEDAD!» como una
+   cinta en la esquina de la portada, más chica: en un catálogo ordenado por
+   lo más nuevo casi todo lo es, y el cartel grande tapaba las tapas.
+   --------------------------------------------------------------------- */
+.catalogo-pila {
+  position: absolute;
+  z-index: 1;
+  right: 6%;
+  top: 50%;
+  width: 300px;
+  height: 230px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.catalogo-pila__tapa {
+  position: absolute;
+  width: 112px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border: 3px solid var(--blanco);
+  box-shadow: 6px 6px 0 var(--noche);
+}
+.catalogo-pila__tapa:nth-child(1) { left: 0; top: 18px; transform: rotate(-11deg); }
+.catalogo-pila__tapa:nth-child(2) { left: 84px; top: 0; z-index: 1; transform: rotate(3deg); }
+.catalogo-pila__tapa:nth-child(3) { left: 168px; top: 26px; transform: rotate(13deg); }
+.catalogo-pila__ticket {
+  position: absolute;
+  z-index: 2;
+  left: 40px;
+  bottom: -18px;
+  display: grid;
+  gap: 4px;
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--hueso);
+  color: var(--noche);
+  font-size: 0.625rem;
+  transform: rotate(-4deg);
+  box-shadow: 4px 4px 0 var(--acento);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 3% 90%, 0 80%, 3% 70%, 0 60%, 3% 50%, 0 40%, 3% 30%, 0 20%, 3% 10%);
+}
+.catalogo-pila__ticket { white-space: nowrap; padding-left: var(--esp-4); }
+.catalogo-pila__ticket b { font: italic 800 0.875rem / 1 var(--fuente-display); letter-spacing: 0; text-transform: uppercase; }
+@media (max-width: 1100px) { .catalogo-pila { display: none; } }
+/* El panel de filtros acompaña al bajar, con su propio recorrido. */
+@media (min-width: 900px) {
+  .modo-publico .catalogo__panel { position: sticky; top: 92px; }
+  .modo-publico .catalogo__panel .panel-filtros { max-height: calc(100vh - 116px); overflow-y: auto; }
+}
+/* «¡NOVEDAD!», una cinta cruzada en la esquina de la portada. */
+.modo-publico .cartel-tomo--novedad {
+  right: -34px;
+  top: 16px;
+  bottom: auto;
+  width: 132px;
+  padding: 3px 0;
+  border: 0;
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+  font: 700 0.625rem / 1.2 var(--fuente-datos);
+  letter-spacing: 0.14em;
+  text-align: center;
+  box-shadow: 0 2px 0 var(--noche);
+  transform: rotate(38deg);
+}
+
+/* La anotación a mano: Bangers, girada, con una flecha dibujada que apunta al
+   título, como las notas en los márgenes de las referencias. */
+.garabato {
+  position: relative;
+  align-self: center;
+  margin-right: auto;
+  margin-left: var(--esp-6);
+  padding-left: 58px;
+  color: var(--acento-texto);
+  font: 400 clamp(1.25rem, 1rem + 0.8vw, 1.75rem) / 1 var(--fuente-grito);
+  letter-spacing: 0.02em;
+  transform: rotate(-6deg);
+}
+.garabato::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 50px;
+  height: 30px;
+  transform: translateY(-30%);
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 30'%3E%3Cpath d='M48 6C34 2 18 6 6 22M6 22l1-11M6 22l11-2' fill='none' stroke='%23FF6A13' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+@media (max-width: 720px) { .garabato { display: none; } }
+
+/* ---------------------------------------------------------------------
+   El tope del selector de cantidad: la flecha que ya no puede ir más allá se
+   ve apagada (sigue respondiendo, para poder avisar), y el aviso cae debajo
+   como un globo con su cola, sacudiéndose una vez.
+   --------------------------------------------------------------------- */
+.modo-publico .campo--cantidad { position: relative; }
+.modo-publico .selector-cantidad__paso[aria-disabled="true"] { opacity: 0.35; cursor: not-allowed; }
+.selector-cantidad__aviso {
+  position: absolute;
+  z-index: 6;
+  left: 0;
+  top: calc(100% + 12px);
+  width: max-content;
+  max-width: min(34ch, 80vw);
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--trazo-fuerte) var(--noche);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--noche);
+  font-size: var(--pub-chico);
+  box-shadow: 4px 4px 0 var(--acento);
+}
+.selector-cantidad__aviso::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: -10px;
+  width: 16px;
+  height: 10px;
+  background: var(--noche);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+}
+.selector-cantidad__aviso .mensaje__prefijo { font-weight: 700; color: var(--senal-hondo); }
+.selector-cantidad__aviso--sacude { animation: sacudon 240ms var(--curva-golpe) 1; }
+@media (prefers-reduced-motion: reduce) { .selector-cantidad__aviso--sacude { animation: none; } }
+
+/* ---------------------------------------------------------------------
+   La barra de desplazamiento de la tienda: un riel oscuro con su guía al
+   medio y un tirador lima con estrías, como la perilla de un aparato. Al
+   tomarlo pasa a naranja. Chrome y Edge la dibujan con `::-webkit-scrollbar`
+   (por eso acá no va `scrollbar-color`, que la reemplazaría); Firefox, que no
+   tiene esos pseudoelementos, toma los colores.
+   --------------------------------------------------------------------- */
+/* La hoja general fija `scrollbar-width` en todo: desde Chrome 121 eso anula
+   los pseudoelementos. En la tienda se vuelve a `auto` para que se dibujen. */
+html:has(> body.modo-publico),
+.modo-publico,
+.modo-publico * { scrollbar-width: auto; scrollbar-color: auto; }
+html:has(> body.modo-publico)::-webkit-scrollbar { width: 16px; height: 16px; }
+html:has(> body.modo-publico)::-webkit-scrollbar-track {
+  background:
+    linear-gradient(90deg, transparent 7px, var(--cable) 7px 9px, transparent 9px),
+    var(--noche);
+  border-left: 1px solid var(--cable);
+}
+html:has(> body.modo-publico)::-webkit-scrollbar-thumb {
+  min-height: 64px;
+  border: 3px solid var(--noche);
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgb(10 10 12 / 0.35) 3px 4px) center / 6px 22px no-repeat,
+    var(--ok);
+}
+html:has(> body.modo-publico)::-webkit-scrollbar-thumb:hover { background-color: var(--senal-vivo); }
+html:has(> body.modo-publico)::-webkit-scrollbar-thumb:active { background-color: var(--senal); }
+html:has(> body.modo-publico)::-webkit-scrollbar-corner { background: var(--noche); }
+@supports (-moz-appearance: none) {
+  html:has(> body.modo-publico) { scrollbar-color: var(--ok) var(--noche); }
+  .modo-publico * { scrollbar-width: thin; scrollbar-color: var(--ok) var(--asfalto); }
+}
+/* Las cintas giradas y agrandadas se pasan del ancho: se recortan sin crear
+   una barra horizontal (`clip` no rompe el encabezado fijo ni el panel). */
+.modo-publico .contenido-publico,
+.modo-publico .pie-publico { overflow-x: clip; }
+/* Las barras de los recorridos internos (filas, filtros), finas y lima. */
+.modo-publico ::-webkit-scrollbar { width: 8px; height: 8px; }
+.modo-publico ::-webkit-scrollbar-track { background: var(--asfalto); border-radius: 999px; }
+.modo-publico ::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--rol-encendido); }
+
+/* ---------------------------------------------------------------------
+   El cajón del carrito (plan 07, novena parte): un aparato. Rótulo de
+   grabación, la portada sujeta con cinta, el ticket, el medidor del envío
+   gratis que se llena al abrir, las acciones a lo ancho y el pie del ticket.
+   --------------------------------------------------------------------- */
+.modo-publico .cajon-carrito {
+  flex-direction: column;
+  width: min(26rem, 100vw);
+  border-left: 0;
+  background: var(--trama-puntos), var(--asfalto);
+  box-shadow: -8px 0 0 var(--rol-encendido);
+}
+.modo-publico .cajon-carrito[open] { display: flex; }
+@media (max-width: 480px) { .modo-publico .cajon-carrito { width: 100vw; max-width: 100vw; box-shadow: none; } }
+.cajon-carrito__cuerpo { display: flex; flex-direction: column; gap: var(--esp-4); padding: 0 var(--esp-5) var(--esp-5); }
+.cajon-carrito__rotulo {
+  display: flex;
+  margin: 0 calc(-1 * var(--esp-5));
+  padding: var(--esp-2) var(--esp-5);
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+}
+.cajon-carrito__rotulo i { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--alarma); animation: latido 1.2s ease-in-out infinite; }
+.modo-publico .cajon-carrito .dialogo__cabeza { padding: 0; }
+.modo-publico .cajon-carrito .dialogo__cabeza h2 { font: italic 800 1.75rem / 1 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; color: var(--blanco); }
+.modo-publico .cajon-carrito .dialogo__cabeza h2 .icono { color: var(--rol-encendido); }
+.modo-publico .cajon-carrito .dialogo__cerrar { border-radius: var(--radio-control); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -2px 0 rgb(0 0 0 / 0.5); }
+.modo-publico .cajon-carrito__producto { align-items: flex-start; gap: var(--esp-5); padding: var(--esp-4) 0; border-block: 1px dashed var(--cable); }
+.cajon-carrito__foto { position: relative; flex: none; padding: 6px 6px 18px; background: var(--hueso); box-shadow: 5px 5px 0 var(--noche); transform: rotate(-4deg); }
+.modo-publico .cajon-carrito__foto .portada-mini { display: block; width: 5.5rem; border: 2px solid var(--noche); }
+.cinta-adhesiva--cajon { z-index: 1; top: -10px; left: 18%; width: 64%; height: 18px; }
+.modo-publico .cajon-carrito__titulo { font: italic 800 1.375rem / 1.05 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; color: var(--blanco); overflow-wrap: anywhere; }
+.cajon-carrito__precio { font-size: 1.125rem; color: var(--rol-encendido); }
+/* El ticket: renglones con línea punteada, en la letra de los datos. */
+.cajon-carrito__ticket {
+  display: grid;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-4) var(--esp-4) var(--esp-3);
+  background: var(--hueso);
+  color: var(--noche);
+  clip-path: polygon(0 5px, 4% 0, 8% 5px, 12% 0, 16% 5px, 20% 0, 24% 5px, 28% 0, 32% 5px, 36% 0, 40% 5px, 44% 0, 48% 5px, 52% 0, 56% 5px, 60% 0, 64% 5px, 68% 0, 72% 5px, 76% 0, 80% 5px, 84% 0, 88% 5px, 92% 0, 96% 5px, 100% 0, 100% 100%, 0 100%);
+}
+.cajon-carrito__ticket div { display: flex; justify-content: space-between; gap: var(--esp-3); padding-bottom: var(--esp-1); border-bottom: 1px dashed var(--linea-papel); }
+.cajon-carrito__ticket div:last-child { border-bottom: 0; }
+.cajon-carrito__ticket dt { font: 500 0.75rem / 1.4 var(--fuente-datos); letter-spacing: 0.08em; text-transform: uppercase; color: var(--grafito); }
+.cajon-carrito__ticket dd { margin: 0; font: 700 1rem / 1.4 var(--fuente-datos); }
+.cajon-carrito__ticket div:last-child dd { font-size: 1.375rem; }
+/* El medidor del envío gratis: un VU de bloques que se llena. */
+.cajon-carrito__envio { display: grid; gap: var(--esp-2); }
+.cajon-carrito__envio p { margin: 0; color: var(--texto-2); }
+.cajon-carrito__envio strong { color: var(--rol-encendido); }
+.cajon-carrito__medidor {
+  --avance: 0;
+  position: relative;
+  display: block;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, var(--hormigon) 0 10px, var(--noche) 10px 12px);
+}
+.cajon-carrito__medidor i {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, var(--rol-encendido) 0 10px, transparent 10px 12px);
+  transform: scaleX(var(--avance));
+  transform-origin: left;
+  transition: transform 900ms var(--curva-golpe);
+}
+.cajon-carrito__medidor--completo i { background: repeating-linear-gradient(90deg, var(--acento) 0 10px, transparent 10px 12px); }
+.cajon-carrito__acciones { display: grid; gap: var(--esp-3); }
+.cajon-carrito__acciones > * { justify-content: center; width: 100%; }
+.cajon-carrito__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  margin-top: auto;
+  padding: var(--esp-4) var(--esp-5);
+  border-top: 1px dashed var(--cable);
+  color: var(--texto-2);
+}
+.cajon-carrito__barras { width: 96px; height: 26px; background: repeating-linear-gradient(90deg, var(--tiza) 0 2px, transparent 2px 4px, var(--tiza) 4px 5px, transparent 5px 8px, var(--tiza) 8px 11px, transparent 11px 12px); opacity: 0.6; }
+.modo-publico .cajon-carrito[open] .cajon-carrito__producto { animation: aparece var(--dur-3) var(--curva-golpe) 120ms both; }
+.modo-publico .cajon-carrito[open] .cajon-carrito__ticket { animation: aparece var(--dur-3) var(--curva-golpe) 200ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .cajon-carrito__rotulo i { animation: none; }
+  .cajon-carrito__medidor i { transition: none; }
+}
+
+/* ---------------------------------------------------------------------
+   El visor de imágenes en la tienda (plan 07, novena parte). La imagen se
+   inclina apenas al pasar por encima; cada cambio entra por bandas
+   (`cambio-canal`); las miniaturas son cuadros de una tira de película; y la
+   ampliación es una pantalla de proyección, con líneas de barrido, su
+   rótulo, flechas de aparato y la tira abajo.
+   --------------------------------------------------------------------- */
+.modo-publico .visor__principal {
+  overflow: hidden;
+  border-color: var(--noche);
+  transition: transform var(--dur-3) var(--curva-golpe), box-shadow var(--dur-3) var(--curva-golpe);
+}
+.modo-publico .visor__principal:hover { transform: rotate(1deg) translateY(-4px); box-shadow: 9px 9px 0 var(--acento); }
+.modo-publico .visor__principal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 0.18) 50%, transparent 60%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  transition: background-position 700ms var(--curva-golpe);
+}
+.modo-publico .visor__principal:hover::after { background-position: -20% 0; }
+.modo-publico .visor__lupa {
+  width: auto;
+  height: 34px;
+  gap: 6px;
+  display: inline-flex;
+  padding: 0 var(--esp-3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--rol-encendido);
+  color: var(--rol-encendido-sobre);
+  font: 700 0.6875rem / 1 var(--fuente-datos);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: translateY(8px);
+  transition: opacity var(--dur-2) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe);
+}
+.modo-publico .visor__lupa .icono { width: 16px; height: 16px; }
+.modo-publico .visor__principal:hover .visor__lupa,
+.modo-publico .visor__principal:focus-visible .visor__lupa { transform: none; }
+.visor__lupa-texto { display: none; }
+.modo-publico .visor__lupa-texto { display: inline; }
+.modo-publico .visor__imagen--entra,
+.modo-publico .visor__principal img.visor__imagen--entra { animation: cambio-canal var(--dur-4) var(--curva-cuadro) both; }
+/* Las miniaturas: cuadros de una tira de película, con perforaciones. */
+.modo-publico .visor__miniaturas {
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow-x: auto;
+  padding: 14px var(--esp-2);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg, var(--asfalto) 0 8px, transparent 8px 18px) 0 4px / 100% 6px repeat-x,
+    repeating-linear-gradient(90deg, var(--asfalto) 0 8px, transparent 8px 18px) 0 calc(100% - 4px) / 100% 6px repeat-x,
+    var(--noche);
+}
+.modo-publico .visor__miniaturas .visor__miniatura { flex: 0 0 4rem; margin-right: 6px; border: 2px solid var(--noche); opacity: 0.55; transition: opacity var(--dur-1) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe); }
+.modo-publico .visor__miniaturas .visor__miniatura:hover { opacity: 1; transform: translateY(-3px); }
+.modo-publico .visor__miniaturas .visor__miniatura[aria-current] { border: 2px solid var(--rol-encendido); opacity: 1; transform: translateY(-3px); }
+/* La ampliación: una pantalla de proyección. */
+.modo-publico .visor__dialogo {
+  border: 3px solid var(--blanco);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--noche);
+  box-shadow: 10px 10px 0 var(--acento);
+}
+.modo-publico .visor__dialogo::backdrop { background: rgb(10 10 12 / 0.82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.modo-publico .visor__dialogo[open] { animation: dialogo-entra var(--dur-3) var(--curva-golpe) both; }
+.modo-publico .visor__dialogo-cabeza { gap: var(--esp-4); background: var(--asfalto); border-bottom-color: var(--cable); }
+.visor__proyeccion { display: none; }
+.modo-publico .visor__proyeccion { display: inline-flex; align-items: center; gap: 8px; color: var(--rol-encendido); }
+.modo-publico .visor__proyeccion i { width: 8px; height: 8px; border-radius: 50%; background: var(--alarma); animation: latido 1.2s ease-in-out infinite; }
+.modo-publico .visor__dialogo-cabeza .dialogo__cerrar { margin-left: auto; border-radius: var(--radio-control); }
+.modo-publico .visor__escenario { position: relative; }
+.modo-publico .visor__escenario::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 3px);
+}
+.modo-publico .visor__paso {
+  z-index: 1;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--hormigon);
+  color: var(--blanco);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -2px 0 rgb(0 0 0 / 0.5), 4px 4px 0 var(--noche);
+}
+.modo-publico .visor__paso:hover { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+.modo-publico .visor__dialogo .visor__tira { background: var(--asfalto); border-top-color: var(--cable); }
+.modo-publico .visor__dialogo .visor__tira .visor__miniatura { border-radius: 4px; }
+.modo-publico .visor__dialogo .visor__tira .visor__miniatura[aria-current] { border-color: var(--rol-encendido); }
+@media (prefers-reduced-motion: reduce) {
+  .modo-publico .visor__imagen--entra,
+  .modo-publico .visor__principal img.visor__imagen--entra,
+  .modo-publico .visor__proyeccion i { animation: none; }
+  .modo-publico .visor__principal::after { transition: none; }
+}
+
+/* ---------------------------------------------------------------------
+   Las pantallas del Cliente con el lenguaje del escaparate (plan 07, novena
+   parte; pedido del responsable): carrito, compra, «Mi cuenta», pedidos,
+   puntos y stock en el local. Se rediseñan las piezas que comparten, así
+   todas cambian juntas y ninguna pierde lo que hace.
+   --------------------------------------------------------------------- */
+
+/* Los títulos: el 1 con el corrimiento de color del hero; el 2 con su
+   marca sesgada y una línea punteada que corre hasta el borde. */
+.modo-publico .titulo-1 {
+  font: italic 900 var(--pub-titulo-1) / 0.92 var(--fuente-display);
+  font-stretch: var(--ancho-apretado);
+  letter-spacing: var(--tracking-titulo);
+  color: var(--texto-fuerte);
+  text-shadow: -2px 0 color-mix(in srgb, var(--acento) 55%, transparent), 2px 0 color-mix(in srgb, var(--rol-encendido) 45%, transparent);
+}
+.modo-publico .titulo-2 {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin: 0;
+  font: italic 800 clamp(1.25rem, 1rem + 0.8vw, 1.625rem) / 1 var(--fuente-display);
+  font-stretch: var(--ancho-condensado);
+  color: var(--texto-fuerte);
+}
+.modo-publico .titulo-2::before { content: ""; flex: none; width: 14px; height: 14px; background: var(--acento); transform: skewX(var(--sesgo)); }
+.modo-publico .titulo-2::after { content: ""; flex: 1; min-width: var(--esp-6); border-bottom: 2px dashed var(--cable); }
+
+/* Los paneles: aparatos, con su relieve y su sombra dura. */
+.modo-publico .panel {
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background: var(--asfalto);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 6px 6px 0 var(--noche);
+}
+.modo-publico .panel::before { content: none; }
+.modo-publico .panel--atencion { overflow: hidden; }
+.modo-publico .panel--atencion::after { right: 0; }
+
+/* Los rótulos de estado: píldoras, como las teclas de un aparato. */
+.modo-publico .marca-estado { border-radius: 999px; padding-inline: var(--esp-3); }
+
+/* Los campos sobre noche: redondeados y con el foco encendido. */
+.modo-publico .superficie-noche :is(input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], input[type="date"], input[type="search"], select, textarea) {
+  border-radius: 10px;
+}
+.modo-publico .superficie-noche :is(input, select, textarea):focus-visible { border-color: var(--rol-encendido); box-shadow: 0 0 0 1px var(--rol-encendido); }
+
+/* El estado vacío: un televisor sin señal. Barras de prueba arriba, el
+   rótulo «Sin señal» y líneas de pantalla; el cartel y el texto, igual. */
+.modo-publico .vacio {
+  position: relative;
+  overflow: hidden;
+  padding-top: calc(var(--esp-7) + 18px);
+  border: var(--trazo) var(--cable);
+  border-radius: var(--radio-aparato);
+  background:
+    linear-gradient(90deg, var(--hueso) 0 14.28%, var(--ok) 14.28% 28.57%, var(--dato) 28.57% 42.85%, var(--senal) 42.85% 57.14%, var(--alarma) 57.14% 71.42%, var(--grafito) 71.42% 85.71%, var(--noche) 85.71%) 0 0 / 100% 14px no-repeat,
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px),
+    var(--trama-puntos),
+    var(--asfalto);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 6px 6px 0 var(--noche);
+}
+.modo-publico .vacio::after {
+  content: "● Sin señal · CH 00";
+  position: absolute;
+  left: var(--esp-4);
+  top: 26px;
+  font: 500 0.6875rem / 1 var(--fuente-datos);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rol-encendido);
+}
+
+/* Los pasos de la compra: el contador de una casetera. */
+.modo-publico .pasos-compra { gap: 0; align-items: center; }
+.modo-publico .pasos-compra__paso {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 6px var(--esp-3) 6px 6px;
+  border: var(--trazo) var(--cable);
+  border-radius: 999px;
+  background: var(--asfalto);
+}
+.modo-publico .pasos-compra__paso + .pasos-compra__paso { margin-left: 28px; position: relative; }
+.modo-publico .pasos-compra__paso + .pasos-compra__paso::before { content: ""; position: absolute; right: calc(100% + 4px); top: 50%; width: 20px; border-top: 2px dashed var(--cable); }
+.modo-publico .pasos-compra__numero {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--hormigon);
+  color: var(--texto-2);
+  -webkit-text-stroke: 0;
+  font: 700 0.8125rem / 1 var(--fuente-datos);
+}
+.modo-publico .pasos-compra__paso--hecho { border-color: var(--cable); color: var(--texto); }
+.modo-publico .pasos-compra__paso--hecho .pasos-compra__numero { background: var(--texto); color: var(--noche); }
+.modo-publico .pasos-compra__paso--actual { border-color: var(--rol-encendido); background: color-mix(in srgb, var(--rol-encendido) 14%, var(--asfalto)); color: var(--texto-fuerte); }
+.modo-publico .pasos-compra__paso--actual .pasos-compra__numero { background: var(--rol-encendido); color: var(--rol-encendido-sobre); }
+@media (max-width: 600px) {
+  .modo-publico .pasos-compra { gap: var(--esp-2); }
+  .modo-publico .pasos-compra__paso + .pasos-compra__paso { margin-left: 0; }
+  .modo-publico .pasos-compra__paso + .pasos-compra__paso::before { content: none; }
+  .modo-publico .pasos-compra__paso:not(.pasos-compra__paso--actual) .pasos-compra__nombre { display: none; }
+}
+
+/* Las líneas del carrito y del pedido: la caja de una cinta, con su lomo
+   de color a la izquierda y la portada como una foto. */
+.modo-publico .linea-carrito {
+  position: relative;
+  padding-left: calc(var(--esp-4) + 12px);
+  border: var(--trazo) var(--cable);
+  background: var(--asfalto);
+  box-shadow: inset 12px 0 0 var(--rol-encendido), 6px 6px 0 var(--noche);
+  transition: transform var(--dur-2) var(--curva-golpe), box-shadow var(--dur-2) var(--curva-golpe);
+}
+.modo-publico .linea-carrito::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: repeating-linear-gradient(0deg, transparent 0 6px, rgb(10 10 12 / 0.35) 6px 8px);
+}
+.modo-publico .linea-carrito:hover { transform: translate(-2px, -2px); box-shadow: inset 12px 0 0 var(--rol-encendido), 8px 8px 0 var(--acento); }
+.modo-publico .linea-carrito--con-problema { box-shadow: inset 12px 0 0 var(--error), 6px 6px 0 var(--noche); }
+.modo-publico .linea-carrito__portada { padding: 4px 4px 12px; background: var(--hueso); box-shadow: 3px 3px 0 var(--noche); transform: rotate(-3deg); }
+.modo-publico .linea-carrito__titulo { font: italic 800 1.25rem / 1.05 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; overflow-wrap: anywhere; }
+.modo-publico .linea-carrito__subtotal { color: var(--rol-encendido); }
+
+/* El resumen: un ticket de papel, dentado arriba, con su código de barras. */
+.modo-publico .resumen-carrito {
+  --fondo: var(--hueso);
+  --fondo-2: var(--blanco);
+  --fondo-3: #E7E3DA;
+  --texto: var(--noche);
+  --texto-fuerte: var(--noche);
+  --texto-2: var(--grafito);
+  --linea: var(--linea-papel);
+  --acento-texto: var(--senal-hondo);
+  --golpe: var(--noche);
+  --foco: var(--noche);
+  position: relative;
+  padding-top: calc(var(--esp-5) + 6px);
+  padding-bottom: calc(var(--esp-5) + 34px);
+  border: 0;
+  background: var(--hueso);
+  color: var(--noche);
+  clip-path: polygon(0 6px, 4% 0, 8% 6px, 12% 0, 16% 6px, 20% 0, 24% 6px, 28% 0, 32% 6px, 36% 0, 40% 6px, 44% 0, 48% 6px, 52% 0, 56% 6px, 60% 0, 64% 6px, 68% 0, 72% 6px, 76% 0, 80% 6px, 84% 0, 88% 6px, 92% 0, 96% 6px, 100% 0, 100% 100%, 0 100%);
+}
+.modo-publico .resumen-carrito::after {
+  content: "";
+  position: absolute;
+  left: var(--esp-5);
+  right: var(--esp-5);
+  bottom: var(--esp-4);
+  height: 22px;
+  background: repeating-linear-gradient(90deg, var(--noche) 0 2px, transparent 2px 4px, var(--noche) 4px 5px, transparent 5px 8px, var(--noche) 8px 11px, transparent 11px 12px);
+  opacity: 0.75;
+}
+.modo-publico .resumen-carrito .resumen-compra dt,
+.modo-publico .resumen-carrito .antetitulo { font-family: var(--fuente-datos); font-weight: 500; letter-spacing: 0.12em; }
+.modo-publico .resumen-carrito .resumen-compra > div { border-bottom: 1px dashed var(--linea-papel); }
+.modo-publico .resumen-carrito__total { padding-top: var(--esp-3); border-top: 2px solid var(--noche); }
+
+/* Las tarjetas de opción (la entrega, el medio de pago): aparatos. */
+.modo-publico .opcion-tarjeta {
+  border: var(--trazo-fuerte) var(--cable);
+  border-radius: 14px;
+  background: var(--asfalto);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  transition: border-color var(--dur-1) var(--curva-golpe), transform var(--dur-2) var(--curva-golpe), box-shadow var(--dur-2) var(--curva-golpe);
+}
+.modo-publico .opcion-tarjeta:hover { border-color: var(--tiza); transform: translateY(-2px); }
+.modo-publico .opcion-tarjeta:has(input:checked) { border-color: var(--rol-encendido); background: color-mix(in srgb, var(--rol-encendido) 10%, var(--asfalto)); box-shadow: 5px 5px 0 var(--rol-encendido); }
+.modo-publico .opcion-tarjeta:has(input:checked) .opcion-tarjeta__icono { color: var(--rol-encendido); }
+
+/* Los pedidos de la cuenta: tickets de alquiler. Lomo de color, la fecha y
+   el riel, y el talón con el estado y lo cobrado detrás de una línea de corte. */
+.modo-publico .pedido-de-cuenta {
+  position: relative;
+  padding-left: calc(var(--esp-4) + 12px);
+  border: var(--trazo) var(--cable);
+  background: var(--asfalto);
+  box-shadow: inset 12px 0 0 var(--acento), 6px 6px 0 var(--noche);
+}
+.modo-publico .pedido-de-cuenta:hover { box-shadow: inset 12px 0 0 var(--acento), 8px 8px 0 var(--rol-encendido); }
+.modo-publico .pedido-de-cuenta__numero { font: italic 800 1.25rem / 1.1 var(--fuente-display); font-stretch: var(--ancho-condensado); text-transform: uppercase; }
+.modo-publico .pedido-de-cuenta__numero .datos { color: var(--rol-encendido); }
+.modo-publico .pedido-de-cuenta__portadas .portada-mini { box-shadow: 2px 2px 0 var(--noche); }
+.modo-publico .pedido-de-cuenta__portadas .portada-mini:nth-child(odd) { transform: rotate(-4deg); }
+.modo-publico .pedido-de-cuenta__portadas .portada-mini:nth-child(even) { transform: rotate(3deg); }
+@media (min-width: 640px) {
+  .modo-publico .pedido-de-cuenta__cierre { align-self: stretch; justify-content: center; padding-left: var(--esp-4); border-left: 2px dashed var(--cable); }
+}
+.modo-publico .pedido-de-cuenta__total { font-size: 1.125rem; color: var(--texto-fuerte); }
+
+/* Los lotes de puntos y las filas de la cuenta: tarjetas con su talón. */
+.modo-publico .tarjeta.fila-de-cuenta {
+  border: var(--trazo) var(--cable);
+  border-left: 6px solid var(--rol-encendido);
+  background: var(--asfalto);
+  box-shadow: 4px 4px 0 var(--noche);
+}
+
+/* ---------------------------------------------------------------------
+   Las animaciones nuevas (plan 07, novena parte, ambigüedad 8).
+   --------------------------------------------------------------------- */
+@keyframes cambio-canal {
+  0%   { clip-path: inset(0 0 100% 0); transform: translateX(-8px); }
+  33%  { clip-path: inset(0 0 55% 0); transform: translateX(6px); }
+  66%  { clip-path: inset(0 0 15% 0); transform: translateX(-2px); }
+  100% { clip-path: inset(0); transform: none; }
+}
+@keyframes banda-ruido {
+  0%   { top: -20%; opacity: 1; }
+  100% { top: 110%; opacity: 1; }
+}
+@keyframes texto-deriva {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-20%); }
+}
+@keyframes vitrina-entra {
+  from { opacity: 0; transform: rotate(-3deg) translateX(40px); }
+  to   { opacity: 1; transform: rotate(-3deg); }
+}
+@keyframes rebobina {
+  from { background-position: 0 0; }
+  to   { background-position: 0 -220px; }
+}
+@keyframes cajon-entra {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portada-tienda__fondo,
+  .ecualizador i,
+  .cinta-fotos__pista,
+  .tele__ruido--pasa,
+  .vitrina__diapositiva--entra .vitrina__tapa,
+  .cinta-fotos { overflow-x: auto; }
+}

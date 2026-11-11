@@ -3,7 +3,7 @@ Los resultados del catálogo público (`CO-176`): la cantidad, la estantería y 
 paginación. Es lo único que se reemplaza cuando cambian los filtros (plan 07,
 quinta parte); la vista lo responde solo con `parcial=1`.
 {% endcomment %}
-<p class="antetitulo" role="status">{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</p>
+<p class="antetitulo catalogo__cuenta" role="status">{{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}</p>
 
 {% if productos %}
   {% include "core/_estanteria.html" with productos=productos volver=parametros %}

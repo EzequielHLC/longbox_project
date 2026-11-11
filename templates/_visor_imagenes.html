@@ -10,6 +10,11 @@ ampliación no cambia la imagen de la pantalla**: son dos lugares distintos.
 No dibuja nada si el producto no tiene ninguna imagen: el estado vacío es de
 cada pantalla.
 
+Plan 07, novena parte: en la tienda, cada cambio de imagen entra «cambiando de
+canal», las miniaturas van en una tira de película y la ampliación es una
+pantalla de proyección con su rótulo. En el panel se ve como siempre: lo nuevo
+está en `escaparate.css`, que sólo carga la tienda.
+
     {% include "_visor_imagenes.html" with producto=producto %}
 {% endcomment %}
 {% with adicionales=producto.imagenes.all %}
@@ -21,7 +26,7 @@ cada pantalla.
     {% else %}
       <img src="{{ adicionales.0.imagen.url }}" alt="Imagen 1 de {{ producto.titulo }}" data-visor-imagen>
     {% endif %}
-    <span class="visor__lupa" aria-hidden="true">{% include "_iconos.html" with icono="buscar" %}</span>
+    <span class="visor__lupa" aria-hidden="true">{% include "_iconos.html" with icono="buscar" %}<span class="visor__lupa-texto">Ampliar</span></span>
   </button>
 
   {% if adicionales.count > 1 or producto.portada and adicionales %}
@@ -41,6 +46,7 @@ cada pantalla.
 
   <dialog class="dialogo visor__dialogo" data-visor-dialogo aria-label="Imágenes de {{ producto.titulo }}">
     <div class="visor__dialogo-cabeza">
+      <span class="visor__proyeccion osd" aria-hidden="true"><i></i>Proyección</span>
       <span class="datos texto-chico" data-visor-contador aria-live="polite"></span>
       <button type="button" class="dialogo__cerrar" data-visor-cerrar aria-label="Cerrar">×</button>
     </div>
@@ -71,7 +77,15 @@ cada pantalla.
       let enPantalla = 0;
       let enAmpliacion = 0;
 
+      // Cada cambio vuelve a correr la entrada (sólo la tienda la dibuja).
+      function entrar(imagen) {
+        imagen.classList.remove("visor__imagen--entra");
+        void imagen.offsetWidth;
+        imagen.classList.add("visor__imagen--entra");
+      }
+
       function mostrarEnPantalla(indice) {
+        if (indice !== enPantalla) entrar(principal);
         enPantalla = indice;
         principal.src = fuentes[indice].src;
         principal.alt = fuentes[indice].alt;
@@ -80,6 +94,7 @@ cada pantalla.
 
       function mostrarAmpliada(indice) {
         enAmpliacion = (indice + fuentes.length) % fuentes.length;
+        entrar(ampliada);
         ampliada.src = fuentes[enAmpliacion].src;
         ampliada.alt = fuentes[enAmpliacion].alt;
         contador.textContent = fuentes.length > 1 ? `${enAmpliacion + 1} de ${fuentes.length}` : "";

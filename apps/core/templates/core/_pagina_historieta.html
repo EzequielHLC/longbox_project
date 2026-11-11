@@ -1,0 +1,27 @@
+{% comment %}
+La página de historieta (plan 07, novena parte): de tres a seis viñetas de
+tamaños distintos, como una página. El tamaño sale del lugar (`:nth-child` en la hoja): la
+primera es la grande. El texto va en un recuadro de narración, en un globo o, si es una
+onomatopeya, grande sobre la imagen o sobre un panel de color cuando no hay
+imagen. Las viñetas entran barriéndose en diagonal, una detrás de la otra.
+
+Una viñeta sin texto es decorativa: su imagen no se anuncia (ambigüedad 6).
+
+    {% include "core/_pagina_historieta.html" with imagenes=seccion.lista %}
+{% endcomment %}
+<div class="pagina-historieta" data-cantidad="{{ imagenes|length }}" data-revela>
+  {% for vineta in imagenes %}
+    {% if vineta.url %}<a href="{{ vineta.url }}"{% else %}<div{% endif %} class="vineta{% if not vineta.imagen %} vineta--color{% endif %}" data-indice="{{ forloop.counter0 }}">
+      {% if vineta.imagen %}<img src="{{ vineta.imagen.url }}" alt="{% if vineta.titulo and not vineta.texto %}{{ vineta.titulo }}{% endif %}" loading="lazy">{% endif %}
+      {% if vineta.texto %}
+        {% if vineta.forma_texto == "globo" %}
+          <span class="vineta__globo">{{ vineta.texto }}</span>
+        {% elif vineta.forma_texto == "grito" %}
+          <span class="vineta__grito">{{ vineta.texto }}{% if vineta.titulo %}<small>{{ vineta.titulo }}</small>{% endif %}</span>
+        {% else %}
+          <span class="vineta__recuadro">{{ vineta.texto }}</span>
+        {% endif %}
+      {% endif %}
+    {% if vineta.url %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+</div>

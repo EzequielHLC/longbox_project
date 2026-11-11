@@ -233,7 +233,7 @@ Nada en el documento.
 ### B-07-009 · Filas de productos en la portada, por etiqueta o por grupo de etiquetas
 
 **Tipo:** Agregado · **Fecha:** 2026-10-04 · **Alcance:** la portada de la tienda, `CO-176`
-**Estado:** Abierta — pedido explícito del responsable el 2026-10-04; falta decidir si lleva caso de uso propio
+**Estado:** Abierta — pedido explícito del responsable el 2026-10-04. El caso de uso quedó decidido el 2026-11-11: `CU-CFG-SEC` (B-07-046)
 
 **Qué apareció.**
 El responsable pidió que la portada muestre grupos del catálogo como barras que se recorren de
@@ -723,7 +723,7 @@ con el relleno. En la tarjeta, el precio quedaba pegado al botón de agregar.
 ### B-07-027 · El menú de la tienda, todo texto
 
 **Tipo:** Corrección · **Fecha:** 2026-10-05 · **Alcance:** la cáscara pública
-**Estado:** Resuelta
+**Estado:** Resuelta · reemplazada el 2026-11-11 por B-07-048 (botonera de íconos)
 
 **Qué apareció.**
 El responsable preguntó por qué «Carrito» era el único enlace del menú con ícono. El ícono lo
@@ -1314,3 +1314,401 @@ que el sistema lo devuelva.
 **Qué habría que cambiar.**
 `CU-TDA-CMP`, requisitos de la integración con la pasarela: el plazo para pagar coincide con el de
 abandono del checkout.
+
+---
+
+### B-07-046 · Las filas de la portada pasan a ser secciones de varios tipos
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-CFG-SEC` (antes `CU-CFG-FIL`), `CU-TDA-POR`, `guardarSeccionesDeLaPortada` (`NUEVO-CO-23`)
+**Estado:** Abierta — pedido explícito del responsable el 2026-11-11 (plan 07, novena parte, aprobado)
+
+**Qué apareció.**
+El responsable pidió que la portada admita, además de las filas de productos, filas o carruseles
+de fotos que se ordenen igual que ellas, y una fila de botones con foto que lleve directo a un
+grupo de productos.
+
+**Qué dice la especificación.**
+`Nada.` Las filas no tienen caso de uso en el documento (B-07-009); `CU-CFG-FIL` se asignó el
+2026-11-08 y su ficha no se escribió.
+
+**Qué se hizo.**
+- Cada elemento de la portada es una **sección** con un tipo: **Productos** (la fila de siempre,
+  o una **vitrina** que destaca uno por vez), **Accesos con foto** (3 a 8), **Página de
+  historieta** (3 a 6 viñetas), **Cinta de fotos** (4 a 12), **Panel destacado** (1 imagen, con
+  texto y botón), y **Recién llegados** y **Lo que se viene**, que arma el sistema. Todas van en
+  un solo orden, en el mismo gestor por tarjetas de B-07-010.
+- Recién llegados y Lo que se viene existen siempre: se mueven y se apagan, no se borran. Al
+  migrar quedaron primeras, en el orden en que la portada las mostraba, y las filas detrás.
+- El tipo se elige al agregar la sección y después no cambia.
+- Cada imagen puede llevar a una parte de la tienda, de una **lista cerrada**: sin enlace, las
+  pre-ventas, un grupo, una etiqueta, un tipo de producto, una editorial o un producto, que se
+  indica por su código. El servidor rechaza cualquier otro destino y la base exige que el destino
+  tenga su dato.
+- Un acceso cuyo destino se dio de baja, o que no tiene productos visibles, no se dibuja; una
+  viñeta, una foto o el panel con el destino caído se muestran sin enlace.
+- Una imagen sin archivo sólo se admite como onomatopeya de la página de historieta, que se
+  dibuja sobre un panel de color.
+- El título de un acceso o de una foto es su texto alternativo; una viñeta sin texto es
+  decorativa.
+- Las secciones alternan noche y papel según su lugar, como páginas de una revista, y llevan su
+  número en el título.
+- Guardar se audita como «Modificación de las secciones de la portada», con la lista anterior y
+  la nueva, incluidas las imágenes y adónde lleva cada una. Los registros viejos conservan su
+  acción.
+
+**Qué habría que cambiar.**
+- Identificación de los Casos de Uso › Mód. 17: `CU-CFG-SEC` Administrar Secciones de la Portada
+  (reemplaza a `CU-CFG-FIL`, ya registrado en `CODIGOS.md`); ficha nueva, con su DSS.
+- Contratos › Mód. 17: `guardarSeccionesDeLaPortada`, con número a asignar.
+- `MODELO_DE_DOMINIO`: **SeccionPortada** reemplaza a FilaPortada (tipo, presentación, título,
+  antetítulo, texto, texto del botón, etiqueta o grupo, imagen, orden, activa) e
+  **ImagenDeSeccion** (imagen, título, texto, forma del texto, destino y su dato, orden).
+- `CU-TDA-POR`: la portada dibuja las secciones activas en su orden.
+
+---
+
+### B-07-047 · El carrusel de banners se ve en un televisor dentro del hero
+
+**Tipo:** Desvío · **Fecha:** 2026-11-11 · **Alcance:** `CU-CFG-BNC`, `CU-TDA-POR`
+**Estado:** Abierta — consultado: plan 07, novena parte, ambigüedad 2, aprobada
+
+**Qué apareció.**
+El hero era texto sobre un fondo vacío y el carrusel quedaba debajo, como una sección aparte.
+
+**Qué dice la especificación.**
+> «**Transición**: `barrido-diagonal` […]. Controles «Anterior», «Siguiente» y «Pausar» como
+> `.boton-texto`, más indicadores cuadrados» (`identidad_visual.md`, Carrusel de banners).
+
+**Qué se hizo.**
+El carrusel pasa al hero, dentro de un televisor: la pantalla con el rótulo de reproducción, el
+canal y el tiempo, las perillas, un botón por banner que lo elige, y los controles de cinta
+(anterior, pausar, siguiente). El cambio de banner es un **cambio de canal**: la imagen entra por
+bandas y pasa una banda de ruido. El intervalo, la pausa con el puntero, con el foco y con el
+botón, y el movimiento reducido siguen igual (`CO-132` no cambia). Sin banners, el televisor
+pasa la portada destacada. La vista previa de la galería de banners sigue mostrando el carrusel
+de siempre.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Portada (hero) y Carrusel de banners: el televisor y sus controles (ver
+B-07-049).
+
+---
+
+### B-07-048 · El menú de la tienda es una botonera de íconos
+
+**Tipo:** Desvío · **Fecha:** 2026-11-11 · **Alcance:** la cáscara pública
+**Estado:** Abierta — consultado: pedido explícito del responsable el 2026-11-11 («la barra de
+arriba se ve muy sosa […] con iconitos»). Reemplaza a B-07-027.
+
+**Qué apareció.**
+El responsable pidió íconos en la barra de arriba, como en la referencia.
+
+**Qué dice la especificación.**
+> «Menú en `--pub-rotulo`; el enlace actual con un subrayado `--acento` de 3px sesgado»
+> (`identidad_visual.md`, Encabezado). B-07-027 dejó el menú «todo texto».
+
+**Qué se hizo.**
+- La barra es un aparato: la marca en una pestaña, el buscador en una píldora y una botonera con
+  un ícono por destino —Inicio, Catálogo, **Pre-ventas** (nuevo), los puntos, el carrito y la
+  cuenta—. El nombre de cada destino aparece al pasar el puntero o con el foco, y está siempre
+  en el enlace para el lector de pantalla. El actual va encendido. El invitado ve «Ingresar»
+  con texto.
+- Detrás de la barra fija hay un velo con desenfoque.
+- En el celular quedan el catálogo, los puntos, el carrito y la cuenta, en la misma fila que la
+  marca; el buscador va debajo.
+- Todo lo de antes sigue: las sugerencias, el atajo «/», el contador que rebota, el menú de la
+  cuenta y la barra que se compacta al bajar.
+- El pie conserva su contenido —el botón de arrepentimiento, los accesos de la tienda, la ayuda,
+  el contacto y las redes— con la línea «■ STOP · Fin de la cinta» arriba, íconos de contacto,
+  «◀◀ Rebobinar» (vuelve arriba) y el nombre de la tienda gigante, cortado.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Encabezado y Pie.
+
+---
+
+### B-07-049 · Aparatos e impresos: redondeados, lima y desenfoque en el escaparate
+
+**Tipo:** Desvío · **Fecha:** 2026-11-11 · **Alcance:** el modo público
+**Estado:** Abierta — consultado: pedido explícito del responsable el 2026-11-11 («Puedes usar
+esquinas redondeadas y tonos verde lima, solo si son coherentes visualmente, lo mismo con
+desenfoques, animaciones»); plan 07, novena parte, ambigüedad 8, aprobada. Espera la enmienda de
+los documentos visuales.
+
+**Qué apareció.**
+El responsable pidió más personalidad, con el estilo retro, musical y de VHS de la referencia, y
+admitió redondeados, lima y desenfoques si son coherentes.
+
+**Qué dice la especificación.**
+> «`--radio` `0` — **Nada redondeado.**» · «`--ok` […] Sólo modo operativo» · «Prohibido: […]
+> `backdrop-filter` **salvo en el `::backdrop` de un `<dialog>`**» (`TOKENS_VISUALES.md`). «No se
+> crean animaciones fuera de esta lista» (`identidad_visual.md`, Catálogo de animaciones).
+
+**Qué se hizo.**
+- Una regla: los **aparatos** (la barra, el televisor, la botonera, los controles de cinta, el
+  reproductor de la vitrina, el riel, el globo de ayuda, el cajón del carrito) son redondeados
+  —16px los contenedores, píldora los botones— y usan el color «Aparatos encendidos» (lima por
+  defecto; B-17-021) para lo encendido, lo que se reproduce y lo elegido. Lo **impreso**
+  (portadas, tarjetas, viñetas, fotos, títulos) sigue recto, con cortes y sombras duras. La acción
+  sigue siendo el botón principal.
+- Lo retro: líneas de barrido muy tenues sobre todo el escaparate; el título del hero con el
+  corrimiento de color de una cinta gastada; los títulos de sección como lomos de cinta
+  numerados; la radio («En rotación» con un ecualizador que se detiene con ella); el riel de
+  secciones en escritorio ancho.
+- Patrones nuevos: barra de aparato, televisor, radio, lomo de cinta, vitrina con reproductor,
+  acceso inclinado, página de viñetas, foto con cinta, panel destacado, riel de secciones y pie
+  «fin de la cinta».
+- Animaciones nuevas: `cambio-canal`, `banda-ruido`, `texto-deriva` (atada al desplazamiento,
+  nunca sola), `vitrina-entra` y `cajon-entra`. El ecualizador reutiliza `barras-carga`, la cinta
+  de fotos `ticker` y la página `barrido-diagonal`. Con movimiento reducido no corre ninguna. La
+  animación `tracking` que listaba el plan no se construyó: el título conserva `titulo-glitch`.
+
+**Qué habría que cambiar.**
+- `TOKENS_VISUALES.md`: Forma (radio de aparato y píldora, sólo en el público), Color (el rol
+  «Aparatos encendidos» en el público), Prohibido (el desenfoque de la barra fija).
+- `identidad_visual.md`: la regla de aparatos e impresos entre las siete reglas, los patrones del
+  modo público y las cinco animaciones en el catálogo.
+
+---
+
+### B-07-050 · Recién llegados se arma con una vitrina y la grilla de siempre
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-POR`
+**Estado:** Abierta — plan 07, novena parte
+
+**Qué apareció.**
+Con pocos productos, la estantería de recién llegados dejaba un hueco grande de papel.
+
+**Qué dice la especificación.**
+`Nada.` «Recién llegados» se agregó en la tercera parte sin caso de uso.
+
+**Qué se hizo.**
+Arriba, una vitrina con los seis primeros que tienen portada, que se recorren con un reproductor;
+debajo, la grilla con los ocho siguientes, como antes. La vitrina usa el mismo botón de agregar
+que la tarjeta, con el mismo cajón del carrito. La radio nombra lo llegado entre esos catorce. En
+el celular, la grilla de la portada va de a dos.
+
+**Qué habría que cambiar.**
+La ficha de `CU-TDA-POR`, cuando se escriba.
+
+---
+
+### B-07-051 · El precio no se veía en las tarjetas sobre papel
+
+**Tipo:** Corrección · **Fecha:** 2026-11-11 · **Alcance:** la estantería y las filas sobre papel
+**Estado:** Resuelta
+
+**Qué apareció.**
+En las secciones de papel el precio de la tarjeta salía blanco sobre blanco. Ya pasaba con
+«Recién llegados» antes de esta parte.
+
+**Qué dice la especificación.**
+> «Precios · `--rol-precios-texto` · Neutro» (`identidad_visual.md`, Mapa de colores).
+
+**Qué se hizo.**
+El neutro es el texto fuerte de la superficie de la tarjeta: noche sobre papel, blanco sobre
+noche. Antes se resolvía una sola vez, con la superficie noche de toda la tienda.
+
+**Qué habría que cambiar.**
+Nada en el documento: el error era del código.
+
+---
+
+### B-07-052 · Casete en la vitrina, sin «¡NOVEDAD!» en recién llegados, rebobinar, carnet y ficha
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-POR`, `CU-TDA-CAT` (la ficha, `CO-177`), «Mi cuenta» (`CU-CLI-HIS`)
+**Estado:** Abierta — pedidos explícitos del responsable el 2026-11-11, durante la construcción de la novena parte
+
+**Qué apareció.**
+Al revisar lo construido, el responsable pidió: elementos de casete, y que en «Recién llegados»
+no se repita el cartel de novedad; que «Rebobinar» suba deslizándose; que el carnet del Cliente
+se parezca a la ficha de un personaje de la referencia; y mejorar la ficha de producto. El plan
+dejaba la ficha y la cuenta para una etapa posterior.
+
+**Qué dice la especificación.**
+`Nada.` La guía describe el carnet (`identidad_visual.md`, Compra y cuenta del Cliente) pero no
+el casete, el rebobinado ni la ficha con este lenguaje.
+
+**Qué se hizo.**
+- **Casete.** El bloque de la vitrina muestra un casete: la etiqueta con el número de pista y el
+  título, la ventana con dos carretes que giran una vez al cambiar de producto, y «Lado A ·
+  Pista 01 de 06» arriba.
+- **«¡NOVEDAD!»** no aparece en «Recién llegados» (vitrina y grilla): ahí todo es nuevo. Sigue en
+  el catálogo, en las filas y en la ficha. «¡TOMO 1!» sigue en todos lados.
+- **Rebobinar.** La página sube deslizándose, con el rótulo «◀◀ REW» y líneas de rebobinado; al
+  llegar, el foco vuelve a la marca. Con movimiento reducido sube de golpe.
+- **El carnet** es la credencial del socio: barra con el número de socio, retrato con las
+  iniciales, el nombre, «Socio desde» con el año del alta, el código de cliente con un código de
+  barras decorativo, y los puntos y lo guardado como estadísticas. Las secciones de la cuenta son
+  una botonera, con la actual encendida. No muestra ningún dato nuevo.
+- **La ficha de producto**: el título gigante en contorno detrás, la portada sobre la trama, el
+  número del tomo rayado junto al título, la compra en una caja de aparato con su rótulo («En
+  venta», «Pre-venta», «Sin stock») y la sinopsis en un recuadro. Lo que se puede hacer en la ficha
+  no cambia.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: el casete y el rebobinado en los patrones y en el catálogo de animaciones
+(`carrete-gira`, `rebobina`); el carnet y la ficha en Compra y cuenta del Cliente.
+
+---
+
+### B-07-053 · Catálogo con el lenguaje nuevo, barrido en negro, cintas en marcha y textos largos
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-CAT` (`CO-176`), `CU-TDA-POR`, la cáscara pública
+**Estado:** Abierta — pedidos explícitos del responsable el 2026-11-11, durante la construcción de la novena parte
+
+**Qué apareció.**
+El responsable pidió actualizar el catálogo; una transición entre páginas «como un barrido en
+negro»; algo en movimiento mientras se baja, para sostener la atención; que la galería de fotos
+no se corte; y probar nombres muy largos en todos los campos.
+
+**Qué dice la especificación.**
+> «Entre páginas públicas, la vista nueva entra con `barrido-diagonal` en `--dur-4`»
+> (`identidad_visual.md`, Transición entre vistas). Del resto, `Nada`.
+
+**Qué se hizo.**
+- **El catálogo**: el título en un lomo de cinta sobre la palabra gigante en contorno, el buscador
+  en una píldora, una cinta en marcha con los tipos de material, el panel de filtros como aparato
+  (lo prendido, encendido) y la cantidad de productos como contador. Los filtros, la búsqueda y la
+  paginación no cambian.
+- **El cambio de página** es un barrido en negro: la página que se va se corta en diagonal, queda
+  el negro, y la nueva entra con otro corte. Dura unos 640 ms. Con movimiento reducido no ocurre.
+- **Lo que se mueve al bajar**: una barra fina bajo el encabezado que crece con lo recorrido, y
+  una cinta en marcha entre secciones con el nombre de la que viene. Las dos se mueven sólo
+  mientras la persona se desplaza: nada corre solo, así que no hay nada que pausar.
+- **La cinta de fotos** ya no se corta: con pocas fotos, cada vuelta las repite hasta llenar la
+  pantalla, y el bucle empalma justo. Sólo la primera aparición de cada foto se anuncia.
+- **Textos largos**: probados con un título de 130 letras y una palabra de 60 en cada campo, en
+  escritorio y a 390 px. Se corrigieron cuatro desbordes (título de la tarjeta, globo de la
+  viñeta, tarjeta titular de la fila, título de la ficha). Los títulos de tarjeta se acotan a
+  cuatro líneas y los de acceso a tres; el título entero sigue en la ficha.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: Transición entre vistas (el barrido en negro, `vista-tapa` y
+`vista-destapa`); el catálogo de animaciones (`progreso-lectura`, `cinta-avanza`); la regla de
+acotar títulos en tarjetas.
+
+---
+
+### B-07-054 · El casete recortado y la ciudad: muro, cinta de película, pila de televisores y detalles
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-POR`, la cáscara pública
+**Estado:** Abierta — pedido explícito del responsable el 2026-11-11, con referencias nuevas de la estética de ZZZ en `.contexto-ia/referencias-pantallas/`
+
+**Qué apareció.**
+El responsable pidió reemplazar el bloque naranja de la vitrina por el casete recortado, sin el
+título del tomo (que ya está al lado), y dijo que la tienda seguía lejos de lo esperado: «falta
+esa vista retro, con personalidad urbana, con pequeños detalles, lleno de vida».
+
+**Qué dice la especificación.**
+`Nada.` Viñeta Nocturna no describe estos elementos.
+
+**Qué se hizo.**
+- **El casete recortado** va suelto sobre la escena de la vitrina, con borde blanco de figura
+  recortada, sombra dura y un trozo de cinta adhesiva. La carcasa lleva tornillos, la etiqueta
+  con franjas, la marca de la tienda, el lado «A», el número de pista y renglones, la ventana con
+  los carretes y la base. Entra con un golpe al cambiar de producto y los carretes giran.
+- **El muro**: palabras gigantes en contorno, rótulos chicos y garabatos propios, casi invisibles,
+  detrás del hero, la cabeza del catálogo, la ficha y las secciones de la portada. Se corre apenas
+  al bajar.
+- **La cinta de película**: la cinta entre secciones pasa a lima con perforaciones y los nombres en
+  cuadros.
+- **La pila de televisores**: dos televisores chicos detrás del principal, con lo último que llegó.
+  En el celular no aparecen.
+- **El sello circular** del hero, que gira con el desplazamiento.
+- **Relieve en los aparatos**: un filo de luz arriba y uno de sombra abajo, sin desenfoque.
+- **Detalles de imprenta**: texto chico en vertical con marcas de registro en el margen de cada
+  sección y un código de barras en cada lomo.
+- Nada se mueve solo: lo que se mueve está atado al desplazamiento, y con movimiento reducido se
+  queda quieto.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`: el muro, la cinta de película, la pila de televisores, el sello y el relieve
+de los aparatos en los patrones del modo público; `casete-entra`, `muro-pasa` y `sello-gira` en el
+catálogo de animaciones. La regla «Sigue fuera: los fondos fotográficos con velos» no se toca: el
+muro es dibujo, no fotografía.
+
+---
+
+### B-07-055 · El barrido en negro es un telón propio; la ficha, un expediente; más detalles
+
+**Tipo:** Corrección · **Fecha:** 2026-11-11 · **Alcance:** la cáscara pública, `CU-TDA-CAT` (`CO-177`), `CU-TDA-POR`
+**Estado:** Resuelta — pedido explícito del responsable el 2026-11-11 («la transición con barrido a negro no funciona»)
+
+**Qué apareció.**
+El responsable no veía el barrido entre páginas. La transición nativa del navegador sí corría,
+pero la capa de carga tapaba la pantalla a los 300 ms y el navegador fotografiaba la página que
+se iba ya cubierta de negro: un barrido de negro sobre negro no se ve. Además, Firefox no tiene la
+transición nativa y Chrome la cancela si la página nueva tarda varios segundos.
+
+**Qué dice la especificación.**
+> «`@view-transition { navigation: auto; }` en `tokens.css`. Entre páginas públicas, la vista
+> nueva entra con `barrido-diagonal`» (`identidad_visual.md`, Transición entre vistas).
+
+**Qué se hizo.**
+- **El telón**: al llegar a una página de la tienda, un telón negro con líneas de pantalla se abre
+  en diagonal; al hacer clic en un enlace de la tienda, se cierra desde la izquierda y, mientras el
+  servidor responde, dice «Cargando» con un ecualizador. Se abre con CSS, así que un guion roto
+  nunca lo deja cerrado. En la tienda la transición nativa se apaga y la capa de carga no se activa
+  con los enlaces: el telón cumple las dos funciones. Con movimiento reducido no hay telón.
+- **La ficha como expediente**: el número de expediente con código de barras arriba; la portada
+  sujeta con cinta sobre una hoja de papel rayada con el borde cortado, la pestaña del tomo, el
+  sello de goma del estado («En stock», «Pre-venta», «Sin stock») y el pie mecanografiado. El
+  número rayado junto al título se quitó: chocaba con títulos largos.
+- **El catálogo**: la pila con las tres primeras portadas de lo que se está viendo y un ticket con
+  la cantidad; el panel de filtros acompaña al bajar, con su propio recorrido; «¡NOVEDAD!» pasa a
+  una cinta cruzada en la esquina de la portada, más chica.
+- **El sello del hero** se rehízo: el texto ocupa justo la vuelta sin pisarse, sobre un disco
+  negro con aros, y se movió para no tapar los controles del televisor.
+- **Anotaciones a mano** junto a algunos títulos de la portada («¡Recién salidos!», «¡Elegí tu
+  cinta!», «¡Pasá a ver!»), con una flecha dibujada.
+
+**Qué habría que cambiar.**
+`identidad_visual.md`, Transición entre vistas: el telón reemplaza a la transición nativa en el
+modo público. Y la ficha, el catálogo y las anotaciones en los patrones del modo público.
+
+---
+
+### B-07-056 · El tope de la cantidad avisa; el Cliente con el lenguaje nuevo; cajón, visor y barra propia
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-TDA-CAT` (`CO-177`), `CU-TDA-CRA` (`CO-083`), `CU-TDA-CRC`, `CU-TDA-CMP`, «Mi cuenta», la cáscara pública
+**Estado:** Abierta — pedidos explícitos del responsable el 2026-11-11
+
+**Qué apareció.**
+El responsable pidió: que el «+» de la ficha avise cuando no quedan más unidades; pasar el
+carrito, la compra, el perfil y los pedidos del Cliente al diseño nuevo; un visor de imágenes con
+más personalidad; una barra de desplazamiento propia; arreglar el cajón del carrito; corregir el
+muro, que dejaba «LONGBOX» cortado; probar desbordes de texto y tamaños de pantalla; y, al final,
+quitar el sello giratorio del hero.
+
+**Qué dice la especificación.**
+`Nada.` `CO-083` valida la cantidad en el servidor; la pantalla no tenía aviso propio.
+
+**Qué se hizo.**
+- **El tope de cantidad.** El máximo de la ficha descuenta lo que ya está en el carrito. Al
+  llegar, el «+» se ve apagado y, si se lo aprieta, cae un globo que dice por qué: «no hay más
+  unidades: hay 3 en stock», «… y ya tenés 2 en el carrito», o el máximo por Cliente de la
+  pre-venta. Con todo el stock en el carrito, la ficha lo dice y no ofrece agregar. El servidor
+  sigue validando igual. El mismo control sirve al carrito.
+- **El Cliente**: títulos con corrimiento de color, paneles como aparatos, el estado vacío como
+  un televisor sin señal, los pasos de la compra como el contador de una casetera, las líneas del
+  carrito y del pedido como cajas de cinta, el resumen como un ticket de papel con código de barras,
+  las tarjetas de entrega y pago con la elegida encendida, y los pedidos de la cuenta como tickets
+  de alquiler con su talón.
+- **El cajón del carrito**: rótulo de grabación, la portada sujeta con cinta, el tomo en el
+  título, el ticket con unidades y total, un medidor del envío gratis que se llena al abrir y las
+  acciones a lo ancho. A todo el ancho en el celular.
+- **El visor**: la imagen se inclina al pasar, cada cambio entra por bandas, las miniaturas van en
+  una tira de película y la ampliación es una pantalla de proyección.
+- **La barra de desplazamiento**: riel oscuro con su guía y tirador lima con estrías, naranja al
+  tomarlo; en Firefox, los colores. Las cintas giradas ya no generan barra horizontal.
+- **El muro** se rearmó para que ninguna palabra cruce el borde de la baldosa.
+- **El sello giratorio del hero se quitó**, a pedido del responsable.
+- **Prueba de desbordes**: 18 pantallas públicas y del Cliente en 7 anchos (360 a 1920 px), con
+  los datos reales y con textos de 130 letras y palabras de 60 en cada campo. Los globos de nombre
+  del carrito y la cuenta se salían de la pantalla en el celular; corregido.
+
+**Qué habría que cambiar.**
+`CU-TDA-CAT`, paso de la ficha: el aviso al llegar al tope de unidades. `identidad_visual.md`:
+el cajón, el visor, la barra de desplazamiento y las piezas del Cliente en los patrones del modo
+público.

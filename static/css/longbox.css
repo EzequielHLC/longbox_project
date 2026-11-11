@@ -475,8 +475,12 @@ em, i { font-style: normal; }
    variantes salen de ese color: un acento azul tiene el hover azul claro. Los
    valores de acá son los iniciales; la hoja de la tienda los reemplaza. El
    `-sobre` y el `-texto` los calcula el servidor por contraste.
+   Se declaran también en cada superficie: un rol neutro vale
+   `var(--texto-fuerte)`, y sólo así se resuelve en la superficie de la tarjeta
+   (noche o papel) y no una sola vez en la raíz (plan 07, novena parte).
    --------------------------------------------------------------------- */
-.modo-publico {
+.modo-publico,
+.modo-publico :is(.superficie-noche, .superficie-papel) {
   --rol-boton: var(--tienda-primario);
   --rol-boton-sobre: var(--tienda-sobre-primario);
   --rol-enlaces: var(--tienda-acento);
@@ -1823,6 +1827,33 @@ input[role="switch"]:checked::after { transform: translateX(22px); background: v
   gap: var(--esp-1);
   font-size: var(--op-chico);
   color: var(--texto-2);
+}
+/* Las secciones de la portada (plan 07, novena parte): las imágenes de una
+   sección van en tarjetas más chicas, adentro de la suya, sobre el fondo
+   elevado. «Agregar sección» abre la lista de tipos. */
+.gestor-imagenes { display: flex; flex-direction: column; gap: var(--esp-3); padding-top: var(--esp-3); border-top: var(--trazo) var(--linea); }
+.gestor-filas--imagenes { gap: var(--esp-2); }
+.tarjeta-imagen { gap: var(--esp-3); padding: var(--esp-4); background: var(--fondo-3); }
+.tarjeta-imagen .tarjeta-fila__cabecera { padding-bottom: var(--esp-2); }
+.tarjeta-imagen__vista { aspect-ratio: 4 / 3; }
+.menu-agregar { position: relative; margin: 0; }
+.menu-agregar > summary { list-style: none; cursor: pointer; }
+.menu-agregar > summary::-webkit-details-marker { display: none; }
+.menu-agregar__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--esp-2));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  min-width: 220px;
+  padding: var(--esp-4);
+  border: var(--trazo-fuerte) var(--texto-fuerte);
+  background: var(--fondo-2);
+  box-shadow: var(--sombra-golpe-2);
+  animation: dialogo-entra var(--dur-2) var(--curva-golpe) both;
 }
 
 /* Recuadro de cifra. */

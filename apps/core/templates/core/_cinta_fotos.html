@@ -1,0 +1,28 @@
+{% comment %}
+La cinta de fotos (plan 07, novena parte): fotos con marco blanco y un trozo de
+cinta adhesiva, que corren de costado. Se mueve sola, así que se detiene con el
+puntero, con el foco y con «Pausar», y con movimiento reducido queda quieta y
+se recorre a mano (`identidad_visual.md`, regla 7).
+
+Las fotos van dos veces para que el bucle no tenga corte, y dentro de cada
+vuelta se repiten hasta llenar una pantalla ancha (`repeticiones`). Sólo la
+primera aparición de cada foto se anuncia y se alcanza con el tabulador.
+
+    {% include "core/_cinta_fotos.html" with imagenes=seccion.lista repeticiones=seccion.repeticiones %}
+{% endcomment %}
+<div class="cinta-fotos" data-cinta-fotos>
+  <div class="cinta-fotos__pista">
+    {% for vuelta in "12" %}
+      {% for copia in repeticiones %}
+      {% for foto in imagenes %}
+        {% if vuelta == "1" and copia == 0 %}<figure class="foto">{% else %}<figure class="foto" aria-hidden="true">{% endif %}
+          {% if foto.url %}<a href="{{ foto.url }}"{% if vuelta == "2" or copia %} tabindex="-1"{% endif %}>{% endif %}
+            <img src="{{ foto.imagen.url }}" alt="{% if vuelta == '1' and copia == 0 %}{{ foto.titulo }}{% endif %}" loading="lazy">
+          {% if foto.url %}</a>{% endif %}
+          {% if foto.titulo or foto.texto %}<figcaption><span>{{ foto.titulo }}</span>{% if foto.texto %}<span>{{ foto.texto }}</span>{% endif %}</figcaption>{% endif %}
+        </figure>
+      {% endfor %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>

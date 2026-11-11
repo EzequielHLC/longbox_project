@@ -1,0 +1,118 @@
+{% comment %}
+Una sección de la portada en su gestor (`CU-CFG-SEC`; plan 07, novena parte).
+Como la tarjeta de fila de antes (B-07-010): la arrastra el asa; «Subir» y
+«Bajar» hacen lo mismo con teclado. `numero` vacío en las plantillas de
+«Agregar sección»: lo pone el guion.
+
+Cada tarjeta muestra sólo lo que su tipo pide. Las que llevan imágenes tienen
+adentro sus propias tarjetas, que también se arrastran.
+
+    {% include "core/_tarjeta_seccion.html" with formulario=f imagenes=fi numero=n %}
+{% endcomment %}
+{% with tipo=formulario.tipo_elegido fija=formulario.instance.fija %}
+<li class="tarjeta-fila tarjeta-seccion{% if formulario.errors or imagenes.non_form_errors %} tarjeta-fila--con-error{% endif %}" data-tarjeta-fila data-tipo="{{ tipo }}">
+  {% for oculto in formulario.hidden_fields %}{{ oculto }}{% endfor %}
+  {# El tipo no se elige en la tarjeta: lo fija «Agregar sección» y después no cambia. #}
+  <input type="hidden" name="{{ formulario.tipo.html_name }}" value="{{ tipo }}">
+
+  <div class="tarjeta-fila__cabecera">
+    <div class="fila fila-base">
+      <span class="tarjeta-fila__asa" data-asa title="Arrastrar para cambiar el lugar" aria-hidden="true">
+        {% include "_iconos.html" with icono="menu" %}
+      </span>
+      <span class="tarjeta-fila__numero" data-numero>{{ numero|stringformat:"02d" }}</span>
+      <span class="fuerte" data-nombre-fila>{% if formulario.instance.pk %}{{ formulario.instance.titulo_visible }}{% else %}Nueva sección{% endif %}</span>
+      <span class="marca-estado">{% for valor, nombre in formulario.fields.tipo.choices %}{% if valor == tipo %}{{ nombre }}{% endif %}{% endfor %}</span>
+      {% if fija %}<span class="marca-estado marca-estado--dato">Fija</span>{% endif %}
+      {% if formulario.instance.pk and not formulario.instance.activa %}
+        <span class="marca-estado marca-estado--apagado">Inactiva</span>
+      {% endif %}
+      {% if formulario.errors or imagenes.non_form_errors %}
+        <span class="marca-estado marca-estado--atencion">Con errores</span>
+      {% endif %}
+    </div>
+    <div class="fila-2">
+      <button type="button" class="boton-texto texto-chico" data-subir>{% include "_iconos.html" with icono="anterior" %}<span>Subir</span></button>
+      <button type="button" class="boton-texto texto-chico" data-bajar>{% include "_iconos.html" with icono="siguiente" %}<span>Bajar</span></button>
+    </div>
+  </div>
+
+  {% for error in formulario.non_field_errors %}
+    <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>
+  {% endfor %}
+  {% for error in formulario.tipo.errors %}
+    <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>
+  {% endfor %}
+
+  <div class="{% if tipo == 'productos' %}tarjeta-fila__cuerpo{% else %}pila-3{% endif %}">
+    {% if tipo == "productos" %}
+      <div class="tarjeta-fila__imagen">
+        {% if formulario.instance.imagen %}
+          <img src="{{ formulario.instance.imagen.url }}" alt="Imagen actual de la fila">
+        {% else %}
+          <span class="tarjeta-fila__sin-imagen">{% include "_iconos.html" with icono="imagen" %}<span>Sin imagen</span></span>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="pila-3 min-0">
+      {% if tipo == "productos" %}
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=formulario.origen %}
+          {% include "_campo.html" with campo=formulario.presentacion ayuda="La fila se recorre de costado; la vitrina destaca uno por vez." %}
+        </div>
+      {% endif %}
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=formulario.titulo %}
+        {% include "_campo.html" with campo=formulario.antetitulo ayuda="La línea chica arriba del título. Opcional." %}
+      </div>
+      {% if tipo == "panel" %}
+        <div class="rejilla-2">
+          {% include "_campo.html" with campo=formulario.texto ayuda="La bajada del llamado." %}
+          {% include "_campo.html" with campo=formulario.texto_boton ayuda="Vacío, dice «Ver más»." %}
+        </div>
+      {% endif %}
+      {% if tipo == "productos" %}
+        <div class="pila-2">
+          {% include "_campo.html" with campo=formulario.imagen %}
+          {% if formulario.instance.imagen %}{% include "_casilla.html" with campo=formulario.quitar_imagen %}{% endif %}
+        </div>
+      {% endif %}
+      <div class="fila-5">
+        {% include "_casilla.html" with campo=formulario.activa interruptor=1 encendido="Activa" apagado="Inactiva" %}
+        {% if formulario.instance.pk and not fija %}
+          {% include "_casilla.html" with campo=formulario.DELETE %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Las imágenes: siempre se envía su formulario de gestión, aunque el tipo no las lleve. #}
+  {% with limite=imagenes.limite %}
+  <div class="gestor-imagenes"{% if not limite %} hidden{% endif %} data-gestor-imagenes data-maximo="{{ limite.1|default:0 }}">
+    {{ imagenes.management_form }}
+    {% if limite %}
+      <div class="fila-entre">
+        <p class="secundario">
+          <span data-contador-imagenes class="fuerte">{{ imagenes.total_form_count }}</span>
+          {% if limite.0 == limite.1 %}de {{ limite.1 }} imagen{{ limite.1|pluralize:"es" }}.{% else %}imágenes, entre {{ limite.0 }} y {{ limite.1 }}.{% endif %}
+        </p>
+        <button type="button" class="boton-seccion boton-seccion--tenue" data-agregar-imagen>
+          {% include "_iconos.html" with icono="agregar" %}<span>Agregar imagen</span>
+        </button>
+      </div>
+    {% endif %}
+    {% for error in imagenes.non_form_errors %}
+      <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>
+    {% endfor %}
+    <ol class="gestor-filas gestor-filas--imagenes" data-lista-imagenes>
+      {% for imagen in imagenes %}
+        {% include "core/_tarjeta_imagen_seccion.html" with formulario=imagen tipo=tipo numero=forloop.counter %}
+      {% endfor %}
+    </ol>
+    <template data-plantilla-imagen>
+      {% include "core/_tarjeta_imagen_seccion.html" with formulario=imagenes.empty_form tipo=tipo numero="" %}
+    </template>
+  </div>
+  {% endwith %}
+</li>
+{% endwith %}

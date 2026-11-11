@@ -684,3 +684,28 @@ modelo y clave en Parámetros.
 nota en `CU-ALT-NOV` E2) para la propuesta, con `CO-228`. `CU-CFG-PAR` y `CO-130`: la sección del
 respaldo. En el modelo de dominio, `ConfiguracionSistema` gana el respaldo y la racha de fallas; en
 `RegistroAuditoria`, las dos acciones nuevas.
+
+---
+
+### B-17-021 · El mapa de colores suma el rol «Aparatos encendidos»
+
+**Tipo:** Agregado · **Fecha:** 2026-11-11 · **Alcance:** `CU-CFG-VIS`, `CO-131`
+**Estado:** Abierta — plan 07, novena parte, ambigüedad 3, aprobada
+
+**Qué apareció.**
+El escaparate nuevo usa el lima para los aparatos encendidos (B-07-049). Fijo, quedaría
+desentonando si el Administrador cambia la paleta de la tienda.
+
+**Qué dice la especificación.**
+`Nada.` El mapa de colores (B-17-019) tiene siete roles y ninguno para esto.
+
+**Qué se hizo.**
+Un octavo rol, **Aparatos encendidos**: la barra de arriba, el televisor y los controles cuando
+están encendidos, reproduciendo o elegidos. Empieza en lima y se puede cambiar por el primario,
+el secundario o el acento, como los demás roles. El texto encima se elige solo, por contraste.
+La vista previa de la identidad lo muestra en vivo.
+
+**Qué habría que cambiar.**
+- `CO-131`: el atributo del rol nuevo en la identidad visual.
+- `MODELO_DE_DOMINIO`, IdentidadVisual: el rol «Aparatos encendidos».
+- `identidad_visual.md`, Mapa de colores: la fila del rol.

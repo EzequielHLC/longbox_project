@@ -1,0 +1,65 @@
+{% comment %}
+Una sección de la portada (`CU-TDA-POR`, `CU-CFG-SEC`; plan 07, novena parte).
+
+La arma `views_tienda.secciones_de_portada`: trae su `numero`, su
+`superficie` —noche y papel alternados como páginas de una revista— y lo que
+dibuja según su tipo. Entre una papel y una noche va una franja de cinta; una
+papel después de una noche entra en diagonal (`identidad_visual.md`, Secciones
+y separadores: nunca las dos en la misma unión).
+
+    {% include "core/_seccion_portada.html" with seccion=seccion primera=forloop.first %}
+{% endcomment %}
+{% comment %}
+Entre una papel y una noche, la cinta en marcha: anuncia la sección que viene y
+avanza mientras se baja (plan 07, novena parte). Es decorativa: el título de la
+sección ya la nombra.
+{% endcomment %}
+{% if not primera and seccion.superficie == "noche" %}
+  <div class="cinta-marcha" aria-hidden="true"><div class="cinta-marcha__pista">{% for vez in "12345678" %}<span>{{ seccion.titulo_visible }}</span>{% endfor %}</div></div>
+{% endif %}
+<section class="seccion-portada {% if seccion.superficie == 'papel' %}superficie-papel{% if not primera %} seccion-portada--diagonal{% endif %}{% else %}superficie-noche{% endif %}" data-tipo="{{ seccion.tipo }}" id="seccion-{{ seccion.numero }}" data-seccion="{{ seccion.numero }}" data-nombre="{{ seccion.titulo_visible }}" aria-labelledby="titulo-seccion-{{ seccion.numero }}">
+  <span class="seccion-portada__margen" aria-hidden="true"><b>+</b><span>{% firstof identidad_tienda.nombre_tienda "Longbox" %} · archivo {{ seccion.numero }} · {{ seccion.get_tipo_display }}</span><b>+</b></span>
+  <div class="columna-publica">
+    {% if seccion.tipo == "productos" and seccion.presentacion == "fila" or seccion.tipo == "se_viene" %}
+      {% include "core/_fila_portada.html" with fila=seccion %}
+    {% else %}
+      {% if seccion.tipo != "panel" %}
+      <div class="cabeza-seccion">
+        {% include "core/_lomo.html" with numero=seccion.numero antetitulo=seccion.antetitulo_visible titulo=seccion.titulo_visible %}
+        {# Una anotación a mano junto al título: anuncio, no información. #}
+        {% if seccion.tipo == "recien_llegados" %}<span class="garabato" aria-hidden="true">¡Recién salidos!</span>{% elif seccion.tipo == "accesos" %}<span class="garabato" aria-hidden="true">¡Elegí tu cinta!</span>{% elif seccion.tipo == "cinta" %}<span class="garabato" aria-hidden="true">¡Pasá a ver!</span>{% endif %}
+        {% if seccion.tipo == "recien_llegados" %}
+          <a href="{% url 'core:tienda_catalogo' %}" class="boton-texto">Todo el catálogo →</a>
+        {% elif seccion.tipo == "productos" %}
+          <a href="{{ seccion.ver_todo }}" class="boton-texto">Ver todo →</a>
+        {% elif seccion.tipo == "cinta" %}
+          <button type="button" class="boton-texto" data-cinta-pausa aria-pressed="false" hidden>Pausar</button>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if seccion.tipo == "recien_llegados" %}
+        {% include "_mensajes.html" %}
+        {% if seccion.productos %}
+          {% if seccion.vitrina %}{% include "core/_vitrina.html" with productos=seccion.vitrina numero=seccion.numero sin_novedad=1 %}{% endif %}
+          {% if seccion.grilla %}{% include "core/_estanteria.html" with productos=seccion.grilla sin_novedad=1 %}{% endif %}
+        {% else %}
+          <div class="vacio">
+            {% include "_iconos.html" with icono="tienda" %}
+            <p>Todavía no hay productos disponibles en la tienda.</p>
+          </div>
+        {% endif %}
+      {% elif seccion.tipo == "productos" %}
+        {% include "core/_vitrina.html" with productos=seccion.vitrina numero=seccion.numero %}
+      {% elif seccion.tipo == "accesos" %}
+        {% include "core/_accesos.html" with imagenes=seccion.lista %}
+      {% elif seccion.tipo == "pagina" %}
+        {% include "core/_pagina_historieta.html" with imagenes=seccion.lista %}
+      {% elif seccion.tipo == "cinta" %}
+        {% include "core/_cinta_fotos.html" with imagenes=seccion.lista repeticiones=seccion.repeticiones %}
+      {% elif seccion.tipo == "panel" %}
+        {% include "core/_panel_destacado.html" with seccion=seccion imagen=seccion.panel %}
+      {% endif %}
+    {% endif %}
+  </div>
+</section>

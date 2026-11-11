@@ -1,0 +1,22 @@
+{% comment %}
+El botón para agregar una unidad al carrito sin abrir la ficha (B-07-014). Lo
+usan la tarjeta de producto y la vitrina de la portada (plan 07, novena parte):
+el mismo formulario y el mismo guion, que abre el cajón del carrito.
+
+Va fuera del enlace —un formulario no puede ir dentro de un enlace— y sólo para
+quien tiene carrito: invitado o cliente, nunca el personal. Sin stock, no hay
+botón.
+
+    {% include "core/_agregar_rapido.html" with producto=producto volumen=volumen clase="..." %}
+{% endcomment %}
+{% if unidades_en_carrito is not None and producto.estado_publico != "agotado" %}
+  <form method="post" action="{% url 'tienda:agregar' producto.pk %}" class="{{ clase }}" data-agregar-rapido>
+    {% csrf_token %}
+    <input type="hidden" name="cantidad" value="1">
+    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+    <button type="submit" title="{% if producto.estado_publico == 'pre_venta' %}Reservar{% else %}Agregar al carrito{% endif %}">
+      {% include "_iconos.html" with icono="bolsa" %}<span>{% if producto.estado_publico == "pre_venta" %}Reservar{% else %}Agregar{% endif %}</span>
+      <span class="sr-only"> «{{ producto.titulo }}{% if volumen or volumen == 0 %} #{{ volumen }}{% endif %}» al carrito</span>
+    </button>
+  </form>
+{% endif %}

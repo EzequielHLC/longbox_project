@@ -1,0 +1,58 @@
+{% comment %}
+Una imagen de una sección, dentro de la tarjeta de su sección (`CU-CFG-SEC`).
+La forma del texto sólo se ofrece en la página de historieta; en las demás, el
+texto es el epígrafe. «Código del producto» aparece cuando «Lleva a» es un
+producto.
+
+    {% include "core/_tarjeta_imagen_seccion.html" with formulario=f tipo=tipo numero=n %}
+{% endcomment %}
+<li class="tarjeta-fila tarjeta-imagen{% if formulario.errors %} tarjeta-fila--con-error{% endif %}" data-tarjeta-imagen>
+  {% for oculto in formulario.hidden_fields %}{{ oculto }}{% endfor %}
+  <div class="tarjeta-fila__cabecera">
+    <div class="fila fila-base">
+      <span class="tarjeta-fila__asa" data-asa-imagen title="Arrastrar para cambiar el lugar" aria-hidden="true">
+        {% include "_iconos.html" with icono="menu" %}
+      </span>
+      <span class="tarjeta-fila__numero" data-numero-imagen>{{ numero|stringformat:"02d" }}</span>
+      <span class="fuerte" data-nombre-imagen>{% if formulario.instance.pk %}{{ formulario.instance }}{% else %}Nueva imagen{% endif %}</span>
+      {% if formulario.errors %}<span class="marca-estado marca-estado--atencion">Con errores</span>{% endif %}
+    </div>
+    <div class="fila-2">
+      <button type="button" class="boton-texto texto-chico" data-subir-imagen>{% include "_iconos.html" with icono="anterior" %}<span>Subir</span></button>
+      <button type="button" class="boton-texto texto-chico" data-bajar-imagen>{% include "_iconos.html" with icono="siguiente" %}<span>Bajar</span></button>
+    </div>
+  </div>
+  {% for error in formulario.non_field_errors %}
+    <p class="mensaje mensaje--error" role="alert">{% include "_iconos.html" with icono="error" %}<span><span class="mensaje__prefijo">Error:</span> {{ error }}</span></p>
+  {% endfor %}
+  <div class="tarjeta-fila__cuerpo">
+    <div class="tarjeta-fila__imagen tarjeta-imagen__vista">
+      {% if formulario.instance.imagen %}
+        <img src="{{ formulario.instance.imagen.url }}" alt="Imagen actual">
+      {% else %}
+        <span class="tarjeta-fila__sin-imagen">{% include "_iconos.html" with icono="imagen" %}<span>Sin imagen</span></span>
+      {% endif %}
+    </div>
+    <div class="pila-3 min-0">
+      {% include "_campo.html" with campo=formulario.imagen %}
+      <div class="rejilla-2">
+        {% include "_campo.html" with campo=formulario.titulo ayuda="El nombre del acceso o el epígrafe. También es el texto alternativo." %}
+        {% include "_campo.html" with campo=formulario.texto ayuda="Opcional." %}
+      </div>
+      <div class="rejilla-2">
+        {% if tipo == "pagina" %}
+          {% include "_campo.html" with campo=formulario.forma_texto ayuda="Una onomatopeya puede ir sin imagen, sobre un panel de color." %}
+        {% else %}
+          <input type="hidden" name="{{ formulario.forma_texto.html_name }}" value="recuadro">
+        {% endif %}
+        {% include "_campo.html" with campo=formulario.lleva_a %}
+      </div>
+      <div data-codigo-producto>
+        {% include "_campo.html" with campo=formulario.codigo_producto %}
+      </div>
+      {% if formulario.instance.pk %}
+        <div>{% include "_casilla.html" with campo=formulario.DELETE %}</div>
+      {% endif %}
+    </div>
+  </div>
+</li>

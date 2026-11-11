@@ -48,7 +48,11 @@ class PoliticaPrivacidadView(TemplateView):
 
 
 class TiendaView(TemplateView):
-    """La portada de la tienda: el carrusel de banners (CU-CFG-BNC, C-06).
+    """La portada de la tienda (`CU-TDA-POR`; plan 07, novena parte).
+
+    Arriba, el hero con el carrusel de banners (CU-CFG-BNC, C-06) en el
+    televisor; sin banners, la portada destacada. Debajo, la radio con lo que
+    llegó y las secciones que arma el Administrador (`CU-CFG-SEC`), en su orden.
 
     Pública, como el catálogo y la ficha (`CO-176`): la ve cualquiera, con
     sesión o sin ella (C-20, resuelta por el responsable el 2026-10-05).
@@ -60,14 +64,15 @@ class TiendaView(TemplateView):
         contexto = super().get_context_data(**kwargs)
         contexto["banners"] = Banner.objects.all()
         contexto["intervalo"] = ConfiguracionSistema.obtener().intervalo_carrusel
-        llegados = views_tienda.recien_llegados()
+        # La vitrina de «Recién llegados» se queda con los primeros y la grilla
+        # sigue con los ocho de antes (plan 07, novena parte).
+        llegados = views_tienda.recien_llegados(views_tienda.VITRINA + 8)
         contexto["recien_llegados"] = llegados
         contexto["destacado"] = next((p for p in llegados if p.portada), None)
         # El ticker nombra cada serie una vez, aunque hayan llegado varios tomos
         # (B-07-023).
         contexto["llegaron"] = list(dict.fromkeys(p.titulo for p in llegados))
-        contexto["filas"] = views_tienda.filas_de_portada()
-        contexto["se_viene"] = views_tienda.lo_que_se_viene()
+        contexto["secciones"] = views_tienda.secciones_de_portada(llegados)
         return contexto
 
 
