@@ -6,8 +6,9 @@ alcance y sus dos precios.
 
 Acciones según el estado (paso 6): Editar y Dar de baja en Activa y en
 Programada (plan 03, segunda parte, ambigüedad 4). Vencida y Dada de baja son
-de sólo lectura. En una oferta por tipo, un producto con oferta individual
-propia queda «tapado»: se cobra con la individual (ambigüedad 3).
+de sólo lectura. Un producto al que le cobra otra oferta —una más específica o,
+en el mismo nivel, una que empezó antes— queda «tapado»: se cobra con ésa
+(ambigüedad 3; plan 03, tercera parte, decisiones 1 y 3).
 {% endcomment %}
 
 {% block titulo %}{{ oferta.descripcion }} · Longbox{% endblock %}
@@ -54,7 +55,7 @@ propia queda «tapado»: se cobra con la individual (ambigüedad 3).
               <td class="datos sin-cortar">{{ fila.producto.codigo }}</td>
               <td class="celda-principal">
                 <a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto.titulo }}</a>
-                {% if fila.tapado_por %}<br><span class="texto-chico secundario">Se cobra con su oferta propia, «{{ fila.tapado_por.descripcion }}»</span>{% endif %}
+                {% if fila.tapado_por %}<br><span class="texto-chico secundario">Se cobra con la oferta «{{ fila.tapado_por.descripcion }}», que tiene precedencia</span>{% endif %}
               </td>
               <td>{{ fila.producto.get_estado_display }}</td>
               <td class="numero">{{ fila.precio_original|pesos }}</td>
@@ -65,7 +66,7 @@ propia queda «tapado»: se cobra con la individual (ambigüedad 3).
       </table>
     </div>
   {% else %}
-    <p class="secundario">El tipo todavía no tiene productos a la venta.</p>
+    <p class="secundario">El alcance todavía no tiene productos a la venta.</p>
   {% endif %}
 </section>
 {% endblock %}

@@ -113,6 +113,7 @@ def consultar(sesion):
         [item["producto"] for item in datos["items"]]
     )
     del_dia = OfertasDelDia()
+    del_dia.preparar(productos.values())
     items = []
     for item in datos["items"]:
         producto = productos.get(item["producto"])

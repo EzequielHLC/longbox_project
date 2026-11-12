@@ -250,6 +250,7 @@ def consultar(carrito):
         "producto", "producto__tipo", "producto__productoeditorial"
     ).order_by("agregada_en", "pk")
     del_dia = OfertasDelDia()
+    del_dia.preparar(linea.producto for linea in lineas)
     consultadas = []
     for linea in lineas:
         tope = None
@@ -457,6 +458,7 @@ def actualizar_precios(productos):
     lineas = list(LineaCarrito.objects.filter(producto__in=productos).select_related("producto"))
     cambiadas = []
     del_dia = OfertasDelDia()
+    del_dia.preparar(linea.producto for linea in lineas)
     for linea in lineas:
         precio = del_dia.precio(linea.producto)
         if linea.precio_vigente != precio:

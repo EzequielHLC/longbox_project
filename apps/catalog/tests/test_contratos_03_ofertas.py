@@ -643,7 +643,7 @@ def test_CO170_la_ficha_muestra_los_dos_precios_y_las_acciones_del_estado(client
 
     assert "$ 18.500" in contenido
     assert "$ 16.650" in contenido
-    assert "Se cobra con su oferta propia, «Propia de Monster»" in contenido
+    assert "Se cobra con la oferta «Propia de Monster», que tiene precedencia" in contenido
     assert reverse("catalog:oferta_editar", args=[por_tipo.pk]) in contenido
     assert reverse("catalog:oferta_baja", args=[por_tipo.pk]) in contenido
 

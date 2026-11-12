@@ -1,6 +1,8 @@
 {% load moneda %}
 {% comment %}
 B-00-032: las ventas del panel, de un vistazo. Lo calcula `core.tablero`.
+Lo vendido es neto: sin lo cancelado y con lo devuelto por el medio de pago
+restado el día que se resolvió. El ticket promedio no lleva el envío.
 
 Un solo color por gráfico (el naranja de la marca, que pasa el contraste contra el
 fondo); el dato exacto aparece al pasar el mouse y en «Ver como tabla», así que nada
@@ -15,14 +17,15 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
     <div class="kpi kpi--heroe">
       <span class="kpi__rotulo">{% include "_iconos.html" with icono="efectivo" %}Vendido este mes</span>
       <span class="kpi__valor" data-contar="{{ tablero.mes.total|stringformat:'d' }}" data-moneda>{{ tablero.mes.total|pesos }}</span>
-      {% if tablero.mes.variacion is not None %}
-        <span class="kpi__delta {% if tablero.mes.variacion >= 0 %}kpi__delta--sube{% else %}kpi__delta--baja{% endif %}">
-          {% if tablero.mes.variacion >= 0 %}▲ {{ tablero.mes.variacion }} %{% else %}▼ {{ tablero.mes.variacion|stringformat:'d'|slice:'1:' }} %{% endif %}
-          <span class="secundario">contra el mismo tramo del mes pasado</span>
+      {% if tablero.mes.diferencia is not None %}
+        <span class="kpi__delta {% if tablero.mes.diferencia >= 0 %}kpi__delta--sube{% else %}kpi__delta--baja{% endif %}">
+          {% if tablero.mes.diferencia >= 0 %}▲ {{ tablero.mes.diferencia|pesos }}{% else %}▼ {{ tablero.mes.diferencia|pesos|cut:"-" }}{% endif %}{% if tablero.mes.variacion is not None %} · {% if tablero.mes.variacion >= 0 %}{{ tablero.mes.variacion }}{% else %}{{ tablero.mes.variacion|stringformat:'d'|slice:'1:' }}{% endif %} %{% endif %}
+          <span class="secundario">contra el mismo tramo del mes pasado{% if tablero.mes.variacion is None %} ({{ tablero.mes.pedidos_anteriores }} pedido{{ tablero.mes.pedidos_anteriores|pluralize }}: poca base para un por ciento){% endif %}</span>
         </span>
       {% else %}
         <span class="kpi__delta secundario">Sin ventas el mes pasado para comparar</span>
       {% endif %}
+      {% if tablero.mes.reembolsos %}<span class="kpi__nota">Descontados {{ tablero.mes.reembolsos|pesos }} devueltos por el medio de pago</span>{% endif %}
     </div>
     <div class="kpi">
       <span class="kpi__rotulo">{% include "_iconos.html" with icono="bolsa" %}Pedidos del mes</span>
@@ -31,10 +34,12 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
     <div class="kpi">
       <span class="kpi__rotulo">{% include "_iconos.html" with icono="tarjeta" %}Ticket promedio</span>
       <span class="kpi__valor" data-contar="{{ tablero.mes.ticket|stringformat:'d' }}" data-moneda>{{ tablero.mes.ticket|pesos }}</span>
+      <span class="kpi__nota">Por compra, sin el envío</span>
     </div>
     <div class="kpi">
       <span class="kpi__rotulo">{% include "_iconos.html" with icono="reloj" %}Últimos 30 días</span>
       <span class="kpi__valor" data-contar="{{ tablero.vendido_30|stringformat:'d' }}" data-moneda>{{ tablero.vendido_30|pesos }}</span>
+      <span class="kpi__nota">Neto de cancelaciones y devoluciones</span>
     </div>
   </div>
 
@@ -44,7 +49,7 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
       <div class="grafico-dias" role="img" aria-label="Ventas por día de los últimos 30 días. El detalle está en «Ver como tabla».">
         {% for dia in tablero.serie %}
           <span class="grafico-dias__columna{% if dia.es_hoy %} grafico-dias__columna--hoy{% endif %}"
-                data-dato="{{ dia.fecha|date:'D d/m' }} · {{ dia.total|pesos }} · {{ dia.pedidos }} pedido{{ dia.pedidos|pluralize }}"
+                data-dato="{{ dia.fecha|date:'D d/m' }} · {{ dia.total|pesos }} · {{ dia.pedidos }} pedido{{ dia.pedidos|pluralize }}{% if dia.reembolsos %} · −{{ dia.reembolsos|pesos }} devuelto{% endif %}"
                 data-alto="{{ dia.alto|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
             <span class="grafico-dias__barra"></span>
           </span>
@@ -58,10 +63,10 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
         <summary>Ver como tabla</summary>
         <div class="tabla-desplazable">
           <table class="tabla">
-            <thead><tr><th>Día</th><th class="numero">Pedidos</th><th class="numero">Vendido</th></tr></thead>
+            <thead><tr><th>Día</th><th class="numero">Pedidos</th><th class="numero">Envío</th><th class="numero">Devuelto</th><th class="numero">Vendido neto</th></tr></thead>
             <tbody>
-              {% for dia in tablero.serie %}{% if dia.pedidos %}
-                <tr><td class="datos">{{ dia.fecha|date:"d/m/Y" }}</td><td class="numero">{{ dia.pedidos }}</td><td class="numero">{{ dia.total|pesos }}</td></tr>
+              {% for dia in tablero.serie %}{% if dia.pedidos or dia.reembolsos %}
+                <tr><td class="datos">{{ dia.fecha|date:"d/m/Y" }}</td><td class="numero">{{ dia.pedidos }}</td><td class="numero">{{ dia.envio|pesos }}</td><td class="numero">{% if dia.reembolsos %}−{{ dia.reembolsos|pesos }}{% else %}—{% endif %}</td><td class="numero">{{ dia.total|pesos }}</td></tr>
               {% endif %}{% endfor %}
             </tbody>
           </table>
@@ -131,10 +136,12 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
 </section>
 
 <script>
-  (function () {
+  // Corre cuando la página está entera: la sección de inteligencia viene después.
+  document.addEventListener("DOMContentLoaded", function () {
     // Los largos de cada barra, de sus atributos a las variables que lee la hoja.
     for (const marca of document.querySelectorAll(".tablero [data-alto]")) marca.style.setProperty("--alto", marca.dataset.alto + "%");
     for (const marca of document.querySelectorAll(".tablero [data-ancho]")) marca.style.setProperty("--ancho", marca.dataset.ancho + "%");
+    for (const marca of document.querySelectorAll(".tablero [data-desde]")) marca.style.setProperty("--desde", marca.dataset.desde + "%");
     for (const marca of document.querySelectorAll(".tablero [data-i]")) marca.style.setProperty("--i", marca.dataset.i);
     // La ventanita con el dato exacto, sobre lo que tenga `data-dato`.
     const globo = document.querySelector("[data-globo]");
@@ -169,5 +176,5 @@ porque una plantilla no lleva estilo propio (Viñeta Nocturna).
       };
       requestAnimationFrame(paso);
     }
-  })();
+  });
 </script>

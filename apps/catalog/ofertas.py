@@ -10,10 +10,15 @@ que cambia qué descuenta, es el precio vigente de las líneas de carrito de los
 productos alcanzados: es la postcondición «las `LineaCarrito` afectadas quedaron
 actualizadas» de cada contrato.
 
-**Solapamiento (I-20).** Dos ofertas vivas sobre el mismo producto, o sobre el
-mismo tipo, no pueden compartir días. Una individual y una de su tipo sí: manda
-la individual (plan 03, segunda parte, ambigüedad 3). La validación y el alta van
-en una transacción con bloqueo sobre el producto o el tipo del alcance, para
+**Alcance** (plan 03, tercera parte). Una oferta tiene un solo destino: un
+producto, un tipo de material, una editorial, una etiqueta o un grupo de
+etiquetas. Cuando a un producto le aplican varias, manda la más específica
+(`Oferta.PRECEDENCIA`); las reglas de cuál cobra viven en
+`precio_visible.OfertasDelDia`.
+
+**Solapamiento (I-20).** Dos ofertas vivas sobre el mismo destino no pueden
+compartir días. Sobre destinos distintos sí, y decide la precedencia. La
+validación y el alta van en una transacción con bloqueo sobre el destino, para
 que dos administradores no registren a la vez dos ofertas que se pisan.
 """
 
@@ -24,7 +29,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Q
 
-from apps.catalog.models import Oferta, Producto, Tipo
+from apps.catalog.models import Editorial, Etiqueta, GrupoEtiqueta, Oferta, Producto, Tipo
 from apps.catalog.precio_visible import OfertasDelDia, descontar, hoy_local
 from apps.core.models import RegistroAuditoria
 
@@ -60,6 +65,9 @@ class DatosDeOferta:
     alcance: str
     producto: Producto | None = None
     tipo: Tipo | None = None
+    editorial: Editorial | None = None
+    etiqueta: Etiqueta | None = None
+    grupo: GrupoEtiqueta | None = None
 
     @classmethod
     def de(cls, oferta):
@@ -70,9 +78,19 @@ class DatosDeOferta:
             tipo_descuento=oferta.tipo_descuento,
             valor=oferta.valor,
             alcance=oferta.alcance,
-            producto=oferta.producto,
-            tipo=oferta.tipo,
+            **{campo: getattr(oferta, campo) for campo in Oferta.CAMPO_DEL_ALCANCE.values()},
         )
+
+    @property
+    def destino(self):
+        return getattr(self, Oferta.CAMPO_DEL_ALCANCE[self.alcance])
+
+    def destinos(self):
+        """Los cinco campos de destino, con valor sólo el del alcance."""
+        return {
+            campo: getattr(self, campo) if alcance == self.alcance else None
+            for alcance, campo in Oferta.CAMPO_DEL_ALCANCE.items()
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -80,36 +98,54 @@ class DatosDeOferta:
 # ---------------------------------------------------------------------------
 
 
-def productos_del_alcance(alcance, producto=None, tipo=None):
-    """Los productos que la oferta descuenta: el elegido, o los de la tienda de ese tipo.
+def _filtro_del_destino(oferta):
+    """Los productos del destino, en cualquier estado."""
+    destino = oferta.destino
+    if oferta.alcance == Oferta.PRODUCTO:
+        return Q(pk=destino.pk)
+    if oferta.alcance == Oferta.TIPO:
+        return Q(tipo=destino)
+    if oferta.alcance == Oferta.EDITORIAL:
+        return Q(productoeditorial__editorial=destino)
+    if oferta.alcance == Oferta.ETIQUETA:
+        return Q(etiquetas=destino)
+    return Q(etiquetas__grupo=destino, etiquetas__activa=True)
 
-    Del tipo cuentan los que se ofrecen en la tienda, Activos y en Pre-venta
-    (plan 03, segunda parte, ambigüedad 5).
+
+def productos_del_alcance(oferta):
+    """Los productos que la oferta descuenta: el elegido, o los de la tienda de su destino.
+
+    Del tipo, la editorial, la etiqueta o el grupo cuentan los que se ofrecen en
+    la tienda, Activos y en Pre-venta (plan 03, segunda parte, ambigüedad 5, y
+    tercera parte, decisión 6). Del grupo, los que llevan alguna de sus etiquetas
+    activas. `oferta` puede ser una `Oferta` o unos `DatosDeOferta`.
     """
-    if alcance == Oferta.PRODUCTO:
-        return Producto.objects.filter(pk=producto.pk)
-    return Producto.objects.filter(tipo=tipo, estado__in=ESTADOS_EN_TIENDA)
+    productos = Producto.objects.filter(
+        pk__in=Producto.objects.filter(_filtro_del_destino(oferta)).values("pk")
+    )
+    if oferta.alcance != Oferta.PRODUCTO:
+        productos = productos.filter(estado__in=ESTADOS_EN_TIENDA)
+    return productos
 
 
-def productos_tocados(alcance, producto=None, tipo=None):
-    """Los productos cuyo precio visible puede cambiar: los del tipo en cualquier estado.
+def productos_tocados(oferta):
+    """Los productos cuyo precio visible puede cambiar: los del destino en cualquier estado.
 
     Es el conjunto que se usa para actualizar carritos: una línea con un
     producto que hoy está Agotado también tiene que quedar con su precio.
     """
-    if alcance == Oferta.PRODUCTO:
-        return Producto.objects.filter(pk=producto.pk)
-    return Producto.objects.filter(tipo=tipo)
+    return Producto.objects.filter(
+        pk__in=Producto.objects.filter(_filtro_del_destino(oferta)).values("pk")
+    )
 
 
-def _tocados_por(oferta):
-    return productos_tocados(oferta.alcance, oferta.producto, oferta.tipo)
-
-
-def describir_alcance(alcance, producto=None, tipo=None):
-    if alcance == Oferta.PRODUCTO:
-        return f"Producto: {producto.titulo} ({producto.codigo})"
-    return f"Tipo de material: {tipo.nombre}"
+def describir_alcance(oferta):
+    destino = oferta.destino
+    if oferta.alcance == Oferta.PRODUCTO:
+        return f"Producto: {destino.titulo} ({destino.codigo})"
+    if oferta.alcance == Oferta.ETIQUETA:
+        return f"Etiqueta: {destino.nombre} ({destino.grupo.nombre})"
+    return f"{dict(Oferta.ALCANCES)[oferta.alcance]}: {destino.nombre}"
 
 
 def describir_descuento(tipo_descuento, valor):
@@ -123,7 +159,7 @@ def describir(oferta, hoy=None):
     hoy = hoy or hoy_local()
     return (
         f"«{oferta.descripcion}» · {describir_descuento(oferta.tipo_descuento, oferta.valor)} · "
-        f"{describir_alcance(oferta.alcance, oferta.producto, oferta.tipo)} · "
+        f"{describir_alcance(oferta)} · "
         f"{oferta.fecha_inicio:%d/%m/%Y} a {oferta.fecha_vencimiento:%d/%m/%Y} · "
         f"{dict(Oferta.ESTADOS)[oferta.estado_en(hoy)]}"
     )
@@ -144,16 +180,13 @@ def _pesos(valor):
 
 
 def solapada(datos, *, hoy, excluir=None):
-    """La oferta viva del mismo alcance que comparte días con éstas, o `None` (E2)."""
+    """La oferta viva sobre el mismo destino que comparte días con éstas, o `None` (E2)."""
     candidatas = Oferta.objects.vivas(hoy).filter(
         alcance=datos.alcance,
         fecha_inicio__lte=datos.fecha_vencimiento,
         fecha_vencimiento__gte=datos.fecha_inicio,
+        **{Oferta.CAMPO_DEL_ALCANCE[datos.alcance]: datos.destino},
     )
-    if datos.alcance == Oferta.PRODUCTO:
-        candidatas = candidatas.filter(producto=datos.producto)
-    else:
-        candidatas = candidatas.filter(tipo=datos.tipo)
     if excluir is not None:
         candidatas = candidatas.exclude(pk=excluir)
     return candidatas.order_by("fecha_inicio", "pk").first()
@@ -164,9 +197,7 @@ def bajo_tope(datos):
     if datos.tipo_descuento != Oferta.MONTO_FIJO:
         return []
     return list(
-        productos_del_alcance(datos.alcance, datos.producto, datos.tipo)
-        .filter(precio__lte=datos.valor)
-        .order_by("titulo", "pk")
+        productos_del_alcance(datos).filter(precio__lte=datos.valor).order_by("titulo", "pk")
     )
 
 
@@ -195,19 +226,33 @@ def validar(datos, *, hoy, excluir=None):
         )
 
 
-def tipo_sin_productos(datos):
-    """A1: un tipo sin productos en la tienda. Es un aviso, no un rechazo."""
-    return (
-        datos.alcance == Oferta.TIPO
-        and not productos_del_alcance(datos.alcance, tipo=datos.tipo).exists()
-    )
+def destino_sin_productos(datos):
+    """A1: un tipo, una editorial, una etiqueta o un grupo sin productos en la tienda.
+
+    Es un aviso, no un rechazo: la oferta los alcanzará cuando los haya.
+    """
+    return datos.alcance != Oferta.PRODUCTO and not productos_del_alcance(datos).exists()
+
+
+def validar_destino(datos):
+    """Una editorial, una etiqueta o un grupo dados de baja no reciben ofertas nuevas.
+
+    Una oferta sobre un destino inactivo no descuenta (plan 03, tercera parte,
+    decisión 5): registrarla sería una oferta que nunca se ve. Se valida al dar
+    de alta y al cambiar de destino; la que ya estaba se puede seguir editando.
+    """
+    destino = datos.destino
+    if datos.alcance == Oferta.EDITORIAL and not destino.activa:
+        raise OfertaRechazada("La editorial está dada de baja.", campo="editorial")
+    if datos.alcance == Oferta.ETIQUETA and not (destino.activa and destino.grupo.activo):
+        raise OfertaRechazada("La etiqueta o su grupo están dados de baja.", campo="etiqueta")
+    if datos.alcance == Oferta.GRUPO and not destino.activo:
+        raise OfertaRechazada("El grupo de etiquetas está dado de baja.", campo="grupo")
 
 
 def _bloquear_destino(datos):
-    if datos.alcance == Oferta.PRODUCTO:
-        Producto.objects.select_for_update().get(pk=datos.producto.pk)
-    else:
-        Tipo.objects.select_for_update().get(pk=datos.tipo.pk)
+    destino = datos.destino
+    type(destino).objects.select_for_update().get(pk=destino.pk)
 
 
 def _actualizar_carritos(productos):
@@ -237,6 +282,7 @@ def registrar(datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
     hoy = hoy or hoy_local()
     with transaction.atomic():
         _bloquear_destino(datos)
+        validar_destino(datos)
         validar(datos, hoy=hoy)
         afectados = bajo_tope(datos)
         if afectados and not aceptar_tope:
@@ -249,8 +295,7 @@ def registrar(datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
             tipo_descuento=datos.tipo_descuento,
             valor=datos.valor,
             alcance=datos.alcance,
-            producto=datos.producto if datos.alcance == Oferta.PRODUCTO else None,
-            tipo=datos.tipo if datos.alcance == Oferta.TIPO else None,
+            **datos.destinos(),
             estado=Oferta.ACTIVA if datos.fecha_inicio <= hoy else Oferta.PROGRAMADA,
         )
         detalle = describir(oferta, hoy)
@@ -264,7 +309,7 @@ def registrar(datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
             detalle=detalle,
         )
         if oferta.estado == Oferta.ACTIVA:
-            _actualizar_carritos(_tocados_por(oferta))
+            _actualizar_carritos(productos_tocados(oferta))
     return oferta
 
 
@@ -304,22 +349,24 @@ def editar(oferta, datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
                 "Una oferta vencida o dada de baja no se puede modificar. "
                 "Para volver a aplicar el descuento, creá una oferta nueva."
             )
+        antes = DatosDeOferta.de(oferta)
         _bloquear_destino(datos)
+        if (antes.alcance, antes.destino) != (datos.alcance, datos.destino):
+            validar_destino(datos)
         validar(datos, hoy=hoy, excluir=oferta.pk)
         afectados = bajo_tope(datos)
         if afectados and not aceptar_tope:
             raise TopeRequerido(afectados)
 
-        antes = DatosDeOferta.de(oferta)
-        tocados_antes = list(_tocados_por(oferta).values_list("pk", flat=True))
+        tocados_antes = list(productos_tocados(oferta).values_list("pk", flat=True))
         cambios = _cambios(antes, datos)
         if not cambios:
             return []
 
         for campo, _ in CAMPOS_EDITABLES:
             setattr(oferta, campo, getattr(datos, campo))
-        oferta.producto = datos.producto if datos.alcance == Oferta.PRODUCTO else None
-        oferta.tipo = datos.tipo if datos.alcance == Oferta.TIPO else None
+        for campo, destino in datos.destinos().items():
+            setattr(oferta, campo, destino)
         oferta.estado = Oferta.ACTIVA if datos.fecha_inicio <= hoy else Oferta.PROGRAMADA
         oferta.save()
 
@@ -330,7 +377,7 @@ def editar(oferta, datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
             ip=ip,
             detalle=f"«{oferta.descripcion}»: " + "; ".join(cambios),
         )
-        tocados = set(tocados_antes) | set(_tocados_por(oferta).values_list("pk", flat=True))
+        tocados = set(tocados_antes) | set(productos_tocados(oferta).values_list("pk", flat=True))
         _actualizar_carritos(Producto.objects.filter(pk__in=tocados))
     return cambios
 
@@ -340,8 +387,8 @@ def _cambios(antes, despues):
     for campo, nombre in CAMPOS_EDITABLES:
         anterior, nuevo = getattr(antes, campo), getattr(despues, campo)
         if campo == "alcance":
-            anterior = describir_alcance(antes.alcance, antes.producto, antes.tipo)
-            nuevo = describir_alcance(despues.alcance, despues.producto, despues.tipo)
+            anterior = describir_alcance(antes)
+            nuevo = describir_alcance(despues)
         elif campo == "valor":
             anterior = describir_descuento(antes.tipo_descuento, antes.valor)
             nuevo = describir_descuento(despues.tipo_descuento, despues.valor)
@@ -377,9 +424,9 @@ class InformeDeBaja:
 
 
 def _con_descuento_de(oferta, hoy):
-    """Los productos a los que esta oferta les descuenta hoy (la individual puede taparla)."""
+    """Los productos a los que esta oferta les descuenta hoy (una más específica puede taparla)."""
     del_dia = OfertasDelDia(hoy)
-    productos = productos_del_alcance(oferta.alcance, oferta.producto, oferta.tipo)
+    productos = del_dia.anotar(list(productos_del_alcance(oferta)))
     return [
         producto
         for producto in productos
@@ -403,9 +450,9 @@ def solicitar_baja(oferta, *, hoy=None):
     _verificar_baja(oferta, hoy)
     return InformeDeBaja(
         oferta=oferta,
-        alcance=describir_alcance(oferta.alcance, oferta.producto, oferta.tipo),
+        alcance=describir_alcance(oferta),
         con_descuento=len(_con_descuento_de(oferta, hoy)),
-        carritos=_carritos_con(_tocados_por(oferta)),
+        carritos=_carritos_con(productos_tocados(oferta)),
     )
 
 
@@ -423,7 +470,7 @@ def confirmar_baja(oferta, *, actor, ip=None, hoy=None):
         oferta = Oferta.objects.select_for_update().get(pk=oferta.pk)
         _verificar_baja(oferta, hoy)
         con_descuento = _con_descuento_de(oferta, hoy)
-        tocados = _tocados_por(oferta)
+        tocados = productos_tocados(oferta)
         carritos = _carritos_con(tocados)
         oferta.estado = Oferta.DADA_DE_BAJA
         oferta.save(update_fields=["estado", "actualizada_en"])
@@ -468,7 +515,7 @@ def ejecutar_ciclo(*, hoy=None):
         for oferta in a_activar:
             oferta.estado = Oferta.ACTIVA
             oferta.save(update_fields=["estado", "actualizada_en"])
-            _actualizar_carritos(_tocados_por(oferta))
+            _actualizar_carritos(productos_tocados(oferta))
             resultado.activadas.append(oferta)
 
         a_vencer = Oferta.objects.select_for_update().filter(
@@ -477,7 +524,7 @@ def ejecutar_ciclo(*, hoy=None):
         for oferta in a_vencer:
             oferta.estado = Oferta.VENCIDA
             oferta.save(update_fields=["estado", "actualizada_en"])
-            _actualizar_carritos(_tocados_por(oferta))
+            _actualizar_carritos(productos_tocados(oferta))
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.VENCIMIENTO_AUTOMATICO_OFERTA,
                 actor_email=TEMPORIZADOR,
@@ -518,22 +565,21 @@ class ProductoDeLaOferta:
 def productos_afectados(oferta, *, hoy=None):
     """`CO-170`: cada producto del alcance con su precio original y con descuento.
 
-    En una oferta por tipo, un producto con su propia oferta individual vigente
-    queda «tapado»: se cobra con la individual (ambigüedad 3).
+    Un producto al que hoy le cobra otra oferta —una más específica o, en el
+    mismo nivel, una que empezó antes— queda «tapado»: se cobra con ésa (plan
+    03, segunda parte, ambigüedad 3, y tercera parte, decisiones 1 y 3).
     """
     del_dia = OfertasDelDia(hoy)
+    productos = del_dia.anotar(list(productos_del_alcance(oferta).order_by("titulo", "pk")))
     filas = []
-    for producto in productos_del_alcance(oferta.alcance, oferta.producto, oferta.tipo).order_by(
-        "titulo", "pk"
-    ):
-        aplicada = del_dia.aplicada(producto)
-        tapado = aplicada if aplicada is not None and aplicada.pk != oferta.pk else None
+    for producto in productos:
+        aplicada = producto.oferta_aplicada
         filas.append(
             ProductoDeLaOferta(
                 producto=producto,
                 precio_original=producto.precio,
                 precio_con_descuento=descontar(producto.precio, oferta),
-                tapado_por=tapado if tapado and tapado.alcance == Oferta.PRODUCTO else None,
+                tapado_por=aplicada if aplicada is not None and aplicada.pk != oferta.pk else None,
             )
         )
     return filas

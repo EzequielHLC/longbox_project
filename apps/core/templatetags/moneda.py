@@ -17,6 +17,15 @@ def _con_puntos(entero):
 
 
 @register.filter
+def miles(valor):
+    """Una cantidad entera con punto de miles: «15.406»."""
+    try:
+        return _con_puntos(int(valor))
+    except (TypeError, ValueError):
+        return valor
+
+
+@register.filter
 def pesos(valor):
     if valor in (None, ""):
         return ""

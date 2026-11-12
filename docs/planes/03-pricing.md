@@ -190,3 +190,68 @@ y se ejerce acá de nuevo.
 - El precio con oferta en el mostrador (`CU-VTA-REG`): usará la misma función cuando exista.
 - La relación con el canje de puntos (RF-12): no existe Puntos.
 - Los otros ocho procesos del Temporizador: el comando los recibirá a medida que existan.
+
+---
+---
+
+# Plan — `03` Pricing · tercera parte: ofertas por editorial, etiqueta y grupo de etiquetas
+
+**Estado del plan:** Aprobado el 2026-11-12: las decisiones de la sección 3 las tomó el responsable · **Fecha:** 2026-11-12
+
+**Cambio de alcance pedido por el responsable** (2026-11-12): una oferta tiene que poder aplicarse,
+además de a un producto y a un tipo de material, a una **editorial**, a una **etiqueta** o a un
+**grupo de etiquetas** entero.
+
+## 1. Qué cubre
+
+Ningún caso de uso ni contrato nuevo: se amplía el alcance de los existentes.
+
+| Caso de uso | Contratos | Qué cambia |
+| --- | --- | --- |
+| `CU-PVP-ALT` | `CO-054`, `CO-055` | El alcance ofrece cinco destinos; las validaciones del paso 5 y el aviso A1 valen para todos |
+| `CU-PVP-EDI` | `CO-168`, `CO-056` | Se puede cambiar a cualquiera de los cinco alcances |
+| `CU-PVP-BAJ` | `CO-057`, `CO-058` | El informe y la restauración cubren los alcances nuevos |
+| `CU-PVP-CON` | `CO-169`, `CO-170` | La lista y la ficha describen el alcance nuevo; la ficha marca qué productos cobran otra oferta más específica |
+| Temporizador | `CO-059` | Sin cambios de efecto: actualiza los carritos del alcance que sea |
+| `CU-CAT-BAJ` | `CO-033` | El informe de baja de un producto cuenta las ofertas de su editorial y sus etiquetas |
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `Oferta` | Sí | El alcance suma Editorial, Etiqueta y Grupo de etiquetas, con su asociación; la base exige que cada alcance tenga exactamente su destino |
+| `Editorial`, `Etiqueta`, `GrupoEtiqueta` | Sí | Destinos nuevos. Sólo se leen, y se bloquean al validar el solapamiento |
+| `Producto`, `ProductoEditorial` | Sí | Sólo se leen: la editorial y las etiquetas deciden qué oferta aplica |
+
+## 3. Decisiones (del responsable)
+
+| # | Punto | Decisión |
+| --- | --- | --- |
+| 1 | **Precedencia** cuando a un producto le aplican varias ofertas | **La más específica**: producto > etiqueta > grupo de etiquetas > editorial > tipo de material. Nunca se suman. Extiende la regla de hoy (la individual le gana a la del tipo) |
+| 2 | **Destinos por oferta** | **Uno por oferta**: un producto, un tipo, una editorial, una etiqueta o un grupo. Para varios, varias ofertas |
+| 3 | Dos ofertas del mismo nivel sobre un producto (dos etiquetas suyas con oferta) | Manda la que empezó antes y, si empezaron el mismo día, la creada primero. Es determinista y se ve en la ficha de la oferta |
+| 4 | Solapamiento (I-20) | Como hoy: no se pisan dos ofertas vivas **sobre el mismo destino**. Sobre destinos distintos sí, y decide la precedencia |
+| 5 | Destino dado de baja (editorial, etiqueta o grupo inactivos) | La oferta deja de descontar mientras lo esté, como las filas de la portada |
+| 6 | Qué productos alcanza cada destino | Editorial: los tomos de esa editorial. Etiqueta: los que la llevan. Grupo: los que llevan cualquiera de sus etiquetas activas. Siempre los de la tienda (Activos y en Pre-venta), como el tipo |
+
+## 4. Orden de construcción
+
+| # | Qué | Motivo |
+| --- | --- | --- |
+| 1 | Modelo y migración: los tres alcances y sus asociaciones, con la restricción en la base | Todo lo demás lo lee |
+| 2 | El precio visible con la precedencia, sin una consulta por producto | Es lo que cobran los dos canales |
+| 3 | El servicio: alcance, solapamiento, tope, aviso A1, bloqueo, baja e informe | Las reglas viven en el servidor |
+| 4 | Formulario, lista y ficha | La pantalla sólo elige el destino |
+
+## 5. Riesgos
+
+| Riesgo | Cómo se cubre |
+| --- | --- |
+| Romper las ofertas por producto y por tipo, verificadas | Sus pruebas corren sin cambios |
+| Una consulta por producto en el catálogo y el carrito | Las etiquetas y editoriales de los productos se leen de una vez; prueba de cantidad de consultas |
+| Dos administradores registran a la vez ofertas que se pisan sobre la misma etiqueta | Bloqueo del destino, como hoy con el producto y el tipo |
+
+## 6. Fuera de alcance
+
+- Ofertas sobre varios destinos a la vez (decisión 2).
+- Ofertas por marca de los productos no editoriales.

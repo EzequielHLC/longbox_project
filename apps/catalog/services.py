@@ -10,6 +10,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils import timezone
 
@@ -584,14 +585,21 @@ class ImpactoDeBaja:
 
 def _ofertas_del_producto(producto, hoy):
     """Las ofertas vivas que lo alcanzan: las de alcance producto, que lo
-    referencian sólo a él, y las de su tipo, que referencian a varios."""
-    from apps.catalog.models import Oferta
+    referencian sólo a él, y las compartidas —de su tipo, su editorial, sus
+    etiquetas o los grupos de sus etiquetas— que referencian a varios (plan 03,
+    tercera parte)."""
+    from apps.catalog.models import Oferta, ProductoEditorial
 
     vivas = Oferta.objects.vivas(hoy)
-    return (
-        vivas.filter(alcance=Oferta.PRODUCTO, producto=producto),
-        vivas.filter(alcance=Oferta.TIPO, tipo_id=producto.tipo_id),
-    )
+    etiquetas = producto.etiquetas.all()
+    editorial = ProductoEditorial.objects.filter(pk=producto.pk).values("editorial_id")[:1]
+    compartidas = vivas.filter(
+        Q(alcance=Oferta.TIPO, tipo_id=producto.tipo_id)
+        | Q(alcance=Oferta.EDITORIAL, editorial_id__in=editorial)
+        | Q(alcance=Oferta.ETIQUETA, etiqueta__in=etiquetas)
+        | Q(alcance=Oferta.GRUPO, grupo__etiquetas__in=etiquetas.filter(activa=True))
+    ).distinct()
+    return vivas.filter(alcance=Oferta.PRODUCTO, producto=producto), compartidas
 
 
 def calcular_impacto_de_baja(producto):
@@ -601,7 +609,7 @@ def calcular_impacto_de_baja(producto):
     from apps.restock.models import SuscripcionReposicion
     from apps.tienda.models import LineaCarrito
 
-    exclusivas, del_tipo = _ofertas_del_producto(producto, timezone.localdate())
+    exclusivas, compartidas = _ofertas_del_producto(producto, timezone.localdate())
     return ImpactoDeBaja(
         stock=producto.stock,
         estado=producto.get_estado_display(),
@@ -611,7 +619,7 @@ def calcular_impacto_de_baja(producto):
         suscripciones_de_reposicion=SuscripcionReposicion.objects.filter(
             producto=producto, estado__in=SuscripcionReposicion.EN_ESPERA
         ).count(),
-        ofertas_vigentes=exclusivas.count() + del_tipo.count(),
+        ofertas_vigentes=exclusivas.count() + compartidas.count(),
         carritos_con_el_producto=LineaCarrito.objects.filter(producto=producto)
         .values("carrito")
         .distinct()
@@ -634,7 +642,7 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
     - Las suscripciones en espera se cancelan (como `CO-076`, se eliminan).
     - Las ofertas que lo referenciaban sólo a él quedan Dadas de baja por
       `CO-058`, con su entrada en el log: no se borran (B-02-007, desvío decidido
-      por el responsable). Las de su tipo, que referencian a varios, dejan de
+      por el responsable). Las compartidas (tipo, editorial, etiqueta, grupo) dejan de
       alcanzarlo porque un descatalogado no está en la tienda.
     - Las líneas de carrito quedan «Producto no disponible» por su estado (lo
       deriva la consulta del carrito) y sus clientes con cuenta reciben un aviso.
@@ -655,8 +663,8 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
         hecho.suscripciones = SuscripcionReposicion.objects.filter(
             producto=producto, estado__in=SuscripcionReposicion.EN_ESPERA
         ).delete()[0]
-        exclusivas, del_tipo = _ofertas_del_producto(producto, timezone.localdate())
-        hecho.ofertas_desvinculadas = del_tipo.count()
+        exclusivas, compartidas = _ofertas_del_producto(producto, timezone.localdate())
+        hecho.ofertas_desvinculadas = compartidas.count()
         for oferta in list(exclusivas):
             ofertas.confirmar_baja(oferta, actor=actor, ip=ip)
             hecho.ofertas_dadas_de_baja.append(str(oferta))
@@ -686,8 +694,8 @@ def confirmar_baja_de_producto(producto, *, actor, ip=None):
                 f"{producto.get_estado_display()} · stock al momento de la baja: "
                 f"{producto.stock} · "
                 f"suscripciones canceladas: {hecho.suscripciones} · ofertas dadas de baja: "
-                f"{len(hecho.ofertas_dadas_de_baja)} · ofertas de su tipo que dejan de alcanzarlo: "
-                f"{hecho.ofertas_desvinculadas} · carritos marcados: {hecho.carritos}"
+                f"{len(hecho.ofertas_dadas_de_baja)} · ofertas compartidas que dejan de "
+                f"alcanzarlo: {hecho.ofertas_desvinculadas} · carritos marcados: {hecho.carritos}"
                 + (
                     f" · líneas de pedido al proveedor cerradas: {hecho.lineas_cerradas}"
                     if hecho.lineas_cerradas

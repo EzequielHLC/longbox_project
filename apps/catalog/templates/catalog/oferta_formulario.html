@@ -10,6 +10,11 @@ pide la misma confirmación (B-03-010).
 
 El buscador de producto es un `<datalist>` del catálogo activo: el código va
 primero porque es lo que identifica (regla 1 del dominio).
+
+El alcance tiene cinco destinos (plan 03, tercera parte); cada uno con su campo.
+Con el guion, sólo se ve el del alcance elegido (ninguno hasta elegirlo); sin él,
+se ven todos y el
+servidor usa el que corresponde.
 {% endcomment %}
 
 {% block titulo %}{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %} · Longbox{% endblock %}
@@ -43,11 +48,14 @@ primero porque es lo que identifica (regla 1 del dominio).
   {% include "catalog/_opciones.html" with campo=form.tipo_descuento %}
   {% include "_campo.html" with campo=form.valor %}
   {% include "catalog/_opciones.html" with campo=form.alcance %}
-  {% include "_campo.html" with campo=form.producto %}
+  <div data-destino="producto">{% include "_campo.html" with campo=form.producto %}</div>
   <datalist id="productos-elegibles">
     {% for opcion in productos %}<option value="{{ opcion }}">{% endfor %}
   </datalist>
-  {% include "_campo.html" with campo=form.tipo %}
+  <div data-destino="tipo">{% include "_campo.html" with campo=form.tipo %}</div>
+  <div data-destino="editorial">{% include "_campo.html" with campo=form.editorial %}</div>
+  <div data-destino="etiqueta">{% include "_campo.html" with campo=form.etiqueta %}</div>
+  <div data-destino="grupo">{% include "_campo.html" with campo=form.grupo %}</div>
 
   {% if afectados %}
     <div class="panel panel--atencion" role="alert">
@@ -70,4 +78,17 @@ primero porque es lo que identifica (regla 1 del dominio).
   </div>
 </form>
 {% include "_autocompletado.html" %}
+<script>
+  (() => {
+    const opciones = document.querySelectorAll('input[name="alcance"]');
+    const mostrar = () => {
+      const elegido = [...opciones].find((o) => o.checked)?.value;
+      document.querySelectorAll("[data-destino]").forEach((campo) => {
+        campo.hidden = campo.dataset.destino !== elegido;
+      });
+    };
+    opciones.forEach((o) => o.addEventListener("change", mostrar));
+    mostrar();
+  })();
+</script>
 {% endblock %}

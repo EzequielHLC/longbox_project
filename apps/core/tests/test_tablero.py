@@ -10,7 +10,8 @@ from django.utils import timezone
 from apps.catalog.models import Producto
 from apps.catalog.tests.factories import ProductoFactory
 from apps.core import tablero
-from apps.pedidos.models import Pedido
+from apps.devoluciones.models import CasoDevolucion
+from apps.pedidos.models import LineaPedido, Pedido
 from apps.pedidos.tests.util import como_venta_de_mostrador, crear_pedido
 
 pytestmark = pytest.mark.django_db
@@ -59,7 +60,8 @@ def test_lo_cubierto_con_puntos_no_es_plata_vendida():
 def test_el_mes_se_compara_contra_el_mismo_tramo_del_mes_anterior():
     hoy = date(2026, 10, 10)
     _en(crear_pedido(lineas=(("15000", 1),), costo_envio="0"), date(2026, 10, 5))
-    _en(crear_pedido(lineas=(("10000", 1),), costo_envio="0"), date(2026, 9, 8))
+    for dia in range(1, tablero.BASE_PARA_COMPARAR + 1):
+        _en(crear_pedido(lineas=(("2000", 1),), costo_envio="0"), date(2026, 9, dia))
     # Fuera del tramo comparable (después del 10 de septiembre): no cuenta.
     _en(crear_pedido(lineas=(("99000", 1),), costo_envio="0"), date(2026, 9, 20))
 
@@ -68,7 +70,68 @@ def test_el_mes_se_compara_contra_el_mismo_tramo_del_mes_anterior():
     assert mes["total"] == Decimal("15000")
     assert mes["pedidos"] == 1
     assert mes["ticket"] == Decimal("15000")
+    assert mes["anterior"] == Decimal("10000")
+    assert mes["diferencia"] == Decimal("5000")
     assert mes["variacion"] == 50
+
+
+def test_con_poca_base_la_variacion_va_solo_en_pesos():
+    hoy = date(2026, 10, 10)
+    _en(crear_pedido(lineas=(("15000", 1),), costo_envio="0"), date(2026, 10, 5))
+    _en(crear_pedido(lineas=(("5000", 1),), costo_envio="0"), date(2026, 9, 8))
+
+    mes = tablero.mes(hoy)
+
+    # Un pedido no alcanza para un «+200 %»: la diferencia sí se dice, en pesos.
+    assert mes["diferencia"] == Decimal("10000")
+    assert mes["variacion"] is None
+
+
+def test_lo_devuelto_por_el_medio_de_pago_se_resta_el_dia_que_se_resolvio(administrador):
+    hoy = date(2026, 10, 28)
+    pedido = _en(crear_pedido(lineas=(("10000", 1), ("4000", 1)), costo_envio="0"), hoy)
+    CasoDevolucion.objects.create(
+        linea=pedido.lineas.get(precio_unitario=Decimal("4000")),
+        correo="cliente@correo.test",
+        motivo=CasoDevolucion.ARREPENTIMIENTO,
+        estado=CasoDevolucion.RESUELTO,
+        resolucion=CasoDevolucion.REEMBOLSO_MEDIO,
+        monto_reembolsado=Decimal("4000"),
+        resuelto_en=timezone.make_aware(timezone.datetime(2026, 10, 28, 15)),
+        resuelto_por=administrador,
+    )
+
+    dia = tablero.ventas_por_dia(hoy)[-1]
+    mes = tablero.mes(hoy)
+
+    assert dia.total == Decimal("10000")
+    assert dia.reembolsos == Decimal("4000")
+    assert mes["total"] == Decimal("10000")
+    assert mes["reembolsos"] == Decimal("4000")
+    # El ticket mide la compra: no se achica por la devolución ni crece por el envío.
+    assert mes["ticket"] == Decimal("14000")
+
+
+def test_una_linea_cancelada_con_reembolso_no_es_venta():
+    hoy = date(2026, 10, 28)
+    pedido = _en(crear_pedido(lineas=(("10000", 1), ("3000", 2)), costo_envio="0"), hoy)
+    pedido.lineas.filter(precio_unitario=Decimal("3000")).update(
+        estado=LineaPedido.CANCELADO_REEMBOLSO
+    )
+
+    assert tablero.ventas_por_dia(hoy)[-1].total == Decimal("10000")
+    assert [f["unidades"] for f in tablero.mas_vendidos(hoy)] == [1]
+
+
+def test_el_ticket_no_lleva_el_envio_ni_los_pedidos_pagados_con_puntos():
+    hoy = date(2026, 10, 28)
+    _en(crear_pedido(lineas=(("10000", 1),), costo_envio="2500"), hoy)
+    _en(crear_pedido(lineas=(("8000", 1, 400),), costo_envio="0"), hoy)
+
+    mes = tablero.mes(hoy)
+
+    assert mes["total"] == Decimal("12500")
+    assert mes["ticket"] == Decimal("10000")
 
 
 def test_sin_ventas_el_mes_pasado_no_hay_variacion():
@@ -80,7 +143,8 @@ def test_sin_ventas_el_mes_pasado_no_hay_variacion():
 
 def test_el_tramo_del_mes_anterior_se_corta_en_su_ultimo_dia():
     # El 31 de marzo se compara contra el 1 al 28 de febrero, no revienta.
-    _en(crear_pedido(lineas=(("8000", 1),), costo_envio="0"), date(2026, 2, 28))
+    for dia in (24, 25, 26, 27, 28):
+        _en(crear_pedido(lineas=(("1600", 1),), costo_envio="0"), date(2026, 2, dia))
     _en(crear_pedido(lineas=(("4000", 1),), costo_envio="0"), date(2026, 3, 31))
 
     assert tablero.mes(date(2026, 3, 31))["variacion"] == -50
@@ -109,8 +173,17 @@ def test_el_catalogo_se_parte_por_estado_sin_los_descatalogados():
     assert catalogo["total"] == 4
     assert tramos["Con stock"]["cantidad"] == 3
     assert tramos["Con stock"]["ancho"] == 75
-    assert tramos["Agotados"]["cantidad"] == 1
+    assert tramos["Sin stock"]["cantidad"] == 1
     assert tramos["En pre-venta"]["cantidad"] == 0
+
+
+def test_un_activo_en_cero_se_cuenta_sin_stock():
+    ProductoFactory(estado=Producto.ACTIVO, stock=2)
+    ProductoFactory(estado=Producto.ACTIVO, stock=0)
+
+    tramos = {t["nombre"]: t["cantidad"] for t in tablero.catalogo()["tramos"]}
+
+    assert tramos == {"Con stock": 1, "En pre-venta": 0, "Sin stock": 1}
 
 
 def test_los_canales_separan_la_tienda_del_mostrador():

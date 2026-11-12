@@ -30,7 +30,18 @@ def _fecha(texto):
 
 
 def _ofertas():
-    return Oferta.objects.select_related("producto", "tipo")
+    return Oferta.objects.select_related(
+        "producto", "tipo", "editorial", "etiqueta__grupo", "grupo"
+    )
+
+
+# A1 de `CU-PVP-ALT`, generalizado a los destinos que agrupan productos.
+SIN_PRODUCTOS = (
+    (Oferta.TIPO, "El tipo de material seleccionado"),
+    (Oferta.EDITORIAL, "La editorial seleccionada"),
+    (Oferta.ETIQUETA, "La etiqueta seleccionada"),
+    (Oferta.GRUPO, "El grupo de etiquetas seleccionado"),
+)
 
 
 class FiltrosDeOfertas:
@@ -66,6 +77,9 @@ class FiltrosDeOfertas:
                 Q(descripcion__icontains=self.texto)
                 | Q(producto__titulo__icontains=self.texto)
                 | Q(tipo__nombre__icontains=self.texto)
+                | Q(editorial__nombre__icontains=self.texto)
+                | Q(etiqueta__nombre__icontains=self.texto)
+                | Q(grupo__nombre__icontains=self.texto)
             )
         return consulta
 
@@ -76,7 +90,7 @@ class OfertaListaView(CatalogoAdminMixin, View):
     def get(self, request):
         hoy = hoy_local()
         filtros = FiltrosDeOfertas(request.GET)
-        todas = Oferta.objects.select_related("producto", "tipo")
+        todas = _ofertas()
         encontradas = filtros.aplicar(todas, hoy).order_by("-fecha_inicio", "-pk")
         pagina = Paginator(encontradas, POR_PAGINA).get_page(request.GET.get("page"))
         for oferta in pagina.object_list:
@@ -111,7 +125,7 @@ class OfertaFichaView(CatalogoAdminMixin, View):
                 "oferta": oferta,
                 "estado": estado,
                 "descuento": ofertas.describir_descuento(oferta.tipo_descuento, oferta.valor),
-                "alcance": ofertas.describir_alcance(oferta.alcance, oferta.producto, oferta.tipo),
+                "alcance": ofertas.describir_alcance(oferta),
                 "productos": ofertas.productos_afectados(oferta, hoy=hoy),
                 "editable": estado not in Oferta.TERMINALES,
             },
@@ -170,10 +184,11 @@ class OfertaAltaView(_FormularioDeOferta):
         messages.success(
             request, f"Oferta «{oferta.descripcion}» registrada: {oferta.get_estado_display()}."
         )
-        if ofertas.tipo_sin_productos(datos):
+        if ofertas.destino_sin_productos(datos):
+            destino = dict(SIN_PRODUCTOS)[datos.alcance]
             messages.warning(
                 request,
-                "El tipo de material seleccionado no tiene productos activos en este momento. "
+                f"{destino} no tiene productos activos en este momento. "
                 "La oferta se aplica cuando haya productos.",
             )
         return redirect("catalog:oferta_ficha", oferta.pk)

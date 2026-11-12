@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from django import forms
 
-from apps.catalog.models import Oferta, Producto, Tipo
+from apps.catalog.models import Editorial, Etiqueta, GrupoEtiqueta, Oferta, Producto, Tipo
 from apps.catalog.ofertas import DatosDeOferta
 
 ESTADOS_DEL_CATALOGO_ACTIVO = (Producto.ACTIVO, Producto.PRE_VENTA)
@@ -63,6 +63,27 @@ class OfertaForm(forms.Form):
         required=False,
         empty_label="Elegí un tipo",
     )
+    editorial = forms.ModelChoiceField(
+        label="Editorial",
+        queryset=Editorial.objects.filter(activa=True).order_by("nombre"),
+        required=False,
+        empty_label="Elegí una editorial",
+    )
+    etiqueta = forms.ModelChoiceField(
+        label="Etiqueta",
+        queryset=Etiqueta.objects.filter(activa=True, grupo__activo=True)
+        .select_related("grupo")
+        .order_by("grupo__nombre", "nombre"),
+        required=False,
+        empty_label="Elegí una etiqueta",
+    )
+    grupo = forms.ModelChoiceField(
+        label="Grupo de etiquetas",
+        queryset=GrupoEtiqueta.objects.filter(activo=True).order_by("nombre"),
+        required=False,
+        empty_label="Elegí un grupo",
+        help_text="Alcanza a los productos que llevan cualquiera de sus etiquetas.",
+    )
 
     def __init__(self, *args, oferta=None, **kwargs):
         if oferta is not None and "initial" not in kwargs:
@@ -75,13 +96,20 @@ class OfertaForm(forms.Form):
                 "alcance": oferta.alcance,
                 "producto": opcion_de(oferta.producto) if oferta.producto else "",
                 "tipo": oferta.tipo,
+                "editorial": oferta.editorial,
+                "etiqueta": oferta.etiqueta,
+                "grupo": oferta.grupo,
             }
         super().__init__(*args, **kwargs)
-        if oferta is not None and oferta.tipo and not oferta.tipo.activo:
-            # La edición sigue ofreciendo el tipo actual aunque se haya dado de baja.
-            self.fields["tipo"].queryset = Tipo.objects.filter(
-                pk__in=[*self.fields["tipo"].queryset.values_list("pk", flat=True), oferta.tipo.pk]
-            ).order_by("nombre")
+        if oferta is not None:
+            # La edición sigue ofreciendo el destino actual aunque se haya dado de baja.
+            for campo in ("tipo", "editorial", "etiqueta", "grupo"):
+                actual = getattr(oferta, campo)
+                if actual is not None:
+                    elegibles = self.fields[campo].queryset
+                    self.fields[campo].queryset = elegibles.model.objects.filter(
+                        pk__in=[*elegibles.values_list("pk", flat=True), actual.pk]
+                    ).order_by(*elegibles.query.order_by)
 
     def clean_producto(self):
         texto = self.cleaned_data["producto"].strip()
@@ -102,8 +130,15 @@ class OfertaForm(forms.Form):
             and "producto" not in self.errors
         ):
             self.add_error("producto", "Elegí el producto de la oferta.")
-        if alcance == Oferta.TIPO and not datos.get("tipo"):
-            self.add_error("tipo", "Elegí el tipo de material de la oferta.")
+        faltantes = {
+            Oferta.TIPO: "Elegí el tipo de material de la oferta.",
+            Oferta.EDITORIAL: "Elegí la editorial de la oferta.",
+            Oferta.ETIQUETA: "Elegí la etiqueta de la oferta.",
+            Oferta.GRUPO: "Elegí el grupo de etiquetas de la oferta.",
+        }
+        campo = Oferta.CAMPO_DEL_ALCANCE.get(alcance)
+        if alcance in faltantes and not datos.get(campo) and campo not in self.errors:
+            self.add_error(campo, faltantes[alcance])
         return datos
 
     def datos(self):
@@ -115,6 +150,8 @@ class OfertaForm(forms.Form):
             tipo_descuento=limpio["tipo_descuento"],
             valor=limpio["valor"],
             alcance=limpio["alcance"],
-            producto=limpio["producto"] if limpio["alcance"] == Oferta.PRODUCTO else None,
-            tipo=limpio["tipo"] if limpio["alcance"] == Oferta.TIPO else None,
+            **{
+                campo: limpio[campo] if alcance == limpio["alcance"] else None
+                for alcance, campo in Oferta.CAMPO_DEL_ALCANCE.items()
+            },
         )

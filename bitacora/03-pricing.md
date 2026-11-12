@@ -373,3 +373,67 @@ responde, queda el respaldo anterior con su fecha.
 
 **Qué habría que cambiar.**
 Declarar `CO-155` como operación del Temporizador (P-05).
+
+---
+
+### B-03-014 · Ofertas por editorial, por etiqueta y por grupo de etiquetas
+
+**Tipo:** Corrección · **Fecha:** 2026-11-12 · **Alcance:** `CU-PVP-ALT`, `CU-PVP-EDI`, `CU-PVP-BAJ`, `CU-PVP-CON`, `CO-054`, `CO-055`, `CO-056`, `CO-057`, `CO-058`, `CO-059`, `CO-168`, `CO-169`, `CO-170`, `CO-033`, I-20
+**Estado:** Abierta — construido el 2026-11-12 a pedido del responsable (plan 03, tercera parte); falta enmendar el documento
+
+**Qué apareció.**
+El responsable pidió que una oferta pueda aplicarse, además de a un producto o a un tipo de
+material, a una editorial («Semana de Ivrea»), a una etiqueta («todo Evangelion») o a un grupo de
+etiquetas entero. Con dos alcances, una promoción por editorial había que cargarla producto por
+producto, y dejaba afuera los tomos que llegaban después.
+
+**Qué dice la especificación.**
+> «Y el campo obligatorio de alcance de aplicación: Producto individual o tipo de material del
+> producto.» (`CU-PVP-ALT`, paso 2)
+
+> «Crear un descuento con vigencia definida sobre un producto individual o sobre un tipo de
+> material» (`CO-054`, Responsabilidades)
+
+**Qué se hizo.**
+El alcance ofrece cinco destinos y cada oferta tiene exactamente uno (la base lo exige). Las
+decisiones las tomó el responsable:
+
+1. **Precedencia.** Si a un producto le aplican varias, cobra la más específica: producto,
+   etiqueta, grupo de etiquetas, editorial y tipo, en ese orden. Nunca se suman. Extiende lo que ya
+   regía: la individual le gana a la del tipo (plan 03, segunda parte, ambigüedad 3).
+2. **Empate en el mismo nivel** (un producto con dos etiquetas en oferta): cobra la que empezó
+   antes y, si empezaron el mismo día, la que se registró primero. La ficha de la oferta que pierde
+   marca esos productos con el nombre de la que cobra.
+3. **Solapamiento (I-20).** Sigue valiendo sobre el mismo destino: no puede haber dos ofertas vivas
+   en los mismos días sobre la misma editorial, etiqueta o grupo. Sobre destinos distintos sí, y
+   decide la precedencia.
+4. **Qué alcanza cada destino.** La editorial alcanza a sus tomos (el rubro no editorial no tiene
+   editorial). La etiqueta, a los productos que la llevan, de los dos rubros. El grupo, a los que
+   llevan cualquiera de sus etiquetas activas. Como el tipo, sólo los que están en la tienda
+   (Activos y en Pre-venta).
+5. **Destino dado de baja.** Una oferta sobre una editorial, una etiqueta o un grupo inactivos deja
+   de descontar mientras lo estén, y el producto pasa a cobrar la siguiente oferta que le aplique.
+   No se puede registrar una oferta nueva sobre un destino inactivo ni mover una a uno; la que ya
+   estaba se sigue pudiendo editar.
+6. **El aviso A1** («sin productos activos») vale para los cuatro destinos que agrupan productos.
+7. **`CO-033`.** El informe de baja de un producto cuenta también las ofertas vigentes de su
+   editorial, sus etiquetas y sus grupos. Al descatalogarlo, ésas no se dan de baja: dejan de
+   alcanzarlo, como las de su tipo.
+
+**Qué habría que cambiar.**
+- `CU-PVP-ALT`, descripción y pasos 2 y 3: los cinco destinos y su selector; paso 5 (b): «sobre el
+  mismo destino»; A1: «el tipo, la editorial, la etiqueta o el grupo sin productos activos».
+- `CU-PVP-ALT` o `CU-PVP-CON`: una regla de negocio con la precedencia y el desempate.
+- `CU-PVP-CON`, pasos 2 y 3: el alcance muestra y busca el nombre de la editorial, la etiqueta o
+  el grupo.
+- `CO-054`: la firma (`productoOTipo` pasa a ser el destino), las responsabilidades, la excepción
+  A1 y la postcondición (b): «se formó o → Producto, Tipo, Editorial, Etiqueta o GrupoEtiqueta
+  según el alcance». La precondición «existe al menos un producto activo o un tipo con productos
+  activos» se amplía a los destinos nuevos y ya no se cumple como está escrita: con A1 un destino
+  vacío se acepta con aviso.
+- `CO-056`: el cambio de alcance puede ser a cualquiera de los cinco.
+- `CO-170`: los productos que cobra otra oferta se muestran marcados.
+- `CO-033`: las ofertas que lo alcanzan incluyen las de su editorial, etiquetas y grupos.
+- Modelo de dominio: tres asociaciones nuevas, `Oferta "0..*" -- "0..1" Editorial`, `Etiqueta` y
+  `GrupoEtiqueta`, y el atributo alcance con sus cinco valores. I-20 se lee «sobre el mismo
+  destino».

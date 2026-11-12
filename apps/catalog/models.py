@@ -1629,6 +1629,18 @@ class ConfianzaCampo(models.Model):
 # ---------------------------------------------------------------------------
 
 
+def _un_solo_destino():
+    """Cada alcance con su asociación llena y las otras cuatro vacías."""
+    campos = ("producto", "tipo", "editorial", "etiqueta", "grupo")
+    condicion = models.Q()
+    for alcance in campos:
+        condicion |= models.Q(
+            alcance=alcance,
+            **{f"{campo}__isnull": campo != alcance for campo in campos},
+        )
+    return condicion
+
+
 class OfertaQuerySet(models.QuerySet):
     def en_vigencia(self, hoy):
         """Las que descuentan hoy: no dadas de baja, y con hoy dentro de sus fechas.
@@ -1647,7 +1659,10 @@ class OfertaQuerySet(models.QuerySet):
 
 
 class Oferta(models.Model):
-    """Un descuento con vigencia sobre un producto o sobre un tipo de material.
+    """Un descuento con vigencia sobre un destino: un producto, un tipo de material,
+    una editorial, una etiqueta o un grupo de etiquetas (plan 03, tercera parte).
+
+    Si a un producto le aplican varias, manda la más específica (`PRECEDENCIA`).
 
     No toca `Producto.precio`: modifica el precio visible
     (`apps.catalog.precio_visible`), y por eso darla de baja o dejarla vencer
@@ -1667,10 +1682,27 @@ class Oferta(models.Model):
 
     PRODUCTO = "producto"
     TIPO = "tipo"
+    EDITORIAL = "editorial"
+    ETIQUETA = "etiqueta"
+    GRUPO = "grupo"
     ALCANCES = [  # noqa: RUF012
         (PRODUCTO, "Producto individual"),
         (TIPO, "Tipo de material"),
+        (EDITORIAL, "Editorial"),
+        (ETIQUETA, "Etiqueta"),
+        (GRUPO, "Grupo de etiquetas"),
     ]
+    # De la más específica a la más general: si a un producto le aplican varias
+    # ofertas, se cobra la primera de esta lista (decisión 1 del responsable).
+    PRECEDENCIA = (PRODUCTO, ETIQUETA, GRUPO, EDITORIAL, TIPO)
+    # El campo de la asociación de cada alcance.
+    CAMPO_DEL_ALCANCE = {  # noqa: RUF012
+        PRODUCTO: "producto",
+        TIPO: "tipo",
+        EDITORIAL: "editorial",
+        ETIQUETA: "etiqueta",
+        GRUPO: "grupo",
+    }
 
     PROGRAMADA = "programada"
     ACTIVA = "activa"
@@ -1698,6 +1730,15 @@ class Oferta(models.Model):
     tipo = models.ForeignKey(
         Tipo, on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
     )
+    editorial = models.ForeignKey(
+        Editorial, on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
+    )
+    etiqueta = models.ForeignKey(
+        "Etiqueta", on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
+    )
+    grupo = models.ForeignKey(
+        "GrupoEtiqueta", on_delete=models.PROTECT, null=True, blank=True, related_name="ofertas"
+    )
     estado = models.CharField("estado", max_length=15, choices=ESTADOS, default=PROGRAMADA)
     creada_en = models.DateTimeField("creada en", auto_now_add=True)
     actualizada_en = models.DateTimeField("actualizada en", auto_now=True)
@@ -1709,12 +1750,9 @@ class Oferta(models.Model):
         verbose_name_plural = "ofertas"
         ordering = ["-fecha_inicio", "-pk"]  # noqa: RUF012
         constraints = [  # noqa: RUF012
-            # El alcance nombra exactamente uno de los dos destinos.
+            # El alcance nombra exactamente su destino, y ningún otro.
             models.CheckConstraint(
-                condition=(
-                    models.Q(alcance="producto", producto__isnull=False, tipo__isnull=True)
-                    | models.Q(alcance="tipo", tipo__isnull=False, producto__isnull=True)
-                ),
+                condition=_un_solo_destino(),
                 name="oferta_alcance_coherente",
             ),
             models.CheckConstraint(
@@ -1744,5 +1782,10 @@ class Oferta(models.Model):
 
     @property
     def destino(self):
-        """El producto o el tipo del alcance."""
-        return self.producto if self.alcance == self.PRODUCTO else self.tipo
+        """El producto, el tipo, la editorial, la etiqueta o el grupo del alcance."""
+        return getattr(self, self.CAMPO_DEL_ALCANCE[self.alcance])
+
+    @property
+    def nivel(self):
+        """La posición en la precedencia: 0 es la más específica."""
+        return self.PRECEDENCIA.index(self.alcance)

@@ -1,0 +1,170 @@
+{% load moneda %}
+{% comment %}
+Las inferencias del panel (`core.inteligencia`). Fuera del documento formal, a
+pedido del responsable (2026-11-12): sólo lee y no cambia nada.
+
+Arriba, una frase por inferencia; abajo, el detalle de cada una. Cada gráfico
+tiene un solo tono y el dato exacto en texto: nada depende sólo del color. Lo
+que sube y lo que baja lleva ▲ o ▼ además del verde o el rojo.
+{% endcomment %}
+<section class="seccion tablero inteligencia" aria-labelledby="titulo-inteligencia">
+  <div class="seccion__titulo"><h2 id="titulo-inteligencia">Inteligencia del negocio</h2></div>
+  <p class="seccion__bajada">Estimaciones a partir de lo vendido. Orientan una decisión; no son contabilidad.</p>
+
+  {% if inteligencia.senales %}
+    <ul class="senales">
+      {% for icono, frase in inteligencia.senales %}
+        <li class="senales__item{% if icono == 'atencion' %} senales__item--atencion{% endif %}" data-i="{{ forloop.counter0 }}">
+          {% include "_iconos.html" with icono=icono %}<span>{{ frase }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="rejilla-2">
+    {# ---- Proyección del mes ---------------------------------------------- #}
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Proyección del mes</figcaption>
+      {% with p=inteligencia.proyeccion %}
+      {% if p %}
+        <p class="proyeccion__cifra"><span class="kpi__valor">{{ p.proyectado|pesos }}</span>
+          <span class="secundario">entre {{ p.piso|pesos }} y {{ p.techo|pesos }}</span></p>
+        <div class="proyeccion" role="img" aria-label="Vendido {{ p.vendido|pesos }}; proyectado {{ p.proyectado|pesos }}, entre {{ p.piso|pesos }} y {{ p.techo|pesos }}{% if p.marca_anterior is not None %}; el mes pasado cerró en {{ p.anterior|pesos }}{% endif %}.">
+          <span class="proyeccion__banda" data-desde="{{ p.desde_banda|stringformat:'.2f' }}" data-ancho="{{ p.ancho_banda|stringformat:'.2f' }}" data-dato="Rango probable · {{ p.piso|pesos }} a {{ p.techo|pesos }}"></span>
+          <span class="proyeccion__vendido" data-ancho="{{ p.ancho_vendido|stringformat:'.2f' }}" data-dato="Vendido hasta hoy · {{ p.vendido|pesos }}"></span>
+          <span class="proyeccion__marca" data-desde="{{ p.ancho_proyectado|stringformat:'.2f' }}" data-dato="Proyectado · {{ p.proyectado|pesos }}"></span>
+          {% if p.marca_anterior is not None %}<span class="proyeccion__marca proyeccion__marca--anterior" data-desde="{{ p.marca_anterior|stringformat:'.2f' }}" data-dato="{{ p.mes_anterior|date:'F' }} · {{ p.anterior|pesos }}"></span>{% endif %}
+        </div>
+        <ul class="grafico-leyenda">
+          <li><span class="grafico-leyenda__marca proyeccion__muestra--vendido" aria-hidden="true"></span>Vendido <strong class="datos">{{ p.vendido|pesos }}</strong></li>
+          <li><span class="grafico-leyenda__marca proyeccion__muestra--banda" aria-hidden="true"></span>Rango probable</li>
+          {% if p.marca_anterior is not None %}<li><span class="grafico-leyenda__marca proyeccion__muestra--anterior" aria-hidden="true"></span>{{ p.mes_anterior|date:"F"|capfirst }} <strong class="datos">{{ p.anterior|pesos }}</strong></li>{% endif %}
+        </ul>
+        <p class="texto-chico secundario">
+          Faltan {{ p.dias_restantes }} día{{ p.dias_restantes|pluralize }}. El ritmo es el promedio de cada día de la semana en las últimas cuatro semanas.
+          {% if p.diferencia is not None %}
+            Contra el mes pasado: {% if p.diferencia >= 0 %}▲ {{ p.diferencia|pesos }}{% else %}▼ {{ p.diferencia|pesos|cut:"-" }}{% endif %}{% if p.variacion is not None %} ({% if p.variacion >= 0 %}+{% endif %}{{ p.variacion }} %){% endif %}.
+          {% endif %}
+        </p>
+      {% else %}
+        <p class="secundario">Hacen falta al menos dos semanas de ventas para proyectar el mes.</p>
+      {% endif %}
+      {% endwith %}
+    </figure>
+
+    {# ---- Qué día se vende más --------------------------------------------- #}
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Qué día se vende más · promedio de {{ inteligencia.semana.semanas|default:8 }} semanas</figcaption>
+      {% if inteligencia.semana %}
+        <div class="grafico-dias grafico-dias--semana" role="img" aria-label="{% for dia in inteligencia.semana.dias %}{{ dia.nombre }}: {{ dia.promedio|pesos }}. {% endfor %}">
+          {% for dia in inteligencia.semana.dias %}
+            <span class="grafico-dias__columna{% if dia.mejor %} grafico-dias__columna--hoy{% endif %}" data-dato="{{ dia.nombre }} · {{ dia.promedio|pesos }} en promedio" data-alto="{{ dia.alto|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
+              <span class="grafico-dias__barra"></span>
+            </span>
+          {% endfor %}
+        </div>
+        <div class="grafico-dias__eje grafico-dias__eje--columnas" aria-hidden="true">
+          {% for dia in inteligencia.semana.dias %}<span{% if dia.mejor %} class="fuerte"{% endif %}>{{ dia.corto }}</span>{% endfor %}
+        </div>
+        <p class="texto-chico secundario">El mejor día es el {{ inteligencia.semana.mejor|lower }}{% if inteligencia.semana.veces %}: {{ inteligencia.semana.veces|floatformat:1 }} veces el promedio diario{% endif %}.</p>
+      {% else %}
+        <p class="secundario">Sin ventas en las últimas semanas.</p>
+      {% endif %}
+    </figure>
+  </div>
+
+  {# ---- Reposición sugerida ------------------------------------------------ #}
+  <figure class="grafico">
+    <figcaption class="grafico__titulo">Reposición sugerida · al ritmo de los últimos 30 días</figcaption>
+    {% if inteligencia.reposicion %}
+      <div class="tabla-desplazable">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="numero">Stock</th>
+              <th class="numero">Vendidas en 30 días</th>
+              <th class="numero">En camino</th>
+              <th class="numero">Se agota en</th>
+              <th class="numero">Pedir</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in inteligencia.reposicion %}
+              <tr>
+                <td class="cortar-palabras"><a href="{% url 'catalog:producto_detalle' fila.producto.pk %}">{{ fila.producto }}</a></td>
+                <td class="numero">{{ fila.stock }}</td>
+                <td class="numero">{{ fila.vendidas }}</td>
+                <td class="numero">{{ fila.en_camino|default:"—" }}</td>
+                <td class="numero sin-cortar">{% if fila.urgente %}<span class="marca-estado marca-estado--error">{% if fila.dias %}{{ fila.dias }} día{{ fila.dias|pluralize }}{% else %}Ya agotado{% endif %}</span>{% else %}{{ fila.dias }} días{% endif %}</td>
+                <td class="numero fuerte">{{ fila.sugerido }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="texto-chico secundario">«Pedir» cubre un mes de venta, descontados el stock y lo que ya viene en camino. Las pre-ventas no entran.</p>
+    {% else %}
+      <p class="secundario">Nada se agota en las próximas tres semanas al ritmo actual.</p>
+    {% endif %}
+  </figure>
+
+  <div class="rejilla-2">
+    {# ---- Stock inmovilizado ------------------------------------------------ #}
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Stock inmovilizado · sin ventas en {{ inteligencia.dias_inmovil }} días</figcaption>
+      {% with q=inteligencia.inmovilizado %}
+      {% if q.productos %}
+        <p class="proyeccion__cifra"><span class="kpi__valor">{{ q.total|pesos }}</span>
+          <span class="secundario">a precio de venta, en {{ q.productos|miles }} producto{{ q.productos|pluralize }} ({{ q.unidades|miles }} unidad{{ q.unidades|pluralize:"es" }})</span></p>
+        <ul class="lista-renglones">
+          {% for producto in q.filas %}
+            <li>
+              <a class="cortar-palabras" href="{% url 'catalog:producto_detalle' producto.pk %}">{{ producto.especifico }}</a>
+              <span class="datos sin-cortar">{{ producto.stock }} u. · {{ producto.plata|pesos }}</span>
+              <span class="texto-chico secundario">{% if producto.ultima_venta %}Última venta: {{ producto.ultima_venta|date:"d/m/Y" }}{% else %}Nunca se vendió{% endif %}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <a href="{% url 'catalog:oferta_alta' %}" class="boton-texto">{% include "_iconos.html" with icono="precios" %}<span>Crear una oferta</span></a>
+      {% else %}
+        <p class="secundario">Todo lo que tiene stock se vendió en los últimos {{ inteligencia.dias_inmovil }} días.</p>
+      {% endif %}
+      {% endwith %}
+    </figure>
+
+    {# ---- Tendencias ----------------------------------------------------- #}
+    <figure class="grafico">
+      <figcaption class="grafico__titulo">Tendencias · 30 días contra los 30 anteriores</figcaption>
+      {% if inteligencia.tendencias.suben or inteligencia.tendencias.bajan %}
+        {% if inteligencia.tendencias.suben %}
+          <p class="tendencia__titulo">▲ Lo que sube</p>
+          <ol class="grafico-ranking">
+            {% for m in inteligencia.tendencias.suben %}
+              <li class="grafico-ranking__fila" data-ancho="{{ m.ancho|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
+                <span class="grafico-ranking__nombre"><span class="secundario">{{ m.dimension }} ·</span> {{ m.nombre }}</span>
+                <span class="grafico-ranking__pista"><span class="grafico-ranking__barra grafico-ranking__barra--sube"></span></span>
+                <span class="grafico-ranking__valor datos">▲ {{ m.diferencia|pesos }}{% if m.variacion is not None %} · +{{ m.variacion }} %{% else %} · nuevo{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ol>
+        {% endif %}
+        {% if inteligencia.tendencias.bajan %}
+          <p class="tendencia__titulo">▼ Lo que baja</p>
+          <ol class="grafico-ranking">
+            {% for m in inteligencia.tendencias.bajan %}
+              <li class="grafico-ranking__fila" data-ancho="{{ m.ancho|stringformat:'.1f' }}" data-i="{{ forloop.counter0 }}">
+                <span class="grafico-ranking__nombre"><span class="secundario">{{ m.dimension }} ·</span> {{ m.nombre }}</span>
+                <span class="grafico-ranking__pista"><span class="grafico-ranking__barra grafico-ranking__barra--baja"></span></span>
+                <span class="grafico-ranking__valor datos">▼ {{ m.diferencia|pesos|cut:"-" }}{% if m.variacion is not None %} · {{ m.variacion }} %{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ol>
+        {% endif %}
+        <p class="texto-chico secundario">Por tipo, editorial y etiqueta, en pesos. El por ciento sólo cuando el tramo anterior tiene al menos tres unidades.</p>
+      {% else %}
+        <p class="secundario">Todavía no hay movimiento suficiente para hablar de tendencias.</p>
+      {% endif %}
+    </figure>
+  </div>
+</section>

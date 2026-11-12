@@ -4511,6 +4511,109 @@ a.galeria-producto__item:hover img { transform: translate(-2px, -2px); box-shado
   .grafico-dias__barra, .grafico-ranking__barra { transform: none; }
 }
 
+/* La nota bajo una cifra del tablero: de dónde sale el número. */
+.kpi__nota { font-size: var(--op-chico); line-height: 1.35; color: var(--texto-2); }
+
+/* ---------------------------------------------------------------------
+   La inteligencia del negocio (panel, fuera del documento formal). Las
+   señales arriba, como renglones con su ícono; el que pide atención lleva el
+   borde del acento y el ícono de alerta, no sólo un color.
+   --------------------------------------------------------------------- */
+.senales {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--esp-2);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+.senales__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--fondo-2);
+  border: var(--trazo) var(--linea);
+  border-left: 4px solid var(--linea);
+  color: var(--texto);
+  line-height: 1.4;
+  animation: aparece var(--dur-3) var(--curva-golpe) both;
+  animation-delay: calc(var(--i, 0) * var(--escalonado));
+}
+.senales__item > .icono { flex: none; width: 20px; height: 20px; margin-top: 1px; color: var(--texto-2); }
+.senales__item--atencion { border-left-color: var(--acento); }
+.senales__item--atencion > .icono { color: var(--acento); }
+
+/* La proyección: lo vendido como barra, el rango probable como franja tenue
+   detrás, y dos marcas finas, la proyectada y el cierre del mes pasado. Una
+   sola escala, la de los pesos. --ancho y --desde los pone el guion. */
+.proyeccion__cifra { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--esp-2) var(--esp-3); margin: 0; }
+.proyeccion {
+  position: relative;
+  height: 28px;
+  background: var(--fondo-3);
+}
+.proyeccion__banda,
+.proyeccion__vendido,
+.proyeccion__marca { position: absolute; top: 0; bottom: 0; cursor: default; outline-offset: 2px; }
+.proyeccion__banda {
+  left: var(--desde, 0%);
+  width: var(--ancho, 0%);
+  background: repeating-linear-gradient(135deg, var(--acento-suave) 0 6px, transparent 6px 10px), var(--acento-suave);
+}
+.proyeccion__vendido {
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: var(--ancho, 0%);
+  min-width: 2px;
+  background: var(--acento);
+  transform-origin: left;
+  animation: barra-crece var(--dur-4) var(--curva-golpe) both;
+}
+.proyeccion__marca {
+  left: var(--desde, 0%);
+  width: 3px;
+  margin-left: -1px;
+  background: var(--texto-fuerte);
+}
+.proyeccion__marca--anterior { width: 0; border-left: 2px dashed var(--texto-2); background: none; }
+.proyeccion__banda:hover, .proyeccion__banda:focus-visible,
+.proyeccion__vendido:hover, .proyeccion__vendido:focus-visible,
+.proyeccion__marca:hover, .proyeccion__marca:focus-visible { outline: 2px solid var(--texto-fuerte); }
+.proyeccion__muestra--vendido { background: var(--acento); }
+.proyeccion__muestra--banda { background: var(--acento-suave); border: 1px solid var(--acento); }
+.proyeccion__muestra--anterior { width: 0; height: 14px; border-left: 2px dashed var(--texto-2); }
+
+/* El promedio por día de la semana: las columnas del tablero, siete. */
+.grafico-dias--semana { height: 7.5rem; gap: var(--esp-2); }
+.grafico-dias__eje--columnas {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--esp-2);
+  text-align: center;
+}
+
+/* Lo que sube y lo que baja: verde o rojo, con ▲ o ▼ en el texto. */
+.tendencia__titulo {
+  margin: 0;
+  font: 700 var(--op-chico) / 1.2 var(--fuente-datos);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+.grafico-ranking__fila:first-child .grafico-ranking__barra--sube,
+.grafico-ranking__barra--sube { background: var(--ok); }
+.grafico-ranking__fila:first-child .grafico-ranking__barra--baja,
+.grafico-ranking__barra--baja { background: var(--error); }
+.inteligencia .lista-renglones > li { justify-content: flex-start; gap: var(--esp-1) var(--esp-4); }
+.inteligencia .lista-renglones > li > a { flex: 1 1 14rem; min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .senales__item, .proyeccion__vendido { animation: none; }
+}
+
 /* Los bloques del menú del Administrador (B-00-031): aire entre uno y otro. */
 .menu-rotulo:not(:first-child) { margin-top: var(--esp-5); }
 

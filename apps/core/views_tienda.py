@@ -215,7 +215,9 @@ class FiltrosDelCatalogo:
         """
         del_dia = OfertasDelDia()
         elegidos = []
-        for producto in productos.select_related(None).only("pk", "precio", "tipo_id"):
+        for producto in del_dia.preparar(
+            productos.select_related(None).only("pk", "precio", "tipo_id")
+        ):
             precio = del_dia.precio(producto)
             if self.precio_desde is not None and precio < self.precio_desde:
                 continue

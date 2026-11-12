@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-11-11, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-11-12, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -26,7 +26,7 @@ es otra puerta y su número también vive ahí.
 | Contratos especificados | 219 |
 | Con al menos una prueba que lleva su código | 219 |
 | Sin ninguna | 0 |
-| Pruebas de contrato en la suite | 1133 |
+| Pruebas de contrato en la suite | 1161 |
 
 **Pruebas que nombran un contrato inexistente.** Un tipeo en el código del contrato produce una prueba que parece cubrir algo y no cubre nada:
 
@@ -104,7 +104,7 @@ es otra puerta y su número también vive ahí.
 | `CO-029` | confirmarAltaPeseAHomonimo | 2 | `apps/catalog/tests/test_contratos_02_producto.py` |
 | `CO-030` | editarProducto | 15 | `apps/catalog/tests/test_carreras_de_unicidad.py`, `apps/catalog/tests/test_contratos_02_producto.py`, `apps/catalog/tests/test_edicion_producto.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-032` | confirmarEdicionPeseAColision | 2 | `apps/catalog/tests/test_contratos_02_producto.py` |
-| `CO-033` | solicitarBajaDeProducto | 3 | `apps/catalog/tests/test_contratos_02_producto.py` |
+| `CO-033` | solicitarBajaDeProducto | 5 | `apps/catalog/tests/test_contratos_02_producto.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
 | `CO-034` | confirmarBajaDeProducto | 10 | `apps/catalog/tests/test_contratos_02_producto.py`, `apps/suppliers/tests/test_contratos_llegada.py` |
 | `CO-035` | solicitarReactivacionDeProducto | 2 | `apps/catalog/tests/test_contratos_02_producto.py` |
 | `CO-036` | confirmarReactivacionDeProducto | 5 | `apps/catalog/tests/test_contratos_02_producto.py` |
@@ -135,17 +135,17 @@ es otra puerta y su número también vive ahí.
 | `CO-050` | solicitarBajaDeCombinacionDePrecio | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-051` | confirmarBajaDeCombinacionDePrecio | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-052` | simularCambioDeMargenGlobal | 3 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-054` | registrarOferta | 12 | `apps/catalog/tests/test_concurrencia_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-055` | confirmarOfertaConTopeMinimo | 1 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-056` | editarOferta | 5 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-057` | solicitarBajaDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-058` | confirmarBajaDeOferta | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-059` | ejecutarCicloDeVigenciaDeOfertas | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-054` | registrarOferta | 28 | `apps/catalog/tests/test_concurrencia_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-055` | confirmarOfertaConTopeMinimo | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-056` | editarOferta | 8 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-057` | solicitarBajaDeOferta | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-058` | confirmarBajaDeOferta | 4 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-059` | ejecutarCicloDeVigenciaDeOfertas | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
 | `CO-166` | consultarTablaDePrecios | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
 | `CO-167` | consultarMargenGlobal | 1 | `apps/catalog/tests/test_contratos_03_pricing.py` |
-| `CO-168` | abrirEdicionDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-169` | consultarOfertas | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
-| `CO-170` | consultarFichaDeOferta | 2 | `apps/catalog/tests/test_contratos_03_ofertas.py` |
+| `CO-168` | abrirEdicionDeOferta | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-169` | consultarOfertas | 4 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
+| `CO-170` | consultarFichaDeOferta | 3 | `apps/catalog/tests/test_contratos_03_ofertas.py`, `apps/catalog/tests/test_contratos_03_ofertas_destinos.py` |
 
 ### `04-proveedores.md` — 04 Proveedores
 
@@ -660,8 +660,10 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-033` · solicitarBajaDeProducto**
 
 - `test_CO033_E2_un_cancelado_por_editorial_se_rechaza` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO033_cuenta_las_ofertas_de_su_editorial_etiquetas_y_grupos` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO033_el_informe_trae_las_cuatro_categorias_y_la_accion` — `apps/catalog/tests/test_contratos_02_producto.py`
 - `test_CO033_pedir_el_informe_no_modifica_nada` — `apps/catalog/tests/test_contratos_02_producto.py`
+- `test_CO033_un_producto_sin_editorial_no_cuenta_ofertas_de_editorial` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-034` · confirmarBajaDeProducto**
 
@@ -781,45 +783,68 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-054` · registrarOferta**
 
+- `test_CO054_A1_un_destino_sin_productos_registra_con_aviso` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_A1_un_tipo_sin_productos_registra_con_aviso` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO054_E1_el_vencimiento_tiene_que_ser_futuro` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E2_destinos_distintos_si_comparten_dias` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_E2_no_cuentan_las_dadas_de_baja_ni_las_de_otro_alcance` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E2_rechaza_dos_ofertas_vivas_sobre_la_misma_etiqueta` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_E2_rechaza_el_solapamiento_con_el_nombre_y_el_periodo` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_E2_una_editorial_distinta_no_es_solapamiento` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_E3_un_monto_que_supera_el_precio_pide_confirmacion_y_no_registra` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO054_con_inicio_futuro_queda_programada_y_no_descuenta_todavia` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO054_dos_ofertas_solapadas_registradas_a_la_vez_dejan_una` — `apps/catalog/tests/test_concurrencia_ofertas.py`
+- `test_CO054_dos_ofertas_solapadas_sobre_la_misma_etiqueta_dejan_una` — `apps/catalog/tests/test_concurrencia_ofertas.py`
+- `test_CO054_el_alcance_exige_su_destino` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_el_destino_alcanza_solo_a_los_de_la_tienda` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_el_formulario_no_ofrece_destinos_dados_de_baja` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_el_inicio_no_puede_pasar_al_vencimiento` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_ignora_los_destinos_de_otros_alcances` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_la_base_rechaza_un_alcance_sin_destino` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_la_base_rechaza_un_destino_que_no_es_el_del_alcance` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_no_toca_el_precio_guardado_del_producto` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_por_editorial_se_asocia_a_la_editorial_y_descuenta_sus_tomos` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_por_etiqueta_descuenta_a_los_que_la_llevan` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_por_grupo_descuenta_a_los_que_llevan_cualquiera_de_sus_etiquetas` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO054_por_tipo_se_asocia_al_tipo_y_alcanza_a_sus_productos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO054_rechaza_un_porcentaje_de_cien` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO054_registrar_con_inicio_hoy_la_deja_activa_y_aplicada_en_los_dos_canales` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO054_un_destino_dado_de_baja_no_recibe_ofertas` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
+- `test_CO054_un_producto_con_dos_etiquetas_del_grupo_cuenta_una_vez` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-055` · confirmarOfertaConTopeMinimo**
 
 - `test_CO055_confirmar_registra_y_deja_en_un_peso_a_los_que_no_alcanzan` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO055_el_monto_fijo_de_una_etiqueta_pide_el_tope_y_lo_aplica` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-056` · editarOferta**
 
 - `test_CO056_A1_reducir_el_alcance_restaura_a_los_que_quedan_afuera` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO056_E1_un_solapamiento_no_actualiza_ningun_campo` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_cambiar_de_tipo_a_editorial_mueve_el_descuento_y_los_carritos` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO056_cambiar_el_valor_de_una_activa_actualiza_precio_carrito_y_log` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO056_mover_el_inicio_al_futuro_la_vuelve_programada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_no_se_puede_mover_a_un_destino_dado_de_baja` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO056_sin_cambios_no_audita` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO056_una_oferta_sobre_un_destino_que_se_dio_de_baja_se_sigue_editando` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-057` · solicitarBajaDeOferta**
 
 - `test_CO057_E1_una_vencida_informa_que_ya_expiro_y_no_registra_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO057_el_informe_cuenta_productos_con_descuento_y_carritos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO057_el_informe_no_cuenta_los_que_cobra_otra_mas_especifica` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-058` · confirmarBajaDeOferta**
 
 - `test_CO058_confirmar_la_deja_dada_de_baja_y_restaura_precio_y_carritos` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO058_dar_de_baja_la_de_la_etiqueta_deja_cobrar_la_de_la_editorial` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO058_una_dada_de_baja_no_se_reactiva_ni_se_audita_dos_veces` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO058_una_programada_tambien_se_da_de_baja` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 
 **`CO-059` · ejecutarCicloDeVigenciaDeOfertas**
 
 - `test_CO059_activa_las_programadas_y_vence_las_activas_con_su_entrada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO059_activar_una_de_grupo_actualiza_sus_carritos` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO059_correrlo_dos_veces_no_duplica_nada` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 
 **`CO-060` · registrarProveedor**
@@ -1809,15 +1834,18 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO168_E2_vencida_o_dada_de_baja_no_abre_ni_guarda` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO168_abre_con_los_campos_actuales` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO168_la_edicion_abre_con_el_destino_actual` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 
 **`CO-169` · consultarOfertas**
 
 - `test_CO169_E1_sin_resultados_ofrece_limpiar_y_E2_sin_ofertas_ofrece_la_alta` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO169_filtra_por_estado_texto_y_fechas` — `apps/catalog/tests/test_contratos_03_ofertas.py`
+- `test_CO169_la_lista_describe_el_destino_y_busca_por_su_nombre` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO169_lista_de_la_mas_reciente_a_la_mas_vieja_con_su_estado_por_fecha` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 
 **`CO-170` · consultarFichaDeOferta**
 
+- `test_CO170_la_ficha_marca_los_productos_que_cobra_otra_mas_especifica` — `apps/catalog/tests/test_contratos_03_ofertas_destinos.py`
 - `test_CO170_la_ficha_muestra_los_dos_precios_y_las_acciones_del_estado` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 - `test_CO170_una_vencida_es_de_solo_lectura` — `apps/catalog/tests/test_contratos_03_ofertas.py`
 

@@ -24,7 +24,7 @@ corrido todavía (plan 03, segunda parte, ambigüedad 1).
 <form method="get" class="barra-de-herramientas">
   <div class="campo">
     <label for="q" class="etiqueta">Buscar</label>
-    <input type="search" id="q" name="q" value="{{ filtros.texto }}" placeholder="Descripción, producto o tipo">
+    <input type="search" id="q" name="q" value="{{ filtros.texto }}" placeholder="Descripción, producto, tipo, editorial o etiqueta">
   </div>
   <div class="campo">
     <label for="estado" class="etiqueta">Estado</label>
@@ -72,7 +72,7 @@ corrido todavía (plan 03, segunda parte, ambigüedad 1).
             <td class="datos sin-cortar">{{ oferta.fecha_inicio|date:"d/m/Y" }}</td>
             <td class="datos sin-cortar">{{ oferta.fecha_vencimiento|date:"d/m/Y" }}</td>
             <td class="numero datos sin-cortar">{% if oferta.tipo_descuento == "porcentaje" %}{{ oferta.valor|floatformat:"-2" }} %{% else %}{{ oferta.valor|pesos }}{% endif %}</td>
-            <td>{% if oferta.alcance == "producto" %}{{ oferta.producto.titulo }}{% else %}Tipo: {{ oferta.tipo.nombre }}{% endif %}</td>
+            <td>{% if oferta.alcance == "producto" %}{{ oferta.producto.titulo }}{% elif oferta.alcance == "tipo" %}Tipo: {{ oferta.tipo.nombre }}{% elif oferta.alcance == "editorial" %}Editorial: {{ oferta.editorial.nombre }}{% elif oferta.alcance == "etiqueta" %}Etiqueta: {{ oferta.etiqueta.nombre }}{% else %}Grupo: {{ oferta.grupo.nombre }}{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>

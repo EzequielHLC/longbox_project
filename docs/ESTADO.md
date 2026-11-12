@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-11-11**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-11-12**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -363,10 +363,10 @@ En un caso de uso sólo cuenta como verificado si la prueba lo ejerce **en ese c
 | `CU-PVP-TBM` | Verificado | 4 / 4 | Informe de alcance y confirmación que propaga a los vinculados, salvo cancelados y precio a mano, **y a las líneas de carrito de esos productos** (R-03-001, B-07-003). |
 | `CU-PVP-TBB` | Verificado | 5 / 5 | **Todos sus contratos verificados.** Informe de vinculados y baja que desvincula conservando precio y marca; se vuelven a vincular con `CO-031`. |
 | `CU-PVP-MAR` | Verificado | 4 / 4 | `MargenView`: valor vigente en porcentaje, simulación y recálculo desde el precio base con `Decimal` exacto, **también en las líneas de carrito** (R-03-001). Sin importados el cambio no se ofrece (B-03-003, C-19). |
-| `CU-PVP-ALT` | Verificado | 2 / 2 | `apps/catalog/ofertas.py`. Activa o Programada según la fecha; solapamiento con bloqueo sobre el alcance (E2); tope de $1 con confirmación (E3, `CO-055`); aviso de tipo vacío (A1). La oferta cambia el precio visible, no el guardado (B-03-007, B-03-008). |
-| `CU-PVP-EDI` | Verificado | 2 / 2 | Registra cada campo anterior y nuevo; reducir el alcance restaura a los excluidos (A1); también pide confirmar el tope (B-03-010). |
+| `CU-PVP-ALT` | Verificado | 2 / 2 | `apps/catalog/ofertas.py`. Activa o Programada según la fecha; **Cinco destinos**: producto, tipo, editorial, etiqueta o grupo de etiquetas, uno por oferta; cobra la más específica (B-03-014). Solapamiento sobre el mismo destino con bloqueo (E2); tope de $1 con confirmación (E3, `CO-055`); aviso de destino vacío (A1). La oferta cambia el precio visible, no el guardado (B-03-007, B-03-008). |
+| `CU-PVP-EDI` | Verificado | 2 / 2 | Registra cada campo anterior y nuevo; reducir o cambiar el alcance, también a otro destino, restaura a los excluidos (A1); también pide confirmar el tope (B-03-010). |
 | `CU-PVP-BAJ` | Verificado | 3 / 3 | Informe con productos con descuento activo y carritos (`CO-057`), confirmación terminal (`CO-058`) y cancelar sin efecto (`CO-156`). Una vencida informa que ya expiró (E1). |
-| `CU-PVP-CON` | Verificado | 2 / 2 | `OfertaListaView`, `OfertaFichaView`. Estado según las fechas aunque el Temporizador no haya corrido (B-03-007). La ficha marca los productos «tapados» por su oferta individual y ofrece la baja también en Programada (B-03-009). Plan 03, segunda parte. |
+| `CU-PVP-CON` | Verificado | 2 / 2 | `OfertaListaView`, `OfertaFichaView`. Estado según las fechas aunque el Temporizador no haya corrido (B-03-007). La ficha marca los productos «tapados» por otra oferta con precedencia y ofrece la baja también en Programada (B-03-009, B-03-014). Planes 03, segunda y tercera parte. |
 
 ### `04` Proveedores
 
