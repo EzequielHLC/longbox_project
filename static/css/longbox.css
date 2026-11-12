@@ -1169,6 +1169,10 @@ em, i { font-style: normal; }
   border-top: var(--trazo) var(--linea);
 }
 .acciones--sin-filete { padding-top: 0; border-top: 0; }
+/* Varias acciones en un encabezado de pantalla: un solo grupo, a la derecha. */
+.acciones--encabezado { gap: var(--esp-3) var(--esp-4); justify-content: flex-end; }
+.acciones--encabezado > form { display: contents; }
+@media (max-width: 40rem) { .acciones--encabezado { justify-content: flex-start; } }
 
 /* ---------------------------------------------------------------------
    Formularios

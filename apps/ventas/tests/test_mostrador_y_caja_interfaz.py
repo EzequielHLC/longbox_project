@@ -42,8 +42,9 @@ def test_la_fila_recien_agregada_destella_una_sola_vez(caja):
     segunda = caja.get(URL)
 
     assert primera.context["ultimo_agregado"] == producto.pk
-    assert 'class="fila-destacada"' in primera.content.decode()
-    assert 'class="fila-destacada"' not in segunda.content.decode()
+    # En el mostrador del Cajero (plan 06, segunda parte) la fila es un renglón del ticket.
+    assert "caj-item--nuevo" in primera.content.decode()
+    assert "caj-item--nuevo" not in segunda.content.decode()
 
 
 def test_con_efectivo_el_vuelto_se_muestra_y_la_venta_no_cambia(caja):

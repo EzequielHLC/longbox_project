@@ -1,0 +1,56 @@
+{% comment %}
+La barra del Cajero (plan 06, segunda parte): una barra-aparato arriba, en lugar
+del encabezado y del menú lateral. Tiene cuatro destinos y caben a la vista; el
+actual se enciende en lima, como la botonera del escaparate.
+
+Esconder un destino no protege nada: el control de acceso está en
+`RolRequeridoMixin` (RNF-03). Acá sólo se ofrece lo que el Cajero puede abrir.
+{% endcomment %}
+{% with actual=request.resolver_match.view_name %}
+<header class="caj-barra">
+  <div class="caj-barra__interior">
+    <a href="{% url 'core:mostrador' %}" class="caj-marca" aria-label="Longbox, ir al mostrador">
+      <span class="caj-marca__logo" aria-hidden="true">L</span><span class="caj-marca__texto">Longbox</span>
+    </a>
+    <div class="caj-turno caj-osd">
+      <span><span class="caj-led caj-led--late" aria-hidden="true"></span><b>En turno</b></span>
+      <span data-caj-reloj>{% now "d/m · H:i" %}</span>
+    </div>
+    <nav class="caj-botonera" aria-label="Operación">
+      <a href="{% url 'core:mostrador' %}" {% if actual == 'core:mostrador' or 'ventas:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="bolsa" %}<span>Mostrador</span>
+      </a>
+      <a href="{% url 'caja:caja' %}" {% if 'caja:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="caja" %}<span>Caja</span>
+      </a>
+      <a href="{% url 'almacen:lista' %}" {% if 'almacen:' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="lote" %}<span>Stock en local</span>
+      </a>
+      <a href="{% url 'catalog:producto_lista' %}" {% if 'catalog:producto' in actual %}aria-current="page"{% endif %}>
+        {% include "_iconos.html" with icono="inventario" %}<span>Inventario</span>
+      </a>
+      <span class="caj-botonera__separador" aria-hidden="true"></span>
+      <span class="caj-operador">{% include "_iconos.html" with icono="usuario" %}{{ user.email }}</span>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" title="Cerrar sesión">{% include "_iconos.html" with icono="salir" %}<span class="sr-only">Cerrar sesión</span></button>
+      </form>
+    </nav>
+  </div>
+</header>
+<div class="caj-calado" aria-hidden="true">{% if 'caja:' in actual %}Caja{% elif 'almacen:' in actual %}Stock{% elif 'catalog:' in actual %}Inventario{% else %}Mostrador{% endif %}</div>
+<script>
+  // La hora del turno, al minuto.
+  (function () {
+    const reloj = document.querySelector("[data-caj-reloj]");
+    if (!reloj) return;
+    const poner = () => {
+      const ahora = new Date();
+      const dos = (n) => String(n).padStart(2, "0");
+      reloj.textContent = dos(ahora.getDate()) + "/" + dos(ahora.getMonth() + 1) + " · " + dos(ahora.getHours()) + ":" + dos(ahora.getMinutes());
+    };
+    poner();
+    setInterval(poner, 15000);
+  })();
+</script>
+{% endwith %}

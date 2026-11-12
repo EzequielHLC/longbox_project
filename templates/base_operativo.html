@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load estaticos %}
 {% comment %}
 Cáscara del **modo operativo** (Mostrador): las pantallas que el personal usa
 muchas veces por día. Siempre superficie noche, columna de alto completo con el
@@ -12,18 +13,23 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-
 {% endcomment %}
 
 {% block cabecera_extra %}
+  {# Plan 06, segunda parte: el Cajero ve el mostrador encendido; el Administrador, sobrio. #}
+  {% if user.rol == "cajero" %}<link rel="stylesheet" href="{% estatico 'css/mostrador.css' %}">{% endif %}
   {% include "_archivo.html" %}
   {% include "_selector_etiquetas.html" %}
   {% include "_ambito_guion.html" %}
 {% endblock %}
 
-{% block clase_body %}modo-operativo superficie-noche{% endblock %}
+{% block clase_body %}modo-operativo superficie-noche{% if user.rol == "cajero" %} modo-cajero{% endif %}{% endblock %}
 
 {% block cuerpo_inicio %}
 {% include "_capa_carga.html" %}
 {% endblock %}
 
 {% block encabezado %}
+{% if user.rol == "cajero" %}
+{% include "_barra_cajero.html" %}
+{% else %}
 <header class="encabezado-operativo">
   <div class="fila-5">
     <button type="button" id="abrir-menu" aria-controls="menu-lateral"
@@ -62,11 +68,12 @@ Hereda de base.html para no duplicar el aviso de vencimiento de sesión (CU-AUT-
     </div>
   {% endif %}
 </header>
+{% endif %}
 {% endblock %}
 
 {% block layout %}
 <div class="cuerpo-operativo">
-  {% include "_menu_lateral.html" %}
+  {% if user.rol != "cajero" %}{% include "_menu_lateral.html" %}{% endif %}
 
   <main class="area-de-trabajo">
     {% block mensajes %}{% include "_mensajes.html" %}{% endblock %}

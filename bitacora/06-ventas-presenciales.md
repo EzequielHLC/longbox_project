@@ -162,3 +162,41 @@ acaba de agregar al ticket destella. Los atajos de teclado se descartaron.
 
 **Qué habría que cambiar.**
 `CU-VTA-REG` paso 6: «con efectivo, el sistema muestra el vuelto sobre lo recibido».
+
+---
+
+### B-06-007 · El mostrador encendido: el Cajero ve el lenguaje de la tienda
+
+**Tipo:** Agregado · **Fecha:** 2026-11-12 · **Alcance:** `CU-VTA-REG`, `CU-CAJ-CIE`, las pantallas del Cajero
+**Estado:** Abierta — pedido del responsable el 2026-11-12; maqueta aprobada el mismo día (plan 06, segunda parte, parte A)
+
+**Qué apareció.**
+El responsable pidió rediseñar todo lo que ve el Cajero con el estilo de la tienda (plan 07,
+novena parte) y dejar sobrio sólo al Administrador. El mostrador y la caja son pantallas que usan
+los dos.
+
+**Qué dice la especificación.**
+`Nada` sobre un estilo por rol. `identidad_visual.md` y `TOKENS_VISUALES.md` describen un solo modo
+operativo para todo el personal.
+
+**Qué se hizo.**
+El estilo va **por rol**, no por pantalla: el Cajero ve el mostrador encendido en todo lo suyo y el
+Administrador sigue sobrio, también cuando usa el mostrador o la caja. Las dos versiones ofrecen las
+mismas operaciones; cambia la forma, no lo que se puede hacer. Con la regla de la tienda:
+
+- **Aparatos**, redondeados y con lima para lo encendido: una **barra** arriba en lugar del menú
+  lateral (el Cajero tiene cuatro destinos: Mostrador, Caja, Stock en local e Inventario), con «● En
+  turno» y la hora; el **lector**, donde escribe el lector de código de barras, con el foco puesto;
+  la **terminal de cobro**, con un **visor** de caja registradora que muestra el total, los puntos y
+  el vuelto mientras se escribe lo recibido; el cliente vinculado como carnet; los medios de pago
+  como **teclas** con su luz; los **medidores** de la caja, de doce segmentos, por medio de pago.
+- **Impresos**, rectos: el **ticket** en curso y el **comprobante** como papel de impresora con el
+  borde dentado, y las ventas de la jornada como la **cinta de control** de una caja.
+- El resto de las pantallas del Cajero (stock en local, inventario, cierres) toma el mismo idioma
+  sin cambiar su contenido.
+- El comprobante se imprime solo, en blanco y negro.
+
+**Qué habría que cambiar.**
+`identidad_visual.md` y `TOKENS_VISUALES.md`: el modo operativo tiene dos versiones según el rol, y
+la del Cajero sigue la regla de aparatos e impresos de la tienda (B-07-049), con la barra superior,
+el visor, las teclas de medio de pago, el ticket y la cinta.

@@ -2,6 +2,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 
 
+def plantilla_del_rol(request, sobria, del_cajero):
+    """La plantilla de una pantalla según quién la mira (plan 06, segunda parte).
+
+    El Cajero ve el mostrador encendido; el Administrador, la versión sobria. Las
+    dos plantillas ofrecen las mismas operaciones: cambia la forma, no lo que se
+    puede hacer.
+    """
+    return del_cajero if getattr(request.user, "rol", "") == "cajero" else sobria
+
+
 class RolRequeridoMixin(LoginRequiredMixin):
     """Restringe una vista a uno o más roles, validando del lado del servidor.
 

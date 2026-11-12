@@ -9,7 +9,7 @@ from django.views.generic import ListView
 from apps.accounts.models import Usuario
 from apps.caja import servicios
 from apps.caja.models import CierreDeCaja
-from apps.core.mixins import RolRequeridoMixin
+from apps.core.mixins import RolRequeridoMixin, plantilla_del_rol
 from apps.pedidos.models import TransaccionPago
 
 
@@ -32,15 +32,37 @@ class CajaView(CajaMixin, View):
             ventas = [t for t in ventas if t.medio == medio]
         return render(
             request,
-            "caja/caja.html",
+            plantilla_del_rol(request, "caja/caja.html", "caja/cajero/caja.html"),
             {
                 "resumen": resumen,
+                "medidores": _medidores(resumen.por_medio),
                 "ventas": ventas,
                 "medio": medio,
                 "medios": TransaccionPago.MEDIO_CHOICES,
                 "ultimos": CierreDeCaja.objects.select_related("realizado_por")[:10],
             },
         )
+
+
+SEGMENTOS = 12
+
+
+def _medidores(por_medio):
+    """Lo recaudado por medio, con los segmentos encendidos de su medidor.
+
+    El medio que más recaudó llena los doce; los dos últimos segmentos son el
+    pico, en naranja. Es la misma proporción que la barra de la versión sobria.
+    """
+    maximo = max((total for _, total in por_medio), default=0)
+    filas = []
+    for etiqueta, total in por_medio:
+        encendidos = round(total / maximo * SEGMENTOS) if maximo else 0
+        segmentos = [
+            ("pico" if i >= SEGMENTOS - 2 else True) if i < encendidos else False
+            for i in range(SEGMENTOS)
+        ]
+        filas.append((etiqueta, total, segmentos))
+    return filas
 
 
 class CerrarView(CajaMixin, View):

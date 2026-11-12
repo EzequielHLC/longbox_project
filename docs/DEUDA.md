@@ -241,7 +241,7 @@ alcance sigue pendiente.
 | `bitacora/03-pricing.md` | 14 | 12 | 11 agregados, 3 correcciones |
 | `bitacora/04-proveedores.md` | 14 | 6 | 10 agregados, 3 correcciones, 1 desvío |
 | `bitacora/05-restock.md` | 10 | 9 | 9 agregados, 1 corrección |
-| `bitacora/06-ventas-presenciales.md` | 6 | 6 | 4 agregados, 2 correcciones |
+| `bitacora/06-ventas-presenciales.md` | 7 | 7 | 5 agregados, 2 correcciones |
 | `bitacora/07-tienda-online.md` | 42 | 34 | 35 agregados, 6 correcciones, 1 desvío |
 | `bitacora/08-gestion-de-pedidos.md` | 10 | 10 | 7 agregados, 2 correcciones, 1 desvío |
 | `bitacora/09-devoluciones.md` | 9 | 7 | 4 agregados, 5 correcciones |
@@ -255,7 +255,7 @@ alcance sigue pendiente.
 | `bitacora/17-configuracion-del-sistema.md` | 19 | 13 | 14 agregados, 4 correcciones, 1 desvío |
 | `bitacora/18-stock-almacenado-en-local.md` | 9 | 8 | 4 agregados, 5 correcciones |
 | `bitacora/19-perfil-y-avisos.md` | 4 | 4 | 4 agregados |
-| **Total** | **237** | **174** | |
+| **Total** | **238** | **175** | |
 
 El 2026-11-07, la [revisión integral](planes/00-revision-integral.md) sumó nueve entradas, todas
 agregados abiertos y fuera de la cuenta de la tabla: B-05-019 a B-05-021, B-07-043 a B-07-045,
@@ -340,6 +340,7 @@ código sin terminar.
 | `TOKENS_VISUALES.md` e `identidad_visual.md`: la regla de aparatos e impresos (radios, lima en el público, desenfoque de la barra), el televisor, la botonera de íconos, el pie, el casete, el carnet, la ficha, el catálogo, el barrido en negro y las animaciones nuevas | B-07-047 a B-07-057 |
 | `CO-131` e IdentidadVisual: el rol «Aparatos encendidos» del mapa de colores | B-17-021 |
 | **Ofertas por editorial, etiqueta y grupo** (cambio del 2026-11-12): `CU-PVP-ALT` pasos 2, 3 y 5 y A1; la precedencia y el desempate como regla de negocio; `CU-PVP-CON` pasos 2 y 3; `CO-054` (firma, responsabilidades, A1, precondición y postcondición b), `CO-056`, `CO-170` y `CO-033`; tres asociaciones de `Oferta` en el modelo; I-20 «sobre el mismo destino» | B-03-014 |
+| `identidad_visual.md` y `TOKENS_VISUALES.md`: el modo operativo del Cajero, encendido con la regla de la tienda (barra, lector, terminal con visor, teclas, ticket y cinta); el Administrador sigue sobrio | B-06-007 |
 | **El módulo 19 Perfil y avisos** (cambio de alcance del 2026-10-27): el módulo, sus requerimientos, las fichas y contratos de `CU-AVI-PEC`, `CAM`, `TGA`, `TGB`, `COR`, `BOR` y `CON`; «notifica al Administrador» pasa a «por los canales que eligió» en cada paso que avisa; `CO-111` también para el personal; los tres conceptos nuevos; la confirmación del vínculo en el perfil; el borrador con origen propio y sin correo (`CU-ALT-REV`, la generación de borradores); las consultas de sólo lectura; el rechazo de borradores desde el chat (`CU-AVI-REB`), sin confirmación; la excepción del material no editorial; los parecidos y la editorial por la serie | B-19-001 a B-19-010 |
 | **La etapa 3 del bot**: las fichas de `CU-AVI-RES`, `CU-AVI-EST` y `CU-AVI-INL`; los tipos de aviso con su canal por defecto (`CU-AVI-CAM`); la hora del resumen en `CU-CFG-PAR` y `CO-130`; el reloj por minuto en P-05; el aviso de seguridad al Administrador en `CU-AUT-INI`, `CU-USR-ALT`, `CU-USR-MOD`, `CO-048` y `CO-053`; las fotos del reclamo por Telegram en `CU-DEV-SOL` paso 5 y en datos personales; la rutina de respaldo de la VM en `RESPALDOS.md` | B-19-011 a B-19-015 |
 | La voz de Long-bot y la charla en personaje (`CU-AVI-COR`, `CU-AVI-CON`) | B-19-017 |

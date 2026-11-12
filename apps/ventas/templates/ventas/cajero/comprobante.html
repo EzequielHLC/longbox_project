@@ -1,0 +1,67 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-VTA-REG paso 8 — el comprobante de CO-082 (B-06-004), en el mostrador del
+Cajero (plan 06, segunda parte). Recién confirmada, la venta lo anuncia con el
+vuelto en el visor y «Nueva venta» a un Enter (13.6). Al imprimir sale sólo el
+comprobante, en blanco y negro.
+{% endcomment %}
+
+{% block titulo %}Venta {{ pedido.numero }} · Longbox{% endblock %}
+{% block seccion %}Mostrador{% endblock %}
+
+{% block contenido %}
+<div class="caj-registrada">
+  <section class="caj-anuncio" aria-labelledby="titulo-venta">
+    <p class="caj-osd caj-osd--lima"><span class="caj-led" aria-hidden="true"></span>{% if recien_registrada %}Venta registrada{% else %}Venta{% endif %} · Nº {{ pedido.numero }}</p>
+    {% if recien_registrada %}
+      <h1 id="titulo-venta" class="caj-anuncio__titulo">¡Listo,<br><span>cobrado!</span></h1>
+    {% else %}
+      <h1 id="titulo-venta" class="caj-anuncio__titulo">Venta <span>{{ pedido.numero }}</span></h1>
+    {% endif %}
+    <div class="caj-visor">
+      <div class="caj-visor__rotulo">
+        <span>{% if vuelto is not None %}Vuelto{% else %}Cobrado{% endif %}</span>
+        <span>{% if transaccion %}{{ transaccion.get_medio_display }}{% else %}Sólo puntos{% endif %}</span>
+      </div>
+      <p class="caj-visor__cifra">{% if vuelto is not None %}{{ vuelto|pesos }}{% elif transaccion %}{{ transaccion.monto|pesos }}{% else %}{{ 0|pesos }}{% endif %}</p>
+      <div class="caj-visor__linea">
+        {% if recibido %}<span>Recibido <b>{{ recibido|pesos }}</b></span>{% endif %}
+        {% if vuelto is not None and transaccion %}<span>Cobrado <b>{{ transaccion.monto|pesos }}</b></span>{% endif %}
+        {% if pedido.usuario and puntos_acreditados %}<span>+{{ puntos_acreditados|miles }} pts</span>{% endif %}
+      </div>
+    </div>
+    <div class="caj-acciones">
+      <a href="{% url 'core:mostrador' %}" class="caj-accion"{% if recien_registrada %} autofocus{% endif %}>{% include "_iconos.html" with icono="agregar" %}<span>Nueva venta</span></a>
+      <button type="button" class="caj-tenue" onclick="window.print()">{% include "_iconos.html" with icono="descargar" %}<span>Imprimir comprobante</span></button>
+    </div>
+  </section>
+
+  <article class="caj-ticket" aria-label="Comprobante">
+    <div class="caj-ticket__cabeza">
+      <div>
+        <p class="caj-ticket__datos">Longbox · cómics y manga</p>
+        <h2 class="caj-ticket__titulo">Comprobante</h2>
+      </div>
+      <p class="caj-ticket__datos caj-ticket__datos--derecha">Nº {{ pedido.numero }}<br>{{ pedido.fecha|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div>
+      {% for linea in lineas %}
+        <div class="caj-renglon">
+          <span>{{ linea.cantidad }} × {{ linea.producto.titulo }}</span>
+          <span>{% if linea.cubierta_con_puntos %}★ {{ linea.puntos_canjeados|miles }} pts{% else %}{{ linea.subtotal|pesos }}{% endif %}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="caj-renglon caj-renglon--total"><span>Cobrado</span><span>{% if transaccion %}{{ transaccion.monto|pesos }}{% else %}{{ 0|pesos }}{% endif %}</span></div>
+    <div class="caj-renglon"><span>Medio</span><span>{% if transaccion %}{{ transaccion.get_medio_display }}{% else %}Sólo puntos{% endif %}</span></div>
+    {% if pedido.usuario %}
+      <div class="caj-renglon caj-renglon--dato"><span>Cliente</span><span>{{ pedido.usuario.get_full_name|default:pedido.usuario.email }} · {{ pedido.usuario.codigo_cliente }}</span></div>
+      <div class="caj-renglon"><span>Puntos canjeados</span><span>{{ puntos_canjeados|miles }}</span></div>
+      <div class="caj-renglon"><span>Puntos sumados</span><span>{{ puntos_acreditados|miles }}</span></div>
+    {% endif %}
+    <p class="caj-gracias">¡Gracias por pasar!</p>
+    <div class="caj-codigo-barras" aria-hidden="true"></div>
+  </article>
+</div>
+{% endblock %}

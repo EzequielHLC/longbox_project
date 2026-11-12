@@ -332,6 +332,7 @@ def test_ninguna_plantilla_usa_una_clase_que_la_hoja_no_define():
     raiz = Path(settings.BASE_DIR)
     hojas = [raiz / "static/css/longbox.css", raiz / "static/css/tokens.css"]
     hojas.append(raiz / "static/css/escaparate.css")  # plan 07, novena parte
+    hojas.append(raiz / "static/css/mostrador.css")  # plan 06, segunda parte
     hojas.append(raiz / "apps/core/templates/core/tienda.css")
     definidas = set(
         re.findall(r"\.([a-zA-Z][\w-]*)", "".join(h.read_text(encoding="utf-8") for h in hojas))

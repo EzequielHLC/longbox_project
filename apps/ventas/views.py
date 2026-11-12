@@ -9,7 +9,7 @@ from django.views import View
 
 from apps.accounts.models import Usuario
 from apps.catalog.models import Producto
-from apps.core.mixins import RolRequeridoMixin
+from apps.core.mixins import RolRequeridoMixin, plantilla_del_rol
 from apps.pedidos.models import Pedido, TransaccionPago
 from apps.ventas import ticket as servicio
 
@@ -45,7 +45,7 @@ class MostradorView(MostradorMixin, View):
         busqueda = request.GET.get("q", "").strip()
         return render(
             request,
-            "ventas/mostrador.html",
+            plantilla_del_rol(request, "ventas/mostrador.html", "ventas/cajero/mostrador.html"),
             {
                 "ticket": servicio.consultar(request.session),
                 # Plan 00 de interfaz, segunda parte, 13.3: la fila recién agregada destella.
@@ -181,7 +181,7 @@ class ComprobanteView(MostradorMixin, View):
             registrada = {}
         return render(
             request,
-            "ventas/comprobante.html",
+            plantilla_del_rol(request, "ventas/comprobante.html", "ventas/cajero/comprobante.html"),
             {
                 "pedido": pedido,
                 "lineas": lineas,

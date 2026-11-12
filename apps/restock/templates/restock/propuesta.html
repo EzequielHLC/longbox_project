@@ -15,17 +15,20 @@ CU-RST-PRO A1: generarla a mano (CO-068); o armarla vacía (B-05-012).
     <h1>Restock</h1>
     {% if propuesta %}<p>{{ propuesta }} · {{ propuesta.get_tipo_disparo_display }}</p>{% endif %}
   </div>
-  <a href="{% url 'restock:propuesta_lista' %}" class="boton-texto">Propuestas anteriores</a>
-  {% if not propuesta %}
-    <form method="post" action="{% url 'restock:a_mano' %}">
-      {% csrf_token %}
-      <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="editar" %}<span>Armar una a mano</span></button>
-    </form>
-    <form method="post" action="{% url 'restock:generar' %}">
-      {% csrf_token %}
-      <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Generar propuesta</span></button>
-    </form>
-  {% endif %}
+  {# Las acciones, juntas a la derecha: la consulta, la manual y la principal al final. #}
+  <div class="acciones acciones--sin-filete acciones--encabezado">
+    <a href="{% url 'restock:propuesta_lista' %}" class="boton-texto">{% include "_iconos.html" with icono="reloj" %}<span>Propuestas anteriores</span></a>
+    {% if not propuesta %}
+      <form method="post" action="{% url 'restock:a_mano' %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-seccion boton-seccion--tenue">{% include "_iconos.html" with icono="editar" %}<span>Armar una a mano</span></button>
+      </form>
+      <form method="post" action="{% url 'restock:generar' %}">
+        {% csrf_token %}
+        <button type="submit" class="boton-primario">{% include "_iconos.html" with icono="agregar" %}<span>Generar propuesta</span></button>
+      </form>
+    {% endif %}
+  </div>
 </header>
 
 {% if propuesta %}

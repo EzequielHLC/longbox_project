@@ -1,0 +1,236 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-VTA-REG — el mostrador del Cajero (plan 06, segunda parte). Las mismas
+operaciones que `ventas/mostrador.html`, la del Administrador, con otra forma:
+
+- El **lector** (paso 2, CO-079, B-06-003): el campo donde escribe el lector de
+  código de barras, con el foco puesto al entrar y después de cada agregado.
+- El **ticket** en curso (A3, CO-080; paso 4, CO-103 y CO-104), impreso.
+- La **terminal de cobro**: el visor con el total y el vuelto, el cliente
+  (paso 3, CO-081), las teclas de medio de pago y «Cobrar» (pasos 5 y 6, CO-082).
+
+El ticket vive en la sesión (B-06-002).
+{% endcomment %}
+
+{% block titulo %}Mostrador · Longbox{% endblock %}
+{% block seccion %}Mostrador{% endblock %}
+
+{% block contenido %}
+<h1 class="sr-only">Mostrador</h1>
+<div class="caj-mostrador">
+  <div class="caj-columna">
+
+    <section class="caj-lector" aria-labelledby="titulo-lector">
+      <div class="caj-lector__cabeza">
+        <p id="titulo-lector" class="caj-osd caj-osd--lima"><span class="caj-led caj-led--late" aria-hidden="true"></span>Lector listo</p>
+        <span class="caj-osd" aria-hidden="true">Código · código de barras · ISBN · título</span>
+      </div>
+      <form method="post" action="{% url 'ventas:agregar' %}" class="caj-lector__fila">
+        {% csrf_token %}
+        <label class="caj-lector__campo">
+          {% include "_iconos.html" with icono="buscar" %}
+          <span class="sr-only">Código, código de barras, ISBN o título</span>
+          <input type="text" id="q" name="q" value="{{ busqueda }}" placeholder="Escaneá o escribí…" autocomplete="off" autofocus>
+          <span class="caj-tecla-enter" aria-hidden="true">Enter ↵</span>
+        </label>
+        <div class="caj-cantidad" data-caj-cantidad>
+          <button type="button" data-paso="-1" aria-label="Una unidad menos">−</button>
+          <label class="sr-only" for="cantidad">Cantidad</label>
+          <input type="number" id="cantidad" name="cantidad" value="1" min="1" inputmode="numeric">
+          <button type="button" data-paso="1" aria-label="Una unidad más">+</button>
+        </div>
+        <button type="submit" class="caj-accion">{% include "_iconos.html" with icono="agregar" %}<span>Agregar</span></button>
+      </form>
+
+      {% if busqueda %}
+        {% if resultados %}
+          <ul class="caj-coincidencias" aria-label="Coincidencias">
+            {% for producto in resultados %}
+              <li class="caj-coincidencia">
+                {% if producto.portada %}<img class="caj-portada" src="{{ producto.portada.url }}" alt="">{% else %}<span class="caj-portada" aria-hidden="true">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}
+                <div>
+                  <b>{{ producto.titulo }}{% if producto.productoeditorial.volumen %} #{{ producto.productoeditorial.volumen }}{% endif %}</b>
+                  <small>{{ producto.codigo }} · stock {{ producto.stock }} · {{ producto.precio|pesos }}</small>
+                </div>
+                <form method="post" action="{% url 'ventas:agregar' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="producto" value="{{ producto.pk }}">
+                  <button type="submit" class="caj-redondo" aria-label="Agregar {{ producto.titulo }}">{% include "_iconos.html" with icono="agregar" %}</button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="caj-osd caj-sin-resultado">Ningún producto a la venta coincide con «{{ busqueda }}».</p>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    <article class="caj-ticket" aria-labelledby="titulo-ticket">
+      <div class="caj-ticket__cabeza">
+        <div>
+          <p class="caj-ticket__datos">Longbox · cómics y manga</p>
+          <h2 id="titulo-ticket" class="caj-ticket__titulo">Ticket en curso</h2>
+        </div>
+        <div class="caj-ticket__datos caj-ticket__datos--derecha">
+          {% now "d/m/Y H:i" %}<br>Atiende: {{ user.first_name|default:user.email }}
+          {% if not ticket.vacio %}
+            <form method="post" action="{% url 'ventas:nueva' %}">
+              {% csrf_token %}
+              <button type="submit" class="caj-enlace-critico">Descartar y empezar otra venta</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if ticket.vacio %}
+        <p class="caj-ticket__vacio">Todavía no hay productos en el ticket. Escaneá uno para empezar.</p>
+      {% else %}
+        <ul class="caj-items">
+          {% for item in ticket.items %}
+            <li class="caj-item{% if item.producto.pk == ultimo_agregado %} caj-item--nuevo{% endif %}">
+              {% if item.producto.portada %}<img class="caj-portada caj-portada--chica" src="{{ item.producto.portada.url }}" alt="">{% else %}<span class="caj-portada caj-portada--chica" aria-hidden="true">{% include "_iconos.html" with icono="libro" %}</span>{% endif %}
+              <div class="caj-item__nombre">
+                <b>{{ item.producto.titulo }}{% if item.producto.productoeditorial.volumen %} #{{ item.producto.productoeditorial.volumen }}{% endif %}</b>
+                <small>{{ item.producto.codigo }}</small>
+                {% if ticket.cliente %}
+                  <form method="post" action="{% url 'ventas:canje' item.producto.pk %}">
+                    {% csrf_token %}
+                    {% if item.cubierta %}
+                      <input type="hidden" name="accion" value="revertir">
+                      <button type="submit" class="caj-chip-canje" aria-pressed="true">★ Quitar canje ({{ item.puntos_necesarios|miles }} pts)</button>
+                    {% else %}
+                      <button type="submit" class="caj-chip-canje" aria-pressed="false">★ Canjear {{ item.puntos_necesarios|miles }} pts</button>
+                    {% endif %}
+                  </form>
+                {% endif %}
+              </div>
+              <span class="caj-item__cant">{{ item.cantidad }} × {{ item.precio|pesos }}</span>
+              <span class="caj-item__importe">{% if item.cubierta %}<s>{{ item.importe|pesos }}</s>{{ 0|pesos }}{% else %}{{ item.importe|pesos }}{% endif %}</span>
+              <form method="post" action="{% url 'ventas:quitar' item.producto.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="caj-quitar" aria-label="Quitar {{ item.producto.titulo }}" title="Quitar">{% include "_iconos.html" with icono="cerrar" %}</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+        <div class="caj-ticket__pie">
+          <span>{{ ticket.unidades }} unidad{{ ticket.unidades|pluralize:"es" }}</span>
+          <span>Subtotal {{ ticket.total|pesos }}</span>
+        </div>
+      {% endif %}
+    </article>
+  </div>
+
+  <aside class="caj-terminal" aria-label="Cobro">
+    <div class="caj-terminal__marca">
+      <span class="caj-osd">Terminal de cobro</span>
+      <span class="caj-rejilla" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+    </div>
+
+    {# Plan 00 de interfaz, segunda parte, 13.1: el total es lo que se mira. #}
+    <div class="caj-visor">
+      <div class="caj-visor__rotulo"><span>Total a cobrar</span><span data-caj-medio>{% if medios %}{{ medios.0.1 }}{% endif %}</span></div>
+      <p class="caj-visor__cifra" data-total="{{ ticket.total|stringformat:'f' }}">{{ ticket.total|pesos }}</p>
+      <div class="caj-visor__linea">
+        <span>{{ ticket.unidades }} u.{% if ticket.puntos_aplicados %} · −{{ ticket.puntos_aplicados|miles }} pts{% endif %}{% if ticket.puntos_a_acreditar %} · +{{ ticket.puntos_a_acreditar|miles }} pts{% endif %}</span>
+        <span aria-live="polite" data-vuelto hidden><span data-vuelto-rotulo>Vuelto</span> <b data-vuelto-cifra></b></span>
+      </div>
+    </div>
+
+    <div class="caj-ranura">
+      <span class="caj-rotulo">Cliente</span>
+      {% if ticket.cliente %}
+        <div class="caj-carnet">
+          <b>{{ ticket.cliente.get_full_name|default:ticket.cliente.email }}</b>
+          <div class="caj-carnet__puntos">{{ ticket.saldo|miles }}<span>puntos</span></div>
+          <small>
+            Cliente <span class="datos">{{ ticket.cliente.codigo_cliente }}</span>{% if ticket.puntos_aplicados %} · quedan {{ ticket.saldo_restante|miles }}{% endif %} ·
+            <form method="post" action="{% url 'ventas:cliente' %}">
+              {% csrf_token %}
+              <input type="hidden" name="accion" value="quitar">
+              <button type="submit" class="caj-enlace-critico">Quitar cliente</button>
+            </form>
+          </small>
+        </div>
+      {% else %}
+        <form method="post" action="{% url 'ventas:cliente' %}" class="caj-pildora">
+          {% csrf_token %}
+          <label for="cliente" class="sr-only">Código de cliente o correo</label>
+          <input type="text" id="cliente" name="cliente" placeholder="Código o correo" autocomplete="off">
+          <button type="submit" class="caj-tenue">Vincular</button>
+        </form>
+        <p class="caj-nota">Sin cuenta no se suman puntos.</p>
+      {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'ventas:confirmar' %}" class="caj-ranura">
+      {% csrf_token %}
+      {% if ticket.total %}
+        <fieldset class="caj-medios">
+          <legend class="caj-rotulo">Medio de pago</legend>
+          <div class="caj-teclas">
+          {% for valor, etiqueta in medios %}
+            <label class="caj-tecla">
+              <input type="radio" name="medio" value="{{ valor }}" data-etiqueta="{{ etiqueta }}" {% if forloop.first %}checked{% endif %}>
+              <span class="caj-tecla__cuerpo">{% include "_iconos.html" with icono=valor %}{{ etiqueta }}</span>
+            </label>
+          {% endfor %}
+          </div>
+        </fieldset>
+        <div class="caj-ranura" data-caj-recibido>
+          <label for="recibido" class="caj-rotulo">Recibido en efectivo</label>
+          <div class="caj-pildora"><input type="text" id="recibido" name="recibido" inputmode="decimal" autocomplete="off" placeholder="Opcional · calcula el vuelto" data-recibido></div>
+        </div>
+      {% endif %}
+      <button type="submit" class="caj-accion caj-accion--ancha"{% if ticket.vacio %} disabled{% endif %}>
+        {% if ticket.vacio %}Cobrar{% elif ticket.total %}Cobrar {{ ticket.total|pesos }}{% else %}Confirmar venta con puntos{% endif %}
+      </button>
+    </form>
+  </aside>
+</div>
+
+<script>
+  (function () {
+    // La cantidad: los pasos del selector, sin bajar de uno.
+    const caja = document.querySelector("[data-caj-cantidad]");
+    if (caja) {
+      const campo = caja.querySelector("input");
+      caja.addEventListener("click", function (evento) {
+        const boton = evento.target.closest("[data-paso]");
+        if (!boton) return;
+        campo.value = Math.max(1, (parseInt(campo.value, 10) || 1) + Number(boton.dataset.paso));
+      });
+    }
+    // El vuelto en el visor, mientras el cajero escribe (13.1). Es una cuenta
+    // para mostrar; el servidor la vuelve a hacer al confirmar y no la guarda.
+    const total = document.querySelector("[data-total]");
+    const recibido = document.querySelector("[data-recibido]");
+    const salida = document.querySelector("[data-vuelto]");
+    const ranura = document.querySelector("[data-caj-recibido]");
+    const rotulo = document.querySelector("[data-caj-medio]");
+    const formato = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+    function vuelto() {
+      if (!recibido || !salida) return;
+      const valor = Number(recibido.value.replace(/\./g, "").replace(",", "."));
+      const resta = valor - Number(total.dataset.total);
+      salida.hidden = !(valor > 0) || ranura.hidden;
+      salida.parentElement.classList.toggle("caj-visor__linea--falta", resta < 0);
+      salida.querySelector("[data-vuelto-rotulo]").textContent = resta < 0 ? "Faltan" : "Vuelto";
+      salida.querySelector("[data-vuelto-cifra]").textContent = "$ " + formato.format(Math.abs(resta));
+    }
+    // Lo recibido sólo tiene sentido en efectivo; el visor dice el medio elegido.
+    function medio() {
+      const elegido = document.querySelector("input[name=medio]:checked");
+      if (!elegido) return;
+      if (ranura) ranura.hidden = elegido.value !== "efectivo";
+      if (rotulo) rotulo.textContent = elegido.dataset.etiqueta;
+      vuelto();
+    }
+    if (recibido) recibido.addEventListener("input", vuelto);
+    document.querySelectorAll("input[name=medio]").forEach((radio) => radio.addEventListener("change", medio));
+    medio();
+  })();
+</script>
+{% endblock %}

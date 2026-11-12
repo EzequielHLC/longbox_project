@@ -1,0 +1,132 @@
+{% extends "base_operativo.html" %}
+{% load moneda %}
+{% comment %}
+CU-CAJ-CIE en la caja del Cajero (plan 06, segunda parte). Lo mismo que
+`caja/caja.html`, la del Administrador: CO-203 (el resumen previo) y «Confirmar
+cierre de caja» (CO-126). E1: la caja de hoy ya está cerrada (B-14-001). E2: sin
+movimientos. A1: pendientes de verificación.
+
+Los totales van en visores; lo recaudado por medio, en medidores de doce
+segmentos (el encendido lo calcula la vista); las ventas de la jornada, como la
+cinta de control de una caja registradora.
+{% endcomment %}
+
+{% block titulo %}Caja · Longbox{% endblock %}
+{% block seccion %}Caja{% endblock %}
+
+{% block contenido %}
+<div class="caj-cabeza">
+  <div>
+    <p class="caj-osd caj-osd--lima"><span class="caj-led" aria-hidden="true"></span>{% if resumen.cierre_de_hoy %}Caja de hoy cerrada{% else %}Jornada abierta{% endif %}</p>
+    <h1 class="caj-titulo">Caja</h1>
+  </div>
+  <a href="{% url 'caja:cierres' %}" class="caj-tenue">{% include "_iconos.html" with icono="reloj" %}<span>Cierres anteriores</span></a>
+</div>
+
+{% if resumen.cierre_de_hoy %}
+  <div class="caj-aviso" role="note">
+    {% include "_iconos.html" with icono="info" %}
+    <div>
+      <p>La caja de hoy ya está cerrada. <a href="{% url 'caja:cierre' resumen.cierre_de_hoy.pk %}">Ver el cierre</a>.</p>
+      {% if resumen.incluidas %}<p class="caj-nota">{{ resumen.incluidas|length }} transacción(es) posteriores esperan el próximo cierre.</p>{% endif %}
+    </div>
+  </div>
+{% elif not resumen.incluidas %}
+  <div class="vacio">
+    {% include "_iconos.html" with icono="caja" %}
+    <p>No hay movimientos para consolidar.</p>
+  </div>
+{% endif %}
+
+{% if resumen.incluidas and not resumen.cierre_de_hoy %}
+  <div class="caj-caja">
+    <section class="caj-columna" aria-labelledby="titulo-resumen">
+      <h2 id="titulo-resumen" class="sr-only">Resumen previo al cierre</h2>
+      {# Plan 00 de interfaz, segunda parte, 13.5: lo que importa arriba y en grande. #}
+      <div class="caj-visores">
+        <div class="caj-visor">
+          <div class="caj-visor__rotulo"><span>Total a cerrar</span><span>{{ resumen.incluidas|length }} {% if resumen.incluidas|length == 1 %}transacción{% else %}transacciones{% endif %}</span></div>
+          <p class="caj-visor__cifra">{{ resumen.total_global|pesos }}</p>
+          {% if resumen.de_dias_anteriores %}<div class="caj-visor__linea"><span>{{ resumen.de_dias_anteriores }} de días anteriores</span></div>{% endif %}
+        </div>
+        {% for etiqueta, total in resumen.por_canal %}
+          <div class="caj-visor">
+            <div class="caj-visor__rotulo"><span>{{ etiqueta }}</span></div>
+            <p class="caj-visor__cifra caj-visor__cifra--media">{{ total|pesos }}</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <section class="caj-ranura" aria-labelledby="titulo-medios">
+        <h2 id="titulo-medios" class="caj-rotulo">Por medio de pago</h2>
+        <div class="caj-medidores">
+          {% for etiqueta, total, segmentos in medidores %}
+            <div class="caj-medidor{% if not total %} caj-medidor--vacio{% endif %}">
+              <div class="caj-medidor__cabeza">{% with icono=etiqueta|lower %}{% include "_iconos.html" with icono=icono %}{% endwith %}<span class="caj-rotulo">{{ etiqueta }}</span></div>
+              <p class="caj-medidor__cifra">{{ total|pesos }}</p>
+              <div class="caj-vumetro" aria-hidden="true">{% for encendido in segmentos %}<span{% if encendido == "pico" %} class="caj-vumetro__pico"{% elif encendido %} class="caj-vumetro__on"{% endif %}></span>{% endfor %}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      {% if resumen.solo_puntos %}<p class="caj-nota">{{ resumen.solo_puntos }} compra(s) pagadas sólo con puntos, sin dinero.</p>{% endif %}
+
+      {% if resumen.pendientes %}
+        <div class="caj-aviso" role="alert">
+          {% include "_iconos.html" with icono="atencion" %}
+          <p><strong>{{ resumen.pendientes|length }} transacción(es) pendientes de verificación.</strong> Quedan fuera de este cierre y pasan al próximo.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <aside class="caj-terminal caj-cierre" aria-label="Cierre">
+      <div class="caj-terminal__marca">
+        <span class="caj-osd">Cierre de caja</span>
+        <span class="caj-rejilla" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+      </div>
+      <div class="caj-visor">
+        <div class="caj-visor__rotulo"><span>A consolidar</span><span>Por canal y medio</span></div>
+        <p class="caj-visor__cifra caj-visor__cifra--media">{{ resumen.total_global|pesos }}</p>
+      </div>
+      <p class="caj-nota">Al cerrar, estas transacciones quedan consolidadas. Lo que se cobre después va al próximo cierre.</p>
+      <form method="post" action="{% url 'caja:cerrar' %}">
+        {% csrf_token %}
+        <button type="submit" class="caj-accion caj-accion--ancha">Confirmar cierre de caja</button>
+      </form>
+    </aside>
+  </div>
+{% endif %}
+
+{% if ventas or medio %}
+  <section class="caj-columna" aria-labelledby="titulo-ventas">
+    <nav class="caj-filtros" aria-label="Filtrar por medio de pago">
+      <a href="{% url 'caja:caja' %}" class="caj-filtro"{% if not medio %} aria-current="true"{% endif %}>Todas</a>
+      {% for valor, etiqueta in medios %}
+        <a href="?medio={{ valor }}" class="caj-filtro"{% if medio == valor %} aria-current="true"{% endif %}>{% include "_iconos.html" with icono=valor %}{{ etiqueta }}</a>
+      {% endfor %}
+    </nav>
+    {% now "Ymd" as hoy %}
+    <article class="caj-ticket caj-cinta">
+      <div class="caj-ticket__cabeza">
+        <h2 id="titulo-ventas" class="caj-ticket__titulo">Ventas de la jornada</h2>
+        <p class="caj-ticket__datos caj-ticket__datos--derecha">Cinta de control<br>{% now "d/m/Y" %}</p>
+      </div>
+      {% for t in ventas %}
+        <div class="caj-renglon">
+          <span>{% if t.registrada_en|date:"Ymd" == hoy %}{{ t.registrada_en|date:"H:i" }}{% else %}{{ t.registrada_en|date:"d/m H:i" }}{% endif %}</span>
+          <span>
+            {% if t.pedido and t.pedido.canal == "presencial" %}<a href="{% url 'ventas:comprobante' t.pedido.numero %}">{{ t.concepto }}</a>{% else %}{{ t.concepto }}{% endif %}
+            {% if t.estado == "pendiente_verificacion" %}<span class="caj-pendiente">Por verificar</span>{% endif %}
+          </span>
+          <span>{% firstof t.pedido.usuario.get_full_name t.pedido.usuario.email t.solicitud.usuario.get_full_name t.pedido.correo_invitado "—" %}</span>
+          <span>{% if t.canal == "online" %}Online{% else %}Físico{% endif %} · {{ t.get_medio_display }}</span>
+          <span>{{ t.monto|pesos }}</span>
+        </div>
+      {% empty %}
+        <p class="caj-ticket__vacio">No hay ventas con ese medio.</p>
+      {% endfor %}
+    </article>
+  </section>
+{% endif %}
+{% endblock %}

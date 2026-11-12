@@ -25,6 +25,12 @@ def _menu(html):
     return html[inicio : html.index("</aside>", inicio)]
 
 
+def _barra_del_cajero(html):
+    """El Cajero no tiene menú lateral: sus destinos y la salida van en la barra (B-06-007)."""
+    inicio = html.index('<nav class="caj-botonera"')
+    return html[inicio : html.index("</nav>", inicio)]
+
+
 def test_el_cliente_puede_cerrar_sesion_desde_la_tienda(client, cliente):
     client.force_login(cliente)
 
@@ -40,23 +46,23 @@ def test_sin_sesion_la_tienda_ofrece_ingresar_y_no_salir(client):
     assert not FORMULARIO_DE_SALIDA.search(html)
 
 
-def test_el_cajero_encuentra_cerrar_sesion_en_el_menu(client, cajero):
+def test_el_cajero_encuentra_cerrar_sesion_en_su_barra(client, cajero):
     client.force_login(cajero)
 
     html = client.get(reverse("core:mostrador")).content.decode()
 
-    assert FORMULARIO_DE_SALIDA.search(_menu(html))
+    assert FORMULARIO_DE_SALIDA.search(_barra_del_cajero(html))
 
 
-def test_el_menu_del_cajero_no_ofrece_el_panel_del_administrador(client, cajero):
-    """El Panel le respondería 403: el menú no ofrece caminos que no existen."""
+def test_la_barra_del_cajero_no_ofrece_el_panel_del_administrador(client, cajero):
+    """El Panel le respondería 403: la barra no ofrece caminos que no existen."""
     client.force_login(cajero)
 
     html = client.get(reverse("core:mostrador")).content.decode()
 
     assert f'href="{reverse("core:panel")}"' not in html
-    assert f'href="{reverse("core:mostrador")}"' in _menu(html)
-    assert f'href="{reverse("catalog:producto_lista")}"' in _menu(html)
+    assert f'href="{reverse("core:mostrador")}"' in _barra_del_cajero(html)
+    assert f'href="{reverse("catalog:producto_lista")}"' in _barra_del_cajero(html)
 
 
 def test_el_cajero_puede_abrir_el_inventario_que_le_ofrece_el_menu(client, cajero):
