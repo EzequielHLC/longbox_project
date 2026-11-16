@@ -49,7 +49,10 @@ def correr(usuarios, duracion):
         cwd=RAIZ,
         capture_output=True,
     )
-    with open(f"{prefijo}_stats.csv", encoding="utf-8") as archivo:
+    # Locust escribe el CSV en la codificación del sistema (cp1252 en Windows), y los nombres de las
+    # operaciones llevan acentos. Lo que se lee son la fila «Aggregated» y sus números: un acento
+    # reemplazado no cambia nada.
+    with open(f"{prefijo}_stats.csv", encoding="utf-8", errors="replace") as archivo:
         total = next(fila for fila in csv.DictReader(archivo) if fila["Name"] == "Aggregated")
     pedidos = int(total["Request Count"])
     errores = int(total["Failure Count"])

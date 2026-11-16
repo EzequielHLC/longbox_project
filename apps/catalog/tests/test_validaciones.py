@@ -29,6 +29,7 @@ from apps.catalog.tests.factories import (
 from apps.catalog.tests.helpers_lote import (
     URL_IMPORTADO,
     URL_NACIONAL,
+    con_unidades,
     item,
     lote_nacional,
     payload,
@@ -53,7 +54,7 @@ def lote_importado(items, editorial, **cabecera):
         "valor_compra_total": "100000",
     }
     datos.update(cabecera)
-    return payload(items, **datos)
+    return payload(con_unidades(items), **datos)
 
 
 def errores(respuesta, campo, indice=0):

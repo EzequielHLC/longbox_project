@@ -140,7 +140,16 @@ calculado, y se separa de lo que escribió la persona.
 
         <div class="rejilla-2">
           {% include "_campo.html" with campo=cabecera.costo_envio_total %}
-          {% include "_campo.html" with campo=cabecera.valor_compra_total %}
+          <div class="pila-1">
+            {% include "_campo.html" with campo=cabecera.valor_compra_total %}
+            {% include "_casilla.html" with campo=cabecera.total_a_mano %}
+            {# Plan 01, segunda parte: el estado de la suma, en vivo; el servidor vuelve a sumar al confirmar. #}
+            <p id="estado-del-total" class="ayuda" aria-live="polite">
+              {% if cabecera.diferencia_con_la_suma is not None %}
+                La suma de los ítems da <span class="datos">{{ cabecera.diferencia_con_la_suma|unlocalize }}</span>: se usa el total escrito.
+              {% endif %}
+            </p>
+          </div>
         </div>
 
         <dl class="divisor rejilla-2">
@@ -626,19 +635,64 @@ calculado, y se separa de lo que escribió la persona.
       precio.placeholder = final ? String(final) : "";
     };
 
+    // Plan 01, segunda parte: el valor de compra es la suma de costo × unidades de
+    // los ítems, salvo que se escriba a mano. Un ítem con costo y sin unidades deja
+    // la suma incompleta: contarlo como cero subiría el CRE de todo el lote.
+    const aMano = document.getElementById("id_total_a_mano");
+    const estado = document.getElementById("estado-del-total");
+
+    function sumaDeLosItems() {
+      let total = 0;
+      let cuantos = 0;
+      for (const item of window.itemsDelLote()) {
+        const costo = item.querySelector('[name$="-costo_origen"]')?.value.trim() || "";
+        const titulo = item.querySelector('[name$="-titulo"]')?.value.trim() || "";
+        const unidades = item.querySelector('[name$="-stock"]')?.value.trim() || "";
+        if (!costo && !titulo) continue;
+        const c = parseFloat(costo.replace(",", "."));
+        const u = parseInt(unidades, 10);
+        if (!Number.isFinite(c) || !(u > 0)) return null;
+        total += c * u;
+        cuantos += 1;
+      }
+      return cuantos ? centavos(total) : null;
+    }
+
+    function actualizarTotal() {
+      const suma = sumaDeLosItems();
+      const manual = Boolean(aMano?.checked);
+      if (compra) compra.readOnly = !manual;
+      if (!manual) {
+        compra.value = suma === null ? "" : suma.toFixed(2);
+        estado.textContent = suma === null
+          ? "Para calcularlo, cada ítem necesita su costo y sus unidades."
+          : "Calculado: la suma de costo × unidades de los ítems.";
+      } else if (suma !== null && compra.value !== "" && Math.abs(numero(compra) - suma) > 0.009) {
+        estado.textContent = `La suma de los ítems da ${suma.toFixed(2)}: se usará el total escrito.`;
+      } else {
+        estado.textContent = "";
+      }
+      if (creMostrado) creMostrado.textContent = cre().toFixed(6);
+    }
+
     window.recalcularTodo = function () {
+      actualizarTotal();
       window.itemsDelLote().forEach(window.recalcularItem);
     };
 
-    for (const campo of [envio, compra, cotizacion]) {
-      campo?.addEventListener("input", () => {
-        if (creMostrado) creMostrado.textContent = cre().toFixed(6);
-        window.recalcularTodo();
-      });
+    for (const campo of [envio, compra, cotizacion, aMano]) {
+      campo?.addEventListener("input", window.recalcularTodo);
+      campo?.addEventListener("change", window.recalcularTodo);
     }
     raiz.addEventListener("input", (evento) => {
       const item = evento.target.closest("[data-item]");
-      if (item) window.recalcularItem(item);
+      if (!item) return;
+      // El costo y las unidades cambian el total, y con él el CRE de todos los ítems.
+      if (evento.target.matches('[name$="-costo_origen"], [name$="-stock"], [name$="-titulo"]')) {
+        window.recalcularTodo();
+      } else {
+        window.recalcularItem(item);
+      }
     });
 
     window.recalcularTodo();

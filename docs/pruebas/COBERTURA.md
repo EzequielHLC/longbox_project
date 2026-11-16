@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-11-12, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-11-16, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -26,13 +26,49 @@ es otra puerta y su número también vive ahí.
 | Contratos especificados | 219 |
 | Con al menos una prueba que lleva su código | 219 |
 | Sin ninguna | 0 |
-| Pruebas de contrato en la suite | 1161 |
+| Pruebas de contrato en la suite | 1300 |
 
 **Pruebas que nombran un contrato inexistente.** Un tipeo en el código del contrato produce una prueba que parece cubrir algo y no cubre nada:
 
+- `CO-219` — `test_CO219_el_panel_presenta_ventas_inteligencia_y_pendientes`, `test_CO219_consultar_el_panel_no_cambia_nada_ni_se_audita`, `test_CO219_el_rol_equivocado_no_ve_el_panel_por_la_direccion_real`
 - `CO-228` — `test_CO228_tres_fallas_seguidas_proponen_el_cambio_y_avisan`, `test_CO228_no_cambia_el_modelo_activo`, `test_CO228_se_propone_una_vez_por_racha`, `test_CO228_un_rechazo_del_proveedor_tambien_cuenta`, `test_CO228_dos_fallas_no_alcanzan`, `test_CO228_un_acierto_corta_la_racha_y_permite_volver_a_proponer`, `test_CO228_una_respuesta_ilegible_no_cuenta_como_falla`, `test_CO228_sin_respaldo_el_aviso_dice_que_no_hay`
 - `CO-229` — `test_CO229_intercambia_el_activo_y_el_respaldo`, `test_CO229_prueba_el_respaldo_sobre_su_propio_perfil`, `test_CO229_si_el_respaldo_tampoco_responde_no_cambia_nada`, `test_CO229_si_el_servidor_no_ofrece_el_modelo_no_cambia`, `test_CO229_sin_respaldo_no_se_puede`, `test_CO229_por_la_pantalla_mirar_no_cambia_y_confirmar_si`, `test_CO229_por_la_pantalla_un_respaldo_caido_se_informa`, `test_CO229_el_rol_equivocado_no_cambia_el_modelo`
-- `CO-232` — `test_CO232_la_pantalla_agrupa_por_fecha_y_editorial_si_no_hay_proveedor`, `test_CO232_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles`, `test_CO232_la_preventa_sin_pedido_aparece_marcada`, `test_CO232_un_pedido_sin_enviar_no_se_espera_y_se_avisa`, `test_CO232_revisar_no_registra_nada`, `test_CO232_cada_linea_suma_lo_recibido_a_su_pedido`, `test_CO232_lo_que_llega_de_mas_se_acepta_y_queda_en_la_auditoria`, `test_CO232_la_preventa_cubre_sus_reservas_por_CO013`, `test_CO232_lo_que_no_es_preventa_suma_al_stock_y_avisa_a_los_suscriptores`, `test_CO232_la_preventa_sin_pedido_se_carga_por_CO013`, `test_CO232_un_faltante_con_la_fecha_cumplida_se_demora_y_uno_futuro_no_cambia`, `test_CO232_lo_que_no_es_preventa_en_cero_sigue_esperando`, `test_CO232_confirmar_sin_haber_revisado_no_registra`, `test_CO232_si_otro_se_adelanto_ese_pedido_no_suma_y_los_demas_siguen`, `test_CO232_si_una_linea_se_cerro_mientras_tanto_no_se_registra_nada`, `test_CO232_el_rol_equivocado_no_ve_ni_carga_la_llegada`, `test_CO232_la_llegada_no_reactiva_un_producto_que_no_se_vende`
+- `CO-232` — `test_CO232_la_pantalla_agrupa_por_fecha_y_editorial_si_no_hay_proveedor`, `test_CO232_cada_linea_suma_lo_recibido_a_su_pedido`, `test_CO232_lo_que_llega_de_mas_se_acepta_y_queda_en_la_auditoria`, `test_CO232_la_preventa_cubre_sus_reservas_por_CO013`, `test_CO232_lo_que_no_es_preventa_suma_al_stock_y_avisa_a_los_suscriptores`, `test_CO232_la_preventa_sin_pedido_se_carga_por_CO013`, `test_CO232_un_faltante_con_la_fecha_cumplida_se_demora_y_uno_futuro_no_cambia`, `test_CO232_lo_que_no_es_preventa_en_cero_sigue_esperando`, `test_CO232_confirmar_sin_haber_revisado_no_registra`, `test_CO232_si_otro_se_adelanto_ese_pedido_no_suma_y_los_demas_siguen`, `test_CO232_si_una_linea_se_cerro_mientras_tanto_no_se_registra_nada`, `test_CO232_el_rol_equivocado_no_ve_ni_carga_la_llegada`, `test_CO232_la_llegada_no_reactiva_un_producto_que_no_se_vende`
+- `CO-233` — `test_CO233_armar_a_mano_la_deja_vacia_pendiente_y_auditada`, `test_CO233_con_una_pendiente_no_se_arma_otra`, `test_CO233_CO234_el_cajero_no_arma_ni_cierra_por_la_direccion_real`, `test_CO233_dos_administradores_a_la_vez_arman_una_sola`
+- `CO-234` — `test_CO234_cerrar_la_vacia_la_cierra_y_audita`, `test_CO234_una_con_productos_no_se_cierra_como_vacia`
+- `CO-235` — `test_CO235_presenta_todas_las_propuestas_de_la_mas_reciente_a_la_mas_antigua`, `test_CO235_consultar_las_propuestas_no_cambia_nada`, `test_CO235_sin_propuestas_presenta_la_vista_vacia`, `test_CO235_CO240_el_rol_equivocado_no_consulta_por_la_direccion_real`
+- `CO-236` — `test_CO236_la_ficha_agrupa_por_proveedor_con_el_pedido_que_genero`, `test_CO236_consultar_la_ficha_no_cambia_nada`
+- `CO-237` — `test_CO237_el_pedido_a_mano_manda_el_correo_y_abre_la_preventa`, `test_CO237_un_codigo_que_no_existe_no_sale`, `test_CO237_no_se_le_pide_a_un_proveedor_lo_que_trae_otro`, `test_CO237_si_no_se_sabe_quien_lo_trae_no_se_pide`, `test_CO237_el_rol_equivocado_no_pide_por_la_direccion_real`
+- `CO-238` — `test_CO238_la_ficha_presenta_cada_linea_con_lo_pedido_y_lo_recibido`, `test_CO238_consultar_la_ficha_del_pedido_no_cambia_nada`
+- `CO-239` — `test_CO239_confirmar_todo_deja_cada_linea_confirmada_y_lo_audita`, `test_CO239_otra_cantidad_cambia_lo_que_se_espera`, `test_CO239_no_disponible_pide_motivo_y_cierra_sin_recibir`, `test_CO239_un_pedido_cerrado_no_admite_respuesta`, `test_CO239_confirmar_menos_de_lo_reservado_se_acepta_y_avisa_sin_cancelar`, `test_CO239_atrasar_una_preventa_con_reservas_es_una_demora`, `test_CO239_el_rol_equivocado_no_responde`, `test_CO239_no_se_confirma_mas_de_lo_pedido`
+- `CO-240` — `test_CO240_consultar_por_llegar_no_cambia_nada`, `test_CO240_sin_nada_por_llegar_presenta_la_vista_vacia`, `test_CO240_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles`, `test_CO240_la_preventa_sin_pedido_aparece_marcada`, `test_CO240_un_pedido_sin_enviar_no_se_espera_y_se_avisa`, `test_CO240_la_lista_muestra_lo_que_esta_por_llegar`
+- `CO-241` — `test_CO241_reintentar_lo_manda_y_lo_deja_por_llegar`, `test_CO241_si_vuelve_a_fallar_queda_sin_enviar_con_el_error_nuevo`, `test_CO241_lo_que_ya_salio_no_se_reintenta`, `test_CO241_CO242_el_cajero_no_reintenta_ni_descarta`
+- `CO-242` — `test_CO242_descartarlo_pide_motivo_y_saca_la_preventa_sin_reservas`
+- `CO-243` — `test_CO243_cerrar_la_linea_no_toca_el_stock_y_saca_la_preventa_sin_reservas`, `test_CO243_una_linea_ya_cerrada_no_se_vuelve_a_cerrar`, `test_CO243_cerrar_una_linea_pide_motivo_y_lo_guarda`
+- `CO-244` — `test_CO244_revisar_no_registra_nada`, `test_CO244_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar`, `test_CO244_una_llegada_mal_escrita_o_vacia_no_registra`
+- `CO-245` — `test_CO245_la_portada_es_publica_y_presenta_las_secciones_activas_en_su_orden`, `test_CO245_consultar_la_portada_no_cambia_nada`
+- `CO-246` — `test_CO246_presenta_lo_publicado_sin_sesion`, `test_CO246_A1_sin_contenido_publicado_no_aparece_el_globo_de_ayuda`, `test_CO246_consultar_las_preguntas_no_cambia_nada`
+- `CO-247` — `test_CO247_un_cobro_pendiente_de_mas_de_un_dia_se_descarta`, `test_CO247_descartar_no_toca_stock_puntos_ni_pedidos_y_deja_el_motivo`
+- `CO-248` — `test_CO248_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock`, `test_CO248_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio`, `test_CO248_el_reembolso_por_el_medio_descuenta_los_puntos_ganados`, `test_CO248_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio`, `test_CO248_E3_en_el_mostrador_no_hay_reembolso_por_el_medio`, `test_CO248_acceso_el_cajero_no_registra_un_reembolso_por_el_medio`, `test_CO248_el_caso_queda_resuelto_sin_ninguna_transaccion_de_caja`, `test_CO248_en_una_garantia_el_articulo_defectuoso_no_vuelve_al_stock`
+- `CO-249` — `test_CO249_la_politica_es_publica_y_presenta_sus_cinco_apartados`, `test_CO249_consultar_la_politica_no_cambia_nada`
+- `CO-250` — `test_CO250_presenta_los_cierres_del_mas_reciente_al_mas_antiguo`, `test_CO250_consultar_los_cierres_no_cambia_nada`, `test_CO250_E1_sin_cierres_lo_informa`, `test_CO250_CO251_el_cliente_no_consulta_por_la_direccion_real`
+- `CO-251` — `test_CO251_presenta_los_totales_y_cada_transaccion_incluida`, `test_CO251_consultar_un_cierre_no_cambia_nada`
+- `CO-252` — `test_CO252_presenta_las_secciones_como_tarjetas_en_su_orden`, `test_CO252_consultar_las_secciones_no_cambia_nada`
+- `CO-253` — `test_CO253_agregar_secciones_de_productos_por_etiqueta_y_por_grupo`, `test_CO253_agregar_accesos_con_sus_imagenes_y_destinos`, `test_CO253_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada`, `test_CO253_un_destino_fuera_de_la_lista_se_rechaza`, `test_CO253_un_codigo_de_producto_que_no_existe_se_rechaza`, `test_CO253_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina`, `test_CO253_las_fijas_no_se_quitan`, `test_CO253_apagar_una_fija_la_saca_de_la_portada`, `test_CO253_el_tipo_de_una_seccion_no_cambia`, `test_CO253_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada`, `test_CO253_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos`, `test_CO253_eliminar_una_seccion_con_sus_imagenes`, `test_CO253_quitar_una_imagen_y_reordenar_las_demas`, `test_CO253_guardar_sin_cambios_no_audita`, `test_CO253_solo_el_administrador_configura_las_secciones`
+- `CO-254` — `test_CO254_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos`, `test_CO254_otro_rol_no_entra_al_perfil_por_la_direccion_real`, `test_CO254_consultar_el_perfil_no_cambia_nada`
+- `CO-255` — `test_CO255_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal`, `test_CO255_los_canales_se_guardan_por_tipo_y_quedan_auditados`, `test_CO255_sin_chat_vinculado_telegram_no_se_puede_elegir`, `test_CO255_todo_por_telegram_con_el_chat_vinculado`
+- `CO-256` — `test_CO256_sin_token_no_se_puede_vincular`, `test_CO256_vincular_da_un_enlace_de_un_solo_uso_al_bot`
+- `CO-257` — `test_CO257_start_no_vincula_todavia_da_un_numero_para_el_perfil`, `test_CO257_un_codigo_vencido_o_usado_no_vincula`, `test_CO257_el_codigo_de_otro_rol_no_vincula`
+- `CO-258` — `test_CO258_el_numero_en_el_perfil_vincula_el_chat`, `test_CO258_un_numero_equivocado_no_vincula_y_cinco_anulan_el_enlace`, `test_CO258_confirmar_sin_que_el_bot_haya_dado_un_numero`, `test_CO258_el_numero_de_otra_cuenta_no_sirve`, `test_CO258_un_chat_es_de_una_sola_cuenta`
+- `CO-259` — `test_CO259_no_fui_yo_anula_el_enlace`
+- `CO-260` — `test_CO260_salir_desvincula_desde_el_chat`, `test_CO260_salir_sin_vinculo_lo_dice`, `test_CO260_desvincular_desde_el_perfil_borra_el_vinculo_y_queda_auditado`
+- `CO-261` — `test_CO261_cargar_con_el_tipo_y_el_formato_sin_tilde`, `test_CO261_lo_no_editorial_no_crea_un_borrador`, `test_CO261_cargar_crea_un_borrador_de_telegram_y_ningun_producto`, `test_CO261_una_editorial_que_no_existe_queda_para_elegir_con_un_reparo`, `test_CO261_cargar_sin_modelo_no_crea_nada`, `test_CO261_cargar_sin_titulo_no_crea_nada`
+- `CO-262` — `test_CO262_borradores_lista_los_abiertos_mas_nuevos`, `test_CO262_borradores_sin_nada_lo_dice`, `test_CO262_un_chat_sin_vinculo_no_ve_los_borradores`, `test_CO262_consultar_los_borradores_desde_el_chat_no_cambia_nada`
+- `CO-263` — `test_CO263_un_chat_sin_vinculo_no_consulta_ni_carga`, `test_CO263_stock_por_titulo_y_tomo`, `test_CO263_llega_lista_preventas_proximas_y_marca_las_atrasadas`, `test_CO263_pendientes_cuenta_lo_que_espera_una_decision`, `test_CO263_caja_sin_cobros`, `test_CO263_las_consultas_no_escriben_nada`, `test_CO263_una_pregunta_libre_el_modelo_elige_y_el_sistema_consulta`, `test_CO263_una_consulta_inventada_por_el_modelo_cuenta_como_ninguna`
+- `CO-264` — `test_CO264_el_resumen_espera_la_hora_y_sale_una_vez_por_dia`, `test_CO264_el_resumen_dice_lo_pendiente_lo_que_llega_y_lo_de_ayer`, `test_CO264_dos_relojes_a_la_vez_mandan_un_solo_resumen`
+- `CO-265` — `test_CO265_estado_en_el_chat`, `test_CO265_estado_no_responde_a_un_chat_sin_vinculo`, `test_CO265_consultar_el_estado_no_cambia_nada`
+- `CO-266` — `test_CO266_el_disco_lleno_se_avisa_una_vez_por_dia`, `test_CO266_un_problema_que_se_arregla_y_vuelve_se_avisa_de_nuevo`
+- `CO-267` — `test_CO267_inline_comparte_la_ficha_de_la_tienda_sin_el_stock`, `test_CO267_inline_dice_la_pre_venta_y_lo_agotado`, `test_CO267_inline_no_muestra_lo_que_la_tienda_no_muestra`, `test_CO267_inline_no_contesta_a_quien_no_esta_vinculado`, `test_CO267_inline_no_contesta_a_un_administrador_dado_de_baja`
 
 ---
 
@@ -73,10 +109,10 @@ es otra puerta y su número también vive ahí.
 | `CO-002` | declararCabeceraLote | 4 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-003` | agregarItemLote | 9 | `apps/catalog/tests/test_carreras_de_unicidad.py`, `apps/catalog/tests/test_contratos_01_alta_lotes.py`, `apps/catalog/tests/test_portadas_rnf05.py`, `apps/suppliers/tests/test_pedidos_a_proveedor.py` |
 | `CO-004` | fijarPrecioManualItem | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-006` | confirmarLote | 4 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-007` | declararCalculadoraLote | 2 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
+| `CO-006` | confirmarLote | 5 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
+| `CO-007` | declararCalculadoraLote | 8 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-008` | sobrescribirCotizacion | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
-| `CO-009` | agregarItemLoteImportado | 3 | `apps/catalog/tests/test_contratos_01_alta_lotes.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
+| `CO-009` | agregarItemLoteImportado | 5 | `apps/catalog/tests/test_contratos_01_alta_lotes.py`, `apps/catalog/tests/test_portadas_rnf05.py` |
 | `CO-010` | fijarPrecioFinalManual | 1 | `apps/catalog/tests/test_contratos_01_alta_lotes.py` |
 | `CO-011` | ejecutarCicloVigilanciaPreventa | 5 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
 | `CO-012` | ejecutarCicloEscaladoPorInaccion | 3 | `apps/pedidos/tests/test_contratos_01_preventa.py` |
@@ -241,7 +277,7 @@ es otra puerta y su número también vive ahí.
 | --- | --- | ---: | --- |
 | `CO-099` | registrarCasoDeDevolucion | 21 | `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-100` | resolverCasoConCambio | 14 | `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py` |
-| `CO-101` | resolverCasoConReembolsoEnPuntos | 13 | `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py` |
+| `CO-101` | resolverCasoConReembolsoEnPuntos | 8 | `apps/devoluciones/tests/test_contratos_09_devoluciones.py` |
 | `CO-102` | rechazarCasoDeDevolucion | 5 | `apps/devoluciones/tests/test_contratos_09_devoluciones.py` |
 | `CO-185` | iniciarSolicitudDeDevolucion | 9 | `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py`, `apps/tienda/tests/test_retiro_en_local.py` |
 | `CO-186` | consultarCasosDeDevolucion | 3 | `apps/devoluciones/tests/test_contratos_09_devoluciones.py` |
@@ -436,12 +472,19 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO006_E1_un_duplicado_del_catalogo_se_excluye_con_motivo_y_el_resto_se_crea` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO006_a_b_c_cada_item_es_un_producto_con_sus_asociaciones_y_valores` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO006_importado_guarda_precio_base_y_costo_en_origen` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO006_la_auditoria_dice_el_origen_del_total` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO006_una_unica_entrada_de_auditoria_consolidada` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 
 **`CO-007` · declararCalculadoraLote**
 
 - `test_CO007_c_la_calculadora_y_el_margen_quedan_congelados_en_el_lote` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO007_cambiar_el_margen_despues_no_cambia_el_lote` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_el_servidor_no_usa_la_suma_de_la_pantalla` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_el_total_escrito_a_mano_manda` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_el_valor_de_compra_es_la_suma_de_los_items` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_total_a_mano_sin_total_escrito_es_rechazado` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_un_item_sin_unidades_impide_el_calculo` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO007_un_total_escrito_distinto_de_la_suma_avisa_sin_bloquear` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 
 **`CO-008` · sobrescribirCotizacion**
 
@@ -451,7 +494,9 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 - `test_CO009_A3_sin_imagen_se_registra_con_imagen_pendiente` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO009_c_precio_base_y_final_salen_del_cre_y_del_margen` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
+- `test_CO009_el_item_importado_necesita_al_menos_una_unidad` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 - `test_CO009_la_portada_del_lote_importado_queda_en_webp_sin_el_original` — `apps/catalog/tests/test_portadas_rnf05.py`
+- `test_CO009_las_unidades_del_item_importado_son_su_stock` — `apps/catalog/tests/test_contratos_01_alta_lotes.py`
 
 **`CO-010` · fijarPrecioFinalManual**
 
@@ -1262,15 +1307,10 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 **`CO-101` · resolverCasoConReembolsoEnPuntos**
 
 - `test_CO101_acredita_un_lote_de_reembolso_por_una_unidad_con_la_caducidad_estandar` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
-- `test_CO101_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio` — `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`
 - `test_CO101_avisa_al_cliente_con_el_saldo_actualizado` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO101_descuenta_los_puntos_ganados_con_la_compra_y_no_toca_el_stock` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
-- `test_CO101_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock` — `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`
 - `test_CO101_el_caso_pasa_de_pendiente_a_resuelto_con_reembolso` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO101_el_movimiento_de_acreditacion_queda_con_su_saldo_y_su_caso` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
-- `test_CO101_el_reembolso_por_el_medio_descuenta_los_puntos_ganados` — `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`
-- `test_CO101_en_el_mostrador_no_hay_reembolso_por_el_medio` — `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`
-- `test_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio` — `apps/devoluciones/tests/test_arrepentimiento_y_garantia.py`
 - `test_CO101_registra_la_resolucion_con_el_tipo_el_administrador_y_el_momento` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO101_un_caso_ya_resuelto_no_acredita_dos_veces` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`
 - `test_CO101_una_unidad_pagada_con_puntos_devuelve_su_parte_hacia_arriba` — `apps/devoluciones/tests/test_contratos_09_devoluciones.py`

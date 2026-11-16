@@ -19,3 +19,6 @@ coverage.xml
 /scripts/demo/salida/
 # El machete de comandos del responsable: sólo para esta máquina
 /.machete.md
+# Generadores de la documentación: herramientas del responsable, no viajan con el repositorio
+/scripts/generar_*.py
+/scripts/exportar_dss.py

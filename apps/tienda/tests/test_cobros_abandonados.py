@@ -37,7 +37,7 @@ def _cobro(*, hace_horas, usuario=None):
     return cobro
 
 
-def test_un_cobro_pendiente_de_mas_de_un_dia_se_descarta():
+def test_CO247_un_cobro_pendiente_de_mas_de_un_dia_se_descarta():
     viejo = _cobro(hace_horas=25)
     reciente = _cobro(hace_horas=2)
 
@@ -96,3 +96,30 @@ def test_CO155_la_sincronizacion_guarda_el_respaldo_cuando_la_api_responde():
 
     assert resultado == catalogo
     guardar.assert_called_once_with({"cotizaciones": catalogo})
+
+
+def test_CO247_descartar_no_toca_stock_puntos_ni_pedidos_y_deja_el_motivo():
+    from apps.catalog.models import Producto
+    from apps.puntos.models import LotePuntos
+
+    viejo = _cobro(hace_horas=30, usuario=cliente_con_direccion())
+    producto_del_cobro = Producto.objects.get(pk=viejo.lineas[0]["producto"])
+    antes = (
+        producto_del_cobro.stock,
+        LotePuntos.objects.count(),
+        list(LotePuntos.objects.values_list("cantidad_acreditada", flat=True)),
+        Pedido.objects.count(),
+    )
+
+    compra.descartar_abandonados()
+
+    producto_del_cobro.refresh_from_db()
+    viejo.refresh_from_db()
+    assert (
+        producto_del_cobro.stock,
+        LotePuntos.objects.count(),
+        list(LotePuntos.objects.values_list("cantidad_acreditada", flat=True)),
+        Pedido.objects.count(),
+    ) == antes
+    assert viejo.estado == CobroEnCurso.DESCARTADO
+    assert "24 horas" in viejo.mensaje and viejo.resuelto_en is not None

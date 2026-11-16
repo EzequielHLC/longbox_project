@@ -876,3 +876,76 @@ mismo título que vuelve, y pedir un clic más no agrega una decisión.
 - En las notas de `CO-006`, que el duplicado no cuenta las ediciones retiradas.
 - «Volver a anunciar», como flujo alternativo del alta (ambigüedad 2 del plan). El código, si hace
   falta, lo asigna el responsable.
+
+---
+
+### B-01-027 · El valor de compra del lote importado se calcula de los ítems
+
+**Tipo:** Corrección · **Fecha:** 2026-11-13 · **Alcance:** `CU-ALT-IMP` pasos 2, 3 y 9, `CO-007`, `CO-006`
+**Estado:** Abierta — [plan 01, segunda parte](../docs/planes/01-alta-editorial.md), aprobado el 2026-11-13 con sus recomendaciones
+
+**Qué apareció.**
+El responsable: el lote importado pide el costo total de la compra a mano, cuando el sistema ya tiene
+el costo en origen de cada ítem y sus unidades. Es el divisor del CRE: escribirlo a mano es una
+cuenta que el sistema puede hacer, y un error de tipeo ahí se reparte en el precio de todo el lote.
+
+**Qué dice la especificación.**
+> «El Administrador declara la moneda de origen e ingresa el costo total de envío internacional y el
+> valor total de compra del lote, expresados en esa moneda.» (`CU-ALT-IMP`, paso 2)
+
+`CO-007`: `declararCalculadoraLote(monedaOrigen, costoTotalEnvio, valorTotalCompra)`, con
+`valorTotalCompra > 0` como precondición.
+
+**Qué se hizo.**
+- **El valor de compra es la suma de costo en origen × unidades** de los ítems cargados
+  (`precios.valor_de_compra`), con `Decimal` y redondeo al centavo. Las unidades son el stock
+  declarado del ítem: en un lote en pre-venta, lo pedido (B-01-017).
+- **Se puede escribir a mano**: la casilla «Escribir el total a mano» habilita el campo, para cuando la
+  factura no coincide con la suma. Si difiere, se avisa y no se bloquea.
+- **Un ítem con costo y sin unidades impide el cálculo**: contarlo como cero bajaría el divisor y
+  subiría el CRE de todo el lote en silencio. Se pide completar las unidades o escribir el total.
+- **Manda el servidor**: la pantalla muestra la suma y el CRE en vivo, y al confirmar el servidor
+  vuelve a sumar los ítems enviados; el número que traía el campo no se usa.
+- **La auditoría consolidada del lote dice de dónde salió el total** («suma de los ítems» o «escrito a
+  mano»). Sin campo nuevo en el modelo ni migración.
+
+**Qué habría que cambiar.**
+`CU-ALT-IMP` paso 2: «el valor total de compra se calcula como la suma de costo en origen × unidades de
+los ítems, o se escribe a mano»; paso 3: el CRE se muestra y se actualiza mientras se cargan los
+ítems; un flujo alternativo para el total escrito a mano y una excepción para el ítem sin unidades.
+`CO-007`: `valorTotalCompra` opcional (su ausencia es la suma de los ítems) y la excepción del ítem sin
+unidades. `CO-006`, postcondición de auditoría: el valor de compra y su origen.
+
+### B-01-028 · En el lote importado, las unidades de cada ítem son obligatorias y mayores a cero
+
+**Tipo:** Corrección · **Fecha:** 2026-11-13 · **Alcance:** `CU-ALT-IMP` paso 5 y E1, `CO-009`, `CO-007`
+**Estado:** Abierta — decidida por el responsable el 2026-11-13; corrige lo que B-01-027 dejó a medias
+
+**Qué apareció.**
+El responsable: si el valor de compra se calcula de costo × unidades, las unidades no pueden ser
+opcionales. B-01-027 las volvió parte del divisor del CRE pero las dejó como estaban, con «sin
+declarar, el producto nace en cero»: eso obligaba a una excepción (el ítem sin unidades impide el
+cálculo, salvo que se escriba el total a mano) y dejaba entrar al catálogo un importado en cero que
+nadie compró.
+
+**Qué dice la especificación.**
+> «El Administrador añade el primer ítem completando los campos obligatorios: título, volumen y costo
+> base en origen.» (`CU-ALT-IMP`, paso 5)
+
+`CO-009`: `agregarItemLoteImportado(titulo, volumen, costoBaseOrigen, …)`, sin unidades.
+
+**Qué se hizo.**
+- **Unidades obligatorias, al menos una**, en el ítem del lote importado (`ItemLoteImportadoForm`),
+  con el mensaje «Indique cuántas unidades se compraron: al menos una.». La regla vive en el
+  formulario del servidor, no en la pantalla.
+- **Escribir el total a mano ya no salva un ítem sin unidades**: el total a mano sigue sirviendo para
+  la factura con descuento, no para cargar un ítem incompleto.
+- **El campo se llama «Unidades»** y va al lado del costo, porque los dos componen la suma; en
+  pre-venta son las pedidas y entran con la llegada (B-01-017).
+- **El lote nacional no cambia**: ahí las unidades no entran en ningún cálculo y el producto puede
+  nacer en cero.
+
+**Qué habría que cambiar.**
+`CU-ALT-IMP` paso 5: las unidades entre los campos obligatorios del ítem, mayores a cero. E1: queda
+sólo el total escrito a mano vacío; el ítem sin unidades lo rechaza la validación del paso 9. `CO-009`:
+`unidades` en la firma y en las precondiciones. `CO-007`: la excepción del ítem sin unidades sale.

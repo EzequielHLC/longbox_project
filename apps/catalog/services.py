@@ -8,6 +8,7 @@ levantar un request.
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -406,6 +407,14 @@ def _detalle_de_auditoria(lote, resultado):
             cabecera += f" / {lote.formato}"
         partes.append(cabecera)
     if lote.origen == LoteAlta.IMPORTADO:
+        # Plan 01, segunda parte (ambigüedad 6): el divisor del CRE y de dónde salió.
+        origen_del_total = (
+            "escrito a mano"
+            if getattr(lote, "total_escrito_a_mano", False)
+            else "suma de los ítems"
+        )
+        total = Decimal(lote.valor_compra_total).quantize(Decimal("0.01"))
+        partes.append(f"valor de compra: {total} ({origen_del_total})")
         partes.append(f"CRE aplicado: {lote.cre}")
         partes.append(f"margen vigente: {lote.margen_aplicado}")
         if lote.tiene_conversion:

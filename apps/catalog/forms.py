@@ -18,7 +18,7 @@ archivo. Cualquier regla que esté solo en el JavaScript se esquiva con una
 pestaña de herramientas del desarrollador abierta.
 """
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
@@ -83,6 +83,15 @@ MENSAJE_COTIZACION_EN_PESOS = (
     "deje el campo vacío."
 )
 MENSAJE_FORMATO_NO_APLICA = "El tipo elegido no se clasifica por formato."
+# Plan 01, segunda parte: el valor de compra del lote importado.
+MENSAJE_TOTAL_INCOMPLETO = "Para calcular el total, cada ítem necesita su costo y sus unidades."
+# B-01-028: el ítem importado sin unidades no se salva escribiendo el total a mano.
+MENSAJE_UNIDADES_IMPORTADO = "Indique cuántas unidades se compraron: al menos una."
+MENSAJE_TOTAL_A_MANO_VACIO = (
+    "Escriba el valor total de compra, o desmarque «Escribir el total a mano»."
+)
+# El mismo tope que el formset de Django: más allá no se leen renglones.
+MAXIMO_DE_ITEMS = 1000
 
 # ---------------------------------------------------------------------------
 # Topes. No son límites técnicos —la base aguanta mucho más— sino filtros de
@@ -347,10 +356,21 @@ class CabeceraLoteImportadoForm(CabeceraLoteForm):
         minimo=Decimal("0"),
         ayuda="En la moneda de origen. Puede ser cero si el envío está bonificado.",
     )
+    # Plan 01, segunda parte: el total se calcula de los ítems (costo en origen ×
+    # unidades) y sólo se escribe a mano cuando la factura no coincide con la suma.
     valor_compra_total = _campo_importe(
         "Valor total de compra en origen",
+        required=False,
         maximo=TOTAL_MAXIMO,
-        ayuda="En la moneda de origen. Es el divisor del CRE, así que no puede ser cero.",
+        ayuda="La suma de costo × unidades de los ítems. Es el divisor del CRE.",
+    )
+    total_a_mano = forms.BooleanField(
+        label="Escribir el total a mano",
+        required=False,
+        help_text=(
+            "Cuando la factura no coincide con la suma: un descuento, algo que no entra "
+            "al catálogo."
+        ),
     )
     moneda_origen = forms.ChoiceField(
         label="Moneda de origen",
@@ -398,7 +418,56 @@ class CabeceraLoteImportadoForm(CabeceraLoteForm):
         elif cotizacion is None:
             self.add_error("cotizacion", "Indique la cotización de la moneda declarada.")
 
+        # El valor de compra: el servidor vuelve a sumar los ítems enviados y usa su
+        # resultado, no el número que mostraba la pantalla (ambigüedad 4).
+        self.suma_de_los_items = precios.valor_de_compra(self._renglones_enviados())
+        if datos.get("total_a_mano"):
+            escrito = datos.get("valor_compra_total")
+            if escrito is None:
+                self.add_error("valor_compra_total", MENSAJE_TOTAL_A_MANO_VACIO)
+            elif self.suma_de_los_items is not None and escrito != self.suma_de_los_items:
+                # Se avisa y no se bloquea: el Administrador conoce la factura mejor
+                # que el sistema (ambigüedad 2).
+                self.diferencia_con_la_suma = self.suma_de_los_items
+        elif self.suma_de_los_items is None:
+            self.add_error("valor_compra_total", MENSAJE_TOTAL_INCOMPLETO)
+        elif self.suma_de_los_items > TOTAL_MAXIMO:
+            self.add_error(
+                "valor_compra_total", f"La suma de los ítems supera el tope de {TOTAL_MAXIMO}."
+            )
+        else:
+            datos["valor_compra_total"] = self.suma_de_los_items
+
         return datos
+
+    diferencia_con_la_suma = None
+    suma_de_los_items = None
+
+    def _renglones_enviados(self):
+        """(costo en origen, unidades) de cada ítem cargado, leídos de los datos enviados.
+
+        La cabecera se valida antes que los ítems (cada ítem necesita el CRE), así
+        que los lee crudos. Un renglón sin título ni costo es un ítem en blanco y no
+        cuenta; uno con costo ilegible o sin unidades deja la suma incompleta.
+        """
+        datos = self.data
+        try:
+            total = int(datos.get("form-TOTAL_FORMS", 0))
+        except (TypeError, ValueError):
+            return []
+        renglones = []
+        for indice in range(min(total, MAXIMO_DE_ITEMS)):
+            costo = (datos.get(f"form-{indice}-costo_origen") or "").strip()
+            titulo = (datos.get(f"form-{indice}-titulo") or "").strip()
+            unidades = (datos.get(f"form-{indice}-stock") or "").strip()
+            if not costo and not titulo:
+                continue
+            try:
+                costo_decimal = Decimal(costo.replace(",", "."))
+            except InvalidOperation:
+                costo_decimal = None
+            renglones.append((costo_decimal, int(unidades) if unidades.isdigit() else None))
+        return renglones
 
     @property
     def cotizacion_aplicada(self):
@@ -425,6 +494,8 @@ class CabeceraLoteImportadoForm(CabeceraLoteForm):
         lote.origen = LoteAlta.IMPORTADO
         lote.costo_envio_total = self.cleaned_data["costo_envio_total"]
         lote.valor_compra_total = self.cleaned_data["valor_compra_total"]
+        # No se guarda en el modelo: va a la entrada consolidada de la auditoría (ambigüedad 6).
+        lote.total_escrito_a_mano = bool(self.cleaned_data.get("total_a_mano"))
         # El CRE y el margen se congelan en el lote: los dos cambian con el
         # tiempo y la auditoría tiene que poder decir con cuáles se dieron de
         # alta estos precios.
@@ -818,6 +889,20 @@ class ItemLoteImportadoForm(ItemLoteForm):
 
     costo_origen = _campo_importe(
         "Costo base en origen", ayuda="En la moneda declarada en la cabecera."
+    )
+    # B-01-028: en el lote importado las unidades son obligatorias y mayores a cero.
+    # Entran en el valor de compra, que es el divisor del CRE; y un ítem importado
+    # sin unidades es algo que no se compró.
+    stock = forms.IntegerField(
+        label="Unidades",
+        min_value=1,
+        max_value=STOCK_MAXIMO,
+        help_text="Las que se compraron. En pre-venta, las pedidas: entran con la llegada.",
+        error_messages={
+            "required": MENSAJE_UNIDADES_IMPORTADO,
+            "min_value": MENSAJE_UNIDADES_IMPORTADO,
+        },
+        widget=forms.NumberInput(attrs={"inputmode": "numeric", "data-solo-enteros": "1"}),
     )
     precio = _campo_importe("Precio final", required=False, ayuda="Vacío toma el precio calculado.")
     confirma_precio_manual = forms.BooleanField(

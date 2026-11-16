@@ -139,7 +139,7 @@ def test_una_preventa_sin_enviar_no_abre_preventas_nuevas(ivrea):
 # ---------------------------------------------------------------------------
 
 
-def test_reintentar_lo_manda_y_lo_deja_por_llegar(sin_enviar, sakamoto, administrador):
+def test_CO241_reintentar_lo_manda_y_lo_deja_por_llegar(sin_enviar, sakamoto, administrador):
     with patch.object(correo_de_pedido, "enviar_pedido", side_effect=sale):
         envio = correo_de_pedido.reintentar(sin_enviar, administrador)
 
@@ -154,7 +154,7 @@ def test_reintentar_lo_manda_y_lo_deja_por_llegar(sin_enviar, sakamoto, administ
     ).exists()
 
 
-def test_si_vuelve_a_fallar_queda_sin_enviar_con_el_error_nuevo(sin_enviar, administrador):
+def test_CO241_si_vuelve_a_fallar_queda_sin_enviar_con_el_error_nuevo(sin_enviar, administrador):
     def otra_falla(proveedor, lineas):
         resultado = falla(proveedor, lineas)
         resultado.error = "timed out"
@@ -179,7 +179,7 @@ def test_reintentar_sin_correo_del_proveedor_lo_dice(sin_enviar, ivrea, administ
     assert envio.error == "sin correo registrado"
 
 
-def test_lo_que_ya_salió_no_se_reintenta(sin_enviar, administrador):
+def test_CO241_lo_que_ya_salio_no_se_reintenta(sin_enviar, administrador):
     with patch.object(correo_de_pedido, "enviar_pedido", side_effect=sale):
         correo_de_pedido.reintentar(sin_enviar, administrador)
 
@@ -187,7 +187,7 @@ def test_lo_que_ya_salió_no_se_reintenta(sin_enviar, administrador):
         correo_de_pedido.reintentar(sin_enviar, administrador)
 
 
-def test_descartarlo_pide_motivo_y_saca_la_preventa_sin_reservas(
+def test_CO242_descartarlo_pide_motivo_y_saca_la_preventa_sin_reservas(
     sin_enviar, sakamoto, administrador
 ):
     with pytest.raises(llegadas.OperacionRechazada, match="obligatorio"):
@@ -268,7 +268,7 @@ def test_descartar_desde_la_ficha(client_admin, sin_enviar):
 
 
 @pytest.mark.parametrize("nombre", ["suppliers:pedido_reintentar", "suppliers:pedido_descartar"])
-def test_el_cajero_no_reintenta_ni_descarta(client, sin_enviar, nombre):
+def test_CO241_CO242_el_cajero_no_reintenta_ni_descarta(client, sin_enviar, nombre):
     client.force_login(UsuarioFactory(rol=Usuario.CAJERO))
 
     with patch.object(correo_de_pedido, "enviar_pedido", side_effect=sale) as enviar:

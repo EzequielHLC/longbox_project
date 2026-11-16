@@ -62,6 +62,28 @@ def calcular_cre(costo_envio_total, valor_compra_total):
     return cre.quantize(PRECISION_CRE, rounding=ROUND_HALF_UP)
 
 
+def valor_de_compra(renglones):
+    """El valor total de compra del lote: la suma de costo en origen × unidades.
+
+    Plan 01, segunda parte: el divisor del CRE se calcula de los ítems en vez de
+    pedirlo a mano. `renglones` son pares (costo, unidades) de los ítems cargados.
+
+    Devuelve `None` si no se puede calcular: sin ítems, o con un ítem que tiene
+    costo y no tiene unidades. Contar ese ítem como cero bajaría el divisor y
+    subiría el CRE de todo el lote sin que nadie lo note (ambigüedad 3).
+    """
+    total = Decimal("0")
+    hay_alguno = False
+    for costo, unidades in renglones:
+        if costo is None or not unidades:
+            return None
+        total += Decimal(costo) * int(unidades)
+        hay_alguno = True
+    if not hay_alguno:
+        return None
+    return total.quantize(UN_CENTAVO, rounding=ROUND_HALF_UP)
+
+
 def convertir_a_pesos(importe, cotizacion=SIN_CONVERSION):
     """Pasa un importe de la moneda de origen a pesos.
 

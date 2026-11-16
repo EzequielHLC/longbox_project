@@ -80,3 +80,82 @@ respuesta del Cliente ante una demora es el plan 08, segunda parte, y se constru
 
 - `CO-077`, la notificación a los suscriptores de reposición (módulo 05).
 - La demora de un producto que ya estaba en stock (RF-18 a): ningún caso de uso la describe.
+
+---
+
+# Plan — `01` Alta Editorial · segunda parte: el valor de compra del lote importado
+
+**Estado del plan:** Aprobado el 2026-11-13, con las recomendaciones de la sección 3 · **Fecha:** 2026-11-13
+
+Pedido del responsable del 2026-11-13: el lote importado pide a mano el «Valor total de compra en
+origen», que es el divisor del Costo Relativo de Envío (CRE), cuando el sistema ya tiene lo necesario
+para calcularlo: el costo en origen de cada ítem y sus unidades. Este plan lo calcula solo, y deja
+escribirlo a mano cuando la factura no coincide con la suma.
+
+---
+
+## 1. Qué cubre
+
+| Caso de uso | Contratos | Operaciones de escritura | Operaciones de consulta |
+| --- | --- | --- | --- |
+| `CU-ALT-IMP` (pasos 2, 3 y 9) | `CO-007` `declararCalculadoraLote`, `CO-006` `confirmarLote` (en lo que toca al lote importado) | 2 | 0 |
+
+**Total:** 2 contratos, ninguno nuevo. Cambia la firma de `CO-007`: `valorTotalCompra` pasa a ser
+opcional, y su ausencia significa «la suma de los ítems».
+
+---
+
+## 2. Conceptos que toca
+
+| Concepto | ¿Existe? | Qué hace este plan con él |
+| --- | --- | --- |
+| `LoteAlta` | Sí | Sólo cambia cómo se obtiene `valor_compra_total`. Sin migración: el campo y su restricción (`> 0`) quedan como están |
+| Ítem del lote importado | Sí | Lo lee: `costo_origen` × `stock` declarado. En un lote en pre-venta el stock declarado es lo pedido (B-01-017), que es justamente lo comprado |
+
+---
+
+## 3. Ambigüedades detectadas
+
+| # | Dónde | Las dos lecturas | Recomendación |
+| --- | --- | --- | --- |
+| 1 | `CU-ALT-IMP` paso 2 | ¿El total calculado reemplaza al escrito, o convive? | **Conviven.** Por defecto se calcula, y una casilla «Escribir el total a mano» habilita el campo. La factura puede no coincidir con la suma (un descuento del proveedor, algo que se compró y no entra al catálogo) |
+| 2 | Paso 2, total escrito a mano | ¿Se bloquea si difiere de la suma? | **No se bloquea: se avisa** («La suma de los ítems da X»). Es un dato que el Administrador conoce mejor que el sistema |
+| 3 | Ítems sin unidades | ¿Un ítem con costo y sin stock cuenta como cero, o impide calcular? | **Impide el cálculo automático**: el total queda «incompleto» y se pide completar las unidades o escribir el total. Contar cero bajaría el divisor y subiría el CRE de todo el lote sin que nadie lo note |
+| 4 | Dónde se calcula | ¿Vale el número que manda la pantalla? | **No.** La pantalla lo muestra en vivo; al confirmar, el servidor vuelve a sumar y usa su resultado (la restricción vive en el servidor). Si el modo es manual, usa el escrito |
+| 5 | Orden del flujo | La ficha declara la calculadora (pasos 2–3) antes de los ítems (paso 5) | Con el total automático, el CRE se recalcula con cada ítem. La ficha pasa a decir que el CRE se muestra y se actualiza mientras se cargan los ítems |
+| 6 | Auditoría | ¿Se registra si el total fue calculado o escrito? | **Sí**, en la entrada consolidada del lote (`CO-006`): el valor usado y su origen. Sin campo nuevo en el modelo |
+
+---
+
+## 4. Orden de construcción
+
+| # | Qué | Depende de | Motivo |
+| --- | --- | --- | --- |
+| 1 | `precios.valor_de_compra(items)` y su prueba de decimales | — | La aritmética primero, aislada |
+| 2 | El formulario: casilla de modo, total calculado en el servidor, validación de la ambigüedad 3 | 1 | La regla vive en el servidor |
+| 3 | La pantalla: el total y el CRE en vivo, el aviso de diferencia | 2 | Sólo adelanta lo que el servidor va a hacer |
+| 4 | La auditoría consolidada con el origen del total | 2 | — |
+| 5 | Bitácora (B-01-027, corrección) y la ficha y el contrato en el documento (`CU-ALT-IMP` pasos 2, 3 y 9; `CO-007`) | 1 a 4 | — |
+
+---
+
+## 5. Riesgos
+
+| Riesgo | Dónde aparece | Cómo se cubre |
+| --- | --- | --- |
+| La suma con decimales difiere entre la pantalla y el servidor | Paso 3 | `Decimal` en el servidor; la pantalla redondea igual y el servidor manda. Prueba con costos de tres decimales |
+| El CRE con un divisor muy chico (un solo ítem barato y un envío caro) | `precios.calcular_cre` | Ya lo acota la validación vigente; se agrega la prueba con el total calculado |
+| Un lote en edición con el total escrito antes de este cambio | Lotes abiertos | No hay lotes abiertos persistidos: el lote se arma en una sola pantalla y se confirma |
+
+**Pruebas** (`docs/pruebas/ESPECIFICACION.md`): `test_CO007_el_valor_de_compra_es_la_suma_de_los_items`,
+`test_CO007_el_total_escrito_a_mano_manda`, `test_CO007_un_item_sin_unidades_impide_el_calculo`,
+`test_CO007_el_servidor_no_usa_la_suma_de_la_pantalla`, `test_CO006_la_auditoria_dice_el_origen_del_total`,
+y la postcondición negativa: con el total a mano, la suma no lo pisa.
+
+---
+
+## 6. Fuera de alcance
+
+- El lote nacional: no tiene CRE ni total de compra.
+- Repartir el envío por peso en lugar de por valor: el CRE sigue siendo un cociente sobre el valor.
+- Cambiar el lote ya confirmado: el CRE queda congelado en el lote, como hoy.

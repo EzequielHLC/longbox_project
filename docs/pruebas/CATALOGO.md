@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-10-19 de una corrida real de la suite.
+> **Tipo: Fotografía.** Tomada el 2026-11-16 de una corrida real de la suite.
 > **Generado por `scripts/generar_catalogo.py`.** No lo edites: la próxima corrida lo pisa.
 
 # Catálogo de pruebas
@@ -11,15 +11,15 @@ qué casos de prueba verifican, en [`CASOS_DE_PRUEBA.md`](CASOS_DE_PRUEBA.md).
 
 | | |
 | --- | ---: |
-| Archivos de prueba | 123 |
-| Funciones de prueba | 2163 |
-| Casos, contando cada valor de `parametrize` | 2472 |
-| Pasan | 2163 |
+| Archivos de prueba | 184 |
+| Funciones de prueba | 3257 |
+| Casos, contando cada valor de `parametrize` | 3720 |
+| Pasan | 3257 |
 | Fallan | 0 |
 | Omitidas | 0 |
 | No corrieron | 0 |
-| Duración de la corrida | 187 s |
-| Scripts de resistencia en `scripts/demo/` | 23 |
+| Duración de la corrida | 253 s |
+| Scripts de resistencia en `scripts/demo/` | 24 |
 
 ---
 
@@ -83,7 +83,7 @@ CU-USR-BAJ — Dar de Baja Usuario del Sistema.
 
 CU-AUT-INI, excepción: 5 intentos fallidos consecutivos bloquean el acceso.
 
-**Casos de prueba que ejecuta:** CP-13.
+**Casos de prueba que ejecuta:** CP-AUT-INI-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -96,6 +96,16 @@ CU-AUT-INI, excepción: 5 intentos fallidos consecutivos bloquean el acceso.
 | `test_tambien_se_cuentan_los_intentos_contra_correos_inexistentes` | Si solo contáramos cuentas reales, la diferencia revelaría cuáles existen. | 1 | Pasa |
 | `test_una_cuenta_inactiva_con_clave_correcta_no_suma_intentos` | Una cuenta inactiva con clave correcta no suma intentos | 1 | Pasa |
 
+### `test_carreras_de_unicidad.py`
+
+El correo que otra alta confirmó mientras ésta se validaba (plan 00 de cierre de deuda, D1).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO107_E1_el_correo_registrado_mientras_se_validaba_avisa_sin_error` | CO107 E1 el correo registrado mientras se validaba avisa sin error | 1 | Pasa |
+| `test_CO120_E2_el_correo_dado_de_alta_mientras_se_validaba_avisa_sin_error` | CO120 E2 el correo dado de alta mientras se validaba avisa sin error | 1 | Pasa |
+| `test_CO121_E2_el_correo_tomado_mientras_se_validaba_la_edicion_avisa_sin_error` | CO121 E2 el correo tomado mientras se validaba la edicion avisa sin error | 1 | Pasa |
+
 ### `test_cierre_de_sesion_visible.py`
 
 Todo rol con sesión tiene a la vista cómo cerrarla (CU-AUT-FIN).
@@ -104,8 +114,8 @@ Todo rol con sesión tiene a la vista cómo cerrarla (CU-AUT-FIN).
 | --- | --- | ---: | --- |
 | `test_el_cliente_puede_cerrar_sesion_desde_la_tienda` | El cliente puede cerrar sesion desde la tienda | 1 | Pasa |
 | `test_sin_sesion_la_tienda_ofrece_ingresar_y_no_salir` | Sin sesion la tienda ofrece ingresar y no salir | 1 | Pasa |
-| `test_el_cajero_encuentra_cerrar_sesion_en_el_menu` | El cajero encuentra cerrar sesion en el menu | 1 | Pasa |
-| `test_el_menu_del_cajero_no_ofrece_el_panel_del_administrador` | El Panel le respondería 403: el menú no ofrece caminos que no existen. | 1 | Pasa |
+| `test_el_cajero_encuentra_cerrar_sesion_en_su_barra` | El cajero encuentra cerrar sesion en su barra | 1 | Pasa |
+| `test_la_barra_del_cajero_no_ofrece_el_panel_del_administrador` | El Panel le respondería 403: la barra no ofrece caminos que no existen. | 1 | Pasa |
 | `test_el_cajero_puede_abrir_el_inventario_que_le_ofrece_el_menu` | El cajero puede abrir el inventario que le ofrece el menu | 1 | Pasa |
 | `test_el_administrador_tambien_tiene_la_salida_en_el_menu` | El administrador tambien tiene la salida en el menu | 1 | Pasa |
 
@@ -126,13 +136,50 @@ El código de cliente (B-06-001): seis cifras, único, sólo para cuentas de Cli
 
 I-12 bajo concurrencia real: dos Administradores se sacan el rol o se dan de baja a la vez.
 
-**Casos de prueba que ejecuta:** CP-21.
+**Casos de prueba que ejecuta:** CP-USR-BAJ-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
 | `test_CO121_dos_administradores_que_se_sacan_el_rol_a_la_vez_dejan_uno` | CO121 dos administradores que se sacan el rol a la vez dejan uno | 1 | Pasa |
 | `test_CO123_dos_administradores_que_se_dan_de_baja_a_la_vez_dejan_uno` | CO123 dos administradores que se dan de baja a la vez dejan uno | 1 | Pasa |
 | `test_CO121_y_CO123_cruzados_dejan_uno` | Uno saca el rol y el otro da de baja, a la vez. | 1 | Pasa |
+
+### `test_contratos_11_baja.py`
+
+Pruebas de contrato de CU-CLI-BAJ: `CO-112`, `CO-113` y `CO-156` (plan 11, tercera parte).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO112_el_informe_trae_las_cuatro_categorias_y_el_aviso` | CO112 el informe trae las cuatro categorias y el aviso | 1 | Pasa |
+| `test_CO112_pedir_el_informe_no_modifica_nada` | CO112 pedir el informe no modifica nada | 1 | Pasa |
+| `test_CO112_E1_un_retenido_bloquea_y_dice_que_hacer` | CO112 E1 un retenido bloquea y dice que hacer | 2 | Pasa |
+| `test_CO112_E2_una_decision_de_demora_pendiente_bloquea` | CO112 E2 una decision de demora pendiente bloquea | 1 | Pasa |
+| `test_CO112_E1_E2_tambien_los_exige_la_confirmacion` | El bloqueo vive en el servidor: un POST armado a mano no lo saltea. | 1 | Pasa |
+| `test_CO113_la_cuenta_pasa_a_inactiva_y_vuelve_al_ingreso` | CO113 la cuenta pasa a inactiva y vuelve al ingreso | 1 | Pasa |
+| `test_CO113_se_cierran_las_sesiones_en_todos_los_dispositivos` | CO113 se cierran las sesiones en todos los dispositivos | 1 | Pasa |
+| `test_CO113_los_puntos_quedan_en_cero_y_vencidos_con_su_debito` | CO113 los puntos quedan en cero y vencidos con su debito | 1 | Pasa |
+| `test_CO113_se_eliminan_las_suscripciones_y_las_lineas_del_carrito` | CO113 se eliminan las suscripciones y las lineas del carrito | 1 | Pasa |
+| `test_CO113_los_pedidos_activos_no_se_modifican_y_siguen_avisando` | Postcondición negativa: el pedido sigue su ciclo y se notifica al correo que se conserva. | 1 | Pasa |
+| `test_CO113_el_historial_y_el_correo_se_conservan` | Las otras dos negativas: nada se borra del historial y el correo queda. | 1 | Pasa |
+| `test_CO113_la_entrada_trae_puntos_suscripciones_y_pedidos` | CO113 la entrada trae puntos suscripciones y pedidos | 1 | Pasa |
+| `test_CO113_manda_la_confirmacion_al_correo` | CO113 manda la confirmacion al correo | 1 | Pasa |
+| `test_CO113_el_correo_no_se_puede_volver_a_registrar` | CO113 el correo no se puede volver a registrar | 1 | Pasa |
+| `test_CO113_E3_una_contrasena_equivocada_no_avanza_y_no_revela_nada` | CO113 E3 una contrasena equivocada no avanza y no revela nada | 1 | Pasa |
+| `test_CO113_E3_tres_intentos_bloquean_la_baja_y_no_el_ingreso` | CO113 E3 tres intentos bloquean la baja y no el ingreso | 1 | Pasa |
+| `test_CO113_E4_un_fallo_tecnico_revierte_todo` | CO113 E4 un fallo tecnico revierte todo | 1 | Pasa |
+| `test_CO156_abandonar_la_baja_no_cambia_nada` | CO156 abandonar la baja no cambia nada | 1 | Pasa |
+| `test_CO112_CO113_el_personal_no_entra` | CO112 CO113 el personal no entra | 2 | Pasa |
+| `test_CO112_sin_sesion_va_al_ingreso` | CO112 sin sesion va al ingreso | 1 | Pasa |
+| `test_CO124_el_cliente_vuelve_a_pendiente_con_un_enlace_nuevo` | CO124 el cliente vuelve a pendiente con un enlace nuevo | 1 | Pasa |
+| `test_CO124_los_puntos_y_el_historial_no_vuelven_ni_se_pierden` | CO-113: los puntos se perdieron sin recuperación; los datos nunca se eliminan. | 1 | Pasa |
+| `test_CO124_la_ficha_ofrece_reactivar_solo_si_esta_dado_de_baja` | CO124 la ficha ofrece reactivar solo si esta dado de baja | 1 | Pasa |
+| `test_CO124_un_cliente_activo_no_se_reactiva` | CO124 un cliente activo no se reactiva | 1 | Pasa |
+| `test_CO124_otro_rol_no_reactiva_un_cliente` | CO124 otro rol no reactiva un cliente | 2 | Pasa |
+| `test_CO123_el_administrador_da_de_baja_un_cliente_sin_quitarle_nada` | CO123 el administrador da de baja un cliente sin quitarle nada | 1 | Pasa |
+| `test_CO123_la_baja_cierra_las_sesiones_del_cliente` | CO123 la baja cierra las sesiones del cliente | 1 | Pasa |
+| `test_CO123_la_ficha_ofrece_dar_de_baja_y_despues_reactivar` | CO123 la ficha ofrece dar de baja y despues reactivar | 1 | Pasa |
+| `test_CO123_reactivar_tras_la_baja_del_administrador_devuelve_sus_puntos` | CO123 reactivar tras la baja del administrador devuelve sus puntos | 1 | Pasa |
+| `test_CO123_otro_rol_no_da_de_baja_un_cliente` | CO123 otro rol no da de baja un cliente | 2 | Pasa |
 
 ### `test_contratos_11_cuenta.py`
 
@@ -142,6 +189,7 @@ Pruebas de contrato de «Mi cuenta» (plan 11, segunda parte).
 | --- | --- | ---: | --- |
 | `test_CO192_muestra_los_pedidos_activos_del_cliente` | CO192 muestra los pedidos activos del cliente | 1 | Pasa |
 | `test_CO192_el_historial_muestra_los_despachados` | CO192 el historial muestra los despachados | 1 | Pasa |
+| `test_CO192_la_direccion_del_historial_lleva_a_su_grupo` | CO192 la direccion del historial lleva a su grupo | 1 | Pasa |
 | `test_CO192_E1_sin_pedidos_activos_informa_y_las_demas_secciones_siguen` | CO192 E1 sin pedidos activos informa y las demas secciones siguen | 1 | Pasa |
 | `test_CO192_la_seccion_stock_en_local_se_muestra` | Plan 18: la sección oculta por B-11-003 ya existe. | 1 | Pasa |
 | `test_CO192_no_modifica_el_estado_del_sistema` | CO192 no modifica el estado del sistema | 1 | Pasa |
@@ -171,7 +219,7 @@ Pruebas de contrato de «Mi cuenta» (plan 11, segunda parte).
 | `test_CO111_la_sesion_actual_sigue_y_las_otras_se_cierran` | CO111 la sesion actual sigue y las otras se cierran | 1 | Pasa |
 | `test_CO111_queda_en_la_auditoria` | CO111 queda en la auditoria | 1 | Pasa |
 | `test_CO111_con_la_contrasena_actual_equivocada_no_cambia_nada` | CO111 con la contrasena actual equivocada no cambia nada | 1 | Pasa |
-| `test_acceso_el_personal_recibe_403_en_mi_cuenta` | Acceso el personal recibe 403 en mi cuenta | 12 | Pasa |
+| `test_acceso_el_personal_recibe_403_en_mi_cuenta` | Acceso el personal recibe 403 en mi cuenta | 14 | Pasa |
 | `test_acceso_sin_sesion_va_al_ingreso` | Acceso sin sesion va al ingreso | 1 | Pasa |
 | `test_acceso_el_personal_no_cambia_sus_datos_por_aca` | Acceso el personal no cambia sus datos por aca | 1 | Pasa |
 
@@ -190,6 +238,20 @@ Pruebas de contrato del módulo 11 · Cuenta de Cliente (CU-CLI-CON).
 | `test_CO195_la_ficha_no_modifica_el_estado` | CO195 la ficha no modifica el estado | 1 | Pasa |
 | `test_CO195_por_la_direccion_real_con_otro_rol_se_deniega` | CO195 por la direccion real con otro rol se deniega | 2 | Pasa |
 | `test_CO195_una_cuenta_de_personal_no_tiene_ficha_de_cliente` | CO195 una cuenta de personal no tiene ficha de cliente | 1 | Pasa |
+
+### `test_contratos_11_registro.py`
+
+Prueba de contrato de `CO-107 registrarCuentaDeCliente` (CU-CLI-ALT).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO107_crea_la_cuenta_de_cliente_activa_con_sus_datos` | CO107 crea la cuenta de cliente activa con sus datos | 1 | Pasa |
+| `test_CO107_la_credencial_queda_con_hash_y_sal_unica` | RNF-04: dos cuentas con la misma contraseña no comparten el hash. | 1 | Pasa |
+| `test_CO107_sin_puntos_ni_stock_almacenado` | CO107 sin puntos ni stock almacenado | 1 | Pasa |
+| `test_CO107_queda_con_sesion_y_con_la_entrada_de_auditoria` | CO107 queda con sesion y con la entrada de auditoria | 1 | Pasa |
+| `test_CO107_E1_un_correo_registrado_en_cualquier_estado_no_duplica` | CO107 E1 un correo registrado en cualquier estado no duplica | 1 | Pasa |
+| `test_CO107_E2_contrasenas_invalidas_no_crean_y_conservan_lo_escrito` | CO107 E2 contrasenas invalidas no crean y conservan lo escrito | 2 | Pasa |
+| `test_CO107_E3_sin_aceptar_la_politica_se_bloquea` | CO107 E3 sin aceptar la politica se bloquea | 1 | Pasa |
 
 ### `test_contratos_12_autenticacion.py`
 
@@ -513,6 +575,9 @@ CU-AUT-REC — Recuperar Contraseña.
 | `test_contrasena_debil_es_rechazada_con_el_motivo` | Contrasena debil es rechazada con el motivo | 1 | Pasa |
 | `test_el_cambio_invalida_todas_las_sesiones_activas` | El cambio invalida todas las sesiones activas | 1 | Pasa |
 | `test_el_cambio_queda_registrado_en_auditoria` | El cambio queda registrado en auditoria | 1 | Pasa |
+| `test_CO117_pasado_el_tope_por_correo_no_sale_nada_y_la_respuesta_es_la_misma` | CO117 pasado el tope por correo no sale nada y la respuesta es la misma | 1 | Pasa |
+| `test_CO117_el_tope_por_ip_frena_aunque_cambie_el_correo` | CO117 el tope por ip frena aunque cambie el correo | 1 | Pasa |
+| `test_CO117_el_tope_vence_a_la_hora` | CO117 el tope vence a la hora | 1 | Pasa |
 
 ### `test_registro_cliente.py`
 
@@ -580,6 +645,18 @@ CU-AUT-INI, comportamiento adicional: expiración por inactividad y renovación.
 | `test_renovar_sin_sesion_redirige_al_login` | Renovar sin sesion redirige al login | 1 | Pasa |
 | `test_renovar_no_acepta_get` | Renovar no acepta get | 1 | Pasa |
 
+### `test_un_administrador_en_la_base.py`
+
+I-12 en la base: siempre queda al menos un Administrador activo (plan 00 de cierre de deuda, D3).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_I12_el_unico_administrador_no_deja_de_serlo_por_update` | I12 el unico administrador no deja de serlo por update | 2 | Pasa |
+| `test_I12_el_unico_administrador_no_se_borra` | I12 el unico administrador no se borra | 1 | Pasa |
+| `test_I12_con_otro_activo_uno_si_deja_de_serlo` | I12 con otro activo uno si deja de serlo | 1 | Pasa |
+| `test_I12_las_demas_escrituras_del_administrador_no_se_frenan` | El disparador mira sólo el rol y el estado: el último ingreso, el nombre o la contraseña del único Administrador se siguen guardando. | 1 | Pasa |
+| `test_I12_dos_escrituras_cruzadas_por_fuera_del_servicio_dejan_uno` | La carrera que el servicio evita con su bloqueo ordenado, sin el servicio. | 1 | Pasa |
+
 ---
 
 ## almacen — `apps/almacen`
@@ -598,6 +675,7 @@ Acceso al stock almacenado por la dirección real, y escrituras a la vez.
 | `test_concurrencia_dos_pestanas_que_piden_el_envio_generan_una_sola_solicitud` | Concurrencia dos pestanas que piden el envio generan una sola solicitud | 1 | Pasa |
 | `test_concurrencia_el_despacho_y_el_retiro_del_mismo_articulo_registran_uno` | Concurrencia el despacho y el retiro del mismo articulo registran uno | 1 | Pasa |
 | `test_concurrencia_el_vencimiento_y_el_pedido_de_envio_no_se_pisan` | Concurrencia el vencimiento y el pedido de envio no se pisan | 1 | Pasa |
+| `test_retirar_lo_que_no_existe_es_404_y_no_un_error` | Revisión integral, R-10: antes, `retiro` daba 500 y `retiro_pedido` 302. | 2 | Pasa |
 
 ### `test_contratos_18_almacen.py`
 
@@ -639,6 +717,290 @@ Contratos del stock almacenado en local (plan 18).
 
 ---
 
+## avisos — `apps/avisos`
+
+### `test_bot.py`
+
+Módulo 19 · el bot: `CU-AVI-TGA` y `CU-AVI-TGB` desde el chat, y `CU-AVI-COR`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO257_start_no_vincula_todavia_da_un_numero_para_el_perfil` | B-19-005: abrir el enlace no alcanza; un enlace filtrado no toma la cuenta. | 1 | Pasa |
+| `test_CO258_el_numero_en_el_perfil_vincula_el_chat` | CO258 el numero en el perfil vincula el chat | 1 | Pasa |
+| `test_CO258_un_numero_equivocado_no_vincula_y_cinco_anulan_el_enlace` | CO258 un numero equivocado no vincula y cinco anulan el enlace | 1 | Pasa |
+| `test_CO258_confirmar_sin_que_el_bot_haya_dado_un_numero` | CO258 confirmar sin que el bot haya dado un numero | 1 | Pasa |
+| `test_CO259_no_fui_yo_anula_el_enlace` | CO259 no fui yo anula el enlace | 1 | Pasa |
+| `test_CO258_el_numero_de_otra_cuenta_no_sirve` | CO258 el numero de otra cuenta no sirve | 1 | Pasa |
+| `test_CO257_un_codigo_vencido_o_usado_no_vincula` | CO257 un codigo vencido o usado no vincula | 1 | Pasa |
+| `test_CO257_el_codigo_de_otro_rol_no_vincula` | CO257 el codigo de otro rol no vincula | 1 | Pasa |
+| `test_CO258_un_chat_es_de_una_sola_cuenta` | CO258 un chat es de una sola cuenta | 1 | Pasa |
+| `test_CO260_salir_desvincula_desde_el_chat` | CO260 salir desvincula desde el chat | 1 | Pasa |
+| `test_ayuda_responde_la_lista_de_comandos` | Ayuda responde la lista de comandos | 1 | Pasa |
+| `test_un_correo_nuevo_llega_por_telegram_con_sus_dos_botones` | Un correo nuevo llega por telegram con sus dos botones | 1 | Pasa |
+| `test_aprobar_desde_el_chat_es_co017_con_el_administrador_como_actor` | Aprobar desde el chat es co017 con el administrador como actor | 1 | Pasa |
+| `test_aprobar_lo_que_otro_ya_resolvió_lo_avisa` | Aprobar lo que otro ya resolvió lo avisa | 1 | Pasa |
+| `test_descartar_con_un_motivo_rápido_es_co018_y_se_audita` | Descartar con un motivo rápido es co018 y se audita | 1 | Pasa |
+| `test_descartar_con_otro_motivo_lo_pide_y_lo_toma_de_la_respuesta` | Descartar con otro motivo lo pide y lo toma de la respuesta | 1 | Pasa |
+| `test_un_botón_armado_a_mano_no_hace_nada` | Un botón armado a mano no hace nada | 1 | Pasa |
+| `test_el_botón_de_otro_chat_no_sirve_en_este` | El botón de otro chat no sirve en este | 1 | Pasa |
+| `test_un_administrador_dado_de_baja_no_resuelve_desde_su_chat` | Un administrador dado de baja no resuelve desde su chat | 1 | Pasa |
+| `test_el_webhook_exige_el_secreto_de_telegram` | El webhook exige el secreto de telegram | 1 | Pasa |
+| `test_el_webhook_con_el_secreto_procesa_la_novedad` | El webhook con el secreto procesa la novedad | 1 | Pasa |
+| `test_escuchar_procesa_lo_que_llegó` | Escuchar procesa lo que llegó | 1 | Pasa |
+| `test_estado_dice_el_bot` | Estado dice el bot | 1 | Pasa |
+| `test_el_webhook_se_pone_en_la_url_pública` | El webhook se pone en la url pública | 1 | Pasa |
+| `test_una_novedad_rota_no_frena_al_bot` | Una novedad rota no frena al bot | 1 | Pasa |
+| `test_CO260_salir_sin_vinculo_lo_dice` | CO260 salir sin vinculo lo dice | 1 | Pasa |
+| `test_aprobar_un_correo_con_novedades_informa_los_borradores` | Aprobar un correo con novedades informa los borradores | 1 | Pasa |
+| `test_aprobar_un_aviso_de_demora_dice_su_motivo` | Aprobar un aviso de demora dice su motivo | 1 | Pasa |
+| `test_aprobar_un_correo_que_ya_no_existe` | Aprobar un correo que ya no existe | 1 | Pasa |
+| `test_descartar_lo_que_ya_no_se_puede_descartar_lo_dice` | Descartar lo que ya no se puede descartar lo dice | 1 | Pasa |
+| `test_descartar_sin_motivo_lo_pide` | Descartar sin motivo lo pide | 1 | Pasa |
+| `test_descartar_un_correo_que_ya_no_existe` | Descartar un correo que ya no existe | 1 | Pasa |
+| `test_descartar_desde_un_chat_sin_vínculo_no_hace_nada` | Descartar desde un chat sin vínculo no hace nada | 1 | Pasa |
+| `test_el_menú_de_motivos_y_la_pregunta_del_otro_motivo` | El menú de motivos y la pregunta del otro motivo | 1 | Pasa |
+| `test_un_motivo_fuera_de_la_lista_es_un_botón_inválido` | Un motivo fuera de la lista es un botón inválido | 1 | Pasa |
+| `test_sin_token_los_comandos_lo_dicen` | Sin token los comandos lo dicen | 1 | Pasa |
+| `test_el_webhook_sin_https_no_se_pone` | El webhook sin https no se pone | 1 | Pasa |
+| `test_el_webhook_con_un_cuerpo_ilegible_responde_400` | El webhook con un cuerpo ilegible responde 400 | 1 | Pasa |
+
+### `test_bot_borradores.py`
+
+Módulo 19 · los borradores en el chat: `CU-AVI-REB` y lo que se revisó de `CU-AVI-BOR`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_un_nombre_de_catálogo_se_reconoce_como_se_escriba` | Un nombre de catálogo se reconoce como se escriba | 6 | Pasa |
+| `test_nombres_distintos_siguen_distintos` | Nombres distintos siguen distintos | 3 | Pasa |
+| `test_el_formato_sin_tilde_resuelve_el_del_catálogo` | El formato sin tilde resuelve el del catálogo | 1 | Pasa |
+| `test_el_formato_de_otro_tipo_sigue_sin_resolverse` | El formato de otro tipo sigue sin resolverse | 1 | Pasa |
+| `test_CO261_cargar_con_el_tipo_y_el_formato_sin_tilde` | CO261 cargar con el tipo y el formato sin tilde | 1 | Pasa |
+| `test_un_tipo_que_no_existe_queda_con_un_reparo` | Un tipo que no existe queda con un reparo | 1 | Pasa |
+| `test_sin_editorial_la_toma_de_la_serie` | Sin editorial la toma de la serie | 1 | Pasa |
+| `test_una_editorial_que_no_existe_cede_a_la_de_la_serie_con_un_reparo` | Una editorial que no existe cede a la de la serie con un reparo | 1 | Pasa |
+| `test_una_serie_en_dos_editoriales_no_elige_ninguna` | Una serie en dos editoriales no elige ninguna | 1 | Pasa |
+| `test_el_duplicado_por_isbn_se_ve_aunque_falte_el_formato` | El duplicado por isbn se ve aunque falte el formato | 1 | Pasa |
+| `test_el_mismo_tomo_en_otra_edición_es_un_parecido` | El mismo tomo en otra edición es un parecido | 1 | Pasa |
+| `test_otro_borrador_abierto_del_mismo_tomo_es_un_parecido` | Otro borrador abierto del mismo tomo es un parecido | 1 | Pasa |
+| `test_sin_parecidos_es_falso` | Sin parecidos es falso | 1 | Pasa |
+| `test_la_vista_previa_avisa_los_parecidos` | La vista previa avisa los parecidos | 1 | Pasa |
+| `test_CO261_lo_no_editorial_no_crea_un_borrador` | CO261 lo no editorial no crea un borrador | 1 | Pasa |
+| `test_un_tipo_no_editorial_tampoco_aunque_el_modelo_diga_editorial` | Un tipo no editorial tampoco aunque el modelo diga editorial | 1 | Pasa |
+| `test_cargar_contesta_con_la_vista_previa_y_rechazar` | Cargar contesta con la vista previa y rechazar | 1 | Pasa |
+| `test_CO262_borradores_lista_los_abiertos_mas_nuevos` | CO262 borradores lista los abiertos mas nuevos | 1 | Pasa |
+| `test_borradores_filtra_por_título_sin_tildes` | Borradores filtra por título sin tildes | 1 | Pasa |
+| `test_CO262_borradores_sin_nada_lo_dice` | CO262 borradores sin nada lo dice | 1 | Pasa |
+| `test_con_portada_la_vista_previa_es_una_foto_chica` | Con portada la vista previa es una foto chica | 1 | Pasa |
+| `test_si_la_foto_no_sale_manda_la_ficha_sola` | Si la foto no sale manda la ficha sola | 1 | Pasa |
+| `test_un_borrador_cerrado_no_ofrece_rechazar` | Un borrador cerrado no ofrece rechazar | 1 | Pasa |
+| `test_rechazar_ofrece_los_motivos` | Rechazar ofrece los motivos | 1 | Pasa |
+| `test_rechazar_con_un_motivo_rápido_rechaza_y_audita` | Rechazar con un motivo rápido rechaza y audita | 1 | Pasa |
+| `test_rechazar_con_otro_motivo_lo_toma_de_la_respuesta` | Rechazar con otro motivo lo toma de la respuesta | 1 | Pasa |
+| `test_responder_a_la_vista_previa_no_rechaza` | Responder a la vista previa no rechaza | 1 | Pasa |
+| `test_rechazar_sin_motivo_lo_pide` | Rechazar sin motivo lo pide | 1 | Pasa |
+| `test_rechazar_lo_ya_resuelto_lo_dice` | Rechazar lo ya resuelto lo dice | 1 | Pasa |
+| `test_rechazar_un_borrador_que_no_existe` | Rechazar un borrador que no existe | 1 | Pasa |
+| `test_el_rechazo_desde_la_web_no_nombra_canal` | El rechazo desde la web no nombra canal | 1 | Pasa |
+| `test_ningún_botón_confirma_un_borrador` | Ningún botón confirma un borrador | 3 | Pasa |
+| `test_un_botón_de_rechazo_armado_a_mano_no_hace_nada` | Un botón de rechazo armado a mano no hace nada | 1 | Pasa |
+| `test_el_botón_de_rechazo_de_otro_chat_no_sirve` | El botón de rechazo de otro chat no sirve | 1 | Pasa |
+| `test_un_administrador_dado_de_baja_no_rechaza` | Un administrador dado de baja no rechaza | 1 | Pasa |
+| `test_CO262_un_chat_sin_vinculo_no_ve_los_borradores` | CO262 un chat sin vinculo no ve los borradores | 1 | Pasa |
+| `test_una_pregunta_por_los_borradores` | Una pregunta por los borradores | 1 | Pasa |
+| `test_la_foto_sale_como_formulario_multiparte_por_la_puerta` | La foto sale como formulario multiparte por la puerta | 1 | Pasa |
+| `test_enviar_foto_pide_send_photo` | Enviar foto pide send photo | 1 | Pasa |
+| `test_CO262_consultar_los_borradores_desde_el_chat_no_cambia_nada` | CO262 consultar los borradores desde el chat no cambia nada | 1 | Pasa |
+
+### `test_bot_etapa_2.py`
+
+Módulo 19, etapa 2 · `CU-AVI-CON` y `CU-AVI-BOR` desde el chat, y los comandos.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_ayuda_lista_los_comandos` | La ayuda lista los comandos | 3 | Pasa |
+| `test_un_comando_desconocido_lo_dice` | Un comando desconocido lo dice | 1 | Pasa |
+| `test_un_mensaje_vacío_responde_la_ayuda` | Un mensaje vacío responde la ayuda | 1 | Pasa |
+| `test_CO263_un_chat_sin_vinculo_no_consulta_ni_carga` | CO263 un chat sin vinculo no consulta ni carga | 4 | Pasa |
+| `test_un_administrador_dado_de_baja_no_consulta` | Un administrador dado de baja no consulta | 1 | Pasa |
+| `test_poner_comandos_registra_la_lista_en_telegram` | Poner comandos registra la lista en telegram | 1 | Pasa |
+| `test_CO263_stock_por_titulo_y_tomo` | CO263 stock por titulo y tomo | 1 | Pasa |
+| `test_stock_por_código_exacto` | Stock por código exacto | 1 | Pasa |
+| `test_stock_de_una_preventa_dice_cuándo_llega_y_lo_reservado` | Stock de una preventa dice cuándo llega y lo reservado | 1 | Pasa |
+| `test_stock_sin_texto_y_sin_resultados` | Stock sin texto y sin resultados | 1 | Pasa |
+| `test_stock_no_muestra_lo_descatalogado` | Stock no muestra lo descatalogado | 1 | Pasa |
+| `test_CO263_llega_lista_preventas_proximas_y_marca_las_atrasadas` | CO263 llega lista preventas proximas y marca las atrasadas | 1 | Pasa |
+| `test_llega_sin_nada` | Llega sin nada | 1 | Pasa |
+| `test_CO263_pendientes_cuenta_lo_que_espera_una_decision` | CO263 pendientes cuenta lo que espera una decision | 1 | Pasa |
+| `test_CO263_caja_sin_cobros` | CO263 caja sin cobros | 1 | Pasa |
+| `test_CO263_las_consultas_no_escriben_nada` | CO263 las consultas no escriben nada | 1 | Pasa |
+| `test_CO263_una_pregunta_libre_el_modelo_elige_y_el_sistema_consulta` | CO263 una pregunta libre el modelo elige y el sistema consulta | 1 | Pasa |
+| `test_una_pregunta_que_no_es_ninguna_consulta` | Una pregunta que no es ninguna consulta | 1 | Pasa |
+| `test_CO263_una_consulta_inventada_por_el_modelo_cuenta_como_ninguna` | CO263 una consulta inventada por el modelo cuenta como ninguna | 1 | Pasa |
+| `test_sin_modelo_la_pregunta_libre_sugiere_los_comandos` | Sin modelo la pregunta libre sugiere los comandos | 1 | Pasa |
+| `test_una_pregunta_libre_de_llegadas` | Una pregunta libre de llegadas | 1 | Pasa |
+| `test_CO261_cargar_crea_un_borrador_de_telegram_y_ningun_producto` | CO261 cargar crea un borrador de telegram y ningun producto | 1 | Pasa |
+| `test_sin_precio_toma_el_de_la_tabla_de_la_editorial` | Sin precio toma el de la tabla de la editorial | 1 | Pasa |
+| `test_CO261_una_editorial_que_no_existe_queda_para_elegir_con_un_reparo` | CO261 una editorial que no existe queda para elegir con un reparo | 1 | Pasa |
+| `test_un_duplicado_se_avisa_en_el_chat` | Un duplicado se avisa en el chat | 1 | Pasa |
+| `test_la_foto_es_la_portada_y_el_epígrafe_los_datos` | La foto es la portada y el epígrafe los datos | 1 | Pasa |
+| `test_una_foto_que_no_baja_deja_el_borrador_con_un_reparo` | Una foto que no baja deja el borrador con un reparo | 1 | Pasa |
+| `test_una_foto_que_no_es_imagen_deja_el_borrador_con_un_reparo` | Una foto que no es imagen deja el borrador con un reparo | 1 | Pasa |
+| `test_cargar_sin_texto_pide_los_datos` | Cargar sin texto pide los datos | 1 | Pasa |
+| `test_CO261_cargar_sin_modelo_no_crea_nada` | CO261 cargar sin modelo no crea nada | 1 | Pasa |
+| `test_CO261_cargar_sin_titulo_no_crea_nada` | CO261 cargar sin titulo no crea nada | 1 | Pasa |
+| `test_una_pregunta_que_describe_un_producto_lo_carga` | Una pregunta que describe un producto lo carga | 1 | Pasa |
+| `test_la_revisión_muestra_el_origen_telegram` | La revisión muestra el origen telegram | 1 | Pasa |
+| `test_descargar_archivo_pide_la_ruta_y_baja_por_la_puerta` | Descargar archivo pide la ruta y baja por la puerta | 1 | Pasa |
+| `test_descargar_archivo_sin_ruta_no_baja_nada` | Descargar archivo sin ruta no baja nada | 1 | Pasa |
+| `test_descargar_devuelve_los_bytes_dentro_del_tope` | Descargar devuelve los bytes dentro del tope | 1 | Pasa |
+| `test_descargar_rechaza_lo_que_pasa_el_tope` | Descargar rechaza lo que pasa el tope | 1 | Pasa |
+| `test_descargar_sin_conexión_devuelve_none` | Descargar sin conexión devuelve none | 1 | Pasa |
+| `test_descargar_rechaza_un_esquema_que_no_es_web` | Descargar rechaza un esquema que no es web | 1 | Pasa |
+| `test_la_red_cortada_corta_también_las_descargas` | La red cortada corta también las descargas | 1 | Pasa |
+
+### `test_etapa_3.py`
+
+Módulo 19, etapa 3 (plan 00 del bot, etapa 3).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_ventas_resumen_y_sistema_van_sólo_por_telegram_y_seguridad_por_los_dos` | Ventas resumen y sistema van sólo por telegram y seguridad por los dos | 1 | Pasa |
+| `test_un_tipo_opcional_sin_telegram_no_se_manda` | Un tipo opcional sin telegram no se manda | 1 | Pasa |
+| `test_un_tipo_opcional_con_telegram_va_sólo_al_chat` | Un tipo opcional con telegram va sólo al chat | 1 | Pasa |
+| `test_seguridad_va_por_los_dos_y_sin_telegram_por_correo` | Seguridad va por los dos y sin telegram por correo | 1 | Pasa |
+| `test_si_telegram_falla_un_opcional_no_cae_al_correo` | Si telegram falla un opcional no cae al correo | 1 | Pasa |
+| `test_un_tipo_desconocido_sale_por_correo` | Un tipo desconocido sale por correo | 1 | Pasa |
+| `test_el_perfil_muestra_los_tipos_nuevos_con_su_canal` | El perfil muestra los tipos nuevos con su canal | 1 | Pasa |
+| `test_CO255_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal` | CO255 sin chat marcar telegram en un opcional lo deja sin canal | 1 | Pasa |
+| `test_un_pago_aprobado_avisa_la_venta_por_telegram` | Un pago aprobado avisa la venta por telegram | 1 | Pasa |
+| `test_la_venta_marca_las_reservas_y_avisa_el_cupo_agotado` | La venta marca las reservas y avisa el cupo agotado | 1 | Pasa |
+| `test_sin_telegram_la_venta_no_le_escribe_al_administrador` | Sin telegram la venta no le escribe al administrador | 1 | Pasa |
+| `test_un_aviso_de_venta_caído_no_deshace_la_venta` | Un aviso de venta caído no deshace la venta | 1 | Pasa |
+| `test_CO264_el_resumen_espera_la_hora_y_sale_una_vez_por_dia` | CO264 el resumen espera la hora y sale una vez por dia | 1 | Pasa |
+| `test_CO264_el_resumen_dice_lo_pendiente_lo_que_llega_y_lo_de_ayer` | CO264 el resumen dice lo pendiente lo que llega y lo de ayer | 1 | Pasa |
+| `test_la_hora_del_resumen_se_cambia_en_parámetros` | La hora del resumen se cambia en parámetros | 1 | Pasa |
+| `test_CO264_dos_relojes_a_la_vez_mandan_un_solo_resumen` | CO264 dos relojes a la vez mandan un solo resumen | 1 | Pasa |
+| `test_cada_minuto_corre_las_tres_tareas_aunque_una_falle` | Cada minuto corre las tres tareas aunque una falle | 1 | Pasa |
+| `test_un_bloqueo_por_intentos_avisa_por_los_dos_canales` | Un bloqueo por intentos avisa por los dos canales | 1 | Pasa |
+| `test_un_bloqueo_de_una_cuenta_que_no_existe_no_avisa` | Un bloqueo de una cuenta que no existe no avisa | 1 | Pasa |
+| `test_el_personal_desde_una_ip_nueva_avisa` | El personal desde una ip nueva avisa | 1 | Pasa |
+| `test_una_ip_que_no_se_usa_hace_más_de_noventa_días_es_nueva` | Una ip que no se usa hace más de noventa días es nueva | 1 | Pasa |
+| `test_un_cliente_desde_otra_ip_no_avisa` | Un cliente desde otra ip no avisa | 1 | Pasa |
+| `test_el_alta_de_un_administrador_avisa_y_la_de_un_cajero_no` | El alta de un administrador avisa y la de un cajero no | 1 | Pasa |
+| `test_un_cambio_de_rol_de_administrador_avisa` | Un cambio de rol de administrador avisa | 1 | Pasa |
+| `test_sólo_las_propagaciones_de_precios_son_masivas` | Sólo las propagaciones de precios son masivas | 4 | Pasa |
+| `test_una_alerta_de_seguridad_no_toca_el_registro` | Una alerta de seguridad no toca el registro | 1 | Pasa |
+| `test_CO265_estado_en_el_chat` | CO265 estado en el chat | 1 | Pasa |
+| `test_CO265_estado_no_responde_a_un_chat_sin_vinculo` | CO265 estado no responde a un chat sin vinculo | 1 | Pasa |
+| `test_CO266_el_disco_lleno_se_avisa_una_vez_por_dia` | CO266 el disco lleno se avisa una vez por dia | 1 | Pasa |
+| `test_CO266_un_problema_que_se_arregla_y_vuelve_se_avisa_de_nuevo` | CO266 un problema que se arregla y vuelve se avisa de nuevo | 1 | Pasa |
+| `test_el_respaldo_vencido_se_avisa_sólo_donde_se_vigila` | El respaldo vencido se avisa sólo donde se vigila | 1 | Pasa |
+| `test_sin_ningún_respaldo_lo_dice` | Sin ningún respaldo lo dice | 1 | Pasa |
+| `test_la_memoria_fuera_de_linux_no_se_inventa` | La memoria fuera de linux no se inventa | 1 | Pasa |
+| `test_el_reclamo_llega_al_chat_con_sus_fotos_achicadas` | El reclamo llega al chat con sus fotos achicadas | 1 | Pasa |
+| `test_por_correo_el_reclamo_va_sin_fotos` | Por correo el reclamo va sin fotos | 1 | Pasa |
+| `test_CO267_inline_comparte_la_ficha_de_la_tienda_sin_el_stock` | CO267 inline comparte la ficha de la tienda sin el stock | 1 | Pasa |
+| `test_CO267_inline_dice_la_pre_venta_y_lo_agotado` | CO267 inline dice la pre venta y lo agotado | 1 | Pasa |
+| `test_CO267_inline_no_muestra_lo_que_la_tienda_no_muestra` | CO267 inline no muestra lo que la tienda no muestra | 1 | Pasa |
+| `test_CO267_inline_no_contesta_a_quien_no_esta_vinculado` | CO267 inline no contesta a quien no esta vinculado | 1 | Pasa |
+| `test_CO267_inline_no_contesta_a_un_administrador_dado_de_baja` | CO267 inline no contesta a un administrador dado de baja | 1 | Pasa |
+| `test_inline_con_menos_de_dos_letras_no_busca` | Inline con menos de dos letras no busca | 1 | Pasa |
+| `test_la_miniatura_sólo_con_https_y_portada` | La miniatura sólo con https y portada | 1 | Pasa |
+| `test_el_bot_pide_las_búsquedas_en_línea` | El bot pide las búsquedas en línea | 1 | Pasa |
+| `test_CO265_consultar_el_estado_no_cambia_nada` | CO265 consultar el estado no cambia nada | 1 | Pasa |
+
+### `test_perfil_y_canales.py`
+
+Módulo 19 · el perfil, los canales de aviso y el despachador (plan 00 de Telegram).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO254_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos` | CO254 el administrador ve su perfil con sus datos y sus avisos | 1 | Pasa |
+| `test_CO254_otro_rol_no_entra_al_perfil_por_la_direccion_real` | CO254 otro rol no entra al perfil por la direccion real | 2 | Pasa |
+| `test_sin_sesion_el_perfil_pide_ingresar` | Sin sesion el perfil pide ingresar | 1 | Pasa |
+| `test_el_encabezado_lleva_al_perfil_sólo_al_administrador` | El encabezado lleva al perfil sólo al administrador | 1 | Pasa |
+| `test_el_administrador_cambia_su_contraseña_y_queda_auditado` | El administrador cambia su contraseña y queda auditado | 1 | Pasa |
+| `test_CO255_los_canales_se_guardan_por_tipo_y_quedan_auditados` | CO255 los canales se guardan por tipo y quedan auditados | 1 | Pasa |
+| `test_CO255_sin_chat_vinculado_telegram_no_se_puede_elegir` | CO255 sin chat vinculado telegram no se puede elegir | 1 | Pasa |
+| `test_CO255_todo_por_telegram_con_el_chat_vinculado` | CO255 todo por telegram con el chat vinculado | 1 | Pasa |
+| `test_CO256_sin_token_no_se_puede_vincular` | CO256 sin token no se puede vincular | 1 | Pasa |
+| `test_CO256_vincular_da_un_enlace_de_un_solo_uso_al_bot` | CO256 vincular da un enlace de un solo uso al bot | 1 | Pasa |
+| `test_CO260_desvincular_desde_el_perfil_borra_el_vinculo_y_queda_auditado` | CO260 desvincular desde el perfil borra el vinculo y queda auditado | 1 | Pasa |
+| `test_sin_preferencias_el_aviso_sale_por_correo_como_siempre` | Sin preferencias el aviso sale por correo como siempre | 1 | Pasa |
+| `test_por_telegram_si_lo_eligió_y_se_puede` | Por telegram si lo eligió y se puede | 1 | Pasa |
+| `test_si_telegram_no_contesta_le_llega_por_correo` | Si telegram no contesta le llega por correo | 1 | Pasa |
+| `test_sin_chat_o_sin_token_le_llega_por_correo` | Sin chat o sin token le llega por correo | 1 | Pasa |
+| `test_lo_que_apagó_en_los_dos_canales_no_le_llega` | Lo que apagó en los dos canales no le llega | 1 | Pasa |
+| `test_un_administrador_dado_de_baja_no_recibe_nada` | Un administrador dado de baja no recibe nada | 1 | Pasa |
+| `test_el_token_del_bot_no_queda_escrito_en_el_log` | El token del bot no queda escrito en el log | 1 | Pasa |
+| `test_un_fallo_de_telegram_no_escribe_el_token` | Un fallo de telegram no escribe el token | 1 | Pasa |
+| `test_el_enlace_pendiente_trae_su_qr` | El enlace pendiente trae su qr | 1 | Pasa |
+| `test_sin_el_nombre_del_bot_no_hay_qr` | Sin el nombre del bot no hay qr | 1 | Pasa |
+| `test_CO254_consultar_el_perfil_no_cambia_nada` | CO254 consultar el perfil no cambia nada | 1 | Pasa |
+
+### `test_refresh.py`
+
+`/refresh` en el bot y «Revisar la casilla» en la cola (B-19-016).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_refresh_trae_lo_nuevo_aunque_no_le_toque_y_reinicia_el_reloj` | Refresh trae lo nuevo aunque no le toque y reinicia el reloj | 1 | Pasa |
+| `test_refresh_sin_novedades_lo_dice` | Refresh sin novedades lo dice | 1 | Pasa |
+| `test_si_los_correos_llegan_por_telegram_no_los_repite` | Si los correos llegan por telegram no los repite | 1 | Pasa |
+| `test_si_no_llegan_por_telegram_los_lista_con_la_cola` | Si no llegan por telegram los lista con la cola | 1 | Pasa |
+| `test_refresh_sin_casilla_configurada` | Refresh sin casilla configurada | 1 | Pasa |
+| `test_refresh_con_la_casilla_caída_lo_dice_y_no_reinicia` | Refresh con la casilla caída lo dice y no reinicia | 1 | Pasa |
+| `test_refresh_desde_un_chat_sin_vínculo_no_revisa` | Refresh desde un chat sin vínculo no revisa | 1 | Pasa |
+| `test_refresh_está_en_el_menú_y_en_la_ayuda` | Refresh está en el menú y en la ayuda | 1 | Pasa |
+| `test_el_botón_de_la_cola_también_reinicia_el_reloj` | El botón de la cola también reinicia el reloj | 1 | Pasa |
+| `test_la_cola_dice_cuándo_es_la_próxima_revisión` | La cola dice cuándo es la próxima revisión | 1 | Pasa |
+| `test_la_cola_con_la_revisión_vencida_dice_el_próximo_minuto` | La cola con la revisión vencida dice el próximo minuto | 1 | Pasa |
+
+### `test_tarjetas.py`
+
+Las tarjetas de Long-bot que acompañan algunos avisos de Telegram (B-19-020).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_cada_gesto_y_tono_da_un_jpeg_apaisado` | Cada gesto y tono da un jpeg apaisado | 10 | Pasa |
+| `test_un_titulo_largo_y_cifras_largas_se_achican_y_no_rompen` | Un titulo largo y cifras largas se achican y no rompen | 1 | Pasa |
+| `test_el_texto_se_corta_con_puntos_suspensivos_cuando_sobra` | El texto se corta con puntos suspensivos cuando sobra | 1 | Pasa |
+| `test_si_no_se_puede_dibujar_no_hay_tarjeta_y_no_explota` | Si no se puede dibujar no hay tarjeta y no explota | 1 | Pasa |
+| `test_la_tarjeta_sale_antes_del_texto_con_el_nombre_de_pila` | La tarjeta sale antes del texto con el nombre de pila | 1 | Pasa |
+| `test_sin_nombre_de_pila_el_titulo_pierde_la_coma` | Sin nombre de pila el titulo pierde la coma | 1 | Pasa |
+| `test_si_la_tarjeta_falla_el_aviso_sale_igual_sin_foto` | Si la tarjeta falla el aviso sale igual sin foto | 1 | Pasa |
+| `test_un_aviso_sin_tarjeta_no_manda_fotos` | Un aviso sin tarjeta no manda fotos | 1 | Pasa |
+| `test_el_resumen_de_la_manana_lleva_su_tarjeta` | El resumen de la manana lleva su tarjeta | 1 | Pasa |
+| `test_la_ayuda_presenta_a_long_bot_con_su_tarjeta` | La ayuda presenta a long bot con su tarjeta | 1 | Pasa |
+| `test_el_pedido_que_no_salio_lleva_la_tarjeta_triste` | El pedido que no salio lleva la tarjeta triste | 1 | Pasa |
+
+### `test_voz.py`
+
+La voz de Long-bot (B-19-017): personalidad sin tapar el dato.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_todas_las_variantes_se_arman_sin_error` | Todas las variantes se arman sin error | 1 | Pasa |
+| `test_la_frase_lleva_el_nombre_y_sin_nombre_no_deja_la_coma` | La frase lleva el nombre y sin nombre no deja la coma | 1 | Pasa |
+| `test_las_variantes_conservan_el_dato` | Las variantes conservan el dato | 1 | Pasa |
+| `test_cada_tipo_de_aviso_tiene_su_emoji` | Cada tipo de aviso tiene su emoji | 1 | Pasa |
+| `test_el_saludo_del_día_dice_el_día_y_el_nombre` | El saludo del día dice el día y el nombre | 1 | Pasa |
+| `test_el_cierre_del_resumen_sigue_a_lo_pendiente` | El cierre del resumen sigue a lo pendiente | 3 | Pasa |
+| `test_el_nombre_de_pila_sale_del_usuario` | El nombre de pila sale del usuario | 1 | Pasa |
+| `test_un_aviso_lleva_el_emoji_del_tipo_la_línea_y_el_remate` | Un aviso lleva el emoji del tipo la línea y el remate | 1 | Pasa |
+| `test_el_resumen_saluda_por_el_nombre_y_cierra_según_lo_pendiente` | El resumen saluda por el nombre y cierra según lo pendiente | 1 | Pasa |
+| `test_un_tipo_sin_emoji_propio_usa_la_campana` | Un tipo sin emoji propio usa la campana | 1 | Pasa |
+| `test_cada_administrador_recibe_el_aviso_con_su_nombre` | Cada administrador recibe el aviso con su nombre | 1 | Pasa |
+| `test_el_correo_nuevo_llega_con_la_cita_y_los_botones_con_emoji` | El correo nuevo llega con la cita y los botones con emoji | 1 | Pasa |
+| `test_la_ayuda_presenta_a_long_bot_y_saluda_por_el_nombre` | La ayuda presenta a long bot y saluda por el nombre | 1 | Pasa |
+| `test_un_saludo_lo_contesta_el_modelo_en_personaje` | Un saludo lo contesta el modelo en personaje | 1 | Pasa |
+| `test_la_charla_del_modelo_se_escapa_y_no_hace_nada` | La charla del modelo se escapa y no hace nada | 1 | Pasa |
+| `test_sin_charla_del_modelo_contesta_una_frase_fija` | Sin charla del modelo contesta una frase fija | 1 | Pasa |
+| `test_la_charla_se_corta_si_se_alarga` | La charla se corta si se alarga | 1 | Pasa |
+| `test_para_una_consulta_la_charla_no_se_usa` | Para una consulta la charla no se usa | 1 | Pasa |
+
+---
+
 ## caja — `apps/caja`
 
 ### `test_concurrencia_caja.py`
@@ -662,6 +1024,7 @@ Pruebas de contrato de la caja (`CU-CAJ-CIE`, plan 14): `CO-203`, `CO-126`, `CO-
 | `test_CO203_E2_sin_movimientos` | CO203 E2 sin movimientos | 1 | Pasa |
 | `test_CO203_no_modifica_el_estado_del_sistema` | CO203 no modifica el estado del sistema | 1 | Pasa |
 | `test_CO126_a_se_crea_el_cierre` | CO126 a se crea el cierre | 1 | Pasa |
+| `test_CO126_el_resumen_del_cierre_se_abre_con_sus_totales_y_sus_ventas` | CU-CAJ-CIE paso 7. | 1 | Pasa |
 | `test_CO126_b_el_cierre_queda_asociado_a_las_transacciones_incluidas` | CO126 b el cierre queda asociado a las transacciones incluidas | 1 | Pasa |
 | `test_CO126_c_fecha_totales_y_cuentas` | CO126 c fecha totales y cuentas | 1 | Pasa |
 | `test_CO126_c_las_incluidas_pasan_a_incluidas_en_cierre` | CO126 c las incluidas pasan a incluidas en cierre | 1 | Pasa |
@@ -676,10 +1039,25 @@ Pruebas de contrato de la caja (`CU-CAJ-CIE`, plan 14): `CO-203`, `CO-126`, `CO-
 | `test_acceso_el_cliente_recibe_403_en_la_caja` | Acceso el cliente recibe 403 en la caja | 2 | Pasa |
 | `test_acceso_el_cliente_no_puede_cerrar` | Acceso el cliente no puede cerrar | 1 | Pasa |
 | `test_acceso_el_administrador_tambien_cierra` | Acceso el administrador tambien cierra | 1 | Pasa |
+| `test_CO250_presenta_los_cierres_del_mas_reciente_al_mas_antiguo` | CO250 presenta los cierres del mas reciente al mas antiguo | 1 | Pasa |
+| `test_CO250_consultar_los_cierres_no_cambia_nada` | CO250 consultar los cierres no cambia nada | 1 | Pasa |
+| `test_CO250_E1_sin_cierres_lo_informa` | CO250 E1 sin cierres lo informa | 1 | Pasa |
+| `test_CO251_presenta_los_totales_y_cada_transaccion_incluida` | CO251 presenta los totales y cada transaccion incluida | 1 | Pasa |
+| `test_CO251_consultar_un_cierre_no_cambia_nada` | CO251 consultar un cierre no cambia nada | 1 | Pasa |
+| `test_CO250_CO251_el_cliente_no_consulta_por_la_direccion_real` | CO250 CO251 el cliente no consulta por la direccion real | 2 | Pasa |
 
 ---
 
 ## Catálogo — `apps/catalog`
+
+### `test_acceso_objeto_despues_del_rol.py`
+
+Revisión integral, R-09: el rol se verifica antes de buscar el objeto.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_rol_equivocado_recibe_403_exista_o_no_el_registro` | El rol equivocado recibe 403 exista o no el registro | 4 | Pasa |
+| `test_el_administrador_sigue_recibiendo_404_si_no_existe` | El administrador sigue recibiendo 404 si no existe | 2 | Pasa |
 
 ### `test_alta_lote_importado.py`
 
@@ -713,7 +1091,7 @@ Alta de lote de material editorial importado.
 
 Alta de lote de material editorial nacional.
 
-**Casos de prueba que ejecuta:** CP-25.
+**Casos de prueba que ejecuta:** CP-ALT-NAC-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -723,6 +1101,8 @@ Alta de lote de material editorial nacional.
 | `test_desbloquear_un_item_convierte_el_lote_en_mixto` | La cabecera deja de describir al lote, así que se la vacía. | 1 | Pasa |
 | `test_un_item_puede_sobrescribir_el_precio_sin_desbloquear_nada` | El precio y el estado siempre se pueden pisar por ítem: lo que el bloqueo protege es la clasificación, no los valores del alta. | 1 | Pasa |
 | `test_el_precio_editado_a_mano_queda_excluido_de_la_propagacion` | Sin la marca, un cambio de la tabla de precios le pisaría después una decisión que alguien tomó a propósito. | 1 | Pasa |
+| `test_sobrescribir_el_precio_sin_confirmar_no_guarda_nada_y_advierte` | CU-ALT-NAC A3: la confirmación se valida en el servidor y no sólo en la pantalla (B-01-013). | 1 | Pasa |
+| `test_escribir_el_mismo_precio_de_la_tabla_no_pide_confirmacion` | Escribir el mismo precio de la tabla no pide confirmacion | 1 | Pasa |
 | `test_el_producto_queda_vinculado_a_su_combinacion_de_la_tabla` | El precio de un nacional es un vínculo, no una foto (RF-11). | 1 | Pasa |
 | `test_en_un_lote_mixto_cada_item_declara_sus_propios_datos` | En un lote mixto cada item declara sus propios datos | 1 | Pasa |
 | `test_en_un_lote_mixto_falta_la_editorial_del_item` | En un lote mixto falta la editorial del item | 1 | Pasa |
@@ -822,9 +1202,9 @@ CU-CAT-BAJ — Dar de Baja Producto (Editorial o No Editorial), y la reactivaci�
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
 | `test_la_pantalla_muestra_las_cuatro_categorias` | Las cuatro se declaran aunque ninguna se pueda calcular: agregar cada una después es llenar un hueco y no rediseñar la pantalla. | 1 | Pasa |
-| `test_lo_que_no_se_puede_calcular_se_dice` | Un cero se leería como "no afecta a nadie". | 1 | Pasa |
+| `test_las_cuatro_categorias_se_calculan` | Desde que existen Pedidos, Restock, Pricing y Tienda (B-02-006), el informe dice cifras: sin referencias, ceros, y la pantalla ya no dice «No disponible todavía». | 1 | Pasa |
 | `test_el_informe_trae_el_stock_y_el_estado` | No son categorías del CU. | 1 | Pasa |
-| `test_hoy_ninguna_categoria_se_puede_determinar` | Hoy ninguna categoria se puede determinar | 1 | Pasa |
+| `test_sin_referencias_cada_categoria_vale_cero` | Sin referencias cada categoria vale cero | 1 | Pasa |
 | `test_ver_el_informe_no_da_de_baja` | El GET es el informe, no la acción. | 1 | Pasa |
 | `test_la_baja_descataloga_el_producto` | La baja descataloga el producto | 1 | Pasa |
 | `test_la_baja_no_borra_nada` | La postcondición pide conservarlo en el inventario y en el historial. | 1 | Pasa |
@@ -892,11 +1272,25 @@ La generación de borradores desde una extracción (CU-ALT-NOV pasos 5, 6, 7 y 9
 | `test_la_fecha_propia_de_una_fila_si_lleva_confianza` | Ahí sí hay un juicio del modelo que registrar: leyó una celda y dudó. | 1 | Pasa |
 | `test_sin_ninguna_fecha_tampoco_se_guarda_confianza_de_fecha` | Un borrador Activo sin fecha no tiene nada que revisar sobre ella: la fecha ni siquiera es bloqueante ahí. | 1 | Pasa |
 
+### `test_carreras_de_unicidad.py`
+
+El código, el ISBN o la edición que otra alta confirmó mientras ésta se validaba.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO028_E3_el_codigo_ajeno_enlaza_la_ficha_en_conflicto` | CO028 E3 el codigo ajeno enlaza la ficha en conflicto | 1 | Pasa |
+| `test_CO028_E3_el_codigo_tomado_mientras_se_validaba_bloquea_y_enlaza` | CO028 E3 el codigo tomado mientras se validaba bloquea y enlaza | 1 | Pasa |
+| `test_CO028_E3_la_portada_del_alta_que_perdio_no_queda_en_el_almacenamiento` | CO028 E3 la portada del alta que perdio no queda en el almacenamiento | 1 | Pasa |
+| `test_CO030_E2_el_codigo_de_barras_ajeno_enlaza_la_ficha_y_el_criterio` | CO030 E2 el codigo de barras ajeno enlaza la ficha y el criterio | 1 | Pasa |
+| `test_CO030_E2_el_codigo_de_barras_tomado_mientras_se_validaba_no_actualiza` | CO030 E2 el codigo de barras tomado mientras se validaba no actualiza | 1 | Pasa |
+| `test_CO030_E2_el_isbn_tomado_mientras_se_validaba_no_actualiza` | El ISBN vive en la tabla de la hija: el choque llega después de escribir el padre. | 1 | Pasa |
+| `test_CO003_el_tomo_cargado_mientras_tanto_se_excluye_como_duplicado` | E1 de `CU-ALT-NAC`: un duplicado excluye ese ítem y el lote sigue. | 1 | Pasa |
+
 ### `test_casos_borde.py`
 
 Acto 2 · Casos borde: entradas válidas pero extremas, y entradas inválidas (plan 00).
 
-**Casos de prueba que ejecuta:** CP-01, CP-06, CP-11.
+**Casos de prueba que ejecuta:** CP-ALT-IMP-01, CP-CAT-ALT-01, CP-PVP-VEN-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -925,11 +1319,87 @@ Doble clic en el alta de un catálogo: dos envíos del mismo nombre a la vez.
 
 I-20 bajo concurrencia real: dos Administradores registran ofertas solapadas a la vez.
 
-**Casos de prueba que ejecuta:** CP-05.
+**Casos de prueba que ejecuta:** CP-PVP-ALT-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
 | `test_CO054_dos_ofertas_solapadas_registradas_a_la_vez_dejan_una` | CO054 dos ofertas solapadas registradas a la vez dejan una | 1 | Pasa |
+| `test_CO054_dos_ofertas_solapadas_sobre_la_misma_etiqueta_dejan_una` | Plan 03, tercera parte: el bloqueo es sobre el destino, sea cual sea. | 1 | Pasa |
+
+### `test_contratos_01_alta_lotes.py`
+
+Pruebas de contrato del alta de lotes (`CU-ALT-NAC`, `CU-ALT-IMP`): V1 del plan 00.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO001_abrir_la_pantalla_no_crea_ningun_lote` | El lote en curso vive en la pantalla hasta confirmarse. | 1 | Pasa |
+| `test_CO001_a_b_c_el_lote_nacional_queda_con_su_creador_origen_y_fecha` | CO001 a b c el lote nacional queda con su creador origen y fecha | 1 | Pasa |
+| `test_CO001_c_el_origen_importado_queda_fijado` | CO001 c el origen importado queda fijado | 1 | Pasa |
+| `test_CO002_b_la_cabecera_asocia_editorial_tipo_y_formato` | CO002 b la cabecera asocia editorial tipo y formato | 1 | Pasa |
+| `test_CO002_c_la_fecha_de_llegada_declarada_queda_en_el_lote` | CO002 c la fecha de llegada declarada queda en el lote | 1 | Pasa |
+| `test_CO002_sin_cabecera_el_lote_es_mixto_y_no_asocia_nada` | CO002 sin cabecera el lote es mixto y no asocia nada | 1 | Pasa |
+| `test_CO002_salida_el_precio_de_la_combinacion_completa_o_nada` | CO002 salida el precio de la combinacion completa o nada | 1 | Pasa |
+| `test_CO003_c_el_precio_sale_de_la_tabla_y_el_producto_queda_asociado` | CO003 c el precio sale de la tabla y el producto queda asociado | 1 | Pasa |
+| `test_CO003_c_sin_combinacion_en_la_tabla_el_precio_es_el_declarado` | CO003 c sin combinacion en la tabla el precio es el declarado | 1 | Pasa |
+| `test_CO003_c_sin_portada_queda_con_imagen_pendiente` | CO003 c sin portada queda con imagen pendiente | 1 | Pasa |
+| `test_CO003_c_el_estado_sigue_a_la_fecha_de_llegada` | CO003 c el estado sigue a la fecha de llegada | 2 | Pasa |
+| `test_CO003_E_un_repetido_por_la_combinacion_no_guarda_nada_y_dice_con_cual_choca` | CO003 E un repetido por la combinacion no guarda nada y dice con cual choca | 1 | Pasa |
+| `test_CO003_E_un_repetido_por_isbn_dice_el_criterio` | CO003 E un repetido por isbn dice el criterio | 1 | Pasa |
+| `test_CO004_la_advertencia_sin_confirmar_no_cambia_nada` | Postcondición: ninguna. | 1 | Pasa |
+| `test_CO005_b_c_confirmado_rompe_el_vinculo_y_fija_el_precio_a_mano` | CO005 b c confirmado rompe el vinculo y fija el precio a mano | 1 | Pasa |
+| `test_CO005_la_auditoria_del_lote_registra_los_precios_a_mano` | En un lote, la entrada es la consolidada de CO-006 (B-01-013). | 1 | Pasa |
+| `test_CO006_a_b_c_cada_item_es_un_producto_con_sus_asociaciones_y_valores` | CO006 a b c cada item es un producto con sus asociaciones y valores | 1 | Pasa |
+| `test_CO006_E1_un_duplicado_del_catalogo_se_excluye_con_motivo_y_el_resto_se_crea` | CO006 E1 un duplicado del catalogo se excluye con motivo y el resto se crea | 1 | Pasa |
+| `test_CO006_una_unica_entrada_de_auditoria_consolidada` | CO006 una unica entrada de auditoria consolidada | 1 | Pasa |
+| `test_CO006_importado_guarda_precio_base_y_costo_en_origen` | CO006 importado guarda precio base y costo en origen | 1 | Pasa |
+| `test_CO007_c_la_calculadora_y_el_margen_quedan_congelados_en_el_lote` | CO007 c la calculadora y el margen quedan congelados en el lote | 1 | Pasa |
+| `test_CO007_cambiar_el_margen_despues_no_cambia_el_lote` | CO007 cambiar el margen despues no cambia el lote | 1 | Pasa |
+| `test_CO007_el_valor_de_compra_es_la_suma_de_los_items` | CO007 el valor de compra es la suma de los items | 1 | Pasa |
+| `test_CO007_el_total_escrito_a_mano_manda` | CO007 el total escrito a mano manda | 1 | Pasa |
+| `test_CO007_un_item_sin_unidades_impide_el_calculo` | CO007 un item sin unidades impide el calculo | 1 | Pasa |
+| `test_CO009_el_item_importado_necesita_al_menos_una_unidad` | B-01-028: escribir el total a mano no salva a un ítem sin unidades. | 2 | Pasa |
+| `test_CO009_las_unidades_del_item_importado_son_su_stock` | CO009 las unidades del item importado son su stock | 1 | Pasa |
+| `test_CO007_el_servidor_no_usa_la_suma_de_la_pantalla` | CO007 el servidor no usa la suma de la pantalla | 1 | Pasa |
+| `test_CO007_total_a_mano_sin_total_escrito_es_rechazado` | CO007 total a mano sin total escrito es rechazado | 1 | Pasa |
+| `test_CO007_un_total_escrito_distinto_de_la_suma_avisa_sin_bloquear` | CO007 un total escrito distinto de la suma avisa sin bloquear | 1 | Pasa |
+| `test_CO006_la_auditoria_dice_el_origen_del_total` | CO006 la auditoria dice el origen del total | 1 | Pasa |
+| `test_CO008_c_la_cotizacion_declarada_reemplaza_a_la_del_servicio` | CO008 c la cotizacion declarada reemplaza a la del servicio | 1 | Pasa |
+| `test_CO009_c_precio_base_y_final_salen_del_cre_y_del_margen` | 1000 × (1 + 0,1) = 1100; 1100 × (1 + 0,4) = 1540. | 1 | Pasa |
+| `test_CO009_A3_sin_imagen_se_registra_con_imagen_pendiente` | CO009 A3 sin imagen se registra con imagen pendiente | 1 | Pasa |
+| `test_CO010_la_advertencia_sin_confirmar_no_cambia_nada` | CO010 la advertencia sin confirmar no cambia nada | 1 | Pasa |
+| `test_CO005_c_importado_confirmado_conserva_el_precio_base_calculado` | CO005 c importado confirmado conserva el precio base calculado | 1 | Pasa |
+| `test_acceso_solo_el_administrador_carga_lotes` | Acceso solo el administrador carga lotes | 4 | Pasa |
+
+### `test_contratos_01_revision.py`
+
+Pruebas de contrato de CU-ALT-REV: `CO-159`, `CO-160`, `CO-020` a `CO-025`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO159_lista_los_pendientes_con_confianza_reparos_estado_y_stock` | CO159 lista los pendientes con confianza reparos estado y stock | 1 | Pasa |
+| `test_CO159_E1_sin_pendientes_lo_informa` | CO159 E1 sin pendientes lo informa | 1 | Pasa |
+| `test_CO160_muestra_campos_confianzas_y_reparos` | CO160 muestra campos confianzas y reparos | 1 | Pasa |
+| `test_CO159_CO160_consultar_no_modifica_nada_ni_abre_sesion` | CO159 CO160 consultar no modifica nada ni abre sesion | 1 | Pasa |
+| `test_CO020_los_atributos_y_el_stock_inicial_pasan_a_lo_declarado` | CO020 los atributos y el stock inicial pasan a lo declarado | 1 | Pasa |
+| `test_CO020_completar_los_bloqueantes_lo_pasa_a_pendiente` | CO020 completar los bloqueantes lo pasa a pendiente | 1 | Pasa |
+| `test_CO020_si_sigue_faltando_un_bloqueante_sigue_incompleto` | CO020 si sigue faltando un bloqueante sigue incompleto | 1 | Pasa |
+| `test_CO021_el_campo_pasa_a_revisado` | CO021 el campo pasa a revisado | 1 | Pasa |
+| `test_CO022_crea_el_producto_con_los_valores_del_borrador` | CO022 crea el producto con los valores del borrador | 1 | Pasa |
+| `test_CO022_la_segunda_decision_sigue_en_la_misma_sesion` | CO022 la segunda decision sigue en la misma sesion | 1 | Pasa |
+| `test_CO022_E3_un_bloqueante_vacio_bloquea` | CO022 E3 un bloqueante vacio bloquea | 1 | Pasa |
+| `test_CO022_E7_la_colision_se_bloquea_antes_de_crear_y_enlaza_la_ficha` | CO022 E7 la colision se bloquea antes de crear y enlaza la ficha | 1 | Pasa |
+| `test_CO022_E7_por_combinacion_lo_dice` | CO022 E7 por combinacion lo dice | 1 | Pasa |
+| `test_CO022_precondicion_confianza_baja_sin_revisar_bloquea` | CO022 precondicion confianza baja sin revisar bloquea | 1 | Pasa |
+| `test_CO023_confirma_los_elegibles_y_no_toca_los_excluidos` | CO023 confirma los elegibles y no toca los excluidos | 1 | Pasa |
+| `test_CO024_pasa_a_rechazado_con_motivo_sesion_y_responsable` | CO024 pasa a rechazado con motivo sesion y responsable | 2 | Pasa |
+| `test_CO024_precondicion_sin_motivo_no_rechaza` | CO024 precondicion sin motivo no rechaza | 1 | Pasa |
+| `test_CO025_cierra_la_sesion_con_el_resultado_por_proveedor` | CO025 cierra la sesion con el resultado por proveedor | 1 | Pasa |
+| `test_CO025_encadena_CO074_con_su_entrada_por_proveedor` | CO025 encadena CO074 con su entrada por proveedor | 1 | Pasa |
+| `test_CO025_la_entrada_del_cierre_trae_el_resumen` | CO025 la entrada del cierre trae el resumen | 1 | Pasa |
+| `test_CO025_E5_un_envio_fallido_no_revierte_los_productos` | CO025 E5 un envio fallido no revierte los productos | 1 | Pasa |
+| `test_CO025_E6_sin_confirmaciones_no_se_envia_nada` | CO025 E6 sin confirmaciones no se envia nada | 1 | Pasa |
+| `test_CO025_precondicion_sin_sesion_abierta_no_registra_cierre` | CO025 precondicion sin sesion abierta no registra cierre | 1 | Pasa |
+| `test_CO020_a_CO025_otro_rol_no_resuelve_borradores` | CO020 a CO025 otro rol no resuelve borradores | 2 | Pasa |
 
 ### `test_contratos_02_catalogo.py`
 
@@ -960,14 +1430,65 @@ Pruebas de contrato del módulo 02 · Catálogo.
 | `test_CO162_consultar_inventario_filtra_por_editorial` | CO162 consultar inventario filtra por editorial | 1 | Pasa |
 | `test_CO162_el_filtro_ofrece_las_etiquetas_inactivas_marcadas` | Para localizar los productos que las conservan (comentario de la ficha). | 1 | Pasa |
 | `test_CO163_la_ficha_dibuja_para_el_cajero_solo_sus_campos` | «El Cajero ve nombre, imagen, tipo, estado, stock y precio. | 1 | Pasa |
-| `test_CO163_los_indicadores_que_no_puede_calcular_se_declaran_no_disponibles` | CO163 los indicadores que no puede calcular se declaran no disponibles | 1 | Pasa |
+| `test_CO163_los_indicadores_internos_se_calculan` | Desde que existen Pedidos y Restock, la ficha dice las cifras. | 1 | Pasa |
 | `test_CO165_consultar_etiquetas_de_grupo_paginadas_con_busqueda_y_estado` | CO165 consultar etiquetas de grupo paginadas con busqueda y estado | 1 | Pasa |
+
+### `test_contratos_02_producto.py`
+
+Contratos del ciclo de vida de un producto: alta no editorial, edición, baja y reactivación (`CO-028`, `CO-029`, `CO-030`, `CO-032`, `CO-161`, `CO-033` a `CO-036`).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO028_crea_el_producto_con_sus_atributos_y_asociaciones` | CO028 crea el producto con sus atributos y asociaciones | 1 | Pasa |
+| `test_CO028_sin_codigo_declarado_se_genera_uno_unico` | CO028 sin codigo declarado se genera uno unico | 1 | Pasa |
+| `test_CO028_E1_falta_un_obligatorio_no_registra_y_conserva_lo_escrito` | CO028 E1 falta un obligatorio no registra y conserva lo escrito | 1 | Pasa |
+| `test_CO028_E2_el_homonimo_advierte_con_enlace_y_no_registra_sin_confirmar` | CO028 E2 el homonimo advierte con enlace y no registra sin confirmar | 1 | Pasa |
+| `test_CO028_E3_un_codigo_ajeno_bloquea_aunque_se_confirme` | La asimetría con E2 es deliberada: el código identifica, el nombre describe. | 2 | Pasa |
+| `test_CO028_precondicion_el_tipo_tiene_que_ser_del_rubro` | CO028 precondicion el tipo tiene que ser del rubro | 1 | Pasa |
+| `test_CO028_precondicion_el_precio_es_mayor_que_cero` | CO028 precondicion el precio es mayor que cero | 2 | Pasa |
+| `test_CO028_precondicion_el_stock_no_es_negativo` | CO028 precondicion el stock no es negativo | 1 | Pasa |
+| `test_CO029_confirmado_el_homonimo_se_crea_con_las_postcondiciones_de_CO028` | CO029 confirmado el homonimo se crea con las postcondiciones de CO028 | 1 | Pasa |
+| `test_CO029_E1_un_faltante_sigue_bloqueando_aunque_se_confirme` | CO029 E1 un faltante sigue bloqueando aunque se confirme | 1 | Pasa |
+| `test_CO161_muestra_los_campos_actuales_y_declara_los_inmutables` | CO161 muestra los campos actuales y declara los inmutables | 1 | Pasa |
+| `test_CO161_el_importado_declara_su_costo_en_origen` | CO161 el importado declara su costo en origen | 1 | Pasa |
+| `test_CO161_abrir_la_edicion_no_modifica_nada` | CO161 abrir la edicion no modifica nada | 1 | Pasa |
+| `test_CO030_los_atributos_cambian_y_la_auditoria_guarda_el_par` | CO030 los atributos cambian y la auditoria guarda el par | 1 | Pasa |
+| `test_CO030_se_forman_y_rompen_las_asociaciones` | CO030 se forman y rompen las asociaciones | 1 | Pasa |
+| `test_CO030_cambiar_un_precio_vinculado_cumple_CO005` | CO030 cambiar un precio vinculado cumple CO005 | 1 | Pasa |
+| `test_CO030_E1_un_obligatorio_vacio_no_actualiza` | CO030 E1 un obligatorio vacio no actualiza | 1 | Pasa |
+| `test_CO030_E1_una_clasificacion_de_otro_rubro_no_actualiza` | CO030 E1 una clasificacion de otro rubro no actualiza | 1 | Pasa |
+| `test_CO030_E2_la_colision_bloqueante_informa_con_enlace_y_no_actualiza` | CO030 E2 la colision bloqueante informa con enlace y no actualiza | 1 | Pasa |
+| `test_CO030_E3_la_colision_no_bloqueante_pide_confirmacion` | CO030 E3 la colision no bloqueante pide confirmacion | 1 | Pasa |
+| `test_CO030_precondicion_un_descatalogado_se_edita` | CO030 precondicion un descatalogado se edita | 1 | Pasa |
+| `test_CO032_confirmada_la_colision_se_cumplen_las_postcondiciones_de_CO030` | CO032 confirmada la colision se cumplen las postcondiciones de CO030 | 1 | Pasa |
+| `test_CO032_precondicion_un_tomo_no_admite_la_confirmacion` | CO032 precondicion un tomo no admite la confirmacion | 1 | Pasa |
+| `test_CO033_el_informe_trae_las_cuatro_categorias_y_la_accion` | CO033 el informe trae las cuatro categorias y la accion | 1 | Pasa |
+| `test_CO033_pedir_el_informe_no_modifica_nada` | CO033 pedir el informe no modifica nada | 1 | Pasa |
+| `test_CO033_E2_un_cancelado_por_editorial_se_rechaza` | CO033 E2 un cancelado por editorial se rechaza | 1 | Pasa |
+| `test_CO034_el_estado_pasa_a_descatalogado` | CO034 el estado pasa a descatalogado | 3 | Pasa |
+| `test_CO034_deja_de_verse_en_el_catalogo_publico_y_la_busqueda` | CO034 deja de verse en el catalogo publico y la busqueda | 1 | Pasa |
+| `test_CO034_las_suscripciones_quedan_canceladas` | CO034 las suscripciones quedan canceladas | 1 | Pasa |
+| `test_CO034_la_oferta_exclusiva_queda_dada_de_baja_y_la_del_tipo_lo_deja_de_alcanzar` | Desvío B-02-007: el contrato dice eliminarla; el responsable decidió que quede Dada de baja, como cualquier baja de oferta, con su entrada propia. | 1 | Pasa |
+| `test_CO034_el_carrito_queda_no_disponible_y_el_cliente_se_entera` | CO034 el carrito queda no disponible y el cliente se entera | 1 | Pasa |
+| `test_CO034_los_pedidos_activos_no_se_modifican` | Postcondición negativa explícita del caso de uso. | 1 | Pasa |
+| `test_CO034_una_sola_entrada_con_el_impacto_resuelto` | CO034 una sola entrada con el impacto resuelto | 1 | Pasa |
+| `test_CO034_E1_sin_referencias_la_baja_procede_igual` | CO034 E1 sin referencias la baja procede igual | 1 | Pasa |
+| `test_CO035_el_resumen_no_modifica_nada` | CO035 el resumen no modifica nada | 1 | Pasa |
+| `test_CO035_E1_un_cancelado_por_editorial_se_rechaza` | CO035 E1 un cancelado por editorial se rechaza | 1 | Pasa |
+| `test_CO036_vuelve_activo_y_visible_con_su_identidad` | CO036 vuelve activo y visible con su identidad | 1 | Pasa |
+| `test_CO036_el_material_para_adultos_sigue_sujeto_a_su_indicador` | CO036 el material para adultos sigue sujeto a su indicador | 1 | Pasa |
+| `test_CO036_no_se_restituyen_suscripciones_ni_ofertas` | Postcondición negativa explícita. | 1 | Pasa |
+| `test_CO036_la_entrada_guarda_el_estado_anterior_y_el_nuevo` | CO036 la entrada guarda el estado anterior y el nuevo | 1 | Pasa |
+| `test_CO036_E2_la_fecha_vencida_queda_sin_efecto_y_se_informa` | CO036 E2 la fecha vencida queda sin efecto y se informa | 1 | Pasa |
+| `test_CO028_el_alta_no_la_hace_otro_rol` | CO028 el alta no la hace otro rol | 2 | Pasa |
+| `test_CO030_la_edicion_no_la_hace_otro_rol` | CO030 la edicion no la hace otro rol | 2 | Pasa |
+| `test_CO034_CO036_baja_y_reactivacion_no_las_hace_otro_rol` | CO034 CO036 baja y reactivacion no las hace otro rol | 2 | Pasa |
 
 ### `test_contratos_03_ofertas.py`
 
 Pruebas de contrato de las ofertas (módulo 03, plan 03 segunda parte).
 
-**Casos de prueba que ejecuta:** CP-11.
+**Casos de prueba que ejecuta:** CP-PVP-VEN-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -1014,11 +1535,57 @@ Pruebas de contrato de las ofertas (módulo 03, plan 03 segunda parte).
 | `test_sin_sesion_redirige_al_inicio_de_sesion` | Sin sesion redirige al inicio de sesion | 1 | Pasa |
 | `test_el_producto_debe_ser_del_catalogo_activo` | El producto debe ser del catalogo activo | 1 | Pasa |
 
+### `test_contratos_03_ofertas_destinos.py`
+
+Ofertas por editorial, etiqueta y grupo de etiquetas (plan 03, tercera parte).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO054_la_base_rechaza_un_destino_que_no_es_el_del_alcance` | CO054 la base rechaza un destino que no es el del alcance | 2 | Pasa |
+| `test_CO054_la_base_rechaza_un_alcance_sin_destino` | CO054 la base rechaza un alcance sin destino | 1 | Pasa |
+| `test_CO054_por_editorial_se_asocia_a_la_editorial_y_descuenta_sus_tomos` | CO054 por editorial se asocia a la editorial y descuenta sus tomos | 1 | Pasa |
+| `test_CO054_por_etiqueta_descuenta_a_los_que_la_llevan` | CO054 por etiqueta descuenta a los que la llevan | 1 | Pasa |
+| `test_CO054_por_grupo_descuenta_a_los_que_llevan_cualquiera_de_sus_etiquetas` | CO054 por grupo descuenta a los que llevan cualquiera de sus etiquetas | 1 | Pasa |
+| `test_CO054_un_producto_con_dos_etiquetas_del_grupo_cuenta_una_vez` | CO054 un producto con dos etiquetas del grupo cuenta una vez | 1 | Pasa |
+| `test_CO054_el_destino_alcanza_solo_a_los_de_la_tienda` | CO054 el destino alcanza solo a los de la tienda | 2 | Pasa |
+| `test_CO054_el_alcance_exige_su_destino` | CO054 el alcance exige su destino | 3 | Pasa |
+| `test_CO054_ignora_los_destinos_de_otros_alcances` | CO054 ignora los destinos de otros alcances | 1 | Pasa |
+| `test_CO054_un_destino_dado_de_baja_no_recibe_ofertas` | CO054 un destino dado de baja no recibe ofertas | 4 | Pasa |
+| `test_CO054_el_formulario_no_ofrece_destinos_dados_de_baja` | CO054 el formulario no ofrece destinos dados de baja | 1 | Pasa |
+| `test_CO054_A1_un_destino_sin_productos_registra_con_aviso` | CO054 A1 un destino sin productos registra con aviso | 3 | Pasa |
+| `test_CO054_E2_rechaza_dos_ofertas_vivas_sobre_la_misma_etiqueta` | CO054 E2 rechaza dos ofertas vivas sobre la misma etiqueta | 1 | Pasa |
+| `test_CO054_E2_destinos_distintos_si_comparten_dias` | CO054 E2 destinos distintos si comparten dias | 1 | Pasa |
+| `test_CO054_E2_una_editorial_distinta_no_es_solapamiento` | CO054 E2 una editorial distinta no es solapamiento | 1 | Pasa |
+| `test_la_precedencia_va_de_lo_mas_especifico_a_lo_mas_general` | Se registran del más general al más específico; cada una tapa a las anteriores. | 1 | Pasa |
+| `test_las_ofertas_nunca_se_suman` | Las ofertas nunca se suman | 1 | Pasa |
+| `test_empate_entre_dos_etiquetas_manda_la_que_empezo_antes` | Empate entre dos etiquetas manda la que empezo antes | 1 | Pasa |
+| `test_empate_el_mismo_dia_manda_la_creada_primero` | Empate el mismo dia manda la creada primero | 1 | Pasa |
+| `test_una_programada_mas_especifica_no_tapa_todavia` | Una programada mas especifica no tapa todavia | 1 | Pasa |
+| `test_una_editorial_dada_de_baja_deja_de_descontar` | Una editorial dada de baja deja de descontar | 1 | Pasa |
+| `test_una_etiqueta_dada_de_baja_cede_a_la_oferta_siguiente` | Una etiqueta dada de baja cede a la oferta siguiente | 1 | Pasa |
+| `test_un_grupo_dado_de_baja_apaga_sus_ofertas_y_las_de_sus_etiquetas` | Un grupo dado de baja apaga sus ofertas y las de sus etiquetas | 1 | Pasa |
+| `test_el_grupo_no_alcanza_por_una_etiqueta_inactiva` | El grupo no alcanza por una etiqueta inactiva | 1 | Pasa |
+| `test_CO055_el_monto_fijo_de_una_etiqueta_pide_el_tope_y_lo_aplica` | CO055 el monto fijo de una etiqueta pide el tope y lo aplica | 1 | Pasa |
+| `test_CO056_cambiar_de_tipo_a_editorial_mueve_el_descuento_y_los_carritos` | CO056 cambiar de tipo a editorial mueve el descuento y los carritos | 1 | Pasa |
+| `test_CO056_una_oferta_sobre_un_destino_que_se_dio_de_baja_se_sigue_editando` | CO056 una oferta sobre un destino que se dio de baja se sigue editando | 1 | Pasa |
+| `test_CO056_no_se_puede_mover_a_un_destino_dado_de_baja` | CO056 no se puede mover a un destino dado de baja | 1 | Pasa |
+| `test_CO168_la_edicion_abre_con_el_destino_actual` | CO168 la edicion abre con el destino actual | 1 | Pasa |
+| `test_CO057_el_informe_no_cuenta_los_que_cobra_otra_mas_especifica` | CO057 el informe no cuenta los que cobra otra mas especifica | 1 | Pasa |
+| `test_CO058_dar_de_baja_la_de_la_etiqueta_deja_cobrar_la_de_la_editorial` | CO058 dar de baja la de la etiqueta deja cobrar la de la editorial | 1 | Pasa |
+| `test_CO059_activar_una_de_grupo_actualiza_sus_carritos` | CO059 activar una de grupo actualiza sus carritos | 1 | Pasa |
+| `test_CO169_la_lista_describe_el_destino_y_busca_por_su_nombre` | CO169 la lista describe el destino y busca por su nombre | 1 | Pasa |
+| `test_CO170_la_ficha_marca_los_productos_que_cobra_otra_mas_especifica` | CO170 la ficha marca los productos que cobra otra mas especifica | 1 | Pasa |
+| `test_CO033_cuenta_las_ofertas_de_su_editorial_etiquetas_y_grupos` | CO033 cuenta las ofertas de su editorial etiquetas y grupos | 1 | Pasa |
+| `test_CO033_un_producto_sin_editorial_no_cuenta_ofertas_de_editorial` | CO033 un producto sin editorial no cuenta ofertas de editorial | 1 | Pasa |
+| `test_el_catalogo_no_consulta_una_vez_por_producto` | El catalogo no consulta una vez por producto | 1 | Pasa |
+| `test_preparar_lee_todo_en_una_consulta_por_tabla` | Preparar lee todo en una consulta por tabla | 1 | Pasa |
+| `test_sin_ofertas_indirectas_no_hay_consultas_extra` | Sin ofertas indirectas no hay consultas extra | 1 | Pasa |
+
 ### `test_contratos_03_pricing.py`
 
 Pruebas de contrato del módulo 03 · Pricing.
 
-**Casos de prueba que ejecuta:** CP-02, CP-03.
+**Casos de prueba que ejecuta:** CP-PVP-MAR-01, CP-PVP-TBM-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -1129,6 +1696,23 @@ CU-CAT-EDI — Editar Producto (Editorial o No Editorial).
 | `test_las_etiquetas_se_pueden_cambiar` | Las etiquetas se pueden cambiar | 1 | Pasa |
 | `test_un_tipo_ajeno_al_rubro_se_rechaza` | El recorte del desplegable es comodidad; la validación es del servidor. | 1 | Pasa |
 | `test_los_dos_rubros_llegan_a_su_propia_ficha` | La vista baja a la instancia de la hija, que es sobre la que trabaja su formulario. | 1 | Pasa |
+| `test_CO030_dejar_el_stock_en_cero_lo_pasa_a_agotado` | CO030 dejar el stock en cero lo pasa a agotado | 1 | Pasa |
+| `test_CO030_dejar_el_stock_en_cero_con_un_pedido_en_camino_abre_la_preventa` | CO030 dejar el stock en cero con un pedido en camino abre la preventa | 1 | Pasa |
+
+### `test_etiquetas_de_serie.py`
+
+B-01-025: las etiquetas de los grupos «de serie» siguen a la serie entera.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_cambiar_el_estado_en_un_tomo_lo_cambia_en_toda_la_serie` | Cambiar el estado en un tomo lo cambia en toda la serie | 1 | Pasa |
+| `test_lo_propio_de_cada_tomo_no_viaja` | Lo propio de cada tomo no viaja | 1 | Pasa |
+| `test_sólo_viaja_lo_que_cambió` | Sólo viaja lo que cambió | 1 | Pasa |
+| `test_otra_editorial_no_es_la_misma_serie` | Otra editorial no es la misma serie | 1 | Pasa |
+| `test_un_grupo_que_no_es_de_serie_no_se_reparte` | Un grupo que no es de serie no se reparte | 1 | Pasa |
+| `test_sin_otros_tomos_no_hay_nada_que_repartir` | Sin otros tomos no hay nada que repartir | 1 | Pasa |
+| `test_la_edición_avisa_qué_grupos_son_de_la_serie` | La edición avisa qué grupos son de la serie | 1 | Pasa |
+| `test_un_grupo_se_marca_de_serie_desde_su_pantalla_y_se_audita` | Un grupo se marca de serie desde su pantalla y se audita | 1 | Pasa |
 
 ### `test_filtros_publicos_de_etiquetas.py`
 
@@ -1140,6 +1724,44 @@ La parte de `CO-039`, `CO-041`, `CO-043` y `CO-045` sobre el catálogo público.
 | `test_CO039_el_grupo_reactivado_vuelve_a_ofrecer_las_etiquetas_activas` | CO039 el grupo reactivado vuelve a ofrecer las etiquetas activas | 1 | Pasa |
 | `test_CO045_la_etiqueta_dada_de_baja_deja_de_ofrecerse_en_la_tienda` | CO045 la etiqueta dada de baja deja de ofrecerse en la tienda | 1 | Pasa |
 | `test_CO043_la_etiqueta_reactivada_vuelve_a_ofrecerse_en_la_tienda` | CO043 la etiqueta reactivada vuelve a ofrecerse en la tienda | 1 | Pasa |
+
+### `test_galeria_edicion.py`
+
+Las imágenes en la edición de producto (plan 00 de interfaz, cuarta parte, C).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_usar_como_portada_intercambia_y_no_borra_ningun_archivo` | Usar como portada intercambia y no borra ningun archivo | 1 | Pasa |
+| `test_sin_portada_la_elegida_sale_de_la_galeria` | Sin portada la elegida sale de la galeria | 1 | Pasa |
+| `test_el_orden_que_arma_el_guion_se_guarda` | El orden que arma el guion se guarda | 1 | Pasa |
+| `test_sin_orden_queda_el_que_estaba` | Sin orden queda el que estaba | 1 | Pasa |
+| `test_quitar_y_reordenar_en_el_mismo_envio` | Quitar y reordenar en el mismo envio | 1 | Pasa |
+| `test_no_se_usa_como_portada_una_imagen_que_se_quita` | No se usa como portada una imagen que se quita | 1 | Pasa |
+| `test_no_se_sube_una_portada_y_se_elige_otra_a_la_vez` | No se sube una portada y se elige otra a la vez | 1 | Pasa |
+| `test_la_pantalla_ofrece_ordenar_usar_como_portada_y_quitar` | La pantalla ofrece ordenar usar como portada y quitar | 1 | Pasa |
+| `test_la_portada_se_quita_desde_su_casilla` | La portada se quita desde su casilla | 1 | Pasa |
+
+### `test_invariantes_en_la_base.py`
+
+I-05, I-06 e I-09 en la base: valen **por cualquier camino** (plan 00 de cierre de deuda, D3).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_I09_un_precio_de_venta_cero_o_negativo_se_rechaza_aunque_sea_por_update` | I09 un precio de venta cero o negativo se rechaza aunque sea por update | 2 | Pasa |
+| `test_I09_tambien_en_el_producto_no_editorial` | I09 tambien en el producto no editorial | 1 | Pasa |
+| `test_I09_el_pvp_de_la_tabla_no_puede_ser_cero` | I09 el pvp de la tabla no puede ser cero | 1 | Pasa |
+| `test_I09_el_precio_base_y_el_costo_en_origen_no_son_negativos` | I09 el precio base y el costo en origen no son negativos | 2 | Pasa |
+| `test_I09_los_importes_del_lote_respetan_sus_topes_en_la_base` | I09 los importes del lote respetan sus topes en la base | 5 | Pasa |
+| `test_I09_un_lote_nacional_sin_importes_se_admite` | I09 un lote nacional sin importes se admite | 1 | Pasa |
+| `test_I09_un_importado_sin_costo_en_origen_y_un_precio_base_cero_se_admiten` | El costo en origen sólo existe en importados, y un precio base cero no es un precio de venta: la invariante pide no negativo, no positivo. | 1 | Pasa |
+| `test_I06_el_no_editorial_no_pasa_a_preventa_ni_a_cancelado_por_ningun_camino` | I06 el no editorial no pasa a preventa ni a cancelado por ningun camino | 2 | Pasa |
+| `test_I06_el_editorial_si_los_admite` | I06 el editorial si los admite | 2 | Pasa |
+| `test_I05_un_tomo_no_toma_un_tipo_no_editorial_por_update` | I05 un tomo no toma un tipo no editorial por update | 1 | Pasa |
+| `test_I05_una_figura_no_toma_un_tipo_editorial_por_update` | I05 una figura no toma un tipo editorial por update | 1 | Pasa |
+| `test_I05_un_alta_por_sql_con_el_tipo_del_otro_rubro_se_rechaza` | I05 un alta por sql con el tipo del otro rubro se rechaza | 1 | Pasa |
+| `test_I05_el_cambio_a_otro_tipo_del_mismo_rubro_se_admite` | I05 el cambio a otro tipo del mismo rubro se admite | 1 | Pasa |
+| `test_I05_un_tipo_con_productos_no_cambia_de_rubro` | I05 un tipo con productos no cambia de rubro | 1 | Pasa |
+| `test_I05_un_tipo_sin_productos_si_cambia_de_rubro` | I05 un tipo sin productos si cambia de rubro | 1 | Pasa |
 
 ### `test_inventario.py`
 
@@ -1191,7 +1813,7 @@ Inventario y ficha de producto: la contraparte de lectura del alta.
 | `test_el_catalogo_vacio_se_distingue_del_filtro_sin_resultados` | Se rompió al darle un valor por defecto al estado: con un filtro siempre puesto, un catálogo vacío se anunciaba como "ningún resultado", que manda a buscar un problema donde no lo hay. | 1 | Pasa |
 | `test_el_administrador_ve_el_historial_de_modificaciones` | El administrador ve el historial de modificaciones | 1 | Pasa |
 | `test_el_cajero_no_ve_la_informacion_interna` | No se esconde con CSS: no se dibuja. | 1 | Pasa |
-| `test_la_ficha_no_inventa_las_cifras_que_no_puede_calcular` | Un cero acá se leería como "nadie lo tiene reservado", que es la conclusión equivocada para decidir una baja. | 1 | Pasa |
+| `test_la_ficha_dice_las_cifras_internas` | Reservado en pedidos y suscriptores: con Pedidos y Restock, son cifras. | 1 | Pasa |
 | `test_el_historial_sale_del_log_de_auditoria` | Sale del log genérico, que desde A8 tiene un índice sobre `(objetivo_tipo, objetivo_pk)` puesto exactamente para esta consulta. | 1 | Pasa |
 
 ### `test_isbn.py`
@@ -1443,12 +2065,70 @@ Parámetros globales: clasificación del catálogo, precios y configuración.
 | `test_CO130_la_pantalla_muestra_la_seccion_de_compra_online` | CO130 la pantalla muestra la seccion de compra online | 1 | Pasa |
 | `test_acceso_solo_el_administrador_guarda_la_compra_online` | Acceso solo el administrador guarda la compra online | 2 | Pasa |
 | `test_la_pantalla_muestra_que_significan_los_dos_numeros` | La pantalla muestra que significan los dos numeros | 1 | Pasa |
+| `test_CO130_el_maximo_por_reserva_pasa_al_declarado_y_se_audita` | Plan 00 de tope de reservas: el parámetro nuevo, en Comercial. | 1 | Pasa |
+| `test_CO130_E1_el_maximo_por_reserva_es_al_menos_uno` | CO130 E1 el maximo por reserva es al menos uno | 1 | Pasa |
+| `test_CO130_el_margen_del_cupo_pasa_al_declarado_y_se_audita` | Plan 00 del circuito, decisión 2: el margen global del cupo de pre-venta. | 1 | Pasa |
+| `test_CO130_E1_el_margen_del_cupo_no_pasa_del_50` | CO130 E1 el margen del cupo no pasa del 50 | 1 | Pasa |
+
+### `test_portadas_rnf05.py`
+
+RNF-05 en las portadas de producto (plan 00 de cierre de deuda, D2).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO003_la_portada_del_lote_nacional_queda_en_webp_sin_el_original` | CO003 la portada del lote nacional queda en webp sin el original | 1 | Pasa |
+| `test_CO009_la_portada_del_lote_importado_queda_en_webp_sin_el_original` | CO009 la portada del lote importado queda en webp sin el original | 1 | Pasa |
+| `test_CO028_la_portada_del_alta_no_editorial_queda_en_webp_sin_el_original` | CO028 la portada del alta no editorial queda en webp sin el original | 1 | Pasa |
+| `test_CO030_la_portada_que_reemplaza_queda_en_webp_sin_el_original` | CO030 la portada que reemplaza queda en webp sin el original | 1 | Pasa |
+| `test_CO020_la_portada_que_se_le_carga_a_un_borrador_queda_en_webp` | CO020 la portada que se le carga a un borrador queda en webp | 1 | Pasa |
+| `test_la_portada_del_correo_se_procesa_al_adjuntarla_al_borrador` | Ambigüedad 1 del plan: la revisión ve la misma imagen que se va a guardar. | 1 | Pasa |
+| `test_CO028_una_portada_gif_se_rechaza_y_no_registra` | Ambigüedad 3 del plan: el mismo criterio que las imágenes adicionales. | 1 | Pasa |
+| `test_un_adjunto_gif_del_correo_deja_el_reparo_y_ningun_archivo` | Un adjunto gif del correo deja el reparo y ningun archivo | 1 | Pasa |
+
+### `test_precio_de_la_tabla_en_borradores.py`
+
+El precio de la tabla de referencia en la revisión de borradores (B-01-018).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_sin_precio_en_el_correo_el_borrador_nace_con_el_de_la_tabla` | Sin precio en el correo el borrador nace con el de la tabla | 1 | Pasa |
+| `test_un_precio_del_correo_se_respeta_aunque_no_sea_el_de_la_tabla` | Un precio del correo se respeta aunque no sea el de la tabla | 1 | Pasa |
+| `test_sin_fila_en_la_tabla_sigue_naciendo_sin_precio` | Sin fila en la tabla sigue naciendo sin precio | 1 | Pasa |
+| `test_con_el_precio_de_la_tabla_la_confianza_baja_no_exige_revision` | Con el precio de la tabla la confianza baja no exige revision | 1 | Pasa |
+| `test_con_otro_precio_la_confianza_baja_sigue_exigiendo_revision` | Con otro precio la confianza baja sigue exigiendo revision | 1 | Pasa |
+| `test_el_lote_excluye_un_precio_distinto_del_de_la_tabla` | El lote excluye un precio distinto del de la tabla | 1 | Pasa |
+| `test_confirmar_un_precio_distinto_sin_la_casilla_lo_rechaza` | Confirmar un precio distinto sin la casilla lo rechaza | 1 | Pasa |
+| `test_confirmar_un_precio_distinto_con_la_casilla_lo_deja_a_mano` | Confirmar un precio distinto con la casilla lo deja a mano | 1 | Pasa |
+| `test_guardar_sin_confirmar_no_pide_la_casilla` | Guardar sin confirmar no pide la casilla | 1 | Pasa |
+| `test_el_precio_de_la_tabla_confirma_vinculado` | El precio de la tabla confirma vinculado | 1 | Pasa |
+| `test_un_borrador_sin_precio_se_abre_con_el_de_la_tabla` | Un borrador sin precio se abre con el de la tabla | 1 | Pasa |
+| `test_con_el_precio_de_la_tabla_la_pantalla_no_pide_revisar_la_confianza` | Con el precio de la tabla la pantalla no pide revisar la confianza | 1 | Pasa |
+| `test_el_cajero_no_confirma_por_la_direccion_real` | El cajero no confirma por la direccion real | 1 | Pasa |
+| `test_una_fecha_sin_anio_es_la_proxima_vez_que_cae` | Una fecha sin anio es la proxima vez que cae | 7 | Pasa |
+| `test_la_fecha_de_una_fila_sin_anio_se_toma_y_queda_anotada` | La fecha de una fila sin anio se toma y queda anotada | 1 | Pasa |
+| `test_el_periodo_sin_anio_tambien_se_toma_y_queda_anotado` | El periodo sin anio tambien se toma y queda anotado | 1 | Pasa |
+| `test_la_serie_se_reconoce_sin_mayusculas_ni_tildes_y_en_la_misma_editorial` | La serie se reconoce sin mayusculas ni tildes y en la misma editorial | 1 | Pasa |
+| `test_el_borrador_de_una_serie_conocida_nace_con_lo_que_ya_sabemos` | El borrador de una serie conocida nace con lo que ya sabemos | 1 | Pasa |
+| `test_sin_serie_en_el_catalogo_el_borrador_queda_como_vino` | Sin serie en el catalogo el borrador queda como vino | 1 | Pasa |
+| `test_la_ficha_ofrece_la_serie_y_señala_el_formato_distinto` | La ficha ofrece la serie y señala el formato distinto | 1 | Pasa |
+| `test_sin_serie_la_ficha_no_ofrece_nada` | Sin serie la ficha no ofrece nada | 1 | Pasa |
+
+### `test_precio_manual_y_tabla.py`
+
+Un precio fijado a mano sobrevive a los cambios de la tabla de referencia.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_un_precio_manual_del_lote_no_lo_pisa_un_cambio_de_la_tabla` | Un precio manual del lote no lo pisa un cambio de la tabla | 1 | Pasa |
+| `test_el_precio_manual_del_lote_no_queda_asociado_a_la_tabla` | El precio manual del lote no queda asociado a la tabla | 1 | Pasa |
+| `test_un_precio_corregido_en_la_edicion_tampoco_lo_pisa_la_tabla` | CU-CAT-EDI A1: la misma regla que en el alta (CO-005, compartida). | 1 | Pasa |
+| `test_la_base_no_admite_un_precio_manual_asociado_a_la_tabla` | La base no admite un precio manual asociado a la tabla | 1 | Pasa |
 
 ### `test_precios.py`
 
 RF-10 — la aritmética del precio importado.
 
-**Casos de prueba que ejecuta:** CP-01.
+**Casos de prueba que ejecuta:** CP-ALT-IMP-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -1464,6 +2144,8 @@ RF-10 — la aritmética del precio importado.
 | `test_la_cotizacion_convierte_el_costo_en_origen_a_pesos` | Agregado a la fuente: el CU habla de 'costo base en origen' sin decir en qué moneda. | 1 | Pasa |
 | `test_el_desglose_convierte_antes_de_aplicar_el_cre` | El desglose convierte antes de aplicar el cre | 1 | Pasa |
 | `test_el_recalculo_de_cu_13_sale_del_precio_base_almacenado` | Ante un margen nuevo, el precio final se recalcula sin los datos del lote. | 1 | Pasa |
+| `test_el_valor_de_compra_es_costo_por_unidades_con_decimal_exacto` | El valor de compra es costo por unidades con decimal exacto | 1 | Pasa |
+| `test_el_valor_de_compra_no_se_calcula_con_un_item_incompleto` | Contar un ítem incompleto como cero bajaría el divisor y subiría el CRE. | 5 | Pasa |
 
 ### `test_revision_borradores.py`
 
@@ -1478,6 +2160,7 @@ Revisar y confirmar borradores (CU-ALT-REV), del lado de las reglas.
 | `test_el_precio_se_redondea_al_peso` | A1: el precio final es el número que se cobra, y en una comiquería no se cobran centavos. | 1 | Pasa |
 | `test_un_precio_que_coincide_con_la_tabla_no_queda_manual` | Un precio que coincide con la tabla no queda manual | 1 | Pasa |
 | `test_un_precio_distinto_del_de_la_tabla_queda_manual` | A4: si el precio confirmado no es el de la tabla, alguien lo decidió a propósito y la propagación de CU-PVP-MAR no debe pisárselo. | 1 | Pasa |
+| `test_un_precio_distinto_del_de_la_tabla_sin_confirmar_no_se_confirma` | B-01-018, como CU-ALT-NAC A3: apartarse de la tabla se confirma, en el servidor. | 1 | Pasa |
 | `test_sin_fila_en_la_tabla_la_marca_no_aplica` | No hay de dónde propagarle, así que no se lo marca como manual. | 1 | Pasa |
 | `test_un_bloqueante_vacio_impide_confirmar` | Un bloqueante vacio impide confirmar | 1 | Pasa |
 | `test_una_pre_venta_sin_fecha_no_se_puede_confirmar` | Bloqueante condicional del CU, y A10: sin fecha quedaría en pre-venta para siempre, invisible para el ciclo que debería sacarla de ahí. | 1 | Pasa |
@@ -1507,9 +2190,50 @@ Revisar y confirmar borradores (CU-ALT-REV), del lado de las reglas.
 | `test_un_proveedor_caido_no_frena_al_resto` | Un proveedor caido no frena al resto | 1 | Pasa |
 | `test_cada_confirmacion_deja_su_entrada` | "Qué pasó en esta tanda" la contesta la sesión; "de dónde salió este producto" solo la contesta esta entrada. | 1 | Pasa |
 | `test_el_cierre_registra_confirmados_rechazados_y_pendientes` | El cierre registra confirmados rechazados y pendientes | 1 | Pasa |
-| `test_el_stock_por_defecto_de_la_configuracion_llega_al_producto` | El stock por defecto de la configuracion llega al producto | 1 | Pasa |
-| `test_una_carrera_contra_la_base_se_trata_como_duplicado` | La restricción de la base es la que **realmente** garantiza la unicidad. | 1 | Pasa |
+| `test_la_cantidad_por_defecto_se_pide_al_cerrar_y_el_producto_nace_sin_stock` | B-01-016: la cantidad del borrador no es stock en la mano. | 1 | Pasa |
+| `test_CO022_E7_el_tomo_confirmado_mientras_tanto_se_informa_como_duplicado` | La restricción de la base es la que **realmente** garantiza la unicidad. | 1 | Pasa |
+| `test_un_error_de_integridad_sin_duplicado_no_se_disfraza` | Si nada choca, el error es nuestro: se deja subir, no se informa «ya existe». | 1 | Pasa |
 | `test_un_proveedor_sin_productos_confirmados_no_recibe_correo` | Nada que pedir no es un fallo: es una sesión donde ese proveedor no aportó ningún producto. | 1 | Pasa |
+
+### `test_serie_en_la_edicion.py`
+
+B-01-024: la edición de un tomo ofrece los datos de su serie, como el borrador.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_serie_no_cuenta_el_tomo_que_se_edita` | La serie no cuenta el tomo que se edita | 1 | Pasa |
+| `test_la_edición_ofrece_los_datos_de_los_otros_tomos` | La edición ofrece los datos de los otros tomos | 1 | Pasa |
+| `test_un_tomo_solo_no_ofrece_serie` | Un tomo solo no ofrece serie | 1 | Pasa |
+| `test_otra_editorial_no_es_la_misma_serie` | Otra editorial no es la misma serie | 1 | Pasa |
+| `test_lo_no_editorial_no_tiene_serie` | Lo no editorial no tiene serie | 1 | Pasa |
+
+### `test_tomo_que_vuelve.py`
+
+El tomo cancelado por la editorial que vuelve a anunciarse (B-01-026).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO027_cancelar_retira_la_edición` | CO027 cancelar retira la edición | 1 | Pasa |
+| `test_CO027_cancelar_no_toca_el_isbn_ni_el_código` | El cancelado queda en el historial tal cual: sólo se libera la identidad. | 1 | Pasa |
+| `test_una_preventa_viva_no_está_retirada` | Una preventa viva no está retirada | 1 | Pasa |
+| `test_el_cancelado_ya_no_cuenta_como_duplicado` | El cancelado ya no cuenta como duplicado | 1 | Pasa |
+| `test_pero_se_lo_encuentra_para_avisar` | Pero se lo encuentra para avisar | 1 | Pasa |
+| `test_el_que_vuelve_nace_con_código_nuevo_y_enlazado` | El que vuelve nace con código nuevo y enlazado | 1 | Pasa |
+| `test_sin_isbn_se_enlaza_por_la_clave` | Sin isbn se enlaza por la clave | 1 | Pasa |
+| `test_el_cancelado_no_cambia_cuando_vuelve` | Postcondición negativa: el historial del cancelado queda intacto. | 1 | Pasa |
+| `test_un_tomo_distinto_no_se_enlaza` | Un tomo distinto no se enlaza | 1 | Pasa |
+| `test_si_vuelve_y_se_cancela_otra_vez_el_tercero_reanuncia_al_último` | Si vuelve y se cancela otra vez el tercero reanuncia al último | 1 | Pasa |
+| `test_dos_ediciones_vivas_iguales_siguen_chocando_en_la_base` | Postcondición negativa: la restricción sigue valiendo entre las vivas. | 1 | Pasa |
+| `test_la_clave_viva_también_sigue_chocando` | La clave viva también sigue chocando | 1 | Pasa |
+| `test_el_lote_lo_carga_en_vez_de_rechazarlo` | El lote lo carga en vez de rechazarlo | 1 | Pasa |
+| `test_el_borrador_del_correo_se_confirma_como_reanuncio` | El borrador del correo se confirma como reanuncio | 1 | Pasa |
+| `test_la_ficha_del_cancelado_ofrece_volver_a_anunciar` | La ficha del cancelado ofrece volver a anunciar | 1 | Pasa |
+| `test_una_ficha_viva_no_ofrece_volver_a_anunciar` | Una ficha viva no ofrece volver a anunciar | 1 | Pasa |
+| `test_las_dos_fichas_se_enlazan` | Las dos fichas se enlazan | 1 | Pasa |
+| `test_volver_a_anunciar_precarga_el_lote` | Volver a anunciar precarga el lote | 1 | Pasa |
+| `test_volver_a_anunciar_algo_que_no_está_cancelado_no_precarga` | Volver a anunciar algo que no está cancelado no precarga | 1 | Pasa |
+| `test_el_borrador_avisa_que_el_tomo_vuelve` | El borrador avisa que el tomo vuelve | 1 | Pasa |
+| `test_sigue_sin_poder_reactivarse` | `CU-CAT-REA` no admite un cancelado: volver es otra edición, no reactivarlo. | 1 | Pasa |
 
 ### `test_validaciones.py`
 
@@ -1569,6 +2293,17 @@ El registro de auditoría: lo que queda escrito y lo que no se puede reescribir.
 | `test_una_entrada_de_auditoria_no_se_puede_borrar` | Una entrada de auditoria no se puede borrar | 1 | Pasa |
 | `test_la_traza_sobrevive_a_la_baja_del_usuario` | La traza sobrevive a la baja del usuario | 1 | Pasa |
 
+### `test_capa_carga.py`
+
+La capa de carga entre pantallas (plan 00 de tope de reservas y errores, C).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_panel_tiene_la_capa` | El panel tiene la capa | 1 | Pasa |
+| `test_la_tienda_tambien_la_tiene` | Antes estaba sólo en el panel. | 1 | Pasa |
+| `test_la_capa_no_se_activa_con_los_clics_que_abren_otra_pestana` | La capa no se activa con los clics que abren otra pestana | 1 | Pasa |
+| `test_la_pantalla_de_error_no_carga_la_capa` | La pantalla de error no carga la capa | 1 | Pasa |
+
 ### `test_componentes.py`
 
 Los controles de formulario del modo operativo están todos vestidos.
@@ -1587,8 +2322,10 @@ Los controles de formulario del modo operativo están todos vestidos.
 | `test_los_desplegables_son_nativos_y_el_propio_solo_falta_base_select` | B-00-011: el formulario dibuja el `<select>` nativo, que es el que envía el valor y el que leen los guiones. | 1 | Pasa |
 | `test_los_cuatro_niveles_estan_definidos` | Los cuatro niveles estan definidos | 1 | Pasa |
 | `test_el_nivel_3_vive_solo_donde_hay_filas` | Su presencia comunica algo concreto. | 1 | Pasa |
+| `test_un_envio_no_se_dibuja_como_navegacion` | Un envio no se dibuja como navegacion | 1 | Pasa |
 | `test_ninguna_pantalla_repite_el_boton_principal` | Uno por pantalla. | 1 | Pasa |
 | `test_el_boton_de_texto_no_lleva_copia_y_antepone_la_flecha_al_volver` | La copia en `data-texto` sólo servía para el barrido de color, que se retiró. | 1 | Pasa |
+| `test_ninguna_plantilla_usa_una_clase_que_la_hoja_no_define` | `pila-4` se usó en 17 plantillas sin existir, y esas pantallas quedaron con los elementos pegados (plan 00 de interfaz). | 1 | Pasa |
 
 ### `test_configuracion_del_modelo.py`
 
@@ -1701,6 +2438,50 @@ Pruebas de contrato del módulo 17 · contenido de la tienda.
 | `test_CO131_la_imagen_del_ingreso_se_procesa_y_se_audita` | B-07-020: la imagen que acompaña a las pantallas de acceso, en la identidad. | 1 | Pasa |
 | `test_CO131_quitar_el_logo_y_la_imagen_del_ingreso_vuelve_a_lo_predeterminado` | B-07-025: las dos imágenes se pueden quitar; la tienda vuelve a su vista predeterminada y la auditoría lo dice. | 1 | Pasa |
 
+### `test_contratos_consultas_del_nucleo.py`
+
+Las consultas del núcleo: `CO-219`, `CO-245`, `CO-246`, `CO-249` y `CO-252`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO219_el_panel_presenta_ventas_inteligencia_y_pendientes` | CO219 el panel presenta ventas inteligencia y pendientes | 1 | Pasa |
+| `test_CO219_consultar_el_panel_no_cambia_nada_ni_se_audita` | CO219 consultar el panel no cambia nada ni se audita | 1 | Pasa |
+| `test_CO219_el_rol_equivocado_no_ve_el_panel_por_la_direccion_real` | CO219 el rol equivocado no ve el panel por la direccion real | 2 | Pasa |
+| `test_CO245_la_portada_es_publica_y_presenta_las_secciones_activas_en_su_orden` | CO245 la portada es publica y presenta las secciones activas en su orden | 1 | Pasa |
+| `test_CO245_consultar_la_portada_no_cambia_nada` | CO245 consultar la portada no cambia nada | 2 | Pasa |
+| `test_CO246_presenta_lo_publicado_sin_sesion` | CO246 presenta lo publicado sin sesion | 1 | Pasa |
+| `test_CO246_A1_sin_contenido_publicado_no_aparece_el_globo_de_ayuda` | CO246 A1 sin contenido publicado no aparece el globo de ayuda | 1 | Pasa |
+| `test_CO246_consultar_las_preguntas_no_cambia_nada` | CO246 consultar las preguntas no cambia nada | 1 | Pasa |
+| `test_CO249_la_politica_es_publica_y_presenta_sus_cinco_apartados` | CO249 la politica es publica y presenta sus cinco apartados | 1 | Pasa |
+| `test_CO249_consultar_la_politica_no_cambia_nada` | CO249 consultar la politica no cambia nada | 1 | Pasa |
+| `test_CO252_presenta_las_secciones_como_tarjetas_en_su_orden` | CO252 presenta las secciones como tarjetas en su orden | 1 | Pasa |
+| `test_CO252_consultar_las_secciones_no_cambia_nada` | CO252 consultar las secciones no cambia nada | 1 | Pasa |
+
+### `test_contratos_modelo_de_respaldo.py`
+
+`CO-228` proponerCambioDeModelo y `CO-229` confirmarCambioDeModelo (plan 00, A).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO228_tres_fallas_seguidas_proponen_el_cambio_y_avisan` | CO228 tres fallas seguidas proponen el cambio y avisan | 1 | Pasa |
+| `test_CO228_no_cambia_el_modelo_activo` | CO228 no cambia el modelo activo | 1 | Pasa |
+| `test_CO228_se_propone_una_vez_por_racha` | CO228 se propone una vez por racha | 1 | Pasa |
+| `test_CO228_un_rechazo_del_proveedor_tambien_cuenta` | CO228 un rechazo del proveedor tambien cuenta | 1 | Pasa |
+| `test_CO228_dos_fallas_no_alcanzan` | CO228 dos fallas no alcanzan | 1 | Pasa |
+| `test_CO228_un_acierto_corta_la_racha_y_permite_volver_a_proponer` | CO228 un acierto corta la racha y permite volver a proponer | 1 | Pasa |
+| `test_CO228_una_respuesta_ilegible_no_cuenta_como_falla` | CO228 una respuesta ilegible no cuenta como falla | 1 | Pasa |
+| `test_CO228_sin_respaldo_el_aviso_dice_que_no_hay` | CO228 sin respaldo el aviso dice que no hay | 1 | Pasa |
+| `test_CO229_intercambia_el_activo_y_el_respaldo` | CO229 intercambia el activo y el respaldo | 1 | Pasa |
+| `test_CO229_prueba_el_respaldo_sobre_su_propio_perfil` | CO229 prueba el respaldo sobre su propio perfil | 1 | Pasa |
+| `test_CO229_si_el_respaldo_tampoco_responde_no_cambia_nada` | CO229 si el respaldo tampoco responde no cambia nada | 1 | Pasa |
+| `test_CO229_si_el_servidor_no_ofrece_el_modelo_no_cambia` | CO229 si el servidor no ofrece el modelo no cambia | 1 | Pasa |
+| `test_CO229_sin_respaldo_no_se_puede` | CO229 sin respaldo no se puede | 1 | Pasa |
+| `test_CO229_por_la_pantalla_mirar_no_cambia_y_confirmar_si` | CO229 por la pantalla mirar no cambia y confirmar si | 1 | Pasa |
+| `test_CO229_por_la_pantalla_un_respaldo_caido_se_informa` | CO229 por la pantalla un respaldo caido se informa | 1 | Pasa |
+| `test_CO229_el_rol_equivocado_no_cambia_el_modelo` | CO229 el rol equivocado no cambia el modelo | 2 | Pasa |
+| `test_el_respaldo_se_guarda_sin_mostrar_ni_auditar_la_clave` | El respaldo se guarda sin mostrar ni auditar la clave | 1 | Pasa |
+| `test_un_respaldo_remoto_sin_modelo_se_rechaza` | Un respaldo remoto sin modelo se rechaza | 1 | Pasa |
+
 ### `test_correo.py`
 
 Los correos salen de verdad, dejan copia en la consola y llevan el estilo del sistema.
@@ -1719,15 +2500,28 @@ Los correos salen de verdad, dejan copia en la consola y llevan el estilo del si
 | `test_ninguna_linea_del_correo_pasa_el_limite_del_protocolo` | Una línea de más de 998 caracteres obliga a recodificar la parte entera. | 1 | Pasa |
 | `test_sin_servidor_el_correo_queda_solo_en_la_consola` | Sin servidor el correo queda solo en la consola | 1 | Pasa |
 | `test_con_servidor_sale_por_smtp_y_deja_la_copia` | Con servidor sale por smtp y deja la copia | 1 | Pasa |
+| `test_una_consola_que_no_escribe_un_caracter_no_frena_el_envio` | La copia va antes del envío: en una consola cp1252 un carácter raro del asunto dejaba el correo sin salir. | 1 | Pasa |
 | `test_un_fallo_del_servidor_levanta_y_la_copia_igual_queda` | Un fallo del servidor levanta y la copia igual queda | 1 | Pasa |
 | `test_sin_mensajes_no_hace_nada` | Sin mensajes no hace nada | 1 | Pasa |
 | `test_el_pedido_reintenta_cuando_el_servidor_real_falla` | El pedido reintenta cuando el servidor real falla | 1 | Pasa |
+
+### `test_correo_reintento.py`
+
+B-19-021: una caída del servidor de correo se reintenta (revisión integral, R-07).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_una_caida_pasajera_se_reintenta_y_sale` | Una caida pasajera se reintenta y sale | 1 | Pasa |
+| `test_un_rechazo_temporal_4xx_tambien_se_reintenta` | Un rechazo temporal 4xx tambien se reintenta | 1 | Pasa |
+| `test_un_rechazo_definitivo_no_se_reintenta` | Un rechazo definitivo no se reintenta | 1 | Pasa |
+| `test_tres_fallas_avisan_por_telegram_y_el_error_sigue` | Tres fallas avisan por telegram y el error sigue | 1 | Pasa |
+| `test_durante_la_misma_caida_se_avisa_una_sola_vez` | Durante la misma caida se avisa una sola vez | 1 | Pasa |
 
 ### `test_cotizaciones.py`
 
 Cotización del peso frente a las monedas con las que se importa.
 
-**Casos de prueba que ejecuta:** CP-04.
+**Casos de prueba que ejecuta:** CP-ALT-IMP-02.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -1760,6 +2554,7 @@ Viñeta Nocturna no se degrada sin que nadie lo note.
 | `test_las_fuentes_estan_autoalojadas` | Las fuentes estan autoalojadas | 1 | Pasa |
 | `test_la_hoja_de_componentes_no_escribe_colores` | Los componentes leen semánticos; los valores viven en `tokens.css`. | 1 | Pasa |
 | `test_la_hoja_de_componentes_no_usa_nada_de_lo_prohibido` | La hoja de componentes no usa nada de lo prohibido | 1 | Pasa |
+| `test_el_desenfoque_solo_va_en_el_telon_del_dialogo` | Plan 00 de interfaz, ambigüedad 2: `backdrop-filter` sólo en el `::backdrop` de un `<dialog>`, a 4px. | 1 | Pasa |
 | `test_las_sombras_son_duras` | Sin desenfoque: el tercer largo de toda sombra es 0, o es un token. | 1 | Pasa |
 | `test_solo_hay_animaciones_del_catalogo` | Solo hay animaciones del catalogo | 1 | Pasa |
 | `test_el_movimiento_reducido_esta_declarado` | El movimiento reducido esta declarado | 1 | Pasa |
@@ -1768,30 +2563,14 @@ Viñeta Nocturna no se degrada sin que nadie lo note.
 | `test_el_sticker_no_aparece_en_el_mostrador` | Bangers, «nunca en el operativo». | 1 | Pasa |
 | `test_los_archivos_del_sistema_anterior_ya_no_estan` | Los archivos del sistema anterior ya no estan | 1 | Pasa |
 
-### `test_filas_portada.py`
+### `test_fechas_iso.py`
 
-Las filas de la portada de la tienda (plan 07, tercera y cuarta parte).
+Revisión integral, R-11: todo selector de fecha se pinta en formato ISO.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
-| `test_el_administrador_agrega_una_fila_de_etiqueta_y_otra_de_grupo` | El administrador agrega una fila de etiqueta y otra de grupo | 1 | Pasa |
-| `test_una_fila_sin_origen_se_rechaza_y_no_se_guarda_nada` | Una fila sin origen se rechaza y no se guarda nada | 1 | Pasa |
-| `test_eliminar_una_fila` | Eliminar una fila | 1 | Pasa |
-| `test_guardar_sin_cambios_no_audita` | Guardar sin cambios no audita | 1 | Pasa |
-| `test_solo_el_administrador_configura_las_filas` | Solo el administrador configura las filas | 2 | Pasa |
-| `test_la_portada_muestra_las_filas_en_su_orden_con_sus_productos` | La portada muestra las filas en su orden con sus productos | 1 | Pasa |
-| `test_la_fila_trae_hasta_doce_y_sin_lo_que_la_tienda_no_muestra` | La fila trae hasta doce y sin lo que la tienda no muestra | 1 | Pasa |
-| `test_no_se_dibujan_las_filas_vacias_inactivas_o_de_etiquetas_dadas_de_baja` | No se dibujan las filas vacias inactivas o de etiquetas dadas de baja | 1 | Pasa |
-| `test_el_catalogo_filtra_por_grupo_para_el_ver_todo` | El catalogo filtra por grupo para el ver todo | 1 | Pasa |
-| `test_reordenar_las_tarjetas_cambia_el_orden_y_se_audita` | Reordenar las tarjetas cambia el orden y se audita | 1 | Pasa |
-| `test_la_imagen_de_la_fila_se_guarda_procesada_y_se_audita` | La imagen de la fila se guarda procesada y se audita | 1 | Pasa |
-| `test_un_archivo_que_no_es_imagen_se_rechaza_y_no_se_guarda_nada` | Un archivo que no es imagen se rechaza y no se guarda nada | 1 | Pasa |
-| `test_quitar_la_imagen_de_una_fila` | Quitar la imagen de una fila | 1 | Pasa |
-| `test_el_gestor_trae_la_tarjeta_vacia_para_agregar_y_los_mandos` | El gestor trae la tarjeta vacia para agregar y los mandos | 1 | Pasa |
-| `test_el_pie_lleva_las_filas_activas_al_catalogo` | La cinta de accesos se quitó (B-07-021): los accesos quedan en el pie. | 1 | Pasa |
-| `test_el_encabezado_busca_en_el_catalogo` | El encabezado busca en el catalogo | 1 | Pasa |
-| `test_el_globo_de_ayuda_aparece_si_hay_preguntas_publicadas` | El globo de ayuda aparece si hay preguntas publicadas | 1 | Pasa |
-| `test_la_fila_abre_con_su_imagen_o_con_el_abanico_de_portadas` | La fila abre con su imagen o con el abanico de portadas | 1 | Pasa |
+| `test_todo_selector_de_fecha_declara_el_formato_iso` | Todo selector de fecha declara el formato iso | 1 | Pasa |
+| `test_la_fecha_se_pinta_como_la_lee_el_navegador` | La fecha se pinta como la lee el navegador | 1 | Pasa |
 
 ### `test_georef.py`
 
@@ -1818,7 +2597,7 @@ Integración con georef-ar-api: caché, respaldo y degradación.
 
 I-13: una entrada del log no se modifica ni se borra, **por ningún camino**.
 
-**Casos de prueba que ejecuta:** CP-22.
+**Casos de prueba que ejecuta:** CP-AUD-CON-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -1828,6 +2607,48 @@ I-13: una entrada del log no se modifica ni se borra, **por ningún camino**.
 | `test_I13_eliminar_la_cuenta_del_actor_conserva_la_entrada_con_el_correo` | El `SET_NULL` de la clave foránea es la única escritura que la base admite. | 1 | Pasa |
 | `test_I13_poner_en_nulo_el_actor_junto_con_otro_cambio_se_rechaza` | I13 poner en nulo el actor junto con otro cambio se rechaza | 1 | Pasa |
 | `test_I13_las_altas_siguen_funcionando` | I13 las altas siguen funcionando | 1 | Pasa |
+
+### `test_inteligencia.py`
+
+Las inferencias del panel (`core.inteligencia`).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_sin_dos_semanas_de_historia_no_proyecta` | Sin dos semanas de historia no proyecta | 1 | Pasa |
+| `test_un_ritmo_parejo_proyecta_ese_ritmo_por_los_dias_que_faltan` | Un ritmo parejo proyecta ese ritmo por los dias que faltan | 1 | Pasa |
+| `test_la_proyeccion_respeta_el_dia_de_la_semana` | La proyeccion respeta el dia de la semana | 1 | Pasa |
+| `test_si_hoy_ya_se_vendio_mas_que_lo_esperado_cuenta_lo_vendido` | Si hoy ya se vendio mas que lo esperado cuenta lo vendido | 1 | Pasa |
+| `test_sugiere_reponer_lo_que_se_agota_y_cuanto_pedir` | Sugiere reponer lo que se agota y cuanto pedir | 1 | Pasa |
+| `test_lo_que_viene_en_camino_se_descuenta_y_si_alcanza_no_se_lista` | Lo que viene en camino se descuenta y si alcanza no se lista | 1 | Pasa |
+| `test_el_agotado_que_se_vende_va_primero_y_la_pre_venta_no_entra` | El agotado que se vende va primero y la pre venta no entra | 1 | Pasa |
+| `test_las_ventas_canceladas_no_son_ritmo` | Las ventas canceladas no son ritmo | 1 | Pasa |
+| `test_suma_la_plata_parada_de_lo_que_no_se_vende` | Suma la plata parada de lo que no se vende | 1 | Pasa |
+| `test_las_tendencias_comparan_contra_los_30_dias_anteriores` | Las tendencias comparan contra los 30 dias anteriores | 1 | Pasa |
+| `test_poco_movimiento_no_es_tendencia_y_lo_nuevo_no_tiene_por_ciento` | Poco movimiento no es tendencia y lo nuevo no tiene por ciento | 1 | Pasa |
+| `test_el_mejor_dia_de_la_semana` | El mejor dia de la semana | 1 | Pasa |
+| `test_sin_ventas_no_hay_dia_de_la_semana` | Sin ventas no hay dia de la semana | 1 | Pasa |
+| `test_las_senales_ponen_primero_lo_urgente` | Las senales ponen primero lo urgente | 1 | Pasa |
+| `test_sin_datos_no_inventa_nada` | Sin datos no inventa nada | 1 | Pasa |
+| `test_el_panel_muestra_la_inteligencia_y_lo_dice_cuando_no_hay_base` | El panel muestra la inteligencia y lo dice cuando no hay base | 1 | Pasa |
+| `test_el_panel_lista_la_reposicion_con_enlace_a_la_ficha` | El panel lista la reposicion con enlace a la ficha | 1 | Pasa |
+| `test_el_cajero_no_ve_el_panel_ni_sus_cifras` | El cajero no ve el panel ni sus cifras | 1 | Pasa |
+
+### `test_mapa_de_colores.py`
+
+El mapa de colores de la tienda (plan 00 de interfaz, cuarta parte, A y B; B-17-019).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_los_valores_iniciales_reproducen_la_tienda_de_antes` | Sin tocar el mapa, cada parte lleva el color que llevaba. | 1 | Pasa |
+| `test_la_pantalla_muestra_el_mapa_con_las_opciones_de_cada_rol` | La pantalla muestra el mapa con las opciones de cada rol | 1 | Pasa |
+| `test_elegir_un_color_por_rol_cambia_la_tienda_y_queda_auditado` | Elegir un color por rol cambia la tienda y queda auditado | 1 | Pasa |
+| `test_una_opcion_ajena_al_rol_se_rechaza_en_el_servidor` | El encabezado no puede ser neutro ni el botón ser el fondo: el desplegable no las ofrece, y un envío armado a mano tampoco pasa. | 1 | Pasa |
+| `test_un_rol_que_no_viaja_conserva_el_que_tenia` | Un rol que no viaja conserva el que tenia | 1 | Pasa |
+| `test_el_texto_encima_de_cada_color_sale_del_contraste` | Primario #1A2B3C es oscuro: el texto del botón va en blanco. | 1 | Pasa |
+| `test_un_color_que_no_se_lee_sobre_el_fondo_no_se_usa_como_texto` | Primario #1A2B3C sobre un fondo casi negro no llega a 3:1: el precio va en el más legible de noche o blanco, no en el primario. | 1 | Pasa |
+| `test_el_encabezado_con_color_cambia_el_texto_de_su_zona` | El encabezado con color cambia el texto de su zona | 1 | Pasa |
+| `test_con_el_encabezado_en_el_fondo_no_se_toca_su_texto` | Con el encabezado en el fondo no se toca su texto | 1 | Pasa |
+| `test_la_hoja_de_componentes_deriva_las_variantes_del_rol` | A: el hover y lo presionado salen del color del rol, no de la paleta fija. | 1 | Pasa |
 
 ### `test_paises.py`
 
@@ -1860,6 +2681,19 @@ Tablero de entrada del Administrador y menú lateral del backoffice.
 | `test_el_menu_lateral_enlaza_las_secciones_disponibles` | El menu lateral enlaza las secciones disponibles | 1 | Pasa |
 | `test_el_menu_marca_la_pantalla_en_la_que_se_esta` | El menu marca la pantalla en la que se esta | 1 | Pasa |
 
+### `test_pantallas_de_error.py`
+
+Las pantallas de error propias (plan 00 de tope de reservas y errores).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_una_direccion_inexistente_muestra_la_pantalla_404` | Una direccion inexistente muestra la pantalla 404 | 1 | Pasa |
+| `test_el_rol_equivocado_ve_la_pantalla_403_con_el_motivo` | El rol equivocado ve la pantalla 403 con el motivo | 1 | Pasa |
+| `test_un_formulario_sin_csrf_valido_ve_que_vencio` | Un formulario sin csrf valido ve que vencio | 1 | Pasa |
+| `test_un_host_no_permitido_ve_la_pantalla_400` | Un host no permitido ve la pantalla 400 | 1 | Pasa |
+| `test_un_error_del_servidor_muestra_la_pantalla_500` | Un error del servidor muestra la pantalla 500 | 1 | Pasa |
+| `test_la_pantalla_500_se_dibuja_sin_consultar_la_base` | La del 500 se dibuja cuando algo ya falló: puede ser la base misma. | 1 | Pasa |
+
 ### `test_permisos_por_rol.py`
 
 RNF-03: el control de acceso por rol se valida siempre del lado del servidor.
@@ -1891,6 +2725,33 @@ Los textos configurables de la portada (B-17-015) y el formato de los importes.
 | `test_un_texto_vacio_vuelve_a_su_valor_inicial` | Un texto vacio vuelve a su valor inicial | 1 | Pasa |
 | `test_sin_mensajes_el_ticker_anuncia_lo_ultimo_que_llego` | Sin mensajes el ticker anuncia lo ultimo que llego | 1 | Pasa |
 
+### `test_pulido_de_interfaz.py`
+
+Plan 00 de interfaz: diálogos de confirmación, selector de entrega y carnet.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_cada_confirmacion_marca_el_bloque_que_va_al_dialogo` | Cada confirmacion marca el bloque que va al dialogo | 1 | Pasa |
+| `test_las_bajas_se_marcan_como_destructivas` | Las bajas se marcan como destructivas | 1 | Pasa |
+| `test_sin_guion_la_confirmacion_sigue_siendo_una_pantalla` | Sin guion la confirmacion sigue siendo una pantalla | 1 | Pasa |
+| `test_el_formulario_del_dialogo_envia_a_la_confirmacion_y_cambia_lo_mismo` | El guion le pone al formulario la dirección de la confirmación: el POST que llega es el de siempre. | 1 | Pasa |
+| `test_el_guion_de_los_dialogos_esta_en_todas_las_pantallas` | El guion de los dialogos esta en todas las pantallas | 1 | Pasa |
+| `test_la_entrega_se_elige_con_tarjetas_de_opcion` | La entrega se elige con tarjetas de opcion | 1 | Pasa |
+| `test_sin_saldo_suficiente_cubrir_con_puntos_esta_deshabilitado` | Sin saldo suficiente cubrir con puntos esta deshabilitado | 1 | Pasa |
+| `test_el_carnet_muestra_codigo_saldo_y_lo_guardado` | El carnet muestra codigo saldo y lo guardado | 1 | Pasa |
+| `test_cada_pedido_de_la_lista_lleva_su_riel_y_sus_portadas` | Cada pedido de la lista lleva su riel y sus portadas | 1 | Pasa |
+| `test_el_pago_aprobado_de_una_cuenta_lleva_a_su_pedido` | El pago aprobado de una cuenta lleva a su pedido | 1 | Pasa |
+| `test_U1_las_sugerencias_traen_las_primeras_coincidencias_visibles` | U1 las sugerencias traen las primeras coincidencias visibles | 1 | Pasa |
+| `test_U1_con_menos_de_dos_letras_no_sugiere_nada` | U1 con menos de dos letras no sugiere nada | 1 | Pasa |
+| `test_U5_el_menu_del_administrador_cuenta_lo_que_espera` | U5 el menu del administrador cuenta lo que espera | 1 | Pasa |
+| `test_U5_el_cajero_no_ve_contadores` | U5 el cajero no ve contadores | 1 | Pasa |
+| `test_P1_los_pasos_de_la_compra_marcan_el_actual` | P1 los pasos de la compra marcan el actual | 1 | Pasa |
+| `test_P2_sin_imagen_la_tarjeta_dibuja_una_tapa_con_el_titulo` | P2 sin imagen la tarjeta dibuja una tapa con el titulo | 1 | Pasa |
+| `test_P7_la_lista_de_pedidos_lleva_el_riel_reducido_y_la_venta_de_mostrador_no` | P7 la lista de pedidos lleva el riel reducido y la venta de mostrador no | 1 | Pasa |
+| `test_P3_el_guion_marca_el_boton_y_frena_el_doble_envio` | P3 el guion marca el boton y frena el doble envio | 1 | Pasa |
+| `test_lo_que_se_toca_dentro_de_una_tarjeta_queda_sobre_su_enlace` | B-00-024: el enlace que cubre la tarjeta tapaba «Cancelar aviso». | 1 | Pasa |
+| `test_la_lista_de_pedidos_separa_estado_y_seguimiento` | La lista de pedidos separa estado y seguimiento | 1 | Pasa |
+
 ### `test_respaldo.py`
 
 El comando de respaldo de la base.
@@ -1915,6 +2776,80 @@ El comando de respaldo de la base.
 | `test_verificar_solo_con_la_carpeta_vacia_no_es_un_error` | Es el estado del primer día, y una tarea programada que devuelve error ese día manda a buscar un problema que no existe. | 1 | Pasa |
 | `test_la_salida_es_ascii` | La consola de Windows corre en cp1252: un acento la hace reventar con el trabajo ya hecho y sin decir cuánto se procesó. | 1 | Pasa |
 
+### `test_secciones_portada.py`
+
+Las secciones de la portada (`CU-CFG-SEC`, `CU-TDA-POR`; plan 07, novena parte).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_las_dos_secciones_fijas_existen_desde_la_migracion` | Las dos secciones fijas existen desde la migracion | 1 | Pasa |
+| `test_CO253_agregar_secciones_de_productos_por_etiqueta_y_por_grupo` | CO253 agregar secciones de productos por etiqueta y por grupo | 1 | Pasa |
+| `test_CO253_agregar_accesos_con_sus_imagenes_y_destinos` | CO253 agregar accesos con sus imagenes y destinos | 1 | Pasa |
+| `test_CO253_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada` | CO253 un tipo fuera de su cantidad de imagenes no guarda nada | 4 | Pasa |
+| `test_CO253_un_destino_fuera_de_la_lista_se_rechaza` | CO253 un destino fuera de la lista se rechaza | 3 | Pasa |
+| `test_CO253_un_codigo_de_producto_que_no_existe_se_rechaza` | CO253 un codigo de producto que no existe se rechaza | 1 | Pasa |
+| `test_CO253_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina` | CO253 una imagen sin archivo se rechaza salvo la onomatopeya de la pagina | 1 | Pasa |
+| `test_CO253_las_fijas_no_se_quitan` | CO253 las fijas no se quitan | 1 | Pasa |
+| `test_CO253_apagar_una_fija_la_saca_de_la_portada` | CO253 apagar una fija la saca de la portada | 1 | Pasa |
+| `test_CO253_el_tipo_de_una_seccion_no_cambia` | CO253 el tipo de una seccion no cambia | 1 | Pasa |
+| `test_CO253_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada` | CO253 una de productos sin origen se rechaza y no se guarda nada | 1 | Pasa |
+| `test_CO253_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos` | CO253 el origen y la vitrina se ignoran fuera de las de productos | 1 | Pasa |
+| `test_CO253_eliminar_una_seccion_con_sus_imagenes` | CO253 eliminar una seccion con sus imagenes | 1 | Pasa |
+| `test_CO253_quitar_una_imagen_y_reordenar_las_demas` | CO253 quitar una imagen y reordenar las demas | 1 | Pasa |
+| `test_CO253_guardar_sin_cambios_no_audita` | CO253 guardar sin cambios no audita | 1 | Pasa |
+| `test_CO253_solo_el_administrador_configura_las_secciones` | Control de acceso por la dirección real, con el rol equivocado. | 2 | Pasa |
+| `test_sin_sesion_el_gestor_lleva_al_ingreso` | Sin sesion el gestor lleva al ingreso | 1 | Pasa |
+| `test_la_base_rechaza_una_seccion_incoherente` | La base rechaza una seccion incoherente | 4 | Pasa |
+| `test_la_base_rechaza_una_imagen_incoherente` | La base rechaza una imagen incoherente | 4 | Pasa |
+| `test_reordenar_las_tarjetas_cambia_el_orden_y_se_audita` | Reordenar las tarjetas cambia el orden y se audita | 1 | Pasa |
+| `test_la_imagen_de_la_fila_se_guarda_procesada_y_se_audita` | La imagen de la fila se guarda procesada y se audita | 1 | Pasa |
+| `test_un_archivo_que_no_es_imagen_se_rechaza_y_no_se_guarda_nada` | Un archivo que no es imagen se rechaza y no se guarda nada | 1 | Pasa |
+| `test_quitar_la_imagen_de_una_fila` | Quitar la imagen de una fila | 1 | Pasa |
+| `test_el_gestor_trae_una_plantilla_por_tipo_y_los_mandos` | El gestor trae una plantilla por tipo y los mandos | 1 | Pasa |
+| `test_las_fijas_no_ofrecen_eliminar` | Las fijas no ofrecen eliminar | 1 | Pasa |
+| `test_la_portada_muestra_las_secciones_en_su_orden_con_sus_productos` | La portada muestra las secciones en su orden con sus productos | 1 | Pasa |
+| `test_las_secciones_se_numeran_y_alternan_noche_y_papel` | Las secciones se numeran y alternan noche y papel | 1 | Pasa |
+| `test_la_fila_trae_hasta_doce_y_sin_lo_que_la_tienda_no_muestra` | La fila trae hasta doce y sin lo que la tienda no muestra | 1 | Pasa |
+| `test_no_se_dibujan_las_secciones_vacias_inactivas_o_de_etiquetas_dadas_de_baja` | No se dibujan las secciones vacias inactivas o de etiquetas dadas de baja | 1 | Pasa |
+| `test_el_catalogo_filtra_por_grupo_para_el_ver_todo` | El catalogo filtra por grupo para el ver todo | 1 | Pasa |
+| `test_la_fila_abre_con_su_imagen_o_con_el_abanico_de_portadas` | La fila abre con su imagen o con el abanico de portadas | 1 | Pasa |
+| `test_los_accesos_llevan_a_su_destino_con_cuantos_productos_hay` | Los accesos llevan a su destino con cuantos productos hay | 1 | Pasa |
+| `test_la_pagina_muestra_la_vineta_sin_enlace_si_su_destino_cayo` | La pagina muestra la vineta sin enlace si su destino cayo | 1 | Pasa |
+| `test_el_panel_lleva_su_boton_o_se_queda_sin_el` | El panel lleva su boton o se queda sin el | 1 | Pasa |
+| `test_la_cinta_de_fotos_repite_sus_fotos_sin_anunciar_la_segunda_vuelta` | La cinta de fotos repite sus fotos sin anunciar la segunda vuelta | 1 | Pasa |
+| `test_recien_llegados_arma_la_vitrina_y_la_grilla_sin_repetir` | Recien llegados arma la vitrina y la grilla sin repetir | 1 | Pasa |
+| `test_la_vitrina_agrega_al_carrito_como_la_tarjeta` | La vitrina agrega al carrito como la tarjeta | 1 | Pasa |
+| `test_una_vitrina_de_productos_muestra_uno_por_vez` | Una vitrina de productos muestra uno por vez | 1 | Pasa |
+| `test_el_hero_pone_el_carrusel_en_el_televisor_o_la_portada_destacada` | El hero pone el carrusel en el televisor o la portada destacada | 1 | Pasa |
+| `test_la_portada_no_dispara_una_consulta_por_seccion_de_mas` | La portada no dispara una consulta por seccion de mas | 1 | Pasa |
+| `test_el_pie_lleva_las_secciones_de_productos_activas_al_catalogo` | La cinta de accesos se quitó (B-07-021): los accesos quedan en el pie. | 1 | Pasa |
+| `test_la_botonera_nombra_cada_destino_y_marca_el_actual` | La botonera nombra cada destino y marca el actual | 1 | Pasa |
+| `test_el_invitado_ve_ingresar_y_el_personal_no_ve_el_carrito` | El invitado ve ingresar y el personal no ve el carrito | 1 | Pasa |
+| `test_el_encabezado_busca_en_el_catalogo` | El encabezado busca en el catalogo | 1 | Pasa |
+| `test_el_globo_de_ayuda_aparece_si_hay_preguntas_publicadas` | El globo de ayuda aparece si hay preguntas publicadas | 1 | Pasa |
+| `test_los_aparatos_van_en_lima_salvo_que_la_identidad_elija_otro_color` | Plan 07, novena parte, ambigüedad 3: el rol «Aparatos encendidos». | 1 | Pasa |
+| `test_cada_destino_lleva_a_su_filtro_y_cae_si_se_da_de_baja` | Las ramas de `destino_de`: cada destino arma su filtro del catálogo, y uno dado de baja deja de ser enlace (ambigüedad 5). | 1 | Pasa |
+| `test_en_recien_llegados_novedad_sobra_pero_en_el_catalogo_sigue` | Pedido del responsable (2026-11-11): en «Recién llegados» todo es nuevo. | 1 | Pasa |
+| `test_el_casete_de_la_vitrina_lleva_la_pista_sin_el_titulo` | El título ya está al lado: el casete lleva la tienda, el lado y la pista. | 1 | Pasa |
+| `test_el_carnet_es_la_credencial_del_socio` | El carnet es la credencial del socio | 1 | Pasa |
+| `test_las_iniciales_salen_del_correo_si_no_hay_nombre` | Las iniciales salen del correo si no hay nombre | 1 | Pasa |
+| `test_el_catalogo_lleva_el_lomo_y_la_cinta_con_los_tipos` | El catalogo lleva el lomo y la cinta con los tipos | 1 | Pasa |
+| `test_entre_papel_y_noche_va_la_cinta_con_el_nombre_de_la_seccion` | Entre papel y noche va la cinta con el nombre de la seccion | 1 | Pasa |
+| `test_la_tienda_trae_el_telon_y_apaga_la_transicion_nativa` | El barrido en negro no depende de la transición del navegador (B-07-055). | 1 | Pasa |
+| `test_la_ficha_es_un_expediente_con_el_sello_del_estado` | La ficha es un expediente con el sello del estado | 1 | Pasa |
+| `test_la_ficha_avisa_cuando_no_se_pueden_agregar_mas_unidades` | Pedido del responsable (2026-11-11): el «+» de la ficha dice por qué no sube. | 1 | Pasa |
+
+### `test_segundo_plano.py`
+
+Los avisos salen en un hilo propio después del commit (`apps/core/segundo_plano.py`).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_con_segundo_plano_el_aviso_corre_en_otro_hilo_que_no_es_demonio` | Con segundo plano el aviso corre en otro hilo que no es demonio | 1 | Pasa |
+| `test_sin_segundo_plano_corre_en_el_acto` | Sin segundo plano corre en el acto | 1 | Pasa |
+| `test_un_aviso_que_falla_se_registra_y_no_sale_del_hilo` | Un aviso que falla se registra y no sale del hilo | 1 | Pasa |
+| `test_el_aviso_espera_a_que_se_confirme_la_transaccion` | El aviso espera a que se confirme la transaccion | 1 | Pasa |
+
 ### `test_servir.py`
 
 El comando que sirve el sistema en la demostración (`docs/despliegue/DEMOSTRACION.md`).
@@ -1923,6 +2858,30 @@ El comando que sirve el sistema en la demostración (`docs/despliegue/DEMOSTRACI
 | --- | --- | ---: | --- |
 | `test_escucha_solo_en_la_interfaz_local_por_defecto` | Del lado de afuera atiende el proxy con TLS; `waitress` no se expone. | 1 | Pasa |
 | `test_el_puerto_y_los_hilos_se_pueden_cambiar` | El puerto y los hilos se pueden cambiar | 1 | Pasa |
+
+### `test_tablero.py`
+
+Los gráficos de ventas del panel del Administrador (B-00-032) y el menú en bloques (B-00-031).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_cada_dia_suma_lo_cobrado_y_el_envio_y_el_mejor_dia_es_la_columna_entera` | Cada dia suma lo cobrado y el envio y el mejor dia es la columna entera | 1 | Pasa |
+| `test_un_pedido_cancelado_no_suma_ni_en_el_dia_ni_en_el_ranking` | Un pedido cancelado no suma ni en el dia ni en el ranking | 1 | Pasa |
+| `test_lo_cubierto_con_puntos_no_es_plata_vendida` | Lo cubierto con puntos no es plata vendida | 1 | Pasa |
+| `test_el_mes_se_compara_contra_el_mismo_tramo_del_mes_anterior` | El mes se compara contra el mismo tramo del mes anterior | 1 | Pasa |
+| `test_con_poca_base_la_variacion_va_solo_en_pesos` | Con poca base la variacion va solo en pesos | 1 | Pasa |
+| `test_lo_devuelto_por_el_medio_de_pago_se_resta_el_dia_que_se_resolvio` | Lo devuelto por el medio de pago se resta el dia que se resolvio | 1 | Pasa |
+| `test_una_linea_cancelada_con_reembolso_no_es_venta` | Una linea cancelada con reembolso no es venta | 1 | Pasa |
+| `test_el_ticket_no_lleva_el_envio_ni_los_pedidos_pagados_con_puntos` | El ticket no lleva el envio ni los pedidos pagados con puntos | 1 | Pasa |
+| `test_sin_ventas_el_mes_pasado_no_hay_variacion` | Sin ventas el mes pasado no hay variacion | 1 | Pasa |
+| `test_el_tramo_del_mes_anterior_se_corta_en_su_ultimo_dia` | El tramo del mes anterior se corta en su ultimo dia | 1 | Pasa |
+| `test_lo_mas_vendido_ordena_por_unidades_y_el_primero_es_la_barra_entera` | Lo mas vendido ordena por unidades y el primero es la barra entera | 1 | Pasa |
+| `test_el_catalogo_se_parte_por_estado_sin_los_descatalogados` | El catalogo se parte por estado sin los descatalogados | 1 | Pasa |
+| `test_un_activo_en_cero_se_cuenta_sin_stock` | Un activo en cero se cuenta sin stock | 1 | Pasa |
+| `test_los_canales_separan_la_tienda_del_mostrador` | Los canales separan la tienda del mostrador | 1 | Pasa |
+| `test_el_panel_dibuja_los_graficos_con_su_vista_de_tabla` | El panel dibuja los graficos con su vista de tabla | 1 | Pasa |
+| `test_el_panel_sin_ventas_lo_dice_en_vez_de_dibujar_barras_vacias` | El panel sin ventas lo dice en vez de dibujar barras vacias | 1 | Pasa |
+| `test_el_menu_separa_los_pedidos_de_clientes_de_los_pedidos_a_proveedores` | El menu separa los pedidos de clientes de los pedidos a proveedores | 1 | Pasa |
 
 ### `test_tienda_quinta_parte.py`
 
@@ -1947,7 +2906,7 @@ La tienda pública, plan 07, quinta parte (B-07-013 a B-07-019, C-20).
 | `test_las_pantallas_de_acceso_van_partidas_y_sin_distracciones` | Las pantallas de acceso van partidas y sin distracciones | 2 | Pasa |
 | `test_el_acceso_muestra_la_imagen_del_ingreso_o_el_logo_o_el_nombre` | B-07-020: la imagen que carga el Administrador; sin ella, el logo; sin logo, el nombre de la tienda. | 1 | Pasa |
 | `test_el_ticker_nombra_cada_serie_una_vez` | B-07-023: dos tomos de la misma serie recién llegados son un solo «Llegó». | 1 | Pasa |
-| `test_el_menu_de_la_tienda_es_todo_texto` | B-07-027: los enlaces del menú público son rótulos, sin íconos. | 1 | Pasa |
+| `test_el_menu_de_la_tienda_es_una_botonera_de_iconos_con_su_nombre` | B-07-027 decía «rótulos, sin íconos»; el responsable pidió íconos el 2026-11-11 (plan 07, novena parte; B-07-046). | 1 | Pasa |
 | `test_CO084_cambiar_la_cantidad_devuelve_el_carrito_recalculado` | CO084 cambiar la cantidad devuelve el carrito recalculado | 1 | Pasa |
 | `test_CO084_sin_stock_suficiente_se_topea_y_se_avisa` | CO084 sin stock suficiente se topea y se avisa | 1 | Pasa |
 | `test_CO085_quitar_devuelve_el_carrito_sin_la_linea` | CO085 quitar devuelve el carrito sin la linea | 1 | Pasa |
@@ -1956,11 +2915,23 @@ La tienda pública, plan 07, quinta parte (B-07-013 a B-07-019, C-20).
 | `test_un_tomo_solo_no_tiene_mas_de_la_serie` | Un tomo solo no tiene mas de la serie | 1 | Pasa |
 | `test_las_filas_no_llevan_contador_y_la_busqueda_tiene_atajo` | Las filas no llevan contador y la busqueda tiene atajo | 1 | Pasa |
 
+### `test_visor_ficha.py`
+
+El visor de imágenes de la ficha pública (plan 00 de interfaz, cuarta parte, D).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_portada_y_las_adicionales_son_miniaturas_del_visor` | La portada y las adicionales son miniaturas del visor | 1 | Pasa |
+| `test_sin_adicionales_no_hay_miniaturas_pero_se_amplia` | Sin adicionales no hay miniaturas pero se amplia | 1 | Pasa |
+| `test_sin_portada_queda_la_tapa_dibujada_y_no_hay_ampliacion` | Sin portada queda la tapa dibujada y no hay ampliacion | 1 | Pasa |
+| `test_la_ficha_del_backoffice_usa_el_mismo_visor` | La ficha del backoffice usa el mismo visor | 1 | Pasa |
+| `test_las_hojas_de_estilo_llevan_su_version` | Sin versión el navegador sigue usando la hoja vieja y la pantalla se ve rota. | 1 | Pasa |
+
 ### `test_volumen_consultas.py`
 
 D5-04 · Volumen sin degradación: cada listado paginado hace las mismas consultas con pocos registros que con muchos (plan 00).
 
-**Casos de prueba que ejecuta:** CP-28.
+**Casos de prueba que ejecuta:** CP-SIS-R02-02.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -2000,7 +2971,7 @@ Las devoluciones reformuladas (plan 00, C1).
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
-| `test_el_boton_esta_en_la_cabecera_de_la_tienda` | El boton esta en la cabecera de la tienda | 1 | Pasa |
+| `test_el_boton_esta_destacado_en_el_pie_de_toda_la_tienda` | Res. | 1 | Pasa |
 | `test_CO185_sin_sesion_el_numero_y_el_correo_de_la_compra_abren_el_pedido` | CO185 sin sesion el numero y el correo de la compra abren el pedido | 1 | Pasa |
 | `test_CO185_un_correo_que_no_coincide_no_revela_el_pedido` | CO185 un correo que no coincide no revela el pedido | 1 | Pasa |
 | `test_CO185_con_sesion_el_cliente_ve_sus_compras_dentro_del_plazo` | CO185 con sesion el cliente ve sus compras dentro del plazo | 1 | Pasa |
@@ -2008,17 +2979,19 @@ Las devoluciones reformuladas (plan 00, C1).
 | `test_CO099_el_arrepentimiento_es_solo_para_compras_online` | CO099 el arrepentimiento es solo para compras online | 1 | Pasa |
 | `test_CO099_E1_los_dos_plazos_son_independientes` | CO099 E1 los dos plazos son independientes | 1 | Pasa |
 | `test_CO099_un_arrepentimiento_y_una_garantia_no_conviven_en_la_misma_linea` | CO099 un arrepentimiento y una garantia no conviven en la misma linea | 1 | Pasa |
-| `test_CO101_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock` | CO101 el arrepentimiento se reembolsa por el medio de pago y vuelve al stock | 1 | Pasa |
-| `test_CO101_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio` | CO101 arrepentirse del pedido entero reintegra tambien el envio | 1 | Pasa |
-| `test_CO101_el_reembolso_por_el_medio_descuenta_los_puntos_ganados` | CO101 el reembolso por el medio descuenta los puntos ganados | 1 | Pasa |
-| `test_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio` | CO101 lo pagado con puntos vuelve en puntos y no por el medio | 1 | Pasa |
-| `test_CO101_en_el_mostrador_no_hay_reembolso_por_el_medio` | CO101 en el mostrador no hay reembolso por el medio | 1 | Pasa |
+| `test_CO248_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock` | CO248 el arrepentimiento se reembolsa por el medio de pago y vuelve al stock | 1 | Pasa |
+| `test_CO248_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio` | CO248 arrepentirse del pedido entero reintegra tambien el envio | 1 | Pasa |
+| `test_CO248_el_reembolso_por_el_medio_descuenta_los_puntos_ganados` | CO248 el reembolso por el medio descuenta los puntos ganados | 1 | Pasa |
+| `test_CO248_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio` | CO248 CO101 lo pagado con puntos vuelve en puntos y no por el medio | 1 | Pasa |
+| `test_CO248_E3_en_el_mostrador_no_hay_reembolso_por_el_medio` | CO248 E3 en el mostrador no hay reembolso por el medio | 1 | Pasa |
 | `test_CO100_el_arrepentimiento_no_admite_cambio_ni_en_el_servicio_ni_en_la_base` | CO100 el arrepentimiento no admite cambio ni en el servicio ni en la base | 1 | Pasa |
 | `test_CO100_el_reemplazo_tiene_que_ser_de_la_misma_editorial_y_formato` | CO100 el reemplazo tiene que ser de la misma editorial y formato | 1 | Pasa |
 | `test_la_ficha_del_caso_muestra_el_contacto_y_solo_las_resoluciones_que_admite` | La ficha del caso muestra el contacto y solo las resoluciones que admite | 1 | Pasa |
-| `test_acceso_el_cajero_no_registra_un_reembolso_por_el_medio` | Acceso el cajero no registra un reembolso por el medio | 1 | Pasa |
+| `test_CO248_acceso_el_cajero_no_registra_un_reembolso_por_el_medio` | CO248 acceso el cajero no registra un reembolso por el medio | 1 | Pasa |
 | `test_flujo_el_invitado_se_arrepiente_y_el_local_reembolsa` | Flujo el invitado se arrepiente y el local reembolsa | 1 | Pasa |
 | `test_el_plazo_de_garantia_se_configura_en_parametros` | El plazo de garantia se configura en parametros | 1 | Pasa |
+| `test_CO248_el_caso_queda_resuelto_sin_ninguna_transaccion_de_caja` | CO248 el caso queda resuelto sin ninguna transaccion de caja | 1 | Pasa |
+| `test_CO248_en_una_garantia_el_articulo_defectuoso_no_vuelve_al_stock` | CO248 en una garantia el articulo defectuoso no vuelve al stock | 1 | Pasa |
 
 ### `test_contratos_09_devoluciones.py`
 
@@ -2055,6 +3028,7 @@ Contratos de devoluciones (plan 09).
 | `test_CO100_el_caso_queda_asociado_al_producto_de_reemplazo` | CO100 el caso queda asociado al producto de reemplazo | 1 | Pasa |
 | `test_CO100_el_stock_del_reemplazo_baja_una_unidad` | CO100 el stock del reemplazo baja una unidad | 1 | Pasa |
 | `test_CO100_el_reemplazo_que_llega_a_cero_pasa_a_agotado` | CO100 el reemplazo que llega a cero pasa a agotado | 1 | Pasa |
+| `test_CO100_el_ultimo_con_un_pedido_en_camino_abre_la_preventa` | B-05-020 (revisión integral, R-05): como la venta, abre la pre-venta. | 1 | Pasa |
 | `test_CO100_el_reemplazo_queda_a_nombre_del_cliente_en_el_stock_en_local` | CO100 el reemplazo queda a nombre del cliente en el stock en local | 1 | Pasa |
 | `test_CO100_registra_la_resolucion_con_el_tipo_el_administrador_y_el_momento` | CO100 registra la resolucion con el tipo el administrador y el momento | 1 | Pasa |
 | `test_CO100_avisa_al_cliente_con_el_reemplazo_y_las_instrucciones` | CO100 avisa al cliente con el reemplazo y las instrucciones | 1 | Pasa |
@@ -2115,6 +3089,24 @@ Acceso al ciclo de la pre-venta y a la demora por la dirección real, y escritur
 | `test_concurrencia_dos_administradores_que_confirman_el_mismo_ingreso_lo_cuentan_una_vez` | Concurrencia dos administradores que confirman el mismo ingreso lo cuentan una vez | 1 | Pasa |
 | `test_concurrencia_la_cancelacion_por_la_editorial_y_la_compra_no_dejan_reservas_vivas` | Concurrencia la cancelacion por la editorial y la compra no dejan reservas vivas | 1 | Pasa |
 
+### `test_calendario_preventas.py`
+
+El calendario de lo que está por llegar (plan 00 de interfaz, tercera parte, 22).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_mes_pedido_se_entiende_y_lo_ilegible_es_el_actual` | El mes pedido se entiende y lo ilegible es el actual | 1 | Pasa |
+| `test_el_mes_empieza_en_lunes_y_completa_sus_semanas` | El mes empieza en lunes y completa sus semanas | 1 | Pasa |
+| `test_cada_llegada_cae_en_su_dia_con_los_grupos_de_la_lista` | Cada llegada cae en su dia con los grupos de la lista | 1 | Pasa |
+| `test_las_cifras_cuentan_lineas_reservas_semana_y_atrasos` | Las cifras cuentan lineas reservas semana y atrasos | 1 | Pasa |
+| `test_cada_grupo_dice_cuando_llega_con_palabras` | Cada grupo dice cuando llega con palabras | 4 | Pasa |
+| `test_la_pantalla_dibuja_el_mes_y_lleva_de_cada_llegada_a_su_grupo` | La pantalla dibuja el mes y lleva de cada llegada a su grupo | 1 | Pasa |
+| `test_se_navega_de_mes_en_mes_por_la_direccion` | Se navega de mes en mes por la direccion | 1 | Pasa |
+| `test_ver_el_calendario_no_cambia_nada` | Ver el calendario no cambia nada | 1 | Pasa |
+| `test_cambiar_de_mes_pide_solo_el_calendario` | Cambiar de mes pide solo el calendario | 1 | Pasa |
+| `test_cada_llegada_abre_su_grupo_y_la_cercana_se_distingue` | Cada llegada abre su grupo y la cercana se distingue | 1 | Pasa |
+| `test_cada_grupo_ofrece_completar_con_lo_esperado` | Cada grupo ofrece completar con lo esperado | 1 | Pasa |
+
 ### `test_contratos_01_preventa.py`
 
 Contratos del ciclo de la pre-venta (plan 01): `CO-011` a `CO-015`, `CO-026`, `CO-027`.
@@ -2140,7 +3132,7 @@ Contratos del ciclo de la pre-venta (plan 01): `CO-011` a `CO-015`, `CO-026`, `C
 | `test_CO013_el_articulo_de_despacho_diferido_llega_disponible_y_cierra_la_compensacion` | CO013 el articulo de despacho diferido llega disponible y cierra la compensacion | 1 | Pasa |
 | `test_CO013_por_la_pantalla_se_revisa_y_despues_se_confirma` | CO013 por la pantalla se revisa y despues se confirma | 1 | Pasa |
 | `test_CO013_la_pantalla_rechaza_unidades_invalidas` | CO013 la pantalla rechaza unidades invalidas | 3 | Pasa |
-| `test_CO013_la_pantalla_agrupa_por_fecha_y_editorial` | CO013 la pantalla agrupa por fecha y editorial | 1 | Pasa |
+| `test_CO232_la_pantalla_agrupa_por_fecha_y_editorial_si_no_hay_proveedor` | CO232 la pantalla agrupa por fecha y editorial si no hay proveedor | 1 | Pasa |
 | `test_CO013_un_producto_que_ya_no_esta_en_preventa_se_informa` | CO013 un producto que ya no esta en preventa se informa | 1 | Pasa |
 | `test_CO014_informa_pedidos_y_clientes_sin_registrar_nada` | CO014 informa pedidos y clientes sin registrar nada | 1 | Pasa |
 | `test_CO014_A3_sin_pedidos_lo_dice` | CO014 A3 sin pedidos lo dice | 1 | Pasa |
@@ -2232,6 +3224,40 @@ Pruebas de contrato de la gestión de pedidos (plan 08, primera parte).
 | `test_CO092_la_confirmacion_muestra_el_estado_actual_y_el_siguiente` | CO092 la confirmacion muestra el estado actual y el siguiente | 1 | Pasa |
 | `test_CO093_avanza_y_los_pendientes_conservan_su_estado` | CO093 avanza y los pendientes conservan su estado | 1 | Pasa |
 | `test_la_primera_transicion_es_la_del_estado_inicial` | La primera transicion es la del estado inicial | 1 | Pasa |
+
+### `test_demora_de_varios_tomos.py`
+
+La demora de varios tomos a la vez (B-01-022, desvío consultado de CU-ALT-DEM).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO015_varios_tomos_cada_uno_con_su_fecha_y_su_auditoria` | CO015 varios tomos cada uno con su fecha y su auditoria | 1 | Pasa |
+| `test_CO015_el_que_ya_no_admite_la_demora_queda_afuera_y_los_demas_siguen` | CO015 el que ya no admite la demora queda afuera y los demas siguen | 1 | Pasa |
+| `test_una_fecha_pasada_excluye_sólo_ese_tomo` | Una fecha pasada excluye sólo ese tomo | 1 | Pasa |
+| `test_un_solo_correo_por_cliente_con_todos_sus_tomos` | Un solo correo por cliente con todos sus tomos | 1 | Pasa |
+| `test_varios_tomos_del_mismo_pedido_llevan_a_ese_pedido` | Varios tomos del mismo pedido llevan a ese pedido | 1 | Pasa |
+| `test_la_pantalla_va_en_tres_tiempos_y_sólo_confirma_al_final` | La pantalla va en tres tiempos y sólo confirma al final | 1 | Pasa |
+| `test_lo_destildado_no_se_demora` | Lo destildado no se demora | 1 | Pasa |
+| `test_una_fecha_pasada_se_marca_en_su_fila_y_no_registra` | Una fecha pasada se marca en su fila y no registra | 1 | Pasa |
+| `test_lo_que_no_admite_la_demora_se_muestra_sin_casilla` | Lo que no admite la demora se muestra sin casilla | 1 | Pasa |
+| `test_sin_tomos_elegidos_vuelve_con_el_aviso` | Sin tomos elegidos vuelve con el aviso | 1 | Pasa |
+| `test_el_grupo_de_preventas_ofrece_demorarlo_entero` | El grupo de preventas ofrece demorarlo entero | 1 | Pasa |
+| `test_el_cajero_no_registra_demoras_por_la_direccion_real` | El cajero no registra demoras por la direccion real | 1 | Pasa |
+
+### `test_riel.py`
+
+El riel de estados del pedido (plan 00 de interfaz, 4.2).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_envio_recorre_hasta_despachado` | El envio recorre hasta despachado | 1 | Pasa |
+| `test_el_retiro_termina_en_el_local` | El retiro termina en el local | 1 | Pasa |
+| `test_cada_paso_lleva_la_fecha_de_su_transicion` | Cada paso lleva la fecha de su transicion | 1 | Pasa |
+| `test_una_cancelacion_queda_en_el_ultimo_paso_alcanzado_y_se_dice` | Una cancelacion queda en el ultimo paso alcanzado y se dice | 1 | Pasa |
+| `test_esperando_la_pre_venta_no_alcanzo_ningun_paso` | Esperando la pre venta no alcanzo ningun paso | 1 | Pasa |
+| `test_el_cliente_ve_el_riel_animable_y_el_administrador_sin_animacion` | El cliente ve el riel animable y el administrador sin animacion | 1 | Pasa |
+| `test_el_estado_interrumpido_se_dice_una_sola_vez_en_mi_cuenta` | El estado interrumpido se dice una sola vez en mi cuenta | 2 | Pasa |
+| `test_sin_interrupcion_el_estado_sigue_con_su_rotulo` | Sin interrupcion el estado sigue con su rotulo | 1 | Pasa |
 
 ---
 
@@ -2341,6 +3367,33 @@ Unidad: la conversión de dinero a puntos, la caducidad y el débito FIFO (B-07-
 
 ---
 
+## reportes — `apps/reportes`
+
+### `test_contratos_15_reportes.py`
+
+Pruebas de contrato de CU-REP-GEN: `CO-204` y `CO-128` (plan 15).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO204_ventas_totales_consolida_por_dia` | CO204 ventas totales consolida por dia | 1 | Pasa |
+| `test_CO204_ventas_totales_filtra_por_canal` | CO204 ventas totales filtra por canal | 1 | Pasa |
+| `test_CO204_ventas_por_canal_separa_fisico_y_online` | CO204 ventas por canal separa fisico y online | 1 | Pasa |
+| `test_CO204_mas_vendidos_ordena_por_unidades_y_el_canje_no_suma` | CO204 mas vendidos ordena por unidades y el canje no suma | 1 | Pasa |
+| `test_CO204_mas_vendidos_filtra_por_categoria` | CO204 mas vendidos filtra por categoria | 1 | Pasa |
+| `test_CO204_movimientos_de_puntos_por_tipo_y_motivo` | CO204 movimientos de puntos por tipo y motivo | 1 | Pasa |
+| `test_CO204_solicitudes_de_reposicion_en_espera_del_rango` | CO204 solicitudes de reposicion en espera del rango | 1 | Pasa |
+| `test_CO204_no_modifica_nada` | CO204 no modifica nada | 1 | Pasa |
+| `test_CO204_E1_un_rango_invalido_no_procede` | CO204 E1 un rango invalido no procede | 2 | Pasa |
+| `test_CO204_E1_el_rango_es_obligatorio` | CO204 E1 el rango es obligatorio | 1 | Pasa |
+| `test_CO204_E2_sin_datos_el_reporte_vacio_lo_dice` | CO204 E2 sin datos el reporte vacio lo dice | 1 | Pasa |
+| `test_CO128_el_csv_dice_lo_mismo_que_la_pantalla` | CO128 el csv dice lo mismo que la pantalla | 1 | Pasa |
+| `test_CO128_queda_en_el_log_con_tipo_rango_y_actor` | CO128 queda en el log con tipo rango y actor | 1 | Pasa |
+| `test_CO128_precondicion_sin_reporte_valido_no_exporta` | CO128 precondicion sin reporte valido no exporta | 1 | Pasa |
+| `test_CO204_CO128_otro_rol_no_entra` | CO204 CO128 otro rol no entra | 2 | Pasa |
+| `test_el_menu_del_administrador_enlaza_los_reportes` | El menu del administrador enlaza los reportes | 1 | Pasa |
+
+---
+
 ## restock — `apps/restock`
 
 ### `test_acceso_y_concurrencia_restock.py`
@@ -2354,6 +3407,37 @@ Acceso a la propuesta de restock por la dirección real, y escrituras a la vez.
 | `test_concurrencia_dos_clics_en_avisarme_dejan_una_suscripcion` | Concurrencia dos clics en avisarme dejan una suscripcion | 1 | Pasa |
 | `test_concurrencia_el_ciclo_y_el_boton_dejan_una_sola_propuesta_pendiente` | Concurrencia el ciclo y el boton dejan una sola propuesta pendiente | 1 | Pasa |
 | `test_concurrencia_dos_administradores_despachan_al_mismo_proveedor_una_vez` | Concurrencia dos administradores despachan al mismo proveedor una vez | 1 | Pasa |
+
+### `test_agregar_por_titulo.py`
+
+«Agregar un producto» a la propuesta, también por título (B-05-016).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO071_por_título_y_número` | CO071 por título y número | 4 | Pasa |
+| `test_CO071_la_opción_del_buscador_trae_el_código` | CO071 la opción del buscador trae el código | 1 | Pasa |
+| `test_CO071_el_isbn_con_guiones` | CO071 el isbn con guiones | 1 | Pasa |
+| `test_el_buscador_ofrece_lo_que_se_puede_pedir` | El buscador ofrece lo que se puede pedir | 1 | Pasa |
+| `test_sin_número_pide_el_número` | Sin número pide el número | 1 | Pasa |
+| `test_un_título_que_no_existe_lo_dice` | Un título que no existe lo dice | 1 | Pasa |
+| `test_más_de_uno_pide_elegir` | Más de uno pide elegir | 1 | Pasa |
+| `test_un_cancelado_dice_que_está_cancelado` | Un cancelado dice que está cancelado | 1 | Pasa |
+| `test_un_descatalogado_dice_que_está_dado_de_baja` | Un descatalogado dice que está dado de baja | 1 | Pasa |
+| `test_lo_no_editorial_dice_que_no_es_un_tomo` | Lo no editorial dice que no es un tomo | 1 | Pasa |
+| `test_vacío_lo_pide` | Vacío lo pide | 1 | Pasa |
+| `test_el_cajero_no_agrega` | El cajero no agrega | 1 | Pasa |
+
+### `test_avisos_de_la_cuenta.py`
+
+«Avisos de stock» en «Mi cuenta»: el A1 de `CU-RST-SUS` (`CO-076`) desde la cuenta (plan 00 de interfaz, segunda parte, 15).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_lista_los_propios_con_su_lugar_en_la_fila` | Lista los propios con su lugar en la fila | 1 | Pasa |
+| `test_lo_avisado_se_ve_sin_accion_y_lo_viejo_no` | Lo avisado se ve sin accion y lo viejo no | 1 | Pasa |
+| `test_CO076_cancelar_desde_la_cuenta_elimina_la_propia_sin_auditar` | CO076 cancelar desde la cuenta elimina la propia sin auditar | 1 | Pasa |
+| `test_acceso_el_personal_recibe_403` | Acceso el personal recibe 403 | 2 | Pasa |
+| `test_acceso_sin_sesion_va_al_ingreso` | Acceso sin sesion va al ingreso | 1 | Pasa |
 
 ### `test_contratos_05_restock.py`
 
@@ -2384,6 +3468,9 @@ Contratos de restock (plan 05): `CO-067` a `CO-077`, `CO-174`, `CO-175`.
 | `test_CO174_E1_sin_propuesta_lo_dice` | CO174 E1 sin propuesta lo dice | 1 | Pasa |
 | `test_CO175_lista_las_lineas_del_proveedor` | CO175 lista las lineas del proveedor | 1 | Pasa |
 | `test_CO069_ajustar_la_cantidad_conserva_los_suscriptores` | CO069 ajustar la cantidad conserva los suscriptores | 1 | Pasa |
+| `test_CO069_guardar_cantidades_cambia_las_del_proveedor_de_una_vez` | Plan 00 de interfaz, segunda parte, 14.3: un solo «Guardar» por proveedor. | 1 | Pasa |
+| `test_CO069_guardar_cantidades_es_todo_o_nada` | CO069 guardar cantidades es todo o nada | 1 | Pasa |
+| `test_CO069_guardar_cantidades_ignora_lineas_de_otro_proveedor` | CO069 guardar cantidades ignora lineas de otro proveedor | 1 | Pasa |
 | `test_CO070_quitar_elimina_la_linea` | CO070 quitar elimina la linea | 1 | Pasa |
 | `test_CO071_agregar_va_al_grupo_de_su_proveedor` | CO071 agregar va al grupo de su proveedor | 1 | Pasa |
 | `test_CO072_despachar_envia_el_correo_y_marca_las_lineas` | CO072 despachar envia el correo y marca las lineas | 1 | Pasa |
@@ -2393,6 +3480,29 @@ Contratos de restock (plan 05): `CO-067` a `CO-077`, `CO-174`, `CO-175`.
 | `test_CO073_descartar_un_proveedor_no_afecta_a_los_demas` | CO073 descartar un proveedor no afecta a los demas | 1 | Pasa |
 | `test_CO074_E2_sin_correo_no_se_envia_y_se_registra` | CO074 E2 sin correo no se envia y se registra | 1 | Pasa |
 | `test_CO013_lo_que_sobra_al_llegar_una_preventa_avisa_a_los_suscriptores` | CO013 lo que sobra al llegar una preventa avisa a los suscriptores | 1 | Pasa |
+
+### `test_propuesta_desde_la_ficha_y_a_mano.py`
+
+Restock: la propuesta pendiente se trabaja desde su ficha (B-05-011) y se puede armar a mano, vacía (B-05-012).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_ficha_de_la_pendiente_tiene_los_controles` | La ficha de la pendiente tiene los controles | 1 | Pasa |
+| `test_cambiar_cantidades_desde_la_ficha_vuelve_a_la_ficha` | Cambiar cantidades desde la ficha vuelve a la ficha | 1 | Pasa |
+| `test_quitar_desde_la_ficha_vuelve_a_la_ficha` | Quitar desde la ficha vuelve a la ficha | 1 | Pasa |
+| `test_agregar_desde_la_ficha_vuelve_a_la_ficha` | Agregar desde la ficha vuelve a la ficha | 1 | Pasa |
+| `test_sin_volver_sigue_yendo_a_restock` | Sin volver sigue yendo a restock | 1 | Pasa |
+| `test_volver_a_otro_sitio_no_se_sigue` | Volver a otro sitio no se sigue | 1 | Pasa |
+| `test_la_ficha_de_una_cerrada_sigue_siendo_de_lectura` | La ficha de una cerrada sigue siendo de lectura | 1 | Pasa |
+| `test_CO233_armar_a_mano_la_deja_vacia_pendiente_y_auditada` | CO233 armar a mano la deja vacia pendiente y auditada | 1 | Pasa |
+| `test_a_la_armada_a_mano_se_le_cargan_productos` | A la armada a mano se le cargan productos | 1 | Pasa |
+| `test_CO233_con_una_pendiente_no_se_arma_otra` | CO233 con una pendiente no se arma otra | 1 | Pasa |
+| `test_la_armada_a_mano_no_cuenta_como_el_ciclo_de_la_semana` | La armada a mano no cuenta como el ciclo de la semana | 1 | Pasa |
+| `test_CO234_cerrar_la_vacia_la_cierra_y_audita` | CO234 cerrar la vacia la cierra y audita | 1 | Pasa |
+| `test_CO234_una_con_productos_no_se_cierra_como_vacia` | CO234 una con productos no se cierra como vacia | 1 | Pasa |
+| `test_cerrar_vacía_sin_pendiente_lo_dice` | Cerrar vacía sin pendiente lo dice | 1 | Pasa |
+| `test_CO233_CO234_el_cajero_no_arma_ni_cierra_por_la_direccion_real` | CO233 CO234 el cajero no arma ni cierra por la direccion real | 2 | Pasa |
+| `test_CO233_dos_administradores_a_la_vez_arman_una_sola` | CO233 dos administradores a la vez arman una sola | 1 | Pasa |
 
 ---
 
@@ -2420,6 +3530,44 @@ CU-PRV-ALT — Registrar Proveedor Editorial.
 | `test_el_alta_queda_auditada` | El alta queda auditada | 1 | Pasa |
 | `test_solo_el_administrador_da_de_alta_proveedores` | Solo el administrador da de alta proveedores | 2 | Pasa |
 | `test_sin_sesion_el_alta_redirige_al_login` | Sin sesion el alta redirige al login | 1 | Pasa |
+
+### `test_avisos_de_demora.py`
+
+Un aviso de demora procesado no falla: propone registrar la demora (B-04-010).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_demora_trae_lo_que_se_atrasa_con_su_fecha_y_la_del_aviso` | La demora trae lo que se atrasa con su fecha y la del aviso | 1 | Pasa |
+| `test_una_demora_con_fecha_ilegible_lo_anota` | Una demora con fecha ilegible lo anota | 1 | Pasa |
+| `test_de_un_correo_otro_no_se_lee_nada` | De un correo otro no se lee nada | 1 | Pasa |
+| `test_un_aviso_de_demora_queda_procesado_sin_borradores` | Un aviso de demora queda procesado sin borradores | 1 | Pasa |
+| `test_un_correo_de_novedades_sin_productos_sigue_fallando` | `CO-017` E4 sigue en pie para lo que sí es una falla. | 1 | Pasa |
+| `test_si_el_modelo_no_responde_sigue_fallando` | Si el modelo no responde sigue fallando | 1 | Pasa |
+| `test_procesar_un_aviso_no_toca_la_preventa` | Regla 4: el modelo propone, nunca aplica. | 1 | Pasa |
+| `test_la_propuesta_pone_primero_lo_que_el_aviso_menciona` | La propuesta pone primero lo que el aviso menciona | 1 | Pasa |
+| `test_sin_fecha_propia_se_propone_la_del_aviso` | Sin fecha propia se propone la del aviso | 1 | Pasa |
+| `test_el_isbn_reconoce_aunque_el_titulo_no_coincida` | El isbn reconoce aunque el titulo no coincida | 1 | Pasa |
+| `test_otro_volumen_no_es_el_mismo_producto` | Otro volumen no es el mismo producto | 1 | Pasa |
+| `test_una_distribuidora_ve_lo_que_tiene_en_camino_con_ella` | Una distribuidora ve lo que tiene en camino con ella | 1 | Pasa |
+| `test_la_ficha_del_aviso_ofrece_registrar_la_demora` | La ficha del aviso ofrece registrar la demora | 1 | Pasa |
+| `test_la_pantalla_de_demora_trae_la_propuesta_sin_registrarla` | La pantalla de demora trae la propuesta sin registrarla | 1 | Pasa |
+| `test_una_fecha_propuesta_que_ya_paso_no_se_carga` | Una fecha propuesta que ya paso no se carga | 1 | Pasa |
+| `test_un_correo_que_no_es_aviso_de_demora_no_propone_nada` | Un correo que no es aviso de demora no propone nada | 1 | Pasa |
+| `test_confirmar_la_demora_desde_el_aviso_vuelve_al_correo` | Confirmar la demora desde el aviso vuelve al correo | 1 | Pasa |
+| `test_el_cajero_no_abre_la_propuesta_por_su_direccion` | El cajero no abre la propuesta por su direccion | 1 | Pasa |
+| `test_un_aviso_procesado_se_puede_descartar` | Un aviso procesado se puede descartar | 1 | Pasa |
+| `test_un_correo_de_novedades_procesado_no_se_descarta` | Sus borradores siguen en la revisión: descartarlo los dejaría huérfanos. | 1 | Pasa |
+| `test_lo_que_cu_alt_dem_no_admite_no_ofrece_el_boton` | Lo que cu alt dem no admite no ofrece el boton | 1 | Pasa |
+| `test_las_que_el_aviso_no_nombra_quedan_plegadas` | Las que el aviso no nombra quedan plegadas | 1 | Pasa |
+| `test_el_volumen_pegado_al_titulo_se_separa_solo_con_marca` | El volumen pegado al titulo se separa solo con marca | 8 | Pasa |
+| `test_la_extraccion_separa_el_volumen_que_el_modelo_dejo_en_el_titulo` | La extraccion separa el volumen que el modelo dejo en el titulo | 1 | Pasa |
+| `test_una_extraccion_vieja_con_el_volumen_en_el_titulo_igual_se_reconoce` | Una extraccion vieja con el volumen en el titulo igual se reconoce | 1 | Pasa |
+| `test_la_preventa_elegida_de_la_lista_recibe_la_fecha_del_aviso` | La preventa elegida de la lista recibe la fecha del aviso | 1 | Pasa |
+| `test_con_dos_fechas_distintas_no_se_propone_ninguna_a_la_elegida` | Con dos fechas distintas no se propone ninguna a la elegida | 1 | Pasa |
+| `test_la_lista_plegada_tiene_buscador` | La lista plegada tiene buscador | 1 | Pasa |
+| `test_la_fecha_de_lo_que_se_atrasa_se_muestra_como_las_demas` | La fecha de lo que se atrasa se muestra como las demas | 1 | Pasa |
+| `test_el_aviso_elige_de_antemano_lo_que_nombra_para_demorarlo_junto` | El aviso elige de antemano lo que nombra para demorarlo junto | 1 | Pasa |
+| `test_la_demora_de_varios_tomos_trae_la_fecha_del_aviso` | La demora de varios tomos trae la fecha del aviso | 1 | Pasa |
 
 ### `test_baja_proveedor.py`
 
@@ -2465,6 +3613,16 @@ El pipeline entero: de un `.eml` en la cola a borradores con su portada.
 | `test_la_ficha_marca_los_borradores_incompletos` | La ficha marca los borradores incompletos | 1 | Pasa |
 | `test_la_ficha_ofrece_aprobar_desde_la_pantalla` | La aprobación de `CO-017` se hace desde la ficha (CU-PRV-COL paso 4), y ya no con una instrucción de consola. | 1 | Pasa |
 | `test_un_correo_sin_procesar_no_muestra_la_seccion_de_borradores` | Una sección vacía se leería como "no generó nada", que es distinto de "todavía no se procesó". | 1 | Pasa |
+
+### `test_casilla_conexion.py`
+
+Cómo se conecta la casilla de novedades: SSL siempre, salvo el correo de prueba local.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_con_ssl_abre_imap_con_ssl` | Con ssl abre imap con ssl | 1 | Pasa |
+| `test_sin_ssl_abre_imap_plano_con_el_correo_de_prueba_local` | Sin ssl abre imap plano con el correo de prueba local | 2 | Pasa |
+| `test_sin_ssl_con_una_casilla_de_afuera_se_rechaza_sin_conectar` | La clave viajaría en claro por internet. | 1 | Pasa |
 
 ### `test_cola_de_correos.py`
 
@@ -2521,7 +3679,7 @@ El comando `extraer_novedades`: la puerta por la que hoy corre el pipeline.
 
 `CO-017` E1 bajo concurrencia real: dos Administradores aprueban el mismo correo a la vez.
 
-**Casos de prueba que ejecuta:** CP-08.
+**Casos de prueba que ejecuta:** CP-PRV-COL-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -2556,9 +3714,55 @@ CU-PRV-CON — Consultar Proveedores: el listado y la ficha.
 | `test_la_ficha_dice_si_el_correo_se_reconoce_como_remitente` | Es la consecuencia práctica del estado, y no se deduce sola de la palabra "Inactivo". | 1 | Pasa |
 | `test_la_ficha_encadena_las_acciones_del_modulo` | CU-PRV-CON paso 5: desde la ficha se inician CU-PRV-EDI y CU-PRV-BAJ. | 1 | Pasa |
 | `test_la_ficha_de_un_inactivo_ofrece_reactivar_y_no_dar_de_baja` | La ficha de un inactivo ofrece reactivar y no dar de baja | 1 | Pasa |
-| `test_la_ficha_avisa_que_falta_el_historial_de_restock` | El paso 4 del CU lo pide, pero el módulo de Restock no existe. | 1 | Pasa |
+| `test_la_ficha_sin_pedidos_lo_dice` | El paso 4 del CU pide el historial de pedidos (B-04-008). | 1 | Pasa |
 | `test_el_listado_no_filtra_datos_a_otros_roles` | El listado no filtra datos a otros roles | 2 | Pasa |
 | `test_el_menu_del_administrador_enlaza_proveedores` | El menu del administrador enlaza proveedores | 1 | Pasa |
+
+### `test_contratos_04_padron.py`
+
+Pruebas de contrato del módulo 04 · Proveedores (el padrón).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO060_crea_el_proveedor_activo_normalizado_y_habilitado` | CO060 crea el proveedor activo normalizado y habilitado | 1 | Pasa |
+| `test_CO060_el_procesamiento_apagado_queda_apagado` | CO060 el procesamiento apagado queda apagado | 1 | Pasa |
+| `test_CO060_E1_un_obligatorio_vacio_no_procede` | CO060 E1 un obligatorio vacio no procede | 1 | Pasa |
+| `test_CO060_E2_un_dato_repetido_en_cualquier_estado_enlaza_la_ficha` | CO060 E2 un dato repetido en cualquier estado enlaza la ficha | 1 | Pasa |
+| `test_CO171_muestra_los_campos_actuales_en_cualquier_estado` | CO171 muestra los campos actuales en cualquier estado | 2 | Pasa |
+| `test_CO061_los_atributos_cambian_y_la_modificacion_queda_con_el_instante` | CO061 los atributos cambian y la modificacion queda con el instante | 1 | Pasa |
+| `test_CO061_se_forman_y_rompen_editorial_y_tipo` | CO061 se forman y rompen editorial y tipo | 1 | Pasa |
+| `test_CO061_la_auditoria_guarda_cada_par_anterior_y_nuevo` | CO061 la auditoria guarda cada par anterior y nuevo | 1 | Pasa |
+| `test_CO061_E1_un_obligatorio_vacio_no_procede` | CO061 E1 un obligatorio vacio no procede | 1 | Pasa |
+| `test_CO061_E2_el_dato_de_otro_proveedor_se_informa_con_enlace` | CO061 E2 el dato de otro proveedor se informa con enlace | 2 | Pasa |
+| `test_CO062_confirmado_el_correo_anterior_deja_de_ser_remitente_y_el_nuevo_pasa_a_serlo` | CO062 confirmado el correo anterior deja de ser remitente y el nuevo pasa a serlo | 1 | Pasa |
+| `test_CO062_sin_la_advertencia_confirmada_el_correo_no_cambia` | CO062 sin la advertencia confirmada el correo no cambia | 1 | Pasa |
+| `test_CO063_el_informe_trae_productos_propuestas_y_reversibilidad` | CO063 el informe trae productos propuestas y reversibilidad | 1 | Pasa |
+| `test_CO063_pedir_el_informe_no_modifica_nada` | CO063 pedir el informe no modifica nada | 1 | Pasa |
+| `test_CO064_pasa_a_inactivo_y_el_correo_deja_de_ser_remitente` | CO064 pasa a inactivo y el correo deja de ser remitente | 1 | Pasa |
+| `test_CO064_los_productos_conservan_su_proveedor` | Postcondición negativa explícita: el historial no se toca. | 1 | Pasa |
+| `test_CO064_la_propuesta_activa_marca_proveedor_inactivo` | CO064 la propuesta activa marca proveedor inactivo | 1 | Pasa |
+| `test_CO064_el_habitual_de_la_editorial_tambien_marca_la_linea` | Sin proveedor propio, la línea involucraba al habitual de su editorial. | 1 | Pasa |
+| `test_CO064_queda_auditada` | CO064 queda auditada | 1 | Pasa |
+| `test_CO065_presenta_los_datos_vigentes_con_el_correo_destacado` | CO065 presenta los datos vigentes con el correo destacado | 1 | Pasa |
+| `test_CO065_no_modifica_nada` | CO065 no modifica nada | 1 | Pasa |
+| `test_CO066_pasa_a_activo_con_las_correcciones_y_vuelve_al_filtro` | CO066 pasa a activo con las correcciones y vuelve al filtro | 1 | Pasa |
+| `test_CO066_el_procesamiento_queda_con_el_valor_declarado` | CO066 el procesamiento queda con el valor declarado | 2 | Pasa |
+| `test_CO066_los_productos_conservan_su_proveedor` | CO066 los productos conservan su proveedor | 1 | Pasa |
+| `test_CO066_queda_auditada_con_las_correcciones` | CO066 queda auditada con las correcciones | 1 | Pasa |
+| `test_CO066_la_reactivacion_limpia_la_marca_de_la_propuesta` | CO066 la reactivacion limpia la marca de la propuesta | 1 | Pasa |
+| `test_CO066_E1_la_colision_se_informa_con_enlace_y_no_reactiva` | CO066 E1 la colision se informa con enlace y no reactiva | 2 | Pasa |
+| `test_CO066_E2_un_correo_mal_formado_se_rechaza` | CO066 E2 un correo mal formado se rechaza | 1 | Pasa |
+| `test_CO066_el_doble_envio_no_registra_dos_reactivaciones` | CO066 el doble envio no registra dos reactivaciones | 1 | Pasa |
+| `test_CO172_lista_razon_social_correo_estado_y_productos` | CO172 lista razon social correo estado y productos | 1 | Pasa |
+| `test_CO172_filtra_por_estado_y_por_texto` | CO172 filtra por estado y por texto | 1 | Pasa |
+| `test_CO172_E1_sin_resultados` | CO172 E1 sin resultados | 1 | Pasa |
+| `test_CO172_E2_sin_proveedores_ofrece_el_alta` | CO172 E2 sin proveedores ofrece el alta | 1 | Pasa |
+| `test_CO172_por_la_direccion_real_con_rol_cajero_se_deniega` | CO172 por la direccion real con rol cajero se deniega | 1 | Pasa |
+| `test_CO173_contacto_productos_y_procesamiento_a_la_vista` | CO173 contacto productos y procesamiento a la vista | 1 | Pasa |
+| `test_CO173_el_historial_trae_los_pedidos_despachados` | CO173 el historial trae los pedidos despachados | 1 | Pasa |
+| `test_CO173_el_historial_no_mezcla_pedidos_de_otro_proveedor` | CO173 el historial no mezcla pedidos de otro proveedor | 1 | Pasa |
+| `test_CO173_consultar_la_ficha_no_modifica_nada` | CO173 consultar la ficha no modifica nada | 1 | Pasa |
+| `test_CO061_CO064_CO066_otro_rol_no_modifica_el_padron` | CO061 CO064 CO066 otro rol no modifica el padron | 2 | Pasa |
 
 ### `test_contratos_04_proveedores.py`
 
@@ -2574,6 +3778,7 @@ Pruebas de contrato del módulo 04 · Proveedores (cola de correos y abandono).
 | `test_CO017_E1_la_segunda_aprobacion_encuentra_el_correo_tomado` | La transición es condicionada: sólo la primera aprobación pasa. | 1 | Pasa |
 | `test_CO017_E4_si_el_servicio_no_responde_el_correo_falla_y_queda_en_la_cola` | CO017 E4 si el servicio no responde el correo falla y queda en la cola | 1 | Pasa |
 | `test_CO017_E4_si_no_identifica_ningun_producto_el_correo_falla` | CO017 E4 si no identifica ningun producto el correo falla | 1 | Pasa |
+| `test_CO017_E4_un_correo_bien_clasificado_que_no_es_de_novedades_no_falla` | B-04-010: una demora o una factura no son una falla del procesamiento. | 2 | Pasa |
 | `test_CO017_por_la_direccion_real_con_rol_cajero_no_procesa` | CO017 por la direccion real con rol cajero no procesa | 1 | Pasa |
 | `test_CO017_no_acepta_get` | Una operación con efecto no se dispara con un enlace. | 1 | Pasa |
 | `test_CO018_descartar_registra_estado_motivo_y_responsable` | CO018 descartar registra estado motivo y responsable | 1 | Pasa |
@@ -2589,11 +3794,77 @@ Pruebas de contrato del módulo 04 · Proveedores (cola de correos y abandono).
 | `test_CO158_la_ficha_de_un_pendiente_ofrece_aprobar_y_descartar` | CO158 la ficha de un pendiente ofrece aprobar y descartar | 1 | Pasa |
 | `test_CO156_abandonar_la_confirmacion_no_cambia_el_proveedor` | Postcondición: «ninguna. | 2 | Pasa |
 
+### `test_contratos_17_diagnostico_llm.py`
+
+Pruebas de contrato de CU-CFG-LLM: `CO-214`, `CO-149` y `CO-150`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO214_presenta_la_configuracion_con_la_credencial_enmascarada` | CO214 presenta la configuracion con la credencial enmascarada | 1 | Pasa |
+| `test_CO214_no_modifica_nada` | CO214 no modifica nada | 1 | Pasa |
+| `test_CO149_no_modifica_el_catalogo_ni_genera_borradores` | Postcondición negativa explícita y central del contrato. | 1 | Pasa |
+| `test_CO149_la_salida_trae_prompt_crudo_validacion_tiempo_y_version` | CO149 la salida trae prompt crudo validacion tiempo y version | 1 | Pasa |
+| `test_CO149_queda_en_el_log_con_la_configuracion_y_sin_la_credencial` | CO149 queda en el log con la configuracion y sin la credencial | 1 | Pasa |
+| `test_CO149_E1_sin_respuesta_tambien_queda_registrado` | CO149 E1 sin respuesta tambien queda registrado | 1 | Pasa |
+| `test_CO149_E2_E3_rechazos_distinguidos` | CO149 E2 E3 rechazos distinguidos | 3 | Pasa |
+| `test_CO149_E4_el_modelo_configurado_no_existe` | CO149 E4 el modelo configurado no existe | 1 | Pasa |
+| `test_CO149_E5_contenido_invalido_se_informa_como_reparo` | CO149 E5 contenido invalido se informa como reparo | 1 | Pasa |
+| `test_CO149_E6_formato_ininterpretable_muestra_el_crudo` | CO149 E6 formato ininterpretable muestra el crudo | 1 | Pasa |
+| `test_CO150_comprueba_sin_extraccion_y_queda_en_el_log` | CO150 comprueba sin extraccion y queda en el log | 1 | Pasa |
+| `test_CO150_E1_a_E3_quedan_registrados` | CO150 E1 a E3 quedan registrados | 3 | Pasa |
+| `test_CO150_no_modifica_el_dominio` | CO150 no modifica el dominio | 1 | Pasa |
+| `test_CO149_CO150_otro_rol_no_diagnostica` | CO149 CO150 otro rol no diagnostica | 2 | Pasa |
+
+### `test_contratos_consultas_de_compras.py`
+
+Las consultas de compras: `CO-235`, `CO-236`, `CO-238` y `CO-240`.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO235_presenta_todas_las_propuestas_de_la_mas_reciente_a_la_mas_antigua` | CO235 presenta todas las propuestas de la mas reciente a la mas antigua | 1 | Pasa |
+| `test_CO235_consultar_las_propuestas_no_cambia_nada` | CO235 consultar las propuestas no cambia nada | 1 | Pasa |
+| `test_CO235_sin_propuestas_presenta_la_vista_vacia` | CO235 sin propuestas presenta la vista vacia | 1 | Pasa |
+| `test_CO236_la_ficha_agrupa_por_proveedor_con_el_pedido_que_genero` | CO236 la ficha agrupa por proveedor con el pedido que genero | 1 | Pasa |
+| `test_CO236_consultar_la_ficha_no_cambia_nada` | CO236 consultar la ficha no cambia nada | 1 | Pasa |
+| `test_CO238_la_ficha_presenta_cada_linea_con_lo_pedido_y_lo_recibido` | CO238 la ficha presenta cada linea con lo pedido y lo recibido | 1 | Pasa |
+| `test_CO238_consultar_la_ficha_del_pedido_no_cambia_nada` | CO238 consultar la ficha del pedido no cambia nada | 1 | Pasa |
+| `test_CO240_consultar_por_llegar_no_cambia_nada` | CO240 consultar por llegar no cambia nada | 1 | Pasa |
+| `test_CO240_sin_nada_por_llegar_presenta_la_vista_vacia` | CO240 sin nada por llegar presenta la vista vacia | 1 | Pasa |
+| `test_CO235_CO240_el_rol_equivocado_no_consulta_por_la_direccion_real` | CO235 CO240 el rol equivocado no consulta por la direccion real | 4 | Pasa |
+| `test_CO243_cerrar_la_linea_no_toca_el_stock_y_saca_la_preventa_sin_reservas` | CO243 cerrar la linea no toca el stock y saca la preventa sin reservas | 1 | Pasa |
+| `test_CO243_una_linea_ya_cerrada_no_se_vuelve_a_cerrar` | CO243 una linea ya cerrada no se vuelve a cerrar | 1 | Pasa |
+
+### `test_contratos_llegada.py`
+
+`CO-232` confirmarLlegadaDeMercaderia: «Por llegar», una sola pantalla (B-05-017).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO240_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles` | CO240 agrupa por proveedor y fecha con lo de los dos paneles | 1 | Pasa |
+| `test_CO240_la_preventa_sin_pedido_aparece_marcada` | CO240 la preventa sin pedido aparece marcada | 1 | Pasa |
+| `test_CO240_un_pedido_sin_enviar_no_se_espera_y_se_avisa` | CO240 un pedido sin enviar no se espera y se avisa | 1 | Pasa |
+| `test_CO244_revisar_no_registra_nada` | CO244 revisar no registra nada | 1 | Pasa |
+| `test_CO232_cada_linea_suma_lo_recibido_a_su_pedido` | CO232 cada linea suma lo recibido a su pedido | 1 | Pasa |
+| `test_CO232_lo_que_llega_de_mas_se_acepta_y_queda_en_la_auditoria` | CO232 lo que llega de mas se acepta y queda en la auditoria | 1 | Pasa |
+| `test_CO232_la_preventa_cubre_sus_reservas_por_CO013` | CO232 la preventa cubre sus reservas por CO013 | 1 | Pasa |
+| `test_CO232_lo_que_no_es_preventa_suma_al_stock_y_avisa_a_los_suscriptores` | CO232 lo que no es preventa suma al stock y avisa a los suscriptores | 1 | Pasa |
+| `test_CO232_la_preventa_sin_pedido_se_carga_por_CO013` | CO232 la preventa sin pedido se carga por CO013 | 1 | Pasa |
+| `test_CO232_un_faltante_con_la_fecha_cumplida_se_demora_y_uno_futuro_no_cambia` | CO232 un faltante con la fecha cumplida se demora y uno futuro no cambia | 1 | Pasa |
+| `test_CO232_lo_que_no_es_preventa_en_cero_sigue_esperando` | CO232 lo que no es preventa en cero sigue esperando | 1 | Pasa |
+| `test_CO232_confirmar_sin_haber_revisado_no_registra` | CO232 confirmar sin haber revisado no registra | 1 | Pasa |
+| `test_CO232_si_otro_se_adelanto_ese_pedido_no_suma_y_los_demas_siguen` | CO232 si otro se adelanto ese pedido no suma y los demas siguen | 1 | Pasa |
+| `test_CO232_si_una_linea_se_cerro_mientras_tanto_no_se_registra_nada` | CO232 si una linea se cerro mientras tanto no se registra nada | 1 | Pasa |
+| `test_CO232_el_rol_equivocado_no_ve_ni_carga_la_llegada` | CO232 el rol equivocado no ve ni carga la llegada | 2 | Pasa |
+| `test_las_direcciones_viejas_llevan_a_por_llegar_sin_registrar_nada` | Las direcciones viejas llevan a por llegar sin registrar nada | 1 | Pasa |
+| `test_CO232_la_llegada_no_reactiva_un_producto_que_no_se_vende` | CO232 la llegada no reactiva un producto que no se vende | 2 | Pasa |
+| `test_CO027_cancelar_la_preventa_cierra_lo_pedido_al_proveedor` | CO027 cancelar la preventa cierra lo pedido al proveedor | 1 | Pasa |
+| `test_CO034_descatalogar_cierra_lo_pedido_al_proveedor` | CO034 descatalogar cierra lo pedido al proveedor | 1 | Pasa |
+
 ### `test_diagnostico_llm.py`
 
 La pantalla de diagnóstico del modelo de lenguaje.
 
-**Casos de prueba que ejecuta:** CP-07.
+**Casos de prueba que ejecuta:** CP-CFG-LLM-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -2661,7 +3932,7 @@ La extracción del modelo: el prompt, la validación y lo que se guarda.
 | `test_el_resultado_dice_con_que_version_del_prompt_se_extrajo` | Un borrador de marzo y otro de junio no son comparables, y cuando algo salga raro la primera pregunta va a ser con cuál se hizo. | 1 | Pasa |
 | `test_el_esquema_le_exige_al_servidor_la_forma_de_la_respuesta` | Es la primera de las tres defensas: con el esquema declarado, el modelo **no puede** emitir algo que no encaje, y la validación deja de tener que ocuparse de la estructura. | 1 | Pasa |
 | `test_el_contenido_del_correo_va_separado_de_las_instrucciones` | Mezclarlos haría que el texto de un correo se pueda leer como una instrucción más. | 1 | Pasa |
-| `test_un_aviso_de_demora_no_produce_productos` | Si el modelo clasificó "demora" y devolvió productos igual, se ignoran: mezclar las dos cosas es el error que la clasificación viene a evitar. | 1 | Pasa |
+| `test_un_aviso_de_demora_no_produce_productos` | Lo que trae un aviso de demora no son altas: va a `demorados`, nunca a `productos`. | 1 | Pasa |
 | `test_una_intencion_inventada_se_toma_como_otro` | Una intencion inventada se toma como otro | 1 | Pasa |
 | `test_un_isbn_que_no_verifica_se_descarta_con_su_reparo` | Es la defensa que atrapa un ISBN alucinado. | 1 | Pasa |
 | `test_un_isbn_con_guiones_se_normaliza` | Un isbn con guiones se normaliza | 1 | Pasa |
@@ -2744,6 +4015,18 @@ Lectura de un correo de novedades: de bytes MIME a texto parseable.
 | `test_CO016_respeta_la_frecuencia_configurada` | CO016 respeta la frecuencia configurada | 1 | Pasa |
 | `test_CO016_sin_casilla_configurada_no_hace_nada` | CO016 sin casilla configurada no hace nada | 1 | Pasa |
 | `test_CO016_corre_en_el_temporizador` | CO016 corre en el temporizador | 1 | Pasa |
+| `test_CO016_revisar_casilla_saltea_la_frecuencia` | CO016 revisar casilla saltea la frecuencia | 1 | Pasa |
+| `test_CO016_revisar_casilla_si_corresponde_respeta_la_frecuencia` | B-04-015: respeta la frecuencia, como el reloj por minuto de la VM. | 1 | Pasa |
+| `test_CO016_escuchar_al_bot_vigila_la_casilla` | B-04-015: en esta PC, `telegram escuchar` revisa la casilla entre consulta y consulta. | 1 | Pasa |
+| `test_escuchar_sigue_aunque_la_casilla_falle` | Escuchar sigue aunque la casilla falle | 1 | Pasa |
+| `test_revisar_casilla_sin_configurar_lo_dice` | Revisar casilla sin configurar lo dice | 1 | Pasa |
+| `test_CO016_el_boton_de_la_cola_encola_sin_esperar_la_frecuencia` | CO016 el boton de la cola encola sin esperar la frecuencia | 1 | Pasa |
+| `test_el_boton_sin_correos_nuevos_lo_dice` | El boton sin correos nuevos lo dice | 1 | Pasa |
+| `test_el_boton_sin_conexion_avisa_y_no_encola` | El boton sin conexion avisa y no encola | 1 | Pasa |
+| `test_sin_casilla_configurada_la_cola_no_ofrece_el_boton` | Sin casilla configurada la cola no ofrece el boton | 1 | Pasa |
+| `test_con_casilla_configurada_la_cola_ofrece_el_boton` | Con casilla configurada la cola ofrece el boton | 1 | Pasa |
+| `test_el_cajero_no_revisa_la_casilla_por_la_direccion_real` | El cajero no revisa la casilla por la direccion real | 1 | Pasa |
+| `test_revisar_la_casilla_no_se_hace_con_get` | Revisar la casilla no se hace con get | 1 | Pasa |
 
 ### `test_muestras.py`
 
@@ -2769,6 +4052,89 @@ El generador de contenido de muestra para el banco de pruebas.
 | `test_el_periodo_varia_entre_muestras` | Mismo motivo que los títulos y los ISBN: un valor fijo deja la duda de si el modelo lo lee o lo reconoce de verlo siempre igual. | 1 | Pasa |
 | `test_el_vencimiento_de_pedidos_es_un_señuelo_sin_año` | Es una segunda fecha en la misma prosa, y el modelo tiene que copiar el período y no el vencimiento. | 1 | Pasa |
 
+### `test_pantallas_pedidos.py`
+
+Las pantallas de los pedidos a proveedores y de las propuestas pasadas (plan 00 del circuito).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_rol_equivocado_recibe_403_en_cada_pantalla` | El rol equivocado recibe 403 en cada pantalla | 2 | Pasa |
+| `test_sin_sesion_lleva_al_ingreso` | Sin sesion lleva al ingreso | 1 | Pasa |
+| `test_CO240_la_lista_muestra_lo_que_esta_por_llegar` | CO240 la lista muestra lo que esta por llegar | 1 | Pasa |
+| `test_CO244_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar` | CO244 la llegada se revisa antes y no cambia nada hasta confirmar | 1 | Pasa |
+| `test_CO244_una_llegada_mal_escrita_o_vacia_no_registra` | CO244 una llegada mal escrita o vacia no registra | 3 | Pasa |
+| `test_CO243_cerrar_una_linea_pide_motivo_y_lo_guarda` | CO243 cerrar una linea pide motivo y lo guarda | 1 | Pasa |
+| `test_CO237_el_pedido_a_mano_manda_el_correo_y_abre_la_preventa` | CO237 el pedido a mano manda el correo y abre la preventa | 1 | Pasa |
+| `test_CO237_un_codigo_que_no_existe_no_sale` | CO237 un codigo que no existe no sale | 1 | Pasa |
+| `test_las_propuestas_pasadas_se_ven_con_sus_pedidos` | Las propuestas pasadas se ven con sus pedidos | 1 | Pasa |
+| `test_CO072_el_despacho_lleva_la_llegada_estimada` | CO072 el despacho lleva la llegada estimada | 1 | Pasa |
+| `test_una_fecha_imposible_se_toma_como_sin_fecha` | Una fecha imposible se toma como sin fecha | 1 | Pasa |
+
+### `test_pedido_a_mano_por_nombre.py`
+
+El pedido a mano busca por nombre y no le pide a un proveedor lo que trae otro (B-05-018).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_se_pide_por_el_titulo_con_su_numero` | Se pide por el titulo con su numero | 1 | Pasa |
+| `test_se_pide_por_la_opcion_de_la_lista_con_codigo_y_nombre` | Se pide por la opcion de la lista con codigo y nombre | 1 | Pasa |
+| `test_la_pantalla_ofrece_el_catalogo_y_quitar_renglones` | La pantalla ofrece el catalogo y quitar renglones | 1 | Pasa |
+| `test_un_titulo_que_coincide_con_varios_pide_elegir` | Un titulo que coincide con varios pide elegir | 1 | Pasa |
+| `test_CO237_no_se_le_pide_a_un_proveedor_lo_que_trae_otro` | CO237 no se le pide a un proveedor lo que trae otro | 1 | Pasa |
+| `test_manda_el_proveedor_propio_del_producto_antes_que_el_de_su_editorial` | Manda el proveedor propio del producto antes que el de su editorial | 1 | Pasa |
+| `test_CO237_si_no_se_sabe_quien_lo_trae_no_se_pide` | B-05-021: sin proveedor identificable no hay cómo saber si este lo tiene. | 1 | Pasa |
+| `test_un_renglon_de_otro_proveedor_frena_todo_el_pedido` | Un renglon de otro proveedor frena todo el pedido | 1 | Pasa |
+| `test_CO237_el_rol_equivocado_no_pide_por_la_direccion_real` | CO237 el rol equivocado no pide por la direccion real | 2 | Pasa |
+
+### `test_pedido_sin_enviar.py`
+
+B-05-014: el pedido cuyo correo no salió queda «Sin enviar», a la vista.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_si_el_correo_falla_el_pedido_queda_sin_enviar_con_su_error` | Si el correo falla el pedido queda sin enviar con su error | 1 | Pasa |
+| `test_sin_registrar_si_falla_sigue_como_antes` | Sin registrar si falla sigue como antes | 1 | Pasa |
+| `test_el_cierre_de_una_revisión_registra_el_que_no_salió` | El cierre de una revisión registra el que no salió | 1 | Pasa |
+| `test_una_preventa_sin_enviar_no_abre_preventas_nuevas` | Una preventa sin enviar no abre preventas nuevas | 1 | Pasa |
+| `test_CO241_reintentar_lo_manda_y_lo_deja_por_llegar` | CO241 reintentar lo manda y lo deja por llegar | 1 | Pasa |
+| `test_CO241_si_vuelve_a_fallar_queda_sin_enviar_con_el_error_nuevo` | CO241 si vuelve a fallar queda sin enviar con el error nuevo | 1 | Pasa |
+| `test_reintentar_sin_correo_del_proveedor_lo_dice` | Reintentar sin correo del proveedor lo dice | 1 | Pasa |
+| `test_CO241_lo_que_ya_salio_no_se_reintenta` | CO241 lo que ya salio no se reintenta | 1 | Pasa |
+| `test_CO242_descartarlo_pide_motivo_y_saca_la_preventa_sin_reservas` | CO242 descartarlo pide motivo y saca la preventa sin reservas | 1 | Pasa |
+| `test_un_pedido_sin_enviar_no_recibe_llegada_ni_respuesta` | Un pedido sin enviar no recibe llegada ni respuesta | 1 | Pasa |
+| `test_la_ficha_lo_dice_y_ofrece_reintentar_y_descartar` | La ficha lo dice y ofrece reintentar y descartar | 1 | Pasa |
+| `test_la_lista_lo_muestra_primero_y_lo_cuenta` | La lista lo muestra primero y lo cuenta | 1 | Pasa |
+| `test_reintentar_desde_la_ficha` | Reintentar desde la ficha | 1 | Pasa |
+| `test_descartar_desde_la_ficha` | Descartar desde la ficha | 1 | Pasa |
+| `test_CO241_CO242_el_cajero_no_reintenta_ni_descarta` | CO241 CO242 el cajero no reintenta ni descarta | 2 | Pasa |
+| `test_la_preventa_sin_nada_en_camino_entra_en_la_propuesta` | La preventa sin nada en camino entra en la propuesta | 1 | Pasa |
+| `test_la_preventa_con_un_pedido_en_camino_no_entra` | La preventa con un pedido en camino no entra | 1 | Pasa |
+| `test_el_pedido_que_no_salió_llega_al_chat_y_se_reintenta` | El pedido que no salió llega al chat y se reintenta | 1 | Pasa |
+
+### `test_pedidos_a_proveedor.py`
+
+El pedido a proveedor, el cupo de la pre-venta y la llegada (plan 00 del circuito).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO003_una_preventa_del_lote_nace_sin_stock_y_su_cantidad_queda_pedida` | B-01-016: lo declarado en un ítem con fecha es lo que se pidió, no stock. | 1 | Pasa |
+| `test_CO072_despachar_restock_registra_el_pedido_y_abre_la_preventa_de_lo_agotado` | CO072 despachar restock registra el pedido y abre la preventa de lo agotado | 1 | Pasa |
+| `test_CO074_un_pedido_que_no_salio_no_queda_registrado` | CO074 un pedido que no salio no queda registrado | 1 | Pasa |
+| `test_el_cupo_es_lo_pedido_menos_el_margen_menos_lo_reservado` | El cupo es lo pedido menos el margen menos lo reservado | 1 | Pasa |
+| `test_sin_pedido_no_hay_cupo_aunque_este_en_preventa` | Sin pedido no hay cupo aunque este en preventa | 1 | Pasa |
+| `test_un_producto_no_editorial_no_pasa_a_preventa` | Decisión 3: la pre-venta sigue siendo editorial (I-06). | 1 | Pasa |
+| `test_al_agotarse_con_un_pedido_en_camino_pasa_a_preventa` | Al agotarse con un pedido en camino pasa a preventa | 1 | Pasa |
+| `test_CO083_con_el_cupo_lleno_no_se_reserva_y_se_dice` | CO083 con el cupo lleno no se reserva y se dice | 1 | Pasa |
+| `test_CO075_con_la_preventa_completa_se_puede_pedir_el_aviso` | Ambigüedad 5 del plan: la lista de espera se avisa si llega de más. | 1 | Pasa |
+| `test_CO089_el_ultimo_lugar_del_cupo_pagado_dos_veces_se_rechaza_la_segunda` | CO089 el ultimo lugar del cupo pagado dos veces se rechaza la segunda | 1 | Pasa |
+| `test_una_llegada_parcial_cubre_reservas_y_deja_la_linea_abierta` | Una llegada parcial cubre reservas y deja la linea abierta | 1 | Pasa |
+| `test_llegar_todo_o_de_mas_cierra_el_pedido_y_queda_auditado` | Llegar todo o de mas cierra el pedido y queda auditado | 1 | Pasa |
+| `test_CO077_lo_que_llega_avisa_a_la_lista_de_espera` | CO077 lo que llega avisa a la lista de espera | 1 | Pasa |
+| `test_una_llegada_sin_unidades_se_rechaza` | Una llegada sin unidades se rechaza | 1 | Pasa |
+| `test_CO013_lo_confirmado_en_preventas_por_llegar_se_descuenta_del_pedido` | Una sola verdad: la misma llegada no se puede registrar por las dos pantallas. | 1 | Pasa |
+| `test_cerrar_sin_recibir_exige_motivo_y_saca_de_preventa_lo_que_nadie_reservo` | Cerrar sin recibir exige motivo y saca de preventa lo que nadie reservo | 1 | Pasa |
+| `test_cerrar_sin_recibir_con_reservas_deja_la_preventa_y_lo_avisa` | Cerrar sin recibir con reservas deja la preventa y lo avisa | 1 | Pasa |
+
 ### `test_pipeline_de_novedades.py`
 
 Lo que el proveedor le aporta al procesamiento automático de CU-ALT-NOV.
@@ -2793,6 +4159,17 @@ Lo que el proveedor le aporta al procesamiento automático de CU-ALT-NOV.
 | `test_un_proveedor_normal_no_lleva_ninguna_marca` | Un proveedor normal no lleva ninguna marca | 1 | Pasa |
 | `test_el_tablero_cuenta_aparte_los_que_alimentan_el_pipeline` | La diferencia entre "activos" y "alimentan" es justo el grupo que de otro modo quedaría invisible. | 1 | Pasa |
 
+### `test_redactar_correo.py`
+
+Lo que arma `scripts/demo/redactar_correo.py` lo lee el sistema (plan 00 del circuito, H).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_correo_redactado_conserva_la_tabla_y_la_portada` | El correo redactado conserva la tabla y la portada | 1 | Pasa |
+| `test_sin_tabla_sale_sólo_el_texto` | Sin tabla sale sólo el texto | 1 | Pasa |
+| `test_el_correo_redactado_entra_a_la_cola_del_proveedor` | El correo redactado entra a la cola del proveedor | 1 | Pasa |
+| `test_el_formulario_se_lee_sin_el_modulo_cgi` | El formulario se lee sin el modulo cgi | 1 | Pasa |
+
 ### `test_remitentes.py`
 
 El filtro de remitentes válidos: lo que este módulo le aporta a CU-ALT-NOV.
@@ -2808,6 +4185,97 @@ El filtro de remitentes válidos: lo que este módulo le aporta a CU-ALT-NOV.
 | `test_un_remitente_vacio_no_encuentra_nada` | Un correo sin remitente legible no puede caer por casualidad en el primer proveedor de la tabla. | 2 | Pasa |
 | `test_activos_solo_devuelve_los_activos` | Activos solo devuelve los activos | 1 | Pasa |
 | `test_el_proveedor_se_identifica_por_su_razon_social` | Es lo que se lee en el log de auditoría y en los desplegables. | 1 | Pasa |
+
+### `test_respuesta_del_proveedor.py`
+
+La respuesta del proveedor a un pedido (plan 00 de la respuesta del proveedor).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO239_confirmar_todo_deja_cada_linea_confirmada_y_lo_audita` | CO239 confirmar todo deja cada linea confirmada y lo audita | 1 | Pasa |
+| `test_CO239_otra_cantidad_cambia_lo_que_se_espera` | CO239 otra cantidad cambia lo que se espera | 1 | Pasa |
+| `test_la_misma_cantidad_que_lo_pedido_es_una_confirmación` | La misma cantidad que lo pedido es una confirmación | 1 | Pasa |
+| `test_confirmar_cero_no_se_puede` | Confirmar cero no se puede | 3 | Pasa |
+| `test_confirmar_menos_de_lo_que_ya_llegó_cierra_la_línea` | Confirmar menos de lo que ya llegó cierra la línea | 1 | Pasa |
+| `test_la_llegada_se_mide_contra_lo_confirmado` | La llegada se mide contra lo confirmado | 1 | Pasa |
+| `test_CO239_no_disponible_pide_motivo_y_cierra_sin_recibir` | CO239 no disponible pide motivo y cierra sin recibir | 1 | Pasa |
+| `test_no_puede_cierra_el_pedido_entero` | No puede cierra el pedido entero | 1 | Pasa |
+| `test_CO239_un_pedido_cerrado_no_admite_respuesta` | CO239 un pedido cerrado no admite respuesta | 1 | Pasa |
+| `test_sin_nada_para_anotar_lo_dice` | Sin nada para anotar lo dice | 1 | Pasa |
+| `test_la_línea_de_otro_pedido_no_se_toca` | La línea de otro pedido no se toca | 1 | Pasa |
+| `test_CO239_confirmar_menos_de_lo_reservado_se_acepta_y_avisa_sin_cancelar` | CO239 confirmar menos de lo reservado se acepta y avisa sin cancelar | 1 | Pasa |
+| `test_CO239_atrasar_una_preventa_con_reservas_es_una_demora` | CO239 atrasar una preventa con reservas es una demora | 1 | Pasa |
+| `test_adelantar_una_preventa_con_reservas_no_es_demora` | Adelantar una preventa con reservas no es demora | 1 | Pasa |
+| `test_una_preventa_sin_reservas_toma_la_fecha_nueva` | Una preventa sin reservas toma la fecha nueva | 1 | Pasa |
+| `test_la_despachada_espera_la_respuesta` | La despachada espera la respuesta | 1 | Pasa |
+| `test_se_cierra_cuando_respondió_el_último` | Se cierra cuando respondió el último | 1 | Pasa |
+| `test_la_llegada_sin_respuesta_también_cuenta` | La llegada sin respuesta también cuenta | 1 | Pasa |
+| `test_mientras_espera_se_puede_generar_la_próxima` | Mientras espera se puede generar la próxima | 1 | Pasa |
+| `test_la_web_y_el_chat_a_la_vez_cierran_la_propuesta_una_vez` | La web y el chat a la vez cierran la propuesta una vez | 1 | Pasa |
+| `test_la_ficha_del_pedido_pregunta_y_la_de_la_propuesta_enlaza` | Plan 00 de la respuesta simple: la respuesta se anota sólo en la ficha del pedido. | 1 | Pasa |
+| `test_guardar_desde_la_ficha_anota_cada_línea_y_la_fecha` | Guardar desde la ficha anota cada línea y la fecha | 1 | Pasa |
+| `test_no_puede_sin_motivo_lo_pide_y_no_cierra` | No puede sin motivo lo pide y no cierra | 1 | Pasa |
+| `test_volver_a_otro_sitio_no_se_sigue` | Volver a otro sitio no se sigue | 1 | Pasa |
+| `test_CO239_el_rol_equivocado_no_responde` | CO239 el rol equivocado no responde | 2 | Pasa |
+| `test_el_pedido_que_sale_llega_al_chat_con_sus_botones` | El pedido que sale llega al chat con sus botones | 1 | Pasa |
+| `test_confirmó_todo_desde_el_chat` | Confirmó todo desde el chat | 1 | Pasa |
+| `test_la_fecha_se_escribe_respondiendo` | La fecha se escribe respondiendo | 1 | Pasa |
+| `test_una_fecha_sin_año_es_la_próxima` | Una fecha sin año es la próxima | 1 | Pasa |
+| `test_una_fecha_que_no_se_entiende_lo_dice` | Una fecha que no se entiende lo dice | 1 | Pasa |
+| `test_no_puede_con_un_motivo_rápido` | No puede con un motivo rápido | 1 | Pasa |
+| `test_no_puede_con_otro_motivo_escrito` | No puede con otro motivo escrito | 1 | Pasa |
+| `test_un_botón_de_pedido_armado_a_mano_no_hace_nada` | Un botón de pedido armado a mano no hace nada | 1 | Pasa |
+| `test_un_administrador_dado_de_baja_no_responde` | Un administrador dado de baja no responde | 1 | Pasa |
+| `test_el_recordatorio_sale_a_los_tres_días_una_vez` | El recordatorio sale a los tres días una vez | 1 | Pasa |
+| `test_lo_respondido_no_se_recuerda` | Lo respondido no se recuerda | 1 | Pasa |
+| `test_el_resumen_cuenta_los_pedidos_sin_respuesta` | El resumen cuenta los pedidos sin respuesta | 1 | Pasa |
+| `test_un_correo_que_falla_ofrece_reintentar_y_reintentar_reprocesa` | Un correo que falla ofrece reintentar y reintentar reprocesa | 1 | Pasa |
+
+### `test_respuesta_simple.py`
+
+La respuesta del proveedor, simple (plan 00 de la respuesta simple, B-05-015).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_una_llegada_parcial_sin_respuesta_confirma_la_línea` | Una llegada parcial sin respuesta confirma la línea | 1 | Pasa |
+| `test_lo_que_llegó_no_se_recuerda_como_sin_respuesta` | Lo que llegó no se recuerda como sin respuesta | 1 | Pasa |
+| `test_la_llegada_no_pisa_una_respuesta_ya_anotada` | La llegada no pisa una respuesta ya anotada | 1 | Pasa |
+| `test_lo_que_confirma_la_pantalla_de_preventas_también_responde` | Lo que confirma la pantalla de preventas también responde | 1 | Pasa |
+| `test_CO239_no_se_confirma_mas_de_lo_pedido` | CO239 no se confirma mas de lo pedido | 1 | Pasa |
+| `test_confirmar_otra_vez_no_anota_ni_audita` | Confirmar otra vez no anota ni audita | 1 | Pasa |
+| `test_la_misma_cantidad_otra_vez_no_anota` | La misma cantidad otra vez no anota | 1 | Pasa |
+| `test_cambiar_la_cantidad_sí_anota` | Cambiar la cantidad sí anota | 1 | Pasa |
+| `test_cada_línea_no_disponible_guarda_su_motivo` | Cada línea no disponible guarda su motivo | 1 | Pasa |
+| `test_sin_motivo_propio_ni_general_no_se_cierra` | Sin motivo propio ni general no se cierra | 1 | Pasa |
+| `test_el_motivo_general_sirve_a_las_que_no_traen` | El motivo general sirve a las que no traen | 1 | Pasa |
+| `test_la_fecha_se_puede_borrar` | La fecha se puede borrar | 1 | Pasa |
+| `test_borrar_una_fecha_que_no_hay_lo_dice` | Borrar una fecha que no hay lo dice | 1 | Pasa |
+| `test_confirmar_todo_con_la_fecha` | Confirmar todo con la fecha | 1 | Pasa |
+| `test_no_puede_dice_qué_preventas_pierden_lo_que_esperaban` | No puede dice qué preventas pierden lo que esperaban | 1 | Pasa |
+| `test_mirar_las_consecuencias_no_cambia_nada` | Mirar las consecuencias no cambia nada | 1 | Pasa |
+| `test_el_resumen_dice_hace_cuánto_espera` | El resumen dice hace cuánto espera | 1 | Pasa |
+| `test_el_resumen_de_lo_que_contestó` | El resumen de lo que contestó | 3 | Pasa |
+| `test_un_pedido_sin_enviar_espera_un_reintento` | Un pedido sin enviar espera un reintento | 1 | Pasa |
+| `test_la_propuesta_dice_qué_espera` | La propuesta dice qué espera | 1 | Pasa |
+| `test_una_propuesta_que_no_espera_no_dice_nada` | Una propuesta que no espera no dice nada | 1 | Pasa |
+| `test_cada_respuesta_tiene_su_pantalla_que_se_abre_como_diálogo` | Cada respuesta tiene su pantalla que se abre como diálogo | 4 | Pasa |
+| `test_una_respuesta_que_no_existe_no_tiene_pantalla` | Una respuesta que no existe no tiene pantalla | 1 | Pasa |
+| `test_un_pedido_cerrado_no_abre_la_pantalla` | Un pedido cerrado no abre la pantalla | 1 | Pasa |
+| `test_con_cambios_muestra_cada_línea_con_sus_tres_opciones` | Con cambios muestra cada línea con sus tres opciones | 1 | Pasa |
+| `test_no_puede_muestra_las_consecuencias` | No puede muestra las consecuencias | 1 | Pasa |
+| `test_con_cambios_desde_la_web_con_un_motivo_por_línea` | Con cambios desde la web con un motivo por línea | 1 | Pasa |
+| `test_un_error_vuelve_a_la_misma_pantalla_con_la_ficha_de_origen` | Un error vuelve a la misma pantalla con la ficha de origen | 1 | Pasa |
+| `test_no_puede_con_otro_motivo_escrito` | No puede con otro motivo escrito | 1 | Pasa |
+| `test_sin_fecha_desde_la_web` | Sin fecha desde la web | 1 | Pasa |
+| `test_la_fecha_vacía_sin_marcar_sin_fecha_lo_pide` | La fecha vacía sin marcar sin fecha lo pide | 1 | Pasa |
+| `test_repetir_la_misma_respuesta_lo_dice` | Repetir la misma respuesta lo dice | 1 | Pasa |
+| `test_la_advertencia_de_reservas_enlaza_la_demora` | La advertencia de reservas enlaza la demora | 1 | Pasa |
+| `test_la_ficha_ya_no_tiene_campos_y_enlaza_la_llegada` | La ficha ya no tiene campos y enlaza la llegada | 1 | Pasa |
+| `test_respondido_todo_la_ficha_se_achica_a_una_línea` | Respondido todo la ficha se achica a una línea | 1 | Pasa |
+| `test_la_llegada_se_carga_en_por_llegar_abierta_en_el_grupo_del_pedido` | La llegada se carga en por llegar abierta en el grupo del pedido | 1 | Pasa |
+| `test_una_llegada_vacía_vuelve_a_la_carga` | Una llegada vacía vuelve a la carga | 1 | Pasa |
+| `test_el_rol_equivocado_no_ve_las_pantallas_de_respuesta` | El rol equivocado no ve las pantallas de respuesta | 4 | Pasa |
+| `test_el_rol_equivocado_no_carga_la_llegada` | El rol equivocado no carga la llegada | 2 | Pasa |
 
 ---
 
@@ -2851,10 +4319,11 @@ Los cobros abandonados (plan 00, C3) y la sincronización de cotizaciones (A2).
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
-| `test_un_cobro_pendiente_de_mas_de_un_dia_se_descarta` | Un cobro pendiente de mas de un dia se descarta | 1 | Pasa |
+| `test_CO247_un_cobro_pendiente_de_mas_de_un_dia_se_descarta` | CO247 un cobro pendiente de mas de un dia se descarta | 1 | Pasa |
 | `test_un_pago_aprobado_despues_de_descartado_se_reembolsa_y_no_genera_pedido` | Un pago aprobado despues de descartado se reembolsa y no genera pedido | 1 | Pasa |
 | `test_CO155_y_los_cobros_abandonados_corren_en_el_temporizador` | CO155 y los cobros abandonados corren en el temporizador | 1 | Pasa |
 | `test_CO155_la_sincronizacion_guarda_el_respaldo_cuando_la_api_responde` | CO155 la sincronizacion guarda el respaldo cuando la api responde | 1 | Pasa |
+| `test_CO247_descartar_no_toca_stock_puntos_ni_pedidos_y_deja_el_motivo` | CO247 descartar no toca stock puntos ni pedidos y deja el motivo | 1 | Pasa |
 
 ### `test_concurrencia_carrito.py`
 
@@ -2878,7 +4347,7 @@ Los cobros abandonados (plan 00, C3) y la sincronización de cotizaciones (A2).
 
 Pruebas de contrato del carrito (módulo 07, plan 07 segunda parte).
 
-**Casos de prueba que ejecuta:** CP-02, CP-03.
+**Casos de prueba que ejecuta:** CP-PVP-MAR-01, CP-PVP-TBM-01.
 
 | Prueba | Qué hace | Casos | Resultado |
 | --- | --- | ---: | --- |
@@ -2886,7 +4355,8 @@ Pruebas de contrato del carrito (módulo 07, plan 07 segunda parte).
 | `test_CO083_el_cliente_crea_un_carrito_persistente_asociado_a_su_cuenta` | CO083 el cliente crea un carrito persistente asociado a su cuenta | 1 | Pasa |
 | `test_CO083_si_ya_estaba_suma_a_la_misma_linea` | CO083 si ya estaba suma a la misma linea | 1 | Pasa |
 | `test_CO083_E1_la_cantidad_no_pasa_del_stock_y_se_informa_el_maximo` | CO083 E1 la cantidad no pasa del stock y se informa el maximo | 1 | Pasa |
-| `test_CO083_A1_la_pre_venta_se_reserva_sin_tope_de_stock` | CO083 A1 la pre venta se reserva sin tope de stock | 1 | Pasa |
+| `test_CO083_A1_la_pre_venta_se_reserva_sin_mirar_el_stock` | Sin stock (cero) y hasta el máximo por reserva: el stock no la limita. | 1 | Pasa |
+| `test_CO083_A1_la_reserva_queda_en_el_maximo_por_cliente_y_se_avisa` | Plan 00 de tope de reservas: el máximo por reserva de Parámetros (5). | 1 | Pasa |
 | `test_CO083_rechaza_una_cantidad_que_no_es_al_menos_uno` | CO083 rechaza una cantidad que no es al menos uno | 3 | Pasa |
 | `test_CO083_un_producto_sin_stock_no_se_agrega` | CO083 un producto sin stock no se agrega | 1 | Pasa |
 | `test_CO083_un_producto_fuera_de_la_tienda_responde_404` | CO083 un producto fuera de la tienda responde 404 | 1 | Pasa |
@@ -2895,7 +4365,8 @@ Pruebas de contrato del carrito (módulo 07, plan 07 segunda parte).
 | `test_CO084_la_linea_queda_con_la_cantidad_declarada` | CO084 la linea queda con la cantidad declarada | 1 | Pasa |
 | `test_CO084_E1_no_pasa_del_stock` | CO084 E1 no pasa del stock | 1 | Pasa |
 | `test_CO084_E2_menos_de_uno_se_rechaza_y_la_linea_no_cambia` | CO084 E2 menos de uno se rechaza y la linea no cambia | 1 | Pasa |
-| `test_CO084_A1_en_pre_venta_no_hay_tope` | CO084 A1 en pre venta no hay tope | 1 | Pasa |
+| `test_CO084_A1_en_pre_venta_el_tope_es_el_maximo_por_reserva` | CO084 A1 en pre venta el tope es el maximo por reserva | 1 | Pasa |
+| `test_CO084_A1_el_maximo_sale_de_parametros` | CO084 A1 el maximo sale de parametros | 1 | Pasa |
 | `test_CO084_la_linea_de_otro_carrito_responde_404` | CO084 la linea de otro carrito responde 404 | 1 | Pasa |
 | `test_CO085_la_linea_deja_de_existir_y_el_producto_sigue_igual` | CO085 la linea deja de existir y el producto sigue igual | 1 | Pasa |
 | `test_CO085_la_linea_de_otro_carrito_responde_404` | CO085 la linea de otro carrito responde 404 | 1 | Pasa |
@@ -2938,6 +4409,8 @@ Pruebas de contrato de la compra con cuenta (`CU-TDA-CMP`, plan 07 sexta parte).
 | `test_CO103_la_linea_queda_cubierta_y_el_total_baja_su_precio` | CO103 la linea queda cubierta y el total baja su precio | 1 | Pasa |
 | `test_CO103_ningun_lote_de_puntos_se_modifica_ni_se_audita` | CO103 ningun lote de puntos se modifica ni se audita | 1 | Pasa |
 | `test_CO103_E1_saldo_insuficiente_no_cubre_y_lo_informa` | CO103 E1 saldo insuficiente no cubre y lo informa | 1 | Pasa |
+| `test_CO103_no_canjea_lo_comprometido_en_otro_pago_en_curso` | B-10-013 (revisión integral, R-06): lo reserva un pago de otro carrito. | 1 | Pasa |
+| `test_CO103_reintentar_despues_de_un_rechazo_no_pierde_los_puntos` | El cobro abierto del mismo carrito se reemplaza al confirmar (B-07-043). | 1 | Pasa |
 | `test_CO103_E1_no_hay_canje_parcial_entre_dos_lineas` | CO103 E1 no hay canje parcial entre dos lineas | 1 | Pasa |
 | `test_CO103_E2_se_verifica_con_el_precio_de_hoy` | CO103 E2 se verifica con el precio de hoy | 1 | Pasa |
 | `test_CO103_sin_saldo_no_hay_canje` | CO103 sin saldo no hay canje | 1 | Pasa |
@@ -3004,6 +4477,7 @@ Pruebas de contrato de la compra como invitado (`CU-TDA-INV`, plan 07 sexta part
 | `test_CO089_invitado_la_confirmacion_va_al_correo_declarado` | CO089 invitado la confirmacion va al correo declarado | 1 | Pasa |
 | `test_CO089_invitado_queda_en_la_auditoria_con_su_correo` | CO089 invitado queda en la auditoria con su correo | 1 | Pasa |
 | `test_CO089_invitado_E3_rechazo_conserva_los_datos_del_formulario` | CO089 invitado E3 rechazo conserva los datos del formulario | 1 | Pasa |
+| `test_CO181_si_el_producto_pasa_a_pre_venta_mientras_paga_se_reembolsa` | B-07-044 (revisión integral, R-02): el invitado nunca termina con una reserva. | 1 | Pasa |
 
 ### `test_frontera_mercadopago.py`
 
@@ -3027,6 +4501,11 @@ Frontera con MercadoPago (B-07-031).
 | `test_frontera_mp_la_preferencia_usa_direcciones_absolutas` | Frontera mp la preferencia usa direcciones absolutas | 1 | Pasa |
 | `test_frontera_una_pasarela_desconocida_no_existe` | Frontera una pasarela desconocida no existe | 1 | Pasa |
 | `test_frontera_mercadopago_se_elige_por_su_clave` | Frontera mercadopago se elige por su clave | 1 | Pasa |
+| `test_CO089_un_aprobado_despues_de_un_rechazo_genera_el_pedido` | CO089 un aprobado despues de un rechazo genera el pedido | 1 | Pasa |
+| `test_CO089_E2_un_rechazo_repetido_se_registra_una_vez` | CO089 E2 un rechazo repetido se registra una vez | 1 | Pasa |
+| `test_CO089_el_resultado_muestra_el_rechazo_y_no_se_recarga` | CO089 el resultado muestra el rechazo y no se recarga | 1 | Pasa |
+| `test_CO088_un_intento_nuevo_reemplaza_al_cobro_rechazado` | CO088 un intento nuevo reemplaza al cobro rechazado | 1 | Pasa |
+| `test_frontera_mp_la_preferencia_vence_cuando_el_cobro_se_abandona` | Frontera mp la preferencia vence cuando el cobro se abandona | 1 | Pasa |
 
 ### `test_retiro_en_local.py`
 
@@ -3063,6 +4542,24 @@ Retiro en el local (plan 07, octava parte).
 | `test_CO099_el_plazo_de_lo_retirado_corre_desde_el_retiro` | CO099 el plazo de lo retirado corre desde el retiro | 1 | Pasa |
 | `test_el_estado_de_reclamo_ofrece_el_boton_en_el_pedido_retirado` | El estado de reclamo ofrece el boton en el pedido retirado | 1 | Pasa |
 | `test_concurrencia_dos_mostradores_que_entregan_el_mismo_pedido_registran_una_vez` | Concurrencia dos mostradores que entregan el mismo pedido registran una vez | 1 | Pasa |
+| `test_CO192_el_pedido_en_el_local_sigue_en_curso_hasta_que_se_retira` | CO192 el pedido en el local sigue en curso hasta que se retira | 1 | Pasa |
+
+### `test_tope_de_reservas.py`
+
+El tope de las reservas de pre-venta (plan 00 de tope de reservas, B-07-041).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO083_el_tope_cuenta_lo_reservado_en_pedidos_en_curso` | CO083 el tope cuenta lo reservado en pedidos en curso | 1 | Pasa |
+| `test_CO083_con_el_maximo_ya_reservado_no_agrega_y_lo_dice` | CO083 con el maximo ya reservado no agrega y lo dice | 1 | Pasa |
+| `test_CO083_lo_cancelado_o_entregado_no_cuenta_como_reserva` | CO083 lo cancelado o entregado no cuenta como reserva | 1 | Pasa |
+| `test_CO083_las_reservas_de_otro_cliente_no_cuentan` | CO083 las reservas de otro cliente no cuentan | 1 | Pasa |
+| `test_CO083_un_activo_sigue_con_el_tope_del_stock_y_no_el_de_reserva` | CO083 un activo sigue con el tope del stock y no el de reserva | 1 | Pasa |
+| `test_CO178_la_linea_que_pasa_el_tope_queda_marcada` | Ambigüedad 2 del plan: bajar el parámetro marca, no recorta. | 1 | Pasa |
+| `test_CO179_la_reserva_hecha_en_otra_pestana_bloquea_el_pago` | La línea esperaba en el carrito mientras otro pedido completaba la reserva. | 1 | Pasa |
+| `test_CO086_la_fusion_respeta_el_tope_contando_los_pedidos` | CO086 la fusion respeta el tope contando los pedidos | 1 | Pasa |
+| `test_la_ficha_ofrece_hasta_lo_que_queda_de_reserva` | La ficha ofrece hasta lo que queda de reserva | 1 | Pasa |
+| `test_la_ficha_sin_reserva_disponible_no_ofrece_reservar` | La ficha sin reserva disponible no ofrece reservar | 1 | Pasa |
 
 ---
 
@@ -3104,7 +4601,7 @@ Pruebas de contrato del mostrador (`CU-VTA-REG`, plan 06).
 | `test_CO104_mostrador_el_item_vuelve_a_su_precio` | CO104 mostrador el item vuelve a su precio | 1 | Pasa |
 | `test_CO082_a_crea_el_pedido_con_sus_lineas_y_la_transaccion` | CO082 a crea el pedido con sus lineas y la transaccion | 1 | Pasa |
 | `test_CO082_b_el_pedido_queda_asociado_al_cliente` | CO082 b el pedido queda asociado al cliente | 1 | Pasa |
-| `test_CO082_c_canal_presencial_y_nace_despachado` | CO082 c canal presencial y nace despachado | 1 | Pasa |
+| `test_CO082_c_canal_presencial_y_nace_vendido_en_el_local` | B-06-005: la postcondición decía «Despachado»; la venta de mostrador tiene estado, modalidad y estado de ítem propios. | 1 | Pasa |
 | `test_CO082_c_precio_congelado_y_canje_registrado` | CO082 c precio congelado y canje registrado | 1 | Pasa |
 | `test_CO082_c_la_transaccion_tiene_el_medio_el_subtotal_monetario_y_aprobado` | CO082 c la transaccion tiene el medio el subtotal monetario y aprobado | 1 | Pasa |
 | `test_CO082_c_el_stock_baja_y_el_que_llega_a_cero_pasa_a_agotado` | CO082 c el stock baja y el que llega a cero pasa a agotado | 1 | Pasa |
@@ -3120,6 +4617,38 @@ Pruebas de contrato del mostrador (`CU-VTA-REG`, plan 06).
 | `test_acceso_el_cliente_recibe_403_en_el_mostrador` | Acceso el cliente recibe 403 en el mostrador | 5 | Pasa |
 | `test_acceso_el_administrador_tambien_vende` | Acceso el administrador tambien vende | 1 | Pasa |
 | `test_acceso_sin_sesion_va_al_ingreso` | Acceso sin sesion va al ingreso | 1 | Pasa |
+| `test_B06005_la_base_no_admite_un_presencial_despachado_ni_un_online_de_mostrador` | B06005 la base no admite un presencial despachado ni un online de mostrador | 1 | Pasa |
+| `test_B06005_la_compra_en_el_local_va_al_historial_de_la_cuenta_sin_riel` | B06005 la compra en el local va al historial de la cuenta sin riel | 1 | Pasa |
+| `test_CO103_mostrador_no_canjea_lo_comprometido_en_un_pago_online` | B-10-013 (revisión integral, R-06): un pago online en curso ya reservó esos puntos. | 1 | Pasa |
+
+### `test_mostrador_encendido.py`
+
+El mostrador encendido (plan 06, segunda parte): el Cajero ve el estilo de la tienda y el Administrador sigue sobrio.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_el_cajero_ve_su_version_y_el_administrador_la_sobria` | El cajero ve su version y el administrador la sobria | 2 | Pasa |
+| `test_la_hoja_y_la_barra_del_cajero_no_llegan_al_administrador` | La hoja y la barra del cajero no llegan al administrador | 1 | Pasa |
+| `test_la_barra_enciende_el_destino_actual` | La barra enciende el destino actual | 4 | Pasa |
+| `test_el_mostrador_del_cajero_ofrece_todas_las_operaciones` | El mostrador del cajero ofrece todas las operaciones | 1 | Pasa |
+| `test_con_cliente_el_ticket_ofrece_el_canje` | Con cliente el ticket ofrece el canje | 1 | Pasa |
+| `test_el_ticket_vacio_no_deja_cobrar` | El ticket vacio no deja cobrar | 1 | Pasa |
+| `test_cobrar_desde_el_mostrador_del_cajero_registra_y_anuncia_el_vuelto` | Cobrar desde el mostrador del cajero registra y anuncia el vuelto | 1 | Pasa |
+| `test_el_medio_que_mas_recaudo_llena_el_medidor_y_termina_en_pico` | El medio que mas recaudo llena el medidor y termina en pico | 1 | Pasa |
+| `test_sin_recaudacion_los_medidores_quedan_apagados` | Sin recaudacion los medidores quedan apagados | 1 | Pasa |
+
+### `test_mostrador_y_caja_interfaz.py`
+
+El mostrador y la caja del plan 00 de interfaz, segunda parte (12 y 13).
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_la_fila_recien_agregada_destella_una_sola_vez` | La fila recien agregada destella una sola vez | 1 | Pasa |
+| `test_con_efectivo_el_vuelto_se_muestra_y_la_venta_no_cambia` | Con efectivo el vuelto se muestra y la venta no cambia | 1 | Pasa |
+| `test_venta_registrada_se_dice_una_vez_y_el_comprobante_sigue_solo` | Venta registrada se dice una vez y el comprobante sigue solo | 1 | Pasa |
+| `test_lo_recibido_que_no_alcanza_no_da_vuelto` | Lo recibido que no alcanza no da vuelto | 1 | Pasa |
+| `test_las_ventas_de_la_jornada_llevan_a_su_comprobante_y_se_filtran_por_medio` | Las ventas de la jornada llevan a su comprobante y se filtran por medio | 1 | Pasa |
+| `test_ver_las_ventas_de_la_jornada_no_cierra_nada` | Ver las ventas de la jornada no cierra nada | 1 | Pasa |
 
 ---
 
@@ -3130,25 +4659,26 @@ Las pruebas de resistencia que no entran en la suite. Corren sobre la base de la
 | Script | Qué hace | Casos de prueba |
 | --- | --- | --- |
 | `ajustes_demo.py` | Ajustes de la demostración: los de producción, con los archivos subidos aparte. | — |
-| `ataques.py` | Acto 3 · Ataques contra el sistema real, cada uno con su veredicto. | CP-13, CP-14, CP-15, CP-16, CP-17, CP-18, CP-19, CP-20 |
-| `caida_base.py` | D6-04 · La base de datos se cae con el servidor andando, y vuelve. | CP-24 |
-| `carreras.py` | Acto 4 · Concurrencia con hilos reales contra PostgreSQL. | CP-05, CP-08 |
+| `ataques.py` | Acto 3 · Ataques contra el sistema real, cada uno con su veredicto. | CP-AUT-INI-01, CP-AUT-REC-01, CP-CAT-INV-01, CP-SIS-R03-02, CP-TDA-CRM-01, CP-CFG-BNA-01, CP-SIS-R04-01, CP-USR-MOD-01 |
+| `caida_base.py` | D6-04 · La base de datos se cae con el servidor andando, y vuelve. | CP-SIS-R12-02 |
+| `carreras.py` | Acto 4 · Concurrencia con hilos reales contra PostgreSQL. | CP-PVP-ALT-01, CP-PRV-COL-01 |
 | `ensayo.py` | El ensayo completo de la demostración, o la verificación rápida de la mañana. | — |
 | `entorno.py` | Lo común a las herramientas de la demostración (plan 00). | — |
 | `enviar_novedades.py` | Correos de novedades de editorial, armados con los datos de Ivrea. Sólo desarrollo. | — |
 | `escalones.py` | D5-03 · Hasta dónde llega: la carga sube por escalones hasta que el p95 pasa 2 s o hay errores. | — |
-| `linea_base.py` | D5-01 · Línea base: tiempos de respuesta con un solo usuario (RNF-02). | CP-26 |
-| `llm_falso.py` | D6-02 · Un modelo de lenguaje que responde basura, para ver qué hace el sistema. | CP-09, CP-10 |
-| `locustfile.py` | Acto 5 · Carga con sesiones reales de los tres roles (RNF-07, RNF-02). | CP-27 |
+| `linea_base.py` | D5-01 · Línea base: tiempos de respuesta con un solo usuario (RNF-02). | CP-SIS-R02-01 |
+| `llm_falso.py` | D6-02 · Un modelo de lenguaje que responde basura, para ver qué hace el sistema. | CP-SIS-R11-01, CP-ALT-REV-01 |
+| `locustfile.py` | Acto 5 · Carga con sesiones reales de los tres roles (RNF-07, RNF-02). | CP-SIS-R07-01 |
 | `manejar.py` | `manage.py` con el entorno de la demostración. | — |
-| `modelo_caido.py` | D6-01 y D6-02 · El modelo de lenguaje caído o respondiendo basura. | CP-07, CP-09, CP-10 |
-| `mutacion.py` | D1-03 · Pruebas de mutación con mutmut, dentro de un contenedor Linux. | CP-01 |
+| `modelo_caido.py` | D6-01 y D6-02 · El modelo de lenguaje caído o respondiendo basura. | CP-CFG-LLM-01, CP-SIS-R11-01, CP-ALT-REV-01 |
+| `mutacion.py` | D1-03 · Pruebas de mutación con mutmut, dentro de un contenedor Linux. | CP-ALT-IMP-01 |
 | `poblar.py` | Puebla `longbox_demo` con un volumen realista y reproducible (plan 00, apartado 2). | — |
 | `presentacion.py` | Deja una base de desarrollo limpia para una presentación, con el catálogo real de Ivrea. | — |
 | `presentacion_carga.py` | La mitad de `presentacion.py` que corre dentro de Django. | — |
 | `raspar_ivrea.py` | Raspa el catálogo público de series de Ivrea a un Excel, con sus portadas. | — |
 | `raspar_portadas_tomos.py` | Baja la portada de cada tomo desde la galería PORTADAS de cada serie de Ivrea. | — |
-| `respaldo.py` | D6-06 · Respaldo y restauración, según `docs/despliegue/RESPALDOS.md`. | CP-23 |
+| `redactar_correo.py` | Redactar a mano un correo de proveedor y mandarlo a la casilla de prueba. Sólo desarrollo. | — |
+| `respaldo.py` | D6-06 · Respaldo y restauración, según `docs/despliegue/RESPALDOS.md`. | CP-SIS-R12-01 |
 | `restaurar.py` | Vuelve `longbox_demo` al punto de partida en un comando (plan 00, apartado 2). | — |
-| `rutas_protegidas.py` | D3-01 · RNF-03: cada ruta protegida, pedida con el rol equivocado, responde 403. | CP-12 |
-| `sabotaje.py` | D1-02 · Sabotaje controlado: rompe algo a propósito y muestra que la suite lo detecta. | CP-01 |
+| `rutas_protegidas.py` | D3-01 · RNF-03: cada ruta protegida, pedida con el rol equivocado, responde 403. | CP-SIS-R03-01 |
+| `sabotaje.py` | D1-02 · Sabotaje controlado: rompe algo a propósito y muestra que la suite lo detecta. | CP-ALT-IMP-01 |

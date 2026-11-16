@@ -72,7 +72,7 @@ def lineas(pedido):
 # ---------------------------------------------------------------------------
 
 
-def test_confirmar_todo_deja_cada_línea_confirmada_y_lo_audita(pedido, administrador):
+def test_CO239_confirmar_todo_deja_cada_linea_confirmada_y_lo_audita(pedido, administrador):
     respuestas.confirmar_todo(pedido, administrador)
 
     pedido.refresh_from_db()
@@ -83,7 +83,7 @@ def test_confirmar_todo_deja_cada_línea_confirmada_y_lo_audita(pedido, administ
     ).exists()
 
 
-def test_otra_cantidad_cambia_lo_que_se_espera(pedido, administrador):
+def test_CO239_otra_cantidad_cambia_lo_que_se_espera(pedido, administrador):
     akira = lineas(pedido)["Akira"]
 
     respuestas.responder(pedido, {akira.pk: (LineaPedidoProveedor.OTRA_CANTIDAD, 2)}, administrador)
@@ -132,7 +132,7 @@ def test_la_llegada_se_mide_contra_lo_confirmado(pedido, administrador):
     assert akira.estado == LineaPedidoProveedor.RECIBIDA
 
 
-def test_no_disponible_pide_motivo_y_cierra_sin_recibir(pedido, administrador):
+def test_CO239_no_disponible_pide_motivo_y_cierra_sin_recibir(pedido, administrador):
     akira = lineas(pedido)["Akira"]
     no = {akira.pk: (LineaPedidoProveedor.NO_DISPONIBLE, None)}
 
@@ -154,7 +154,7 @@ def test_no_puede_cierra_el_pedido_entero(pedido, administrador):
     assert {linea.estado for linea in pedido.lineas.all()} == {LineaPedidoProveedor.SIN_RECIBIR}
 
 
-def test_un_pedido_cerrado_no_admite_respuesta(pedido, administrador):
+def test_CO239_un_pedido_cerrado_no_admite_respuesta(pedido, administrador):
     respuestas.no_puede(pedido, "Discontinuado", administrador)
 
     with pytest.raises(OperacionRechazada, match="cerrado"):
@@ -188,7 +188,7 @@ def con_reservas(pedido, cliente):
     return akira
 
 
-def test_confirmar_menos_de_lo_reservado_se_acepta_y_avisa_sin_cancelar(
+def test_CO239_confirmar_menos_de_lo_reservado_se_acepta_y_avisa_sin_cancelar(
     con_reservas, pedido, administrador
 ):
     resultado = respuestas.responder(
@@ -200,7 +200,7 @@ def test_confirmar_menos_de_lo_reservado_se_acepta_y_avisa_sin_cancelar(
     assert LineaPedido.objects.get(producto=con_reservas.producto).estado == LineaPedido.RESERVADO
 
 
-def test_atrasar_una_preventa_con_reservas_es_una_demora(con_reservas, pedido, administrador):
+def test_CO239_atrasar_una_preventa_con_reservas_es_una_demora(con_reservas, pedido, administrador):
     antes = ProductoEditorial.objects.get(pk=con_reservas.producto_id).llegada_vigente
 
     resultado = respuestas.poner_fecha(pedido, DENTRO_DE_UN_MES + timedelta(days=20), administrador)
@@ -368,7 +368,7 @@ def test_volver_a_otro_sitio_no_se_sigue(client_admin, pedido):
 
 
 @pytest.mark.parametrize("rol", [Usuario.CAJERO, Usuario.CLIENTE])
-def test_el_rol_equivocado_no_responde(client, pedido, rol):
+def test_CO239_el_rol_equivocado_no_responde(client, pedido, rol):
     client.force_login(UsuarioFactory(rol=rol))
 
     respuesta = client.post(

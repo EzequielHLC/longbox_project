@@ -81,7 +81,7 @@ def foto():
 # ---------------------------------------------------------------------------
 
 
-def test_CO232_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles(client_admin, ivrea, cliente):
+def test_CO240_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles(client_admin, ivrea, cliente):
     otro = ProveedorFactory(razon_social="Panini Argentina", editorial=EditorialFactory())
     akira = agotado(ivrea, "Akira")
     pedido = pedir(ivrea, (akira, 6), (agotado(ivrea, "Berserk"), 4), dias=2)
@@ -102,7 +102,7 @@ def test_CO232_agrupa_por_proveedor_y_fecha_con_lo_de_los_dos_paneles(client_adm
     assert f"#{pedido.pk}" in contenido
 
 
-def test_CO232_la_preventa_sin_pedido_aparece_marcada(client_admin):
+def test_CO240_la_preventa_sin_pedido_aparece_marcada(client_admin):
     suelta = ProductoFactory(estado=Producto.PRE_VENTA, stock=0, fecha_llegada=timezone.localdate())
     LineaPedidoProveedor.objects.filter(producto=suelta).delete()
 
@@ -112,7 +112,7 @@ def test_CO232_la_preventa_sin_pedido_aparece_marcada(client_admin):
     assert "Sin pedido registrado" in contenido
 
 
-def test_CO232_un_pedido_sin_enviar_no_se_espera_y_se_avisa(client_admin, ivrea):
+def test_CO240_un_pedido_sin_enviar_no_se_espera_y_se_avisa(client_admin, ivrea):
     akira = agotado(ivrea, "Akira")
     pedido = pedir(ivrea, (akira, 6))
     # Como lo deja un correo que falló (B-05-014): sin pedido en camino, no hay pre-venta.
@@ -130,7 +130,7 @@ def test_CO232_un_pedido_sin_enviar_no_se_espera_y_se_avisa(client_admin, ivrea)
 # ---------------------------------------------------------------------------
 
 
-def test_CO232_revisar_no_registra_nada(client_admin, ivrea, cliente):
+def test_CO244_revisar_no_registra_nada(client_admin, ivrea, cliente):
     akira = agotado(ivrea, "Akira")
     pedido = pedir(ivrea, (akira, 6))
     reservar(cliente, akira, cantidad=2)

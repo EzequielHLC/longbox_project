@@ -28,6 +28,10 @@ from apps.catalog.forms import (
     ADVERTENCIA_PRECIO_MANUAL_NACIONAL,
     MENSAJE_REPETIDO_EN_LOTE,
     MENSAJE_REPETIDO_POR_ISBN,
+    MENSAJE_TOTAL_A_MANO_VACIO,
+    MENSAJE_TOTAL_INCOMPLETO,
+    MENSAJE_UNIDADES_IMPORTADO,
+    CabeceraLoteImportadoForm,
 )
 from apps.catalog.models import LoteAlta, Producto, ProductoEditorial
 from apps.catalog.tests.factories import (
@@ -39,6 +43,7 @@ from apps.catalog.tests.factories import (
 from apps.catalog.tests.helpers_lote import (
     URL_IMPORTADO,
     URL_NACIONAL,
+    con_unidades,
     item,
     lote_nacional,
     payload,
@@ -74,7 +79,7 @@ def lote_importado(items, **cabecera):
         "valor_compra_total": "100000",
     }
     datos.update(cabecera)
-    return payload(items, **datos)
+    return payload(con_unidades(items), **datos)
 
 
 # ===========================================================================
@@ -375,6 +380,129 @@ def test_CO007_cambiar_el_margen_despues_no_cambia_el_lote(client_admin, margen)
     configuracion.save()
 
     assert LoteAlta.objects.get().margen_aplicado == MARGEN
+
+
+# Plan 01, segunda parte: el valor de compra se calcula de los ítems (costo en origen
+# × unidades) y sólo se escribe a mano cuando la factura no coincide con la suma.
+
+
+def lote_calculado(items, **cabecera):
+    """Un lote importado sin total escrito: el valor de compra sale de los ítems."""
+    datos = {
+        "editorial": EditorialFactory(nombre="Viz Media").pk,
+        "tipo": TipoFactory(nombre="Manga").pk,
+        "costo_envio_total": "400",
+    }
+    datos.update(cabecera)
+    return payload(items, **datos)
+
+
+ITEMS_DE_4000 = [
+    item("Berserk", 1, costo_origen="1000", stock="2"),
+    item("Berserk", 2, costo_origen="500", stock="4"),
+]
+
+
+def test_CO007_el_valor_de_compra_es_la_suma_de_los_items(client_admin, margen):
+    client_admin.post(URL_IMPORTADO, lote_calculado(ITEMS_DE_4000))
+
+    lote = LoteAlta.objects.get()
+    assert lote.valor_compra_total == Decimal("4000.00")  # 1000 × 2 + 500 × 4
+    assert lote.cre == Decimal("0.100000")  # 400 / 4000
+
+
+def test_CO007_el_total_escrito_a_mano_manda(client_admin, margen):
+    client_admin.post(
+        URL_IMPORTADO, lote_calculado(ITEMS_DE_4000, total_a_mano="on", valor_compra_total="5000")
+    )
+
+    lote = LoteAlta.objects.get()
+    # Negativa: la suma de los ítems (4000) no pisa el total escrito.
+    assert lote.valor_compra_total == Decimal("5000")
+    assert lote.cre == Decimal("0.080000")
+
+
+def test_CO007_un_item_sin_unidades_impide_el_calculo(client_admin, margen):
+    items = [
+        item("Berserk", 1, costo_origen="1000", stock="2"),
+        item("Berserk", 2, costo_origen="500"),
+    ]
+
+    respuesta = client_admin.post(URL_IMPORTADO, lote_calculado(items))
+
+    assert respuesta.status_code == 200
+    assert MENSAJE_TOTAL_INCOMPLETO in respuesta.context["cabecera"].errors["valor_compra_total"]
+    # Negativa: contar el ítem como cero habría subido el CRE; no se guarda nada.
+    assert not LoteAlta.objects.exists()
+    assert not ProductoEditorial.objects.exists()
+
+
+@pytest.mark.parametrize("unidades", ["", "0"], ids=["sin-unidades", "cero-unidades"])
+def test_CO009_el_item_importado_necesita_al_menos_una_unidad(client_admin, margen, unidades):
+    """B-01-028: escribir el total a mano no salva a un ítem sin unidades."""
+    items = [item("Berserk", 1, costo_origen="1000", stock=unidades)]
+
+    respuesta = client_admin.post(
+        URL_IMPORTADO, lote_calculado(items, total_a_mano="on", valor_compra_total="5000")
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.context["formset"].errors[0]["stock"] == [MENSAJE_UNIDADES_IMPORTADO]
+    # Negativa: ni el lote ni el producto se registran, ni nace un producto en cero.
+    assert not LoteAlta.objects.exists()
+    assert not ProductoEditorial.objects.exists()
+
+
+def test_CO009_las_unidades_del_item_importado_son_su_stock(client_admin, margen):
+    client_admin.post(URL_IMPORTADO, lote_calculado(ITEMS_DE_4000))
+
+    assert sorted(ProductoEditorial.objects.values_list("volumen", "stock")) == [(1, 2), (2, 4)]
+
+
+def test_CO007_el_servidor_no_usa_la_suma_de_la_pantalla(client_admin, margen):
+    # La pantalla mandó otro número en el campo, pero el modo es «calculado».
+    client_admin.post(
+        URL_IMPORTADO, lote_calculado(ITEMS_DE_4000, total_a_mano="", valor_compra_total="999")
+    )
+
+    assert LoteAlta.objects.get().valor_compra_total == Decimal("4000.00")
+
+
+def test_CO007_total_a_mano_sin_total_escrito_es_rechazado(client_admin, margen):
+    respuesta = client_admin.post(URL_IMPORTADO, lote_calculado(ITEMS_DE_4000, total_a_mano="on"))
+
+    assert respuesta.status_code == 200
+    assert MENSAJE_TOTAL_A_MANO_VACIO in respuesta.context["cabecera"].errors["valor_compra_total"]
+    assert not LoteAlta.objects.exists()
+
+
+def test_CO007_un_total_escrito_distinto_de_la_suma_avisa_sin_bloquear(margen):
+    datos = lote_calculado(ITEMS_DE_4000, total_a_mano="on", valor_compra_total="5000")
+
+    cabecera = CabeceraLoteImportadoForm(datos)
+
+    assert cabecera.is_valid(), cabecera.errors
+    assert cabecera.diferencia_con_la_suma == Decimal("4000.00")
+
+
+def test_CO006_la_auditoria_dice_el_origen_del_total(client_admin, margen):
+    client_admin.post(URL_IMPORTADO, lote_calculado(ITEMS_DE_4000))
+    client_admin.post(
+        URL_IMPORTADO,
+        lote_calculado(
+            [item("Akira", 1, costo_origen="100", stock="1")],
+            total_a_mano="on",
+            valor_compra_total="150",
+        ),
+    )
+
+    detalles = list(
+        RegistroAuditoria.objects.filter(accion=RegistroAuditoria.ALTA_LOTE_EDITORIAL)
+        .order_by("pk")
+        .values_list("detalle", flat=True)
+    )
+    assert "valor de compra: 4000.00 (suma de los ítems)" in detalles[0]
+    assert "valor de compra: 150.00 (escrito a mano)" in detalles[1]
 
 
 def test_CO008_c_la_cotizacion_declarada_reemplaza_a_la_del_servicio(client_admin, margen):

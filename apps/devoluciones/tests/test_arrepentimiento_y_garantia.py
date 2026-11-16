@@ -165,7 +165,7 @@ def test_CO099_un_arrepentimiento_y_una_garantia_no_conviven_en_la_misma_linea(t
 
 
 @pytest.mark.django_db
-def test_CO101_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock(
+def test_CO248_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_stock(
     titular, administrador, mailoutbox, django_capture_on_commit_callbacks
 ):
     pedido = pedido_despachado(titular, lineas=(("10000", 2), ("8000", 1)))
@@ -188,7 +188,7 @@ def test_CO101_el_arrepentimiento_se_reembolsa_por_el_medio_de_pago_y_vuelve_al_
 
 
 @pytest.mark.django_db
-def test_CO101_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio(titular, administrador):
+def test_CO248_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio(titular, administrador):
     pedido = pedido_despachado(titular, lineas=(("10000", 1),))
 
     caso = caso_de(titular, pedido=pedido, motivo=CasoDevolucion.ARREPENTIMIENTO)
@@ -198,7 +198,7 @@ def test_CO101_arrepentirse_del_pedido_entero_reintegra_tambien_el_envio(titular
 
 
 @pytest.mark.django_db
-def test_CO101_el_reembolso_por_el_medio_descuenta_los_puntos_ganados(titular, administrador):
+def test_CO248_el_reembolso_por_el_medio_descuenta_los_puntos_ganados(titular, administrador):
     pedido = pedido_despachado(titular, lineas=(("10000", 1),))
     puntos.acreditar(titular, 100, origen=LotePuntos.COMPRA, pedido=pedido)
     caso = caso_de(titular, pedido=pedido, motivo=CasoDevolucion.ARREPENTIMIENTO)
@@ -210,7 +210,9 @@ def test_CO101_el_reembolso_por_el_medio_descuenta_los_puntos_ganados(titular, a
 
 
 @pytest.mark.django_db
-def test_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio(titular, administrador):
+def test_CO248_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio(
+    titular, administrador
+):
     pedido = pedido_despachado(titular, lineas=(("10000", 1, 1000),))
     caso = caso_de(titular, pedido=pedido, motivo=CasoDevolucion.ARREPENTIMIENTO)
 
@@ -224,7 +226,7 @@ def test_CO101_lo_pagado_con_puntos_vuelve_en_puntos_y_no_por_el_medio(titular, 
 
 
 @pytest.mark.django_db
-def test_CO101_en_el_mostrador_no_hay_reembolso_por_el_medio(titular, administrador):
+def test_CO248_E3_en_el_mostrador_no_hay_reembolso_por_el_medio(titular, administrador):
     pedido = pedido_despachado(titular)
     como_venta_de_mostrador(pedido)
     caso = caso_de(titular, pedido=pedido)
@@ -278,7 +280,7 @@ def test_la_ficha_del_caso_muestra_el_contacto_y_solo_las_resoluciones_que_admit
 
 
 @pytest.mark.django_db
-def test_acceso_el_cajero_no_registra_un_reembolso_por_el_medio(client, cajero, titular):
+def test_CO248_acceso_el_cajero_no_registra_un_reembolso_por_el_medio(client, cajero, titular):
     caso = caso_de(titular, motivo=CasoDevolucion.ARREPENTIMIENTO)
     client.force_login(cajero)
 
@@ -332,3 +334,35 @@ def test_el_plazo_de_garantia_se_configura_en_parametros(client_admin):
     client_admin.post(reverse("catalog:parametros"), datos)
 
     assert ConfiguracionSistema.obtener().plazo_garantia_dias == 180
+
+
+def test_CO248_el_caso_queda_resuelto_sin_ninguna_transaccion_de_caja(titular, administrador):
+    from apps.pedidos.models import TransaccionPago
+
+    pedido = pedido_despachado(titular, lineas=(("10000", 1),))
+    caso = caso_de(titular, pedido=pedido, motivo=CasoDevolucion.ARREPENTIMIENTO)
+    assert caso.estado == CasoDevolucion.PENDIENTE and not caso.resolucion
+    transacciones = TransaccionPago.objects.count()
+
+    servicios.resolver_con_reembolso_por_el_medio(caso.pk, administrador)
+
+    caso.refresh_from_db()
+    assert caso.estado == CasoDevolucion.RESUELTO
+    assert caso.resolucion == CasoDevolucion.REEMBOLSO_MEDIO
+    assert (
+        TransaccionPago.objects.count() == transacciones
+    )  # I-09: el reembolso no es un movimiento de caja
+
+
+def test_CO248_en_una_garantia_el_articulo_defectuoso_no_vuelve_al_stock(titular, administrador):
+    pedido = pedido_despachado(titular, lineas=(("10000", 1),))
+    caso = caso_de(titular, pedido=pedido, motivo=CasoDevolucion.DEFECTO)
+    producto = caso.linea.producto
+    antes = producto.stock
+
+    servicios.resolver_con_reembolso_por_el_medio(caso.pk, administrador)
+
+    producto.refresh_from_db()
+    caso.refresh_from_db()
+    assert producto.stock == antes
+    assert caso.estado == CasoDevolucion.RESUELTO

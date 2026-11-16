@@ -7,7 +7,7 @@ import pytest
 from apps.catalog.forms import ADVERTENCIA_PRECIO_MANUAL, MENSAJE_COTIZACION_EN_PESOS
 from apps.catalog.models import LoteAlta, Producto, ProductoEditorial
 from apps.catalog.tests.factories import EditorialFactory, ProductoFactory, TipoFactory
-from apps.catalog.tests.helpers_lote import URL_IMPORTADO, item, payload
+from apps.catalog.tests.helpers_lote import URL_IMPORTADO, con_unidades, item, payload
 from apps.core.models import ConfiguracionSistema, RegistroAuditoria
 
 pytestmark = pytest.mark.django_db
@@ -52,7 +52,7 @@ def lote_importado(items, editorial, tipo=None, **cabecera):
         "valor_compra_total": "100000",
     }
     datos.update(cabecera)
-    return payload(items, **datos)
+    return payload(con_unidades(items), **datos)
 
 
 # ---------------------------------------------------------------------------

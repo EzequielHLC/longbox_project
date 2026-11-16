@@ -25,8 +25,26 @@ def item(titulo="Akira", volumen=1, **campos):
     return datos
 
 
+def con_unidades(items):
+    """Los ítems de un lote importado, con una unidad cuando no declaran cuántas.
+
+    B-01-028: en el lote importado las unidades son obligatorias y mayores a cero.
+    Las pruebas que no tratan de unidades no tienen por qué decirlas; las que sí,
+    las declaran y esto no las toca.
+    """
+    return [{"stock": "1", **campos} for campos in items]
+
+
 def payload(items, **cabecera):
-    """El POST completo: formulario de gestión, cabecera e ítems con prefijo."""
+    """El POST completo: formulario de gestión, cabecera e ítems con prefijo.
+
+    Plan 01, segunda parte: el valor de compra se calcula de los ítems salvo que se
+    marque «Escribir el total a mano». Si el test manda el total escrito y no dice
+    nada de la casilla, se la marca: escribir el total era lo que quería decir.
+    Para probar el modo calculado con un total en el POST, pasar `total_a_mano=""`.
+    """
+    if "valor_compra_total" in cabecera and "total_a_mano" not in cabecera:
+        cabecera = {**cabecera, "total_a_mano": "on"}
     datos = {
         "form-TOTAL_FORMS": str(len(items)),
         "form-INITIAL_FORMS": "0",

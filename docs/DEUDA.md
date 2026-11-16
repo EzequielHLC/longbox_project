@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-11-12**.
+> **Tipo: Fotografía.** Tomada el **2026-11-15**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -47,6 +47,8 @@ al plan o a la sección donde está desarrollada.
 | --- | --- | --- | --- |
 | C-19 | `CO-052` y `CU-PVP-MAR` exigen que exista al menos un importado. Con la palabra del contrato, en una instalación sin importados el margen no se puede cambiar desde ninguna pantalla, porque `CU-CFG-PAR` tampoco lo edita. Construido así (B-03-003) | Plan 03, ambigüedad 2 | Una enmienda de `CO-052`, si no es lo que se quiere |
 | C-21 | El logo no admite SVG porque RNF-05 convierte toda imagen a WebP. ¿Se enmienda la guía de `CU-CFG-VIS` o se exceptúa el logo de RNF-05? | B-17-011 | La guía de formato del logo |
+| — (sin número asignado) | `CP-SIS-R07-01` falla en la ejecución del 2026-11-15: con 50 sesiones no hay errores ni operaciones de más de 1 s, pero cuatro operaciones de administración degradan su p95 más de un 20 % contra la línea base (+28 % a +53 %). Además la condición de `RNF-07` es ambigua: habla de los tiempos «definidos en `RNF-02`» (un techo de 2 s) y de operaciones de catálogo y compra, que no son las de la línea base. ¿Se precisa el criterio o se busca la causa? | Manual de Pruebas, capítulos 5 y 7 | El veredicto de `CP-SIS-R07-01` |
+| — (sin número asignado) | `test_concurrencia_la_llegada_y_la_cancelacion_del_cliente_no_se_pisan` (`apps/pedidos/tests/test_acceso_y_concurrencia_preventa.py`) **falla de forma intermitente**: 1 vez en la suite completa del 2026-11-16 (4.030 pasaron) y 1 vez en 34 corridas aisladas. No se capturó el detalle de la aserción que falla. Es la carrera entre la llegada de mercadería y la cancelación de una línea demorada por el cliente: puede ser la prueba o un bloqueo de registro que no cubre el caso. ¿Se investiga antes de la presentación final? | Esta fila; zona de foco reforzado «Concurrencia» de `CLAUDE.md` | Afirmar que la suite está en verde sin salvedades |
 | C-24 | ¿Se cargan borradores de material **no editorial** (figuras, TCG, merchandising) desde Telegram? Hoy el bot no crea nada y enlaza el alta de la web. Hacerlo exige que el borrador tenga rubro y marca, sin pre-venta, y que `CU-ALT-REV` confirme un producto no editorial | B-19-009 | La carga no editorial desde el chat |
 
 ---
@@ -70,6 +72,23 @@ al plan o a la sección donde está desarrollada.
 
 ---
 
+## Próxima iteración y trabajos futuros
+
+Decidido por el responsable el 2026-11-13, con la entrega al 15/11: **para esta entrega se construye
+sólo el valor de compra automático del lote importado** ([plan 01, segunda parte](planes/01-alta-editorial.md)).
+Lo demás queda como próxima iteración, con su diseño esbozado para que no se pierda. Su lugar en el
+documento de análisis es el plan de la próxima iteración y «Alcance y Limitaciones».
+
+| Qué | Diseño propuesto | Qué falta para empezar |
+| --- | --- | --- |
+| **Portadas con vigencia y vista previa** | El carrusel de banners pasa a ser un tipo de sección de la portada (`CU-CFG-SEC`): gana texto, orden por arrastre y destinos de enlace. Los textos de portada y pie salen de la identidad visual y se administran ahí. «Portada» pasa a ser un concepto: un conjunto de secciones con nombre; hay siempre una **base** y otras opcionales con vigencia, y la tienda muestra la vigente o la base. Editar una portada es editar un borrador que se mira en una dirección privada antes de publicarse: así lo que se modifica deja de verse directo en la tienda | Casos de uso nuevos (administrar portadas, vista previa, publicar), sus contratos, el concepto en el modelo de dominio y la migración de los banners |
+| **Enlace privado al pedido para el invitado** | Un enlace firmado, que no se puede adivinar, en el correo de confirmación, con una página de sólo lectura del estado del pedido. Distinto de «Vincular pedidos de invitado a una cuenta», que sigue descartado | Un caso de uso nuevo («Consultar Pedido como Invitado»), su contrato y la prueba de acceso con un enlace ajeno o manipulado |
+| **Correos en HTML** | Una plantilla base con la identidad de la tienda y versión en texto de respaldo, para todos los correos (hoy casi todos son texto plano) | Ningún contrato cambia: es presentación |
+| **Tomos especiales (el 2 en 1 de Wind Breaker)** | **Decidido: se relaciona con la serie original**, no se cuenta como sus tomos 1 y 2. Hoy la serie es el mismo título en la misma editorial (`catalog.services.serie_de`), así que una edición «2 en 1» con otro título queda como serie aparte y sin vínculo en «Más de la serie». Como el vínculo cambia lo que hace el sistema, es un **campo** del tomo (regla 3), por ejemplo «serie a la que pertenece», que «Más de la serie» usa además del título. El cartel «¡TOMO 1!» sigue mirando la propia edición | Ver cómo está cargado el producto, la regla de duplicados con el campo nuevo y la enmienda del modelo de dominio |
+| **Variantes de producto** (trabajo futuro) | Un cuarto concepto, `VarianteProducto` (por ejemplo, talle y color de una camiseta), donde pasa a vivir el stock; el producto no editorial agrupa sus variantes. Encaja con «un producto no es una entidad, son tres» | Fuera del alcance del trabajo final: se declara en «Alcance y Limitaciones» |
+
+---
+
 ## Recorte para el cierre
 
 Decidido por el responsable el 2026-10-19 ([planes/00-revision-funcional.md](planes/00-revision-funcional.md)):
@@ -89,9 +108,10 @@ lugar en el documento es la tabla «Alcance construido y alcance especificado».
 | Costo de envío por peso y destino | Requiere el peso de cada producto y una cuenta comercial con el operador |
 | Cambios de precio programados (2026-10-22) | No se pidieron y no tienen caso de uso. Lo temporal ya lo cubren las ofertas con fecha de inicio y de vencimiento (`CU-PVP-ALT`); un cambio definitivo a fecha exige un concepto nuevo y un proceso del Temporizador que reaplique la propagación de la tabla |
 
-**Lo que el tutor tiene que confirmar**: los valores legales de los plazos (arrepentimiento, piso
-10 días; garantía, 90 por defecto) y si el envío se reintegra en un arrepentimiento parcial. Los
-dos son parámetros o una regla chica: cambiarlos no toca el diseño.
+**Plazos confirmados por el responsable el 2026-11-15**: arrepentimiento, piso de 10 días; garantía,
+90 por defecto, los dos desde el despacho o el retiro (`BR-14`, aplicado en el documento). Sigue
+abierto si el envío se reintegra en un arrepentimiento parcial; es una regla chica que no toca el
+diseño.
 
 ---
 
@@ -172,12 +192,16 @@ falta es del documento: la calidad y las dimensiones son valores fijos y no par�
 
 ## Contratos sin prueba
 
-El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md).
+El detalle contrato por contrato vive en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), que todavía mide
+contra `.contexto-ia/` (219 contratos, todos con prueba).
 
-**No falta ninguno: los 219 tienen prueba y están verificados** (2026-10-22, V1 y V2 del plan 00,
-y los planes 11 tercera parte y 15). `CO-089 registrarResultadoDePago` y `CO-087
-declararDireccionDeEnvio` están verificados en la compra online y también en `CU-STK-DES`, que
-los ejerce en `apps/almacen/tests/test_contratos_18_almacen.py`.
+Contra el documento de análisis versión 14 **no falta ninguno: 258 de 258**, con 1300 pruebas de
+contrato (revisión del 2026-11-16). Los contratos entre `CO-219` y `CO-267`, redactados durante el
+cierre, quedaron cubiertos renombrando las pruebas que ya verificaban su efecto y agregando las de
+consulta y las de postcondiciones negativas que faltaban. `COBERTURA.md` informa 39 códigos de
+prueba «sin contrato que los respalde»: son esos mismos, que existen en el documento y todavía no
+en `.contexto-ia/`, porque el generador lee el `.docx` y no el documento en HTML. Se resuelve al
+regenerar el contexto desde la versión 14.
 
 ---
 
@@ -207,8 +231,8 @@ Nueve de las doce restricciones de unicidad existen sólo como índice `UNIQUE` 
 
 | Dónde | Qué hace | Qué falta |
 | --- | --- | --- |
-| `apps/core/views.py::PanelAdministracionView` | Tablero de entrada del Administrador con cifras agregadas | Ningún contrato lo declara. `CO-219` está en camino y todavía no aparece en `.contexto-ia/` |
-| `apps/core/views.py::PoliticaPrivacidadView` | Publica la política que el registro obliga a aceptar | Ningún contrato declara su publicación ni qué pasa cuando cambia |
+| `apps/core/views.py::PanelAdministracionView` | Tablero de entrada del Administrador con cifras agregadas | Declarado en la versión 14 como `CO-219`, con prueba; falta que aparezca en `.contexto-ia/` |
+| `apps/core/views.py::PoliticaPrivacidadView` | Publica la política que el registro obliga a aceptar | La consulta está declarada en la versión 14 como `CO-249`, con prueba. Ningún contrato declara qué pasa cuando cambia |
 | `apps/core/integraciones.py` | Única puerta HTTP, con caché, servicio en vivo y respaldo local | La degradación está declarada sólo para cotizaciones (`CO-155`) |
 | `apps/suppliers/views_pedidos.py`, `llegadas.py` | «Pedidos por llegar»: la ficha del pedido, la llegada en dos tiempos, el cierre de una línea sin recibir y el pedido a mano | `CU-RST-LLE` y `CU-RST-PDA` (C-23): faltan su ficha y sus contratos. Probado en `test_pedidos_a_proveedor.py` y `test_pantallas_pedidos.py` |
 | `apps/avisos` (módulo 19) | El perfil del Administrador, los canales de aviso, la vinculación con Telegram, el bot que resuelve correos, las consultas y la carga de borradores desde el chat | Las fichas y los contratos de los once casos de uso, de `CU-AVI-PEC` a `CU-AVI-INL` (B-19-001). Probado en `apps/avisos/tests/` |

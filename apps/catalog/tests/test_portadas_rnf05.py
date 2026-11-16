@@ -112,7 +112,7 @@ def test_CO009_la_portada_del_lote_importado_queda_en_webp_sin_el_original(clien
     configuracion.margen_ganancia = Decimal("0.40")
     configuracion.save()
     datos = payload_lote(
-        [item("Berserk", 1, costo_origen="1000")],
+        [item("Berserk", 1, costo_origen="1000", stock="1")],
         editorial=EditorialFactory().pk,
         tipo=TipoFactory().pk,
         costo_envio_total="10000",

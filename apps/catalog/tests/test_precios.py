@@ -119,3 +119,31 @@ def test_el_recalculo_de_cu_13_sale_del_precio_base_almacenado():
 
     assert precios.calcular_precio_final(base, Decimal("0.40")) == Decimal("1540.00")
     assert precios.calcular_precio_final(base, Decimal("0.55")) == Decimal("1705.00")
+
+
+# ---------------------------------------------------------------------------
+# Plan 01, segunda parte: el valor de compra del lote, de los ítems
+# ---------------------------------------------------------------------------
+
+
+def test_el_valor_de_compra_es_costo_por_unidades_con_decimal_exacto():
+    renglones = [(Decimal("0.335"), 3), (Decimal("1000.10"), 2)]
+
+    # 1.005 + 2000.20 = 2001.205, redondeado al centavo hacia arriba en el medio.
+    assert precios.valor_de_compra(renglones) == Decimal("2001.21")
+
+
+@pytest.mark.parametrize(
+    "renglones",
+    [
+        [],
+        [(Decimal("10"), 0)],
+        [(Decimal("10"), None)],
+        [(None, 2)],
+        [(Decimal("10"), 2), (Decimal("5"), None)],
+    ],
+    ids=["sin-items", "cero-unidades", "sin-unidades", "sin-costo", "uno-incompleto"],
+)
+def test_el_valor_de_compra_no_se_calcula_con_un_item_incompleto(renglones):
+    """Contar un ítem incompleto como cero bajaría el divisor y subiría el CRE."""
+    assert precios.valor_de_compra(renglones) is None

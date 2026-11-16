@@ -279,3 +279,87 @@ def test_acceso_el_administrador_tambien_cierra(client_admin, jornada):
     client_admin.post(URL_CERRAR)
 
     assert CierreDeCaja.objects.count() == 1
+
+
+# ===========================================================================
+# CO-250 · consultarCierresDeCaja y CO-251 · consultarCierreDeCaja
+# ===========================================================================
+
+
+def _foto_caja():
+    return (
+        list(CierreDeCaja.objects.order_by("pk").values_list("fecha_jornada", "total_global")),
+        list(
+            TransaccionPago.objects.order_by("pk").values_list(
+                "estado", "incluida_en_cierre", "cierre_id"
+            )
+        ),
+        RegistroAuditoria.objects.count(),
+    )
+
+
+def test_CO250_presenta_los_cierres_del_mas_reciente_al_mas_antiguo(caja, jornada, cajero):
+    caja.post(URL_CERRAR)
+    anterior = CierreDeCaja.objects.get()
+    CierreDeCaja.objects.filter(pk=anterior.pk).update(
+        fecha_jornada=timezone.localdate() - timedelta(days=3)
+    )
+    transaccion(TransaccionPago.EFECTIVO, "500")
+    caja.post(URL_CERRAR)
+
+    respuesta = caja.get(reverse("caja:cierres"))
+
+    cierres = list(respuesta.context["cierres"])
+    assert [c.fecha_jornada for c in cierres] == sorted(
+        (c.fecha_jornada for c in cierres), reverse=True
+    )
+    assert len(cierres) == 2
+    assert {c.realizado_por for c in cierres} == {cajero}
+
+
+def test_CO250_consultar_los_cierres_no_cambia_nada(caja, jornada):
+    caja.post(URL_CERRAR)
+    antes = _foto_caja()
+
+    caja.get(reverse("caja:cierres"))
+
+    assert _foto_caja() == antes
+
+
+def test_CO250_E1_sin_cierres_lo_informa(caja):
+    assert "Todavía no hay cierres." in caja.get(reverse("caja:cierres")).content.decode()
+
+
+def test_CO251_presenta_los_totales_y_cada_transaccion_incluida(caja, jornada):
+    caja.post(URL_CERRAR)
+    cierre = CierreDeCaja.objects.get()
+
+    respuesta = caja.get(reverse("caja:cierre", args=[cierre.pk]))
+
+    assert respuesta.context["cierre"] == cierre
+    incluidas = {t.pk for t in respuesta.context["transacciones"]}
+    assert incluidas == {jornada["efectivo"].pk, jornada["tarjeta"].pk, jornada["online"].pk}
+    contenido = respuesta.content.decode()
+    assert "Por medio de pago" in contenido and "$ 7.500" in contenido
+
+
+def test_CO251_consultar_un_cierre_no_cambia_nada(caja, jornada):
+    caja.post(URL_CERRAR)
+    antes = _foto_caja()
+
+    caja.get(reverse("caja:cierre", args=[CierreDeCaja.objects.get().pk]))
+
+    assert _foto_caja() == antes
+
+
+@pytest.mark.parametrize("nombre", ["caja:cierres", "caja:cierre"])
+def test_CO250_CO251_el_cliente_no_consulta_por_la_direccion_real(
+    client, cliente, jornada, cajero, nombre
+):
+    from apps.caja import servicios
+
+    cierre = servicios.confirmar(cajero)
+    client.force_login(cliente)
+    args = [cierre.pk] if nombre == "caja:cierre" else []
+
+    assert client.get(reverse(nombre, args=args)).status_code == 403

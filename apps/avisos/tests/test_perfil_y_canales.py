@@ -54,7 +54,9 @@ def aviso(**cambios):
 # ---------------------------------------------------------------------------
 
 
-def test_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos(client_admin, administrador):
+def test_CO254_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos(
+    client_admin, administrador
+):
     respuesta = client_admin.get(PERFIL)
 
     html = respuesta.content.decode()
@@ -70,7 +72,7 @@ def test_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos(client_admin, 
 
 
 @pytest.mark.parametrize("rol", ["cajero", "cliente"])
-def test_otro_rol_no_entra_al_perfil_por_la_direccion_real(client, rol):
+def test_CO254_otro_rol_no_entra_al_perfil_por_la_direccion_real(client, rol):
     client.force_login(UsuarioFactory(rol=rol))
 
     for url, metodo in [
@@ -120,7 +122,7 @@ def test_el_administrador_cambia_su_contraseña_y_queda_auditado(client_admin, a
 # ---------------------------------------------------------------------------
 
 
-def test_los_canales_se_guardan_por_tipo_y_quedan_auditados(client_admin, administrador):
+def test_CO255_los_canales_se_guardan_por_tipo_y_quedan_auditados(client_admin, administrador):
     vincular(administrador)
 
     client_admin.post(
@@ -145,14 +147,14 @@ def test_los_canales_se_guardan_por_tipo_y_quedan_auditados(client_admin, admini
     assert "Pre-ventas: Telegram" in registro.detalle
 
 
-def test_sin_chat_vinculado_telegram_no_se_puede_elegir(client_admin, administrador):
+def test_CO255_sin_chat_vinculado_telegram_no_se_puede_elegir(client_admin, administrador):
     client_admin.post(reverse("avisos:canales"), {"telegram_preventas": "on"})
 
     preferencia = PreferenciaAviso.objects.get(usuario=administrador, tipo="preventas")
     assert (preferencia.por_correo, preferencia.por_telegram) == (True, False)
 
 
-def test_todo_por_telegram_con_el_chat_vinculado(client_admin, administrador):
+def test_CO255_todo_por_telegram_con_el_chat_vinculado(client_admin, administrador):
     vincular(administrador)
 
     client_admin.post(reverse("avisos:canales"), {"atajo": "telegram"})
@@ -167,14 +169,16 @@ def test_todo_por_telegram_con_el_chat_vinculado(client_admin, administrador):
 # ---------------------------------------------------------------------------
 
 
-def test_sin_token_no_se_puede_vincular(client_admin, administrador):
+def test_CO256_sin_token_no_se_puede_vincular(client_admin, administrador):
     respuesta = client_admin.post(reverse("avisos:vincular"), follow=True)
 
     assert "no está configurado" in respuesta.content.decode()
     assert not CodigoVinculacion.objects.exists()
 
 
-def test_vincular_da_un_enlace_de_un_solo_uso_al_bot(client_admin, administrador, con_telegram):
+def test_CO256_vincular_da_un_enlace_de_un_solo_uso_al_bot(
+    client_admin, administrador, con_telegram
+):
     falso, parche = telegram_falso()
 
     with parche:
@@ -188,7 +192,9 @@ def test_vincular_da_un_enlace_de_un_solo_uso_al_bot(client_admin, administrador
     assert f"https://t.me/longbox_prueba_bot?start={codigo.codigo}" in html
 
 
-def test_desvincular_desde_el_perfil_borra_el_vínculo_y_queda_auditado(client_admin, administrador):
+def test_CO260_desvincular_desde_el_perfil_borra_el_vinculo_y_queda_auditado(
+    client_admin, administrador
+):
     vincular(administrador)
 
     client_admin.post(reverse("avisos:desvincular"))
@@ -334,3 +340,21 @@ def test_sin_el_nombre_del_bot_no_hay_qr(client_admin, administrador, settings):
 
     assert "vinculo-qr__codigo" not in html
     assert "/start " in html
+
+
+def test_CO254_consultar_el_perfil_no_cambia_nada(client_admin, administrador):
+    antes = (
+        RegistroAuditoria.objects.count(),
+        PreferenciaAviso.objects.count(),
+        CodigoVinculacion.objects.count(),
+        VinculoTelegram.objects.count(),
+    )
+
+    client_admin.get(PERFIL)
+
+    assert (
+        RegistroAuditoria.objects.count(),
+        PreferenciaAviso.objects.count(),
+        CodigoVinculacion.objects.count(),
+        VinculoTelegram.objects.count(),
+    ) == antes

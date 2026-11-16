@@ -175,7 +175,7 @@ def test_el_formato_de_otro_tipo_sigue_sin_resolverse(tankobon):
     assert borradores._resolver_formato("Tankobon", comic) is None
 
 
-def test_cargar_con_el_tipo_y_el_formato_sin_tilde(vinculado, ivrea, manga, tankobon, falso):
+def test_CO261_cargar_con_el_tipo_y_el_formato_sin_tilde(vinculado, ivrea, manga, tankobon, falso):
     datos = leido(
         editorial="Ivrea", tipo="manga", titulo="Sakamoto Days", volumen="24", formato="Tankobon"
     )
@@ -280,7 +280,7 @@ def test_la_vista_previa_avisa_los_parecidos(vinculado, ivrea, falso):
 # ---------------------------------------------------------------------------
 
 
-def test_lo_no_editorial_no_crea_un_borrador(vinculado, falso):
+def test_CO261_lo_no_editorial_no_crea_un_borrador(vinculado, falso):
     datos = leido(rubro="no_editorial", tipo="Figura", titulo="Figura Nendoroid de Kaneki")
 
     with modelo(datos):
@@ -315,7 +315,7 @@ def test_cargar_contesta_con_la_vista_previa_y_rechazar(vinculado, ivrea, falso)
     assert acciones(ultimo) == ["rb"]
 
 
-def test_borradores_lista_los_abiertos_más_nuevos(vinculado, falso):
+def test_CO262_borradores_lista_los_abiertos_mas_nuevos(vinculado, falso):
     for numero in range(1, 8):
         borrador(titulo=f"Serie {numero}", volumen=numero)
     borrador(titulo="Rechazado", estado=BorradorProducto.RECHAZADO)
@@ -340,7 +340,7 @@ def test_borradores_filtra_por_título_sin_tildes(vinculado, falso):
     assert "1 borrador(es)" in salidas[0] and "Pokémon" in salidas[1]
 
 
-def test_borradores_sin_nada_lo_dice(vinculado, falso):
+def test_CO262_borradores_sin_nada_lo_dice(vinculado, falso):
     bot.procesar(mensaje("/borradores"))
 
     assert "No hay borradores para revisar" in falso.textos(CHAT)[-1]
@@ -509,7 +509,7 @@ def test_un_administrador_dado_de_baja_no_rechaza(vinculado, falso):
     assert not falso.fotos(CHAT)
 
 
-def test_un_chat_sin_vínculo_no_ve_los_borradores(falso):
+def test_CO262_un_chat_sin_vinculo_no_ve_los_borradores(falso):
     borrador()
 
     bot.procesar(mensaje("/borradores"))
@@ -565,3 +565,20 @@ def test_enviar_foto_pide_send_photo(falso):
     (foto,) = falso.fotos(CHAT)
     assert foto["caption"] == "<b>hola</b>" and foto["parse_mode"] == "HTML"
     assert foto["photo"] == ("portada.jpg", b"jpeg", "image/jpeg")
+
+
+def test_CO262_consultar_los_borradores_desde_el_chat_no_cambia_nada(vinculado, falso):
+    borrador(titulo="Serie 1", volumen=1)
+    antes = (
+        list(BorradorProducto.objects.order_by("pk").values_list("estado", flat=True)),
+        Producto.objects.count(),
+        RegistroAuditoria.objects.count(),
+    )
+
+    bot.procesar(mensaje("/borradores"))
+
+    assert (
+        list(BorradorProducto.objects.order_by("pk").values_list("estado", flat=True)),
+        Producto.objects.count(),
+        RegistroAuditoria.objects.count(),
+    ) == antes

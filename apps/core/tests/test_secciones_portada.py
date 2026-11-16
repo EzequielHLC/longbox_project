@@ -2,7 +2,7 @@
 
 Nacieron como las filas de la tercera y cuarta parte (B-07-009, B-07-010): las
 pruebas de las filas siguen acá, sobre el modelo nuevo. El contrato es
-`guardarSeccionesDeLaPortada` (`NUEVO-CO-23`, número a confirmar): las pruebas
+`guardarSeccionesDeLaPortada` (`CO-253`): las pruebas
 llevan ese rótulo hasta que el responsable lo numere.
 
 El Administrador arma las secciones en tarjetas que se reordenan; la portada
@@ -138,11 +138,11 @@ def test_las_dos_secciones_fijas_existen_desde_la_migracion():
 
 
 # ---------------------------------------------------------------------------
-# guardarSeccionesDeLaPortada (NUEVO-CO-23)
+# CO-253 guardarSeccionesDeLaPortada
 # ---------------------------------------------------------------------------
 
 
-def test_NUEVOCO23_agregar_secciones_de_productos_por_etiqueta_y_por_grupo(
+def test_CO253_agregar_secciones_de_productos_por_etiqueta_y_por_grupo(
     client_admin, administrador, shonen
 ):
     respuesta = client_admin.post(
@@ -171,7 +171,7 @@ def test_NUEVOCO23_agregar_secciones_de_productos_por_etiqueta_y_por_grupo(
     )
 
 
-def test_NUEVOCO23_agregar_accesos_con_sus_imagenes_y_destinos(client_admin, shonen):
+def test_CO253_agregar_accesos_con_sus_imagenes_y_destinos(client_admin, shonen):
     producto = con_etiqueta(shonen, titulo="Dragon Ball")
     editorial = EditorialFactory(nombre="Ivrea")
 
@@ -225,7 +225,7 @@ def test_NUEVOCO23_agregar_accesos_con_sus_imagenes_y_destinos(client_admin, sho
         (SeccionPortada.CINTA, 3),
     ],
 )
-def test_NUEVOCO23_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada(
+def test_CO253_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada(
     client_admin, tipo, cantidad
 ):
     respuesta = client_admin.post(
@@ -256,7 +256,7 @@ def test_NUEVOCO23_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada(
     "destino",
     [{"lleva_a": "https://otro.sitio/"}, {"lleva_a": "e:999999"}, {"lleva_a": "x:1"}],
 )
-def test_NUEVOCO23_un_destino_fuera_de_la_lista_se_rechaza(client_admin, destino):
+def test_CO253_un_destino_fuera_de_la_lista_se_rechaza(client_admin, destino):
     respuesta = client_admin.post(
         URL_CONFIGURAR,
         {
@@ -276,7 +276,7 @@ def test_NUEVOCO23_un_destino_fuera_de_la_lista_se_rechaza(client_admin, destino
     assert not SeccionPortada.objects.filter(tipo=SeccionPortada.PANEL).exists()
 
 
-def test_NUEVOCO23_un_codigo_de_producto_que_no_existe_se_rechaza(client_admin):
+def test_CO253_un_codigo_de_producto_que_no_existe_se_rechaza(client_admin):
     respuesta = client_admin.post(
         URL_CONFIGURAR,
         {
@@ -298,7 +298,7 @@ def test_NUEVOCO23_un_codigo_de_producto_que_no_existe_se_rechaza(client_admin):
     assert not ImagenDeSeccion.objects.exists()
 
 
-def test_NUEVOCO23_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina(
+def test_CO253_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina(
     client_admin,
 ):
     sin_archivo = client_admin.post(
@@ -353,7 +353,7 @@ def test_NUEVOCO23_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_
     assert not grito.imagen and grito.texto == "¡KRAK!"
 
 
-def test_NUEVOCO23_las_fijas_no_se_quitan(client_admin):
+def test_CO253_las_fijas_no_se_quitan(client_admin):
     recien = SeccionPortada.objects.get(tipo=SeccionPortada.RECIEN_LLEGADOS)
 
     respuesta = client_admin.post(
@@ -374,7 +374,7 @@ def test_NUEVOCO23_las_fijas_no_se_quitan(client_admin):
     assert SeccionPortada.objects.filter(pk=recien.pk).exists()
 
 
-def test_NUEVOCO23_apagar_una_fija_la_saca_de_la_portada(client_admin, client, cliente):
+def test_CO253_apagar_una_fija_la_saca_de_la_portada(client_admin, client, cliente):
     recien = SeccionPortada.objects.get(tipo=SeccionPortada.RECIEN_LLEGADOS)
     ProductoFactory(titulo="Berserk", stock=2)
 
@@ -393,7 +393,7 @@ def test_NUEVOCO23_apagar_una_fija_la_saca_de_la_portada(client_admin, client, c
     assert SeccionPortada.RECIEN_LLEGADOS not in [s.tipo for s in secciones]
 
 
-def test_NUEVOCO23_el_tipo_de_una_seccion_no_cambia(client_admin, shonen):
+def test_CO253_el_tipo_de_una_seccion_no_cambia(client_admin, shonen):
     seccion = SeccionPortada.objects.create(etiqueta=shonen, orden=3)
 
     respuesta = client_admin.post(
@@ -409,7 +409,7 @@ def test_NUEVOCO23_el_tipo_de_una_seccion_no_cambia(client_admin, shonen):
     assert seccion.tipo == SeccionPortada.PRODUCTOS
 
 
-def test_NUEVOCO23_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada(client_admin):
+def test_CO253_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada(client_admin):
     respuesta = client_admin.post(
         URL_CONFIGURAR, formset({"origen": "", "titulo": "Sin origen", "activa": "on"})
     )
@@ -418,9 +418,7 @@ def test_NUEVOCO23_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada(cl
     assert not SeccionPortada.objects.filter(tipo=SeccionPortada.PRODUCTOS).exists()
 
 
-def test_NUEVOCO23_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos(
-    client_admin, shonen
-):
+def test_CO253_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos(client_admin, shonen):
     client_admin.post(
         URL_CONFIGURAR,
         {
@@ -446,7 +444,7 @@ def test_NUEVOCO23_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos(
     )
 
 
-def test_NUEVOCO23_eliminar_una_seccion_con_sus_imagenes(client_admin):
+def test_CO253_eliminar_una_seccion_con_sus_imagenes(client_admin):
     seccion = accesos(*[(f"A{n}", {}) for n in range(3)], titulo="Atajos")
 
     client_admin.post(
@@ -469,7 +467,7 @@ def test_NUEVOCO23_eliminar_una_seccion_con_sus_imagenes(client_admin):
     assert auditoria().detalle.endswith(f"→ {FIJAS}")
 
 
-def test_NUEVOCO23_quitar_una_imagen_y_reordenar_las_demas(client_admin, shonen):
+def test_CO253_quitar_una_imagen_y_reordenar_las_demas(client_admin, shonen):
     seccion = accesos(*[(f"A{n}", {}) for n in range(4)], titulo="Atajos")
     primera, segunda, tercera, cuarta = seccion.imagenes.all()
 
@@ -503,7 +501,7 @@ def test_NUEVOCO23_quitar_una_imagen_y_reordenar_las_demas(client_admin, shonen)
     )
 
 
-def test_NUEVOCO23_guardar_sin_cambios_no_audita(client_admin, shonen):
+def test_CO253_guardar_sin_cambios_no_audita(client_admin, shonen):
     seccion = SeccionPortada.objects.create(etiqueta=shonen, orden=3)
 
     client_admin.post(
@@ -520,7 +518,7 @@ def test_NUEVOCO23_guardar_sin_cambios_no_audita(client_admin, shonen):
 
 
 @pytest.mark.parametrize("rol", ["cajero", "cliente"])
-def test_NUEVOCO23_solo_el_administrador_configura_las_secciones(client, request, rol, shonen):
+def test_CO253_solo_el_administrador_configura_las_secciones(client, request, rol, shonen):
     """Control de acceso por la dirección real, con el rol equivocado."""
     client.force_login(request.getfixturevalue(rol))
 

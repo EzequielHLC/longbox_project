@@ -115,7 +115,7 @@ def test_la_ficha_de_una_cerrada_sigue_siendo_de_lectura(client_admin, propuesta
 # ---------------------------------------------------------------------------
 
 
-def test_armar_una_a_mano_la_deja_vacía_pendiente_y_auditada(client_admin, administrador):
+def test_CO233_armar_a_mano_la_deja_vacia_pendiente_y_auditada(client_admin, administrador):
     respuesta = client_admin.post(reverse("restock:a_mano"))
 
     assert respuesta.url == reverse("restock:propuesta")
@@ -140,7 +140,7 @@ def test_a_la_armada_a_mano_se_le_cargan_productos(client_admin, administrador):
     assert (linea.producto_id, linea.cantidad_sugerida, linea.anadida_a_mano) == (tomo.pk, 6, True)
 
 
-def test_con_una_pendiente_no_se_arma_otra(client_admin, propuesta):
+def test_CO233_con_una_pendiente_no_se_arma_otra(client_admin, propuesta):
     client_admin.post(reverse("restock:a_mano"))
 
     assert PropuestaRestock.objects.count() == 1
@@ -158,7 +158,7 @@ def test_la_armada_a_mano_no_cuenta_como_el_ciclo_de_la_semana(administrador):
     assert resultado.propuesta is not None
 
 
-def test_cerrar_la_vacía_la_cierra_y_audita(client_admin, administrador):
+def test_CO234_cerrar_la_vacia_la_cierra_y_audita(client_admin, administrador):
     servicios.armar_a_mano(administrador)
 
     client_admin.post(reverse("restock:cerrar_vacia"))
@@ -170,7 +170,7 @@ def test_cerrar_la_vacía_la_cierra_y_audita(client_admin, administrador):
     ).exists()
 
 
-def test_una_con_productos_no_se_cierra_como_vacía(client_admin, propuesta):
+def test_CO234_una_con_productos_no_se_cierra_como_vacia(client_admin, propuesta):
     client_admin.post(reverse("restock:cerrar_vacia"))
 
     propuesta.refresh_from_db()
@@ -187,7 +187,7 @@ def test_cerrar_vacía_sin_pendiente_lo_dice(client_admin):
 
 
 @pytest.mark.parametrize("nombre", ["restock:a_mano", "restock:cerrar_vacia"])
-def test_el_cajero_no_arma_ni_cierra_por_la_dirección_real(client, cajero, nombre):
+def test_CO233_CO234_el_cajero_no_arma_ni_cierra_por_la_direccion_real(client, cajero, nombre):
     client.force_login(cajero)
 
     assert client.post(reverse(nombre)).status_code == 403
@@ -195,7 +195,7 @@ def test_el_cajero_no_arma_ni_cierra_por_la_dirección_real(client, cajero, nomb
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dos_administradores_a_la_vez_arman_una_sola(administrador):
+def test_CO233_dos_administradores_a_la_vez_arman_una_sola(administrador):
     def armar():
         try:
             servicios.armar_a_mano(administrador)

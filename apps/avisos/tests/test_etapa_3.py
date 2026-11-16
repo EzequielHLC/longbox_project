@@ -128,7 +128,9 @@ def test_el_perfil_muestra_los_tipos_nuevos_con_su_canal(client_admin, vinculado
     assert (filas["seguridad"]["por_correo"], filas["seguridad"]["por_telegram"]) == (True, True)
 
 
-def test_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal(client_admin, administrador):
+def test_CO255_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal(
+    client_admin, administrador
+):
     client_admin.post(
         reverse("avisos:canales"), {"telegram_ventas": "on", "telegram_correos": "on"}
     )
@@ -236,7 +238,7 @@ def test_un_aviso_de_venta_caído_no_deshace_la_venta(
 # ---------------------------------------------------------------------------
 
 
-def test_el_resumen_espera_la_hora_y_sale_una_vez_por_día(vinculado, falso):
+def test_CO264_el_resumen_espera_la_hora_y_sale_una_vez_por_dia(vinculado, falso):
     assert resumen.si_corresponde(a_las(8, 59)).estado == "no es la hora"
     assert resumen.si_corresponde(a_las(9, 0)).estado == "enviado"
     assert resumen.si_corresponde(a_las(9, 1)).estado == "ya salió"
@@ -245,7 +247,7 @@ def test_el_resumen_espera_la_hora_y_sale_una_vez_por_día(vinculado, falso):
     assert len([t for t in falso.textos(CHAT) if "Resumen de la mañana" in t]) == 2
 
 
-def test_el_resumen_dice_lo_pendiente_lo_que_llega_y_lo_de_ayer(vinculado, falso):
+def test_CO264_el_resumen_dice_lo_pendiente_lo_que_llega_y_lo_de_ayer(vinculado, falso):
     hoy = timezone.localdate()
     ProductoFactory(titulo="Llega hoy", estado=Producto.PRE_VENTA, fecha_llegada=hoy)
     ProductoFactory(
@@ -279,7 +281,7 @@ def test_la_hora_del_resumen_se_cambia_en_parámetros(client_admin):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dos_relojes_a_la_vez_mandan_un_solo_resumen():
+def test_CO264_dos_relojes_a_la_vez_mandan_un_solo_resumen():
     ConfiguracionSistema.obtener()
     with patch.object(resumen, "enviar") as enviar:
         resultados = a_la_vez(
@@ -446,7 +448,7 @@ def test_una_alerta_de_seguridad_no_toca_el_registro(
 # ---------------------------------------------------------------------------
 
 
-def test_estado_en_el_chat(vinculado, falso):
+def test_CO265_estado_en_el_chat(vinculado, falso):
     bot.procesar(
         {"update_id": 1, "message": {"chat": {"id": CHAT, "type": "private"}, "text": "/estado"}}
     )
@@ -455,7 +457,7 @@ def test_estado_en_el_chat(vinculado, falso):
     assert "Estado del sistema" in texto and "Disco:" in texto and "Casilla" in texto
 
 
-def test_estado_no_responde_a_un_chat_sin_vínculo(falso):
+def test_CO265_estado_no_responde_a_un_chat_sin_vinculo(falso):
     bot.procesar(
         {"update_id": 1, "message": {"chat": {"id": CHAT, "type": "private"}, "text": "/estado"}}
     )
@@ -463,7 +465,7 @@ def test_estado_no_responde_a_un_chat_sin_vínculo(falso):
     assert "no está vinculado" in falso.textos(CHAT)[-1]
 
 
-def test_el_disco_lleno_se_avisa_una_vez_por_día(vinculado, falso):
+def test_CO266_el_disco_lleno_se_avisa_una_vez_por_dia(vinculado, falso):
     with patch.object(salud, "disco", return_value=(91, 2 * 1024**3)):
         assert salud.controlar(a_las(10)) == ["disco"]
         assert salud.controlar(a_las(10, 1)) == []
@@ -472,7 +474,7 @@ def test_el_disco_lleno_se_avisa_una_vez_por_día(vinculado, falso):
     assert "91 %" in falso.textos(CHAT)[-1]
 
 
-def test_un_problema_que_se_arregla_y_vuelve_se_avisa_de_nuevo(vinculado, falso):
+def test_CO266_un_problema_que_se_arregla_y_vuelve_se_avisa_de_nuevo(vinculado, falso):
     with patch.object(salud, "disco", return_value=(91, 1)):
         salud.controlar(a_las(10))
     with patch.object(salud, "disco", return_value=(40, 1)):
@@ -573,7 +575,7 @@ def _resultados(falso):
     return cuerpo["results"]
 
 
-def test_inline_comparte_la_ficha_de_la_tienda_sin_el_stock(vinculado, falso):
+def test_CO267_inline_comparte_la_ficha_de_la_tienda_sin_el_stock(vinculado, falso):
     tomo = ProductoFactory(titulo="Berserk", volumen=5, stock=7, precio=Decimal("24900"))
 
     _inline("berserk 5")
@@ -587,7 +589,7 @@ def test_inline_comparte_la_ficha_de_la_tienda_sin_el_stock(vinculado, falso):
     assert f"https://longbox.test/tienda/producto/{tomo.pk}/" in mensaje
 
 
-def test_inline_dice_la_pre_venta_y_lo_agotado(vinculado, falso):
+def test_CO267_inline_dice_la_pre_venta_y_lo_agotado(vinculado, falso):
     ProductoFactory(
         titulo="Frieren",
         volumen=1,
@@ -603,7 +605,7 @@ def test_inline_dice_la_pre_venta_y_lo_agotado(vinculado, falso):
     assert any("Agotado" in m for m in mensajes)
 
 
-def test_inline_no_muestra_lo_que_la_tienda_no_muestra(vinculado, falso):
+def test_CO267_inline_no_muestra_lo_que_la_tienda_no_muestra(vinculado, falso):
     ProductoFactory(titulo="Akira", volumen=1, solo_adultos=True)
     ProductoFactory(titulo="Akira", volumen=2, estado=Producto.DESCATALOGADO)
 
@@ -615,7 +617,7 @@ def test_inline_no_muestra_lo_que_la_tienda_no_muestra(vinculado, falso):
 # Foco reforzado: control de acceso. Telegram dice quién pregunta.
 
 
-def test_inline_no_contesta_a_quien_no_está_vinculado(vinculado, falso):
+def test_CO267_inline_no_contesta_a_quien_no_esta_vinculado(vinculado, falso):
     ProductoFactory(titulo="Berserk", volumen=5)
 
     _inline("berserk", quien=999)
@@ -623,7 +625,7 @@ def test_inline_no_contesta_a_quien_no_está_vinculado(vinculado, falso):
     assert _resultados(falso) == []
 
 
-def test_inline_no_contesta_a_un_administrador_dado_de_baja(vinculado, falso):
+def test_CO267_inline_no_contesta_a_un_administrador_dado_de_baja(vinculado, falso):
     UsuarioFactory(rol=Usuario.ADMINISTRADOR)
     Usuario.objects.filter(pk=vinculado.pk).update(estado=Usuario.INACTIVO)
     ProductoFactory(titulo="Berserk", volumen=5)
@@ -665,3 +667,23 @@ def test_el_bot_pide_las_búsquedas_en_línea(falso):
 
     (cuerpo,) = [c for m, c in falso.llamadas if m == "getUpdates"]
     assert "inline_query" in cuerpo["allowed_updates"]
+
+
+def test_CO265_consultar_el_estado_no_cambia_nada(vinculado, falso):
+    configuracion = ConfiguracionSistema.obtener()
+    antes = (
+        RegistroAuditoria.objects.count(),
+        configuracion.salud_avisada,
+        configuracion.resumen_enviado_el,
+    )
+
+    bot.procesar(
+        {"update_id": 1, "message": {"chat": {"id": CHAT, "type": "private"}, "text": "/estado"}}
+    )
+
+    configuracion.refresh_from_db()
+    assert (
+        RegistroAuditoria.objects.count(),
+        configuracion.salud_avisada,
+        configuracion.resumen_enviado_el,
+    ) == antes

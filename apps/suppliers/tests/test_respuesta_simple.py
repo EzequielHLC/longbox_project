@@ -120,7 +120,7 @@ def test_lo_que_confirma_la_pantalla_de_preventas_también_responde(pedido):
 # ---------------------------------------------------------------------------
 
 
-def test_no_se_confirma_más_de_lo_pedido(pedido, administrador):
+def test_CO239_no_se_confirma_mas_de_lo_pedido(pedido, administrador):
     akira = lineas(pedido)["Akira"]
 
     with pytest.raises(OperacionRechazada, match="más de lo pedido"):

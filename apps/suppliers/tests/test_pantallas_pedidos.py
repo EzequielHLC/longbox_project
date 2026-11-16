@@ -77,7 +77,7 @@ def test_sin_sesion_lleva_al_ingreso(client, pedido):
     assert reverse("accounts:login") in respuesta.url
 
 
-def test_la_lista_muestra_lo_que_esta_por_llegar(client_admin, pedido):
+def test_CO240_la_lista_muestra_lo_que_esta_por_llegar(client_admin, pedido):
     contenido = client_admin.get(reverse("suppliers:pedido_lista")).content.decode()
 
     assert f"#{pedido.pk}" in contenido
@@ -86,7 +86,9 @@ def test_la_lista_muestra_lo_que_esta_por_llegar(client_admin, pedido):
     assert f"#{pedido.pk}<" not in cerrados.content.decode()
 
 
-def test_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar(client_admin, pedido, cliente):
+def test_CO244_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar(
+    client_admin, pedido, cliente
+):
     reservar(cliente, pedido.lineas.get().producto, cantidad=2)
     linea = pedido.lineas.get()
     url = reverse("suppliers:llegada_revisar")
@@ -107,7 +109,7 @@ def test_la_llegada_se_revisa_antes_y_no_cambia_nada_hasta_confirmar(client_admi
 
 
 @pytest.mark.parametrize("valor", ["-3", "dos", ""])
-def test_una_llegada_mal_escrita_o_vacia_no_registra(client_admin, pedido, valor):
+def test_CO244_una_llegada_mal_escrita_o_vacia_no_registra(client_admin, pedido, valor):
     linea = pedido.lineas.get()
 
     respuesta = client_admin.post(
@@ -122,7 +124,7 @@ def test_una_llegada_mal_escrita_o_vacia_no_registra(client_admin, pedido, valor
     assert "Revisá las unidades" in contenido or "No cambió nada" in contenido
 
 
-def test_cerrar_una_linea_pide_motivo_y_lo_guarda(client_admin, pedido):
+def test_CO243_cerrar_una_linea_pide_motivo_y_lo_guarda(client_admin, pedido):
     linea = pedido.lineas.get()
     url = reverse("suppliers:pedido_cerrar_linea", args=[linea.pk])
 
@@ -139,7 +141,7 @@ def test_cerrar_una_linea_pide_motivo_y_lo_guarda(client_admin, pedido):
     )
 
 
-def test_nuevo_pedido_a_mano_manda_el_correo_y_abre_la_preventa(client_admin, ivrea, mailoutbox):
+def test_CO237_el_pedido_a_mano_manda_el_correo_y_abre_la_preventa(client_admin, ivrea, mailoutbox):
     producto = ProductoFactory(
         titulo="Berserk", stock=0, estado=Producto.AGOTADO, editorial=ivrea.editorial
     )
@@ -166,7 +168,7 @@ def test_nuevo_pedido_a_mano_manda_el_correo_y_abre_la_preventa(client_admin, iv
     assert producto.estado == Producto.PRE_VENTA
 
 
-def test_nuevo_pedido_con_un_codigo_que_no_existe_no_sale(client_admin, ivrea, mailoutbox):
+def test_CO237_un_codigo_que_no_existe_no_sale(client_admin, ivrea, mailoutbox):
     respuesta = client_admin.post(
         reverse("suppliers:pedido_nuevo"),
         {

@@ -94,7 +94,9 @@ def test_un_titulo_que_coincide_con_varios_pide_elegir(client_admin, ivrea, mail
 # ---------------------------------------------------------------------------
 
 
-def test_no_se_le_pide_a_un_proveedor_lo_que_trae_otro(client_admin, ivrea, panini, mailoutbox):
+def test_CO237_no_se_le_pide_a_un_proveedor_lo_que_trae_otro(
+    client_admin, ivrea, panini, mailoutbox
+):
     naruto = tomo(panini, "Naruto", 72)
 
     respuesta = pedir(client_admin, ivrea, (naruto.codigo, 3))
@@ -116,7 +118,7 @@ def test_manda_el_proveedor_propio_del_producto_antes_que_el_de_su_editorial(
     assert PedidoProveedor.objects.get().proveedor == ivrea
 
 
-def test_si_no_se_sabe_quien_lo_trae_no_se_pide(client_admin, ivrea, mailoutbox):
+def test_CO237_si_no_se_sabe_quien_lo_trae_no_se_pide(client_admin, ivrea, mailoutbox):
     """B-05-021: sin proveedor identificable no hay cómo saber si este lo tiene."""
     sin_dueno = tomo(ivrea, "Sin dueño", 1, editorial=EditorialFactory())
 
@@ -136,7 +138,7 @@ def test_un_renglon_de_otro_proveedor_frena_todo_el_pedido(client_admin, ivrea, 
 
 
 @pytest.mark.parametrize("rol", ["cajero", "cliente"])
-def test_el_rol_equivocado_no_pide_por_la_direccion_real(client, ivrea, rol, mailoutbox):
+def test_CO237_el_rol_equivocado_no_pide_por_la_direccion_real(client, ivrea, rol, mailoutbox):
     frieren = tomo(ivrea, "Frieren", 9)
     client.force_login(UsuarioFactory(rol=rol))
 

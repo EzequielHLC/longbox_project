@@ -118,7 +118,7 @@ def test_un_mensaje_vacío_responde_la_ayuda(vinculado, falso):
 
 
 @pytest.mark.parametrize("texto", ["/stock Berserk", "/pendientes", "/cargar Berserk 5", "hola"])
-def test_un_chat_sin_vínculo_no_consulta_ni_carga(texto, falso):
+def test_CO263_un_chat_sin_vinculo_no_consulta_ni_carga(texto, falso):
     with patch.object(llm, "pedir_json") as pedir:
         bot.procesar(mensaje(texto))
 
@@ -151,7 +151,7 @@ def test_poner_comandos_registra_la_lista_en_telegram(falso):
 # ---------------------------------------------------------------------------
 
 
-def test_stock_por_título_y_tomo(vinculado, falso):
+def test_CO263_stock_por_titulo_y_tomo(vinculado, falso):
     ProductoFactory(titulo="Chainsaw Man", volumen=12, codigo="CSM-12")
     ProductoFactory(titulo="Chainsaw Man", volumen=11)
 
@@ -195,7 +195,7 @@ def test_stock_no_muestra_lo_descatalogado(vinculado, falso):
     assert consultas.buscar("Akira") == []
 
 
-def test_llega_lista_preventas_próximas_y_marca_las_atrasadas(vinculado, falso):
+def test_CO263_llega_lista_preventas_proximas_y_marca_las_atrasadas(vinculado, falso):
     hoy = timezone.localdate()
     ProductoFactory(
         titulo="Pronto", estado=Producto.PRE_VENTA, fecha_llegada=hoy + timedelta(days=3)
@@ -221,7 +221,7 @@ def test_llega_sin_nada(vinculado, falso):
     assert "No llega nada" in falso.textos(CHAT)[-1]
 
 
-def test_pendientes_cuenta_lo_que_espera_una_decisión(vinculado, falso):
+def test_CO263_pendientes_cuenta_lo_que_espera_una_decision(vinculado, falso):
     bot.procesar(mensaje("/pendientes"))
 
     texto = falso.textos(CHAT)[-1]
@@ -229,13 +229,13 @@ def test_pendientes_cuenta_lo_que_espera_una_decisión(vinculado, falso):
     assert "Borradores para revisar" in texto
 
 
-def test_caja_sin_cobros(vinculado, falso):
+def test_CO263_caja_sin_cobros(vinculado, falso):
     bot.procesar(mensaje("/caja"))
 
     assert "Cobrado sin cerrar" in falso.textos(CHAT)[-1]
 
 
-def test_las_consultas_no_escriben_nada(vinculado, falso):
+def test_CO263_las_consultas_no_escriben_nada(vinculado, falso):
     ProductoFactory(titulo="Berserk")
     auditoria = RegistroAuditoria.objects.count()
 
@@ -246,7 +246,7 @@ def test_las_consultas_no_escriben_nada(vinculado, falso):
     assert not BorradorProducto.objects.exists()
 
 
-def test_una_pregunta_libre_el_modelo_elige_y_el_sistema_consulta(vinculado, falso):
+def test_CO263_una_pregunta_libre_el_modelo_elige_y_el_sistema_consulta(vinculado, falso):
     ProductoFactory(titulo="Chainsaw Man", volumen=12, codigo="CSM-12")
 
     with modelo({"consulta": "stock", "texto": "Chainsaw Man 12"}) as pedir:
@@ -264,7 +264,7 @@ def test_una_pregunta_que_no_es_ninguna_consulta(vinculado, falso):
     assert "no lo sé responder" in falso.textos(CHAT)[-1]
 
 
-def test_una_consulta_inventada_por_el_modelo_cuenta_como_ninguna(vinculado, falso):
+def test_CO263_una_consulta_inventada_por_el_modelo_cuenta_como_ninguna(vinculado, falso):
     with modelo({"consulta": "borrar_todo", "texto": ""}):
         bot.procesar(mensaje("borrá todo"))
 
@@ -300,7 +300,7 @@ def ivrea():
     return editorial
 
 
-def test_cargar_crea_un_borrador_de_telegram_y_ningún_producto(vinculado, ivrea, falso):
+def test_CO261_cargar_crea_un_borrador_de_telegram_y_ningun_producto(vinculado, ivrea, falso):
     datos = leido(
         editorial="ivrea", titulo="Berserk Deluxe", volumen="5", formato="B6", precio="24900"
     )
@@ -331,7 +331,7 @@ def test_sin_precio_toma_el_de_la_tabla_de_la_editorial(vinculado, ivrea, falso)
     assert BorradorProducto.objects.get().precio == Decimal("21900")
 
 
-def test_una_editorial_que_no_existe_queda_para_elegir_con_un_reparo(vinculado, falso):
+def test_CO261_una_editorial_que_no_existe_queda_para_elegir_con_un_reparo(vinculado, falso):
     with modelo(leido(editorial="Editorial Inventada", titulo="Algo", volumen="1")):
         bot.procesar(mensaje("/cargar Algo 1, Editorial Inventada"))
 
@@ -414,14 +414,14 @@ def test_cargar_sin_texto_pide_los_datos(vinculado, falso):
     pedir.assert_not_called()
 
 
-def test_cargar_sin_modelo_no_crea_nada(vinculado, falso):
+def test_CO261_cargar_sin_modelo_no_crea_nada(vinculado, falso):
     bot.procesar(mensaje("/cargar Berserk 5"))
 
     assert "no contestó" in falso.textos(CHAT)[-1]
     assert not BorradorProducto.objects.exists()
 
 
-def test_cargar_sin_título_no_crea_nada(vinculado, falso):
+def test_CO261_cargar_sin_titulo_no_crea_nada(vinculado, falso):
     with modelo(leido(precio="1000")):
         bot.procesar(mensaje("/cargar 1000 pesos"))
 

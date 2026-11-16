@@ -88,7 +88,7 @@ def datos_de(accion, correo_pk, chat=CHAT, extra=""):
 # ---------------------------------------------------------------------------
 
 
-def test_start_no_vincula_todavía_da_un_número_para_el_perfil(administrador, falso):
+def test_CO257_start_no_vincula_todavia_da_un_numero_para_el_perfil(administrador, falso):
     """B-19-005: abrir el enlace no alcanza; un enlace filtrado no toma la cuenta."""
     codigo = CodigoVinculacion.nuevo(administrador)
 
@@ -102,7 +102,7 @@ def test_start_no_vincula_todavía_da_un_número_para_el_perfil(administrador, f
     assert numero in falso.textos(CHAT)[-1]
 
 
-def test_el_número_en_el_perfil_vincula_el_chat(client_admin, administrador, falso):
+def test_CO258_el_numero_en_el_perfil_vincula_el_chat(client_admin, administrador, falso):
     codigo = CodigoVinculacion.nuevo(administrador)
     bot.procesar(mensaje(f"/start {codigo.codigo}"))
     codigo.refresh_from_db()
@@ -124,7 +124,7 @@ def test_el_número_en_el_perfil_vincula_el_chat(client_admin, administrador, fa
     assert "Telegram quedó vinculado" in respuesta.content.decode()
 
 
-def test_un_número_equivocado_no_vincula_y_cinco_anulan_el_enlace(
+def test_CO258_un_numero_equivocado_no_vincula_y_cinco_anulan_el_enlace(
     client_admin, administrador, falso
 ):
     codigo = CodigoVinculacion.nuevo(administrador)
@@ -143,7 +143,7 @@ def test_un_número_equivocado_no_vincula_y_cinco_anulan_el_enlace(
     assert not VinculoTelegram.objects.exists()
 
 
-def test_confirmar_sin_que_el_bot_haya_dado_un_número(client_admin, administrador, falso):
+def test_CO258_confirmar_sin_que_el_bot_haya_dado_un_numero(client_admin, administrador, falso):
     CodigoVinculacion.nuevo(administrador)
 
     respuesta = client_admin.post(reverse("avisos:confirmar"), {"numero": "123456"}, follow=True)
@@ -152,7 +152,7 @@ def test_confirmar_sin_que_el_bot_haya_dado_un_número(client_admin, administrad
     assert not VinculoTelegram.objects.exists()
 
 
-def test_no_fui_yo_anula_el_enlace(client_admin, administrador, falso):
+def test_CO259_no_fui_yo_anula_el_enlace(client_admin, administrador, falso):
     codigo = CodigoVinculacion.nuevo(administrador)
     bot.procesar(mensaje(f"/start {codigo.codigo}", chat=9999))
 
@@ -162,7 +162,7 @@ def test_no_fui_yo_anula_el_enlace(client_admin, administrador, falso):
     assert not VinculoTelegram.objects.exists()
 
 
-def test_el_número_de_otra_cuenta_no_sirve(client, administrador, falso):
+def test_CO258_el_numero_de_otra_cuenta_no_sirve(client, administrador, falso):
     codigo = CodigoVinculacion.nuevo(administrador)
     bot.procesar(mensaje(f"/start {codigo.codigo}"))
     codigo.refresh_from_db()
@@ -174,7 +174,7 @@ def test_el_número_de_otra_cuenta_no_sirve(client, administrador, falso):
     assert not VinculoTelegram.objects.exists()
 
 
-def test_un_código_vencido_o_usado_no_vincula(administrador, falso):
+def test_CO257_un_codigo_vencido_o_usado_no_vincula(administrador, falso):
     vencido = CodigoVinculacion.nuevo(administrador)
     CodigoVinculacion.objects.filter(pk=vencido.pk).update(
         vence_en=timezone.now() - timedelta(minutes=1)
@@ -187,7 +187,7 @@ def test_un_código_vencido_o_usado_no_vincula(administrador, falso):
     assert all("no sirve" in t for t in falso.textos(CHAT))
 
 
-def test_el_código_de_otro_rol_no_vincula(falso):
+def test_CO257_el_codigo_de_otro_rol_no_vincula(falso):
     codigo = CodigoVinculacion.nuevo(UsuarioFactory(rol="cajero"))
 
     bot.procesar(mensaje(f"/start {codigo.codigo}"))
@@ -195,7 +195,7 @@ def test_el_código_de_otro_rol_no_vincula(falso):
     assert not VinculoTelegram.objects.exists()
 
 
-def test_un_chat_es_de_una_sola_cuenta(administrador, falso):
+def test_CO258_un_chat_es_de_una_sola_cuenta(administrador, falso):
     otro = UsuarioFactory(rol="administrador")
     VinculoTelegram.objects.create(usuario=otro, chat_id=CHAT)
     codigo = CodigoVinculacion.nuevo(administrador)
@@ -212,7 +212,7 @@ def test_un_chat_es_de_una_sola_cuenta(administrador, falso):
 # ---------------------------------------------------------------------------
 
 
-def test_salir_desvincula_desde_el_chat(vinculado, falso):
+def test_CO260_salir_desvincula_desde_el_chat(vinculado, falso):
     bot.procesar(mensaje("/salir"))
 
     assert not VinculoTelegram.objects.exists()
@@ -399,7 +399,7 @@ def test_una_novedad_rota_no_frena_al_bot(falso):
     assert falso.mensajes() == []  # en un grupo no contesta
 
 
-def test_salir_sin_vínculo_lo_dice(falso):
+def test_CO260_salir_sin_vinculo_lo_dice(falso):
     bot.procesar(mensaje("/salir"))
 
     assert "no está vinculado" in falso.textos(CHAT)[-1]

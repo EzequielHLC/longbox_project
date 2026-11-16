@@ -97,8 +97,10 @@ muestra**, no qué es obligatorio.
   {{ form.desbloqueado }}
 
   {% if es_importado %}
-    <div class="rejilla-2">
+    {# B-01-028: costo × unidades es lo que suma el valor de compra; van juntos. #}
+    <div class="rejilla-3">
       {% include "_campo.html" with campo=form.costo_origen %}
+      {% include "_campo.html" with campo=form.stock %}
       {% include "_campo.html" with campo=form.precio %}
     </div>
 
@@ -145,10 +147,10 @@ muestra**, no qué es obligatorio.
     </div>
   {% endif %}
 
-  <div class="rejilla-3">
+  <div class="{% if es_importado %}rejilla-2{% else %}rejilla-3{% endif %}">
     {% include "_campo.html" with campo=form.estado %}
     {% include "_campo.html" with campo=form.fecha_llegada %}
-    {% include "_campo.html" with campo=form.stock %}
+    {% if not es_importado %}{% include "_campo.html" with campo=form.stock %}{% endif %}
   </div>
 
   {# Datos informativos: ninguno bloquea el alta. #}
