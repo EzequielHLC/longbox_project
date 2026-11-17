@@ -4,19 +4,17 @@ Las imágenes llegan ya procesadas por `core.imagenes.procesar` (RNF-05): el
 formulario las procesa al validar, así que una inválida nunca llega hasta acá.
 """
 
-from django.db import transaction
-
 from apps.catalog.models import ImagenProducto
 
 
 def actualizar(producto, *, nuevas=(), quitar=()):
     """Agrega las nuevas al final y quita las marcadas. Devuelve `(agregadas, quitadas)`.
 
-    Las posiciones quedan consecutivas desde 0. Los archivos de las quitadas se
-    borran cuando la transacción confirma: si algo falla, siguen ahí.
+    Las posiciones quedan consecutivas desde 0. Los archivos de las quitadas **no
+    se borran**: el registro de auditoría los muestra como estaban antes
+    (plan 16, segunda parte; B-16-005).
     """
     quitadas = [imagen for imagen in quitar if imagen.producto_id == producto.pk]
-    nombres = [imagen.imagen.name for imagen in quitadas]
     ImagenProducto.objects.filter(pk__in=[imagen.pk for imagen in quitadas]).delete()
 
     restantes = list(producto.imagenes.order_by("posicion", "pk"))
@@ -30,9 +28,6 @@ def actualizar(producto, *, nuevas=(), quitar=()):
             producto=producto, imagen=archivo, posicion=len(restantes) + desplazamiento
         )
 
-    if nombres:
-        almacenamiento = ImagenProducto.imagen.field.storage
-        transaction.on_commit(lambda: [almacenamiento.delete(nombre) for nombre in nombres])
     return len(nuevas), len(quitadas)
 
 

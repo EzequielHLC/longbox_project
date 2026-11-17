@@ -156,6 +156,13 @@ def avanzar(pedido, actor, *, estado_visto, confirmado=False):
                 )
                 + "."
             ),
+            cambios=[
+                (
+                    "estado",
+                    Pedido(estado=anterior).get_estado_display(),
+                    pedido.get_estado_display(),
+                )
+            ],
         )
         despues_del_commit(avisar_cambio_de_estado, pedido)
     return Avance(pedido=pedido, anterior=anterior)

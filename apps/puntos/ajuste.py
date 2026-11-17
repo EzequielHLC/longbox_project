@@ -139,6 +139,7 @@ def ajustar(cliente, actor, tipo, cantidad, motivo):
                 f"{etiqueta} de {cantidad} pts. Saldo: {anterior} → {hecho.saldo}. "
                 f"Motivo: {motivo}"
             ),
+            cambios=[("saldo de puntos", anterior, hecho.saldo)],
         )
         despues_del_commit(_avisar, cliente, hecho, etiqueta)
     return hecho

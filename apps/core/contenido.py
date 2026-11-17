@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils import timezone
 from markdown_it import MarkdownIt
 
+from apps.core import cambios as registro_de_cambios
 from apps.core import colores
 from apps.core.models import Banner, ContenidoFAQ, IdentidadVisual, RegistroAuditoria
 
@@ -41,7 +42,8 @@ def publicar_faq(contenido, *, actor, ip=None, confirma_vacia=False):
 
     with transaction.atomic():
         faq = ContenidoFAQ.objects.select_for_update().get(pk=ContenidoFAQ.obtener().pk)
-        anterior = len(faq.contenido)
+        texto_anterior = faq.contenido
+        anterior = len(texto_anterior)
         faq.contenido = contenido
         faq.actualizado_en = timezone.now()
         faq.save()
@@ -55,6 +57,7 @@ def publicar_faq(contenido, *, actor, ip=None, confirma_vacia=False):
                 if not contenido
                 else f"Se publicó la FAQ: {anterior} → {len(contenido)} caracteres"
             ),
+            cambios=[("contenido de la FAQ", texto_anterior, contenido)],
         )
     return True
 
@@ -96,26 +99,30 @@ def editar_banner(banner, *, actor, ip=None, imagen_procesada=None, numero=None)
     """`CO-133`: reemplaza la imagen, cambia la posición, o ambas cosas.
 
     `numero` es la posición como la ve el Administrador, desde 1. La imagen
-    reemplazada se borra del almacenamiento: no se conserva.
+    reemplazada se conserva para que el log la muestre (B-16-005).
     """
     with transaction.atomic():
         galeria = _galeria_bloqueada()
         actual = next(b for b in galeria if b.pk == banner.pk)
         anterior = actual.numero
         cambios = []
+        registro = []
 
         if imagen_procesada is not None:
+            # B-16-005: la imagen reemplazada se conserva; el log la muestra como
+            # estaba antes. Corrige la nota de `CO-133` («no se conserva»).
             vieja = actual.imagen.name
             actual.imagen = imagen_procesada
             actual.save(update_fields=["imagen"])
-            transaction.on_commit(lambda: actual.imagen.storage.delete(vieja))
             cambios.append("imagen reemplazada")
+            registro.append(registro_de_cambios.imagen("imagen", vieja, actual.imagen.name))
 
         if numero is not None and numero != anterior:
             galeria.remove(actual)
             galeria.insert(numero - 1, actual)
             _reajustar(galeria)
             cambios.append(f"posición: {anterior} → {numero}")
+            registro.append(("posición", anterior, numero))
 
         if cambios:
             RegistroAuditoria.registrar(
@@ -124,6 +131,7 @@ def editar_banner(banner, *, actor, ip=None, imagen_procesada=None, numero=None)
                 objetivo=actual,
                 ip=ip,
                 detalle="; ".join(cambios),
+                cambios=registro,
             )
     return actual
 
@@ -141,11 +149,15 @@ def eliminar_banner(banner, *, actor, ip=None):
             actor=actor,
             ip=ip,
             detalle=f"Banner eliminado de la posición {numero}",
+            # B-16-005: lo que mostraba queda en el log, con su archivo.
+            cambios=[
+                registro_de_cambios.imagen("imagen", archivo, ""),
+                ("posición", numero, "—"),
+            ],
         )
         actual.delete()
         galeria.remove(actual)
         _reajustar(galeria)
-        transaction.on_commit(lambda: Banner.imagen.field.storage.delete(archivo))
     return True
 
 
@@ -188,18 +200,20 @@ def actualizar_identidad(
     """`CO-131`: aplica los cambios a la tienda de inmediato.
 
     Se audita con los campos modificados y sus valores anteriores. Las
-    imágenes llegan ya procesadas; la que reemplazan se borra.
+    imágenes llegan ya procesadas; la que reemplazan se conserva para el log
+    (B-16-005).
     """
     with transaction.atomic():
         guardada = IdentidadVisual.objects.select_for_update().get(pk=IdentidadVisual.obtener().pk)
         anteriores = {campo: getattr(guardada, campo) for campo, _ in CAMPOS_DE_IDENTIDAD}
 
         identidad = formulario.save(commit=False)
-        cambios = [
-            f"{etiqueta}: «{anteriores[campo]}» → «{getattr(identidad, campo)}»"
+        registro = [
+            (etiqueta, anteriores[campo], getattr(identidad, campo))
             for campo, etiqueta in CAMPOS_DE_IDENTIDAD
             if anteriores[campo] != getattr(identidad, campo)
         ]
+        cambios = [f"{etiqueta}: «{antes}» → «{ahora}»" for etiqueta, antes, ahora in registro]
         for campo, nueva, etiqueta in (
             ("logo", logo, "logo"),
             ("imagen_fondo", imagen_fondo, "imagen de fondo"),
@@ -215,19 +229,22 @@ def actualizar_identidad(
                 cambios.append(f"{etiqueta} quitado")
             else:
                 continue
-            if vieja:
-                transaction.on_commit(
-                    lambda nombre=vieja: IdentidadVisual.logo.field.storage.delete(nombre)
-                )
+            # B-16-005: la imagen anterior se conserva para que el log la muestre.
+            # La nueva todavía no tiene nombre definitivo: se completa al guardar.
+            registro.append(registro_de_cambios.imagen(etiqueta, vieja, campo))
 
         identidad.actualizado_en = timezone.now()
         identidad.actualizado_por = actor
         identidad.save()
+        for cambio in registro:
+            if isinstance(cambio, dict):
+                cambio["despues"] = getattr(identidad, cambio["despues"]).name or ""
         RegistroAuditoria.registrar(
             accion=RegistroAuditoria.MODIFICACION_IDENTIDAD_VISUAL,
             actor=actor,
             objetivo=identidad,
             ip=ip,
             detalle="; ".join(cambios) or "Se guardó sin cambios",
+            cambios=registro,
         )
     return identidad

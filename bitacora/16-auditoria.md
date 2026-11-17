@@ -112,3 +112,49 @@ dueño de la tabla, y Django lo usa para vaciar la base entre pruebas.
 
 **Qué habría que cambiar.**
 Nada en el documento.
+
+---
+
+### B-16-005 · Cada modificación guarda qué se cambió y cómo estaba antes, también las imágenes
+
+**Tipo:** Corrección · **Fecha:** 2026-11-17 · **Alcance:** `CO-206`, `CO-131`, `CO-133`, `CO-134`, `CO-135`, `CO-253`, `CO-255`, `RegistroAuditoria`
+**Estado:** Resuelta — pedido del responsable del 2026-11-17, por exigencia de la cátedra (plan 16, segunda parte, aprobado con las recomendaciones)
+
+**Qué apareció.**
+La cátedra exige que toda modificación deje registrado qué se cambió y cómo estaba antes: un
+valor, un banner, una imagen. El log guardaba el par anterior → nuevo dentro de un texto libre, y
+en cinco operaciones lo anterior se perdía. Al reemplazar un banner, el logo, el fondo o la imagen
+del ingreso, el archivo viejo se borraba y el log decía sólo «imagen reemplazada». Al eliminar un
+banner se borraba su imagen. La FAQ guardaba sólo el largo del contenido anterior. Los canales de
+aviso guardaban cómo quedaron, no cómo estaban. Las secciones de la portada decían «imagen
+cambiada en …» sin la anterior. Lo mismo pasaba con las imágenes adicionales que se quitan de un
+producto.
+
+**Qué dice la especificación.**
+> «Presentar timestamp, actor, acción, entidad, identificador, valor anterior y valor nuevo cuando aplican.» (`CO-206`)
+>
+> «La imagen anterior no se conserva.» (`CO-133`, Notas)
+
+**Qué se hizo.**
+Cada entrada guarda, además del texto, la lista de lo que cambió: el campo, cómo estaba antes y
+cómo quedó. El detalle de la entrada lo presenta en una tabla «Qué se cambió · Cómo estaba antes ·
+Cómo quedó», y cuando el valor es una imagen muestra las dos. Las imágenes reemplazadas o quitadas
+**ya no se borran**: banner, logo, fondo, imagen del ingreso, imagen de una sección o de una
+tarjeta, e imágenes adicionales de un producto. La FAQ guarda el contenido anterior entero; los
+canales, cómo estaban; el producto, la sinopsis completa y la portada como imagen. La clave del
+modelo de lenguaje nunca entra al log: queda «(oculta) → reemplazada». Las entradas anteriores a
+este cambio no tienen la lista y se siguen viendo por su texto: el log es inmutable y no se
+reescriben. Las bajas y reactivaciones quedan como estaban, porque la acción ya dice el estado,
+salvo la eliminación de un banner, que ahora deja su imagen en el log.
+
+**Qué habría que cambiar.**
+- `CO-133`, Notas: «La imagen anterior se conserva y el registro de auditoría la presenta como
+  valor anterior». En las postcondiciones, la entrada de auditoría lleva también la imagen
+  anterior y la nueva, no sólo la posición.
+- `CO-131`: lo mismo para el logo, la imagen de fondo y la del ingreso.
+- `CO-134`: la entrada de auditoría conserva la imagen del banner eliminado.
+- `CO-135` y `CO-136`: la entrada lleva el contenido anterior.
+- `RegistroAuditoria` en el modelo de dominio: el atributo «cambios» (campo, valor anterior,
+  valor nuevo).
+- `CU-AUD-CON` paso 5: la presentación en tabla, con las imágenes.
+- El plan 16, ambigüedad 3 de la primera parte, queda superada por esta parte.

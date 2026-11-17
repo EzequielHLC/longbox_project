@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
 
-from apps.core import colores, contenido
+from apps.core import cambios, colores, contenido
 from apps.core.forms import (
     BannerEdicionForm,
     BannerForm,
@@ -248,6 +248,19 @@ def _lista(partes):
     return " · ".join(partes) or "ninguna"
 
 
+def _formularios_con_imagen(secciones, imagenes):
+    """Los formularios de sección y de tarjeta que reemplazan o quitan su imagen."""
+    for formulario in secciones.forms:
+        if formulario in secciones.deleted_forms:
+            continue
+        if formulario.has_changed() and formulario.cambio_la_imagen:
+            yield formulario
+        propias = imagenes[formulario.prefix]
+        for f in propias.forms:
+            if f not in propias.deleted_forms and f.has_changed() and f.cambio_la_imagen:
+                yield f
+
+
 def _resumen_de_secciones():
     """Cada sección en una línea, con lo que la auditoría tiene que poder comparar."""
     resumen = []
@@ -303,32 +316,56 @@ class SeccionesPortadaView(ContenidoAdminMixin, View):
         if not validas:
             return self._pantalla(request, secciones, imagenes)
         antes = _resumen_de_secciones()
+        # Plan 16, segunda parte: el archivo que tenía cada imagen antes de
+        # guardar. Los formularios todavía no la reemplazaron en la instancia.
+        vieja = {
+            id(f): f.instance.imagen.name
+            for f in _formularios_con_imagen(secciones, imagenes)
+            if f.instance.pk
+        }
         with transaction.atomic():
             secciones.save()
             cambiadas = []
+            registro_de_imagenes = []
             for formulario in secciones.forms:
                 if formulario in secciones.deleted_forms:
                     continue
                 if formulario.has_changed() and formulario.cambio_la_imagen:
                     cambiadas.append(formulario.instance.titulo_visible)
+                    registro_de_imagenes.append(
+                        cambios.imagen(
+                            f"imagen de {formulario.instance.titulo_visible}",
+                            vieja.get(id(formulario), ""),
+                            formulario.instance.imagen.name,
+                        )
+                    )
                 propias = imagenes[formulario.prefix]
                 propias.instance = formulario.instance
                 propias.save()
-                cambiadas.extend(
-                    str(f.instance)
-                    for f in propias.forms
-                    if f not in propias.deleted_forms and f.has_changed() and f.cambio_la_imagen
-                )
+                for f in propias.forms:
+                    if f not in propias.deleted_forms and f.has_changed() and f.cambio_la_imagen:
+                        cambiadas.append(str(f.instance))
+                        registro_de_imagenes.append(
+                            cambios.imagen(
+                                f"imagen de {f.instance}",
+                                vieja.get(id(f), ""),
+                                f.instance.imagen.name,
+                            )
+                        )
             despues = _resumen_de_secciones()
             if antes != despues or cambiadas:
                 detalle = f"{_lista(antes)} → {_lista(despues)}"
                 if cambiadas:
                     detalle += f"; imagen cambiada en {_lista(cambiadas)}"
+                registro = []
+                if antes != despues:
+                    registro.append(("secciones", _lista(antes), _lista(despues)))
                 RegistroAuditoria.registrar(
                     accion=RegistroAuditoria.MODIFICACION_SECCIONES_PORTADA,
                     actor=request.user,
                     ip=obtener_ip(request),
                     detalle=detalle,
+                    cambios=registro + registro_de_imagenes,
                 )
         messages.success(request, "Se guardaron las secciones de la portada.")
         return redirect("core:secciones_portada")

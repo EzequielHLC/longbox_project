@@ -12,6 +12,8 @@ pre_commit==4.6.1
 pytest-xdist==3.8.0
 pytest-randomly==5.0.0
 locust==2.46.6
+# Viene con locust (geventhttpclient). 1.2.0 tiene PYSEC-2026-4322; se fija la corregida.
+brotli==1.2.1
 mutmut==3.8.0
 pip-audit==2.10.1
 openpyxl==3.1.5

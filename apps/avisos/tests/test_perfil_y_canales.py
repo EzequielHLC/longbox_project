@@ -358,3 +358,14 @@ def test_CO254_consultar_el_perfil_no_cambia_nada(client_admin, administrador):
         CodigoVinculacion.objects.count(),
         VinculoTelegram.objects.count(),
     ) == antes
+
+
+def test_CO255_los_canales_registran_como_estaban_antes(client_admin, administrador):
+    """Plan 16, segunda parte: no sólo cómo quedaron, también cómo estaban."""
+    vincular(administrador)
+    client_admin.post(reverse("avisos:canales"), {"telegram_preventas": "on"})
+
+    client_admin.post(reverse("avisos:canales"), {"correo_preventas": "on"})
+
+    registro = RegistroAuditoria.objects.filter(accion=RegistroAuditoria.CANALES_DE_AVISO).first()
+    assert {"campo": "Pre-ventas", "antes": "Telegram", "despues": "correo"} in registro.cambios

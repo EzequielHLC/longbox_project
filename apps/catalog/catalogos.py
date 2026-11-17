@@ -297,6 +297,25 @@ def cambios(anteriores, posteriores, campos, *, como_esta=False):
     ]
 
 
+def pares(anteriores, posteriores, campos):
+    """Lo mismo que `cambios`, como `(etiqueta, antes, después)` para el registro.
+
+    Plan 16, segunda parte: la entrada guarda cada valor por separado. Se leen
+    como en el detalle, sin las comillas: «sí», «no» y «—» cuando no hay valor.
+    """
+
+    def legible(valor):
+        if isinstance(valor, bool):
+            return _si_no(valor)
+        return "—" if valor in (None, "") else valor
+
+    return [
+        (etiqueta, legible(anteriores[campo]), legible(posteriores[campo]))
+        for campo, etiqueta in campos
+        if anteriores[campo] != posteriores[campo]
+    ]
+
+
 def editar(formulario, *, catalogo, actor, ip=None, campos_auditados=(), relaciones=()):
     """La modificación: corrige, y reactiva si se pidió. Nunca da de baja.
 
@@ -333,6 +352,8 @@ def editar(formulario, *, catalogo, actor, ip=None, campos_auditados=(), relacio
                 objetivo=objeto,
                 ip=ip,
                 detalle=f"{catalogo.descripcion(objeto)}: " + "; ".join(diferencias),
+                cambios=pares(anteriores, posteriores, campos)
+                + pares(anteriores, posteriores, relaciones),
             )
     return objeto
 
@@ -359,6 +380,7 @@ def declarar_formatos(tipo, formatos, *, actor, ip=None):
                     f"{TIPOS.descripcion(tipo)}: formatos declarados: "
                     f"{anteriores} → {posteriores}"
                 ),
+                cambios=[("formatos declarados", anteriores, posteriores)],
             )
 
 

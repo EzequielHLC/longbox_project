@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-11-15**.
+> **Tipo: Fotografía.** Tomada el **2026-11-17**.
 > Se reemplaza entera. No contiene reglas ni justificaciones de diseño.
 
 # Deuda
@@ -300,6 +300,7 @@ código sin terminar.
 
 | Enmienda pendiente | De dónde sale |
 | --- | --- |
+| La imagen anterior se conserva y el log la presenta (`CO-131`, `CO-133`, `CO-134`); la FAQ guarda el contenido anterior (`CO-135`, `CO-136`); `RegistroAuditoria` gana «cambios»; `CU-AUD-CON` paso 5 en tabla | B-16-005 |
 | Las tareas de consola quedan fuera del modelo de casos de uso | R-01-002 |
 | Los cinco catálogos no distinguen mayúsculas (Área 2 dice «único» a secas en `Formato` y `GrupoEtiqueta`) | R-02-002 |
 | `CO-120`: el correo no pertenece a ninguna cuenta en cualquier estado | R-13-004 |

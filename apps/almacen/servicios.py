@@ -571,6 +571,7 @@ def modificar_plazo(articulo_pk, actor, nueva_fecha, motivo, *, origen=""):
                 f"{nombre(articulo)}: {fecha(anterior)} → {fecha(nueva_fecha)}. "
                 f"Motivo: {motivo}"
             ),
+            cambios=[("fecha de vencimiento", fecha(anterior), fecha(nueva_fecha))],
         )
         despues_del_commit(_avisar_plazo, articulo, anterior, origen)
     return articulo

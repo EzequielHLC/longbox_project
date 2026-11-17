@@ -609,6 +609,7 @@ class UsuarioEdicionView(GestionDeUsuariosMixin, UpdateView):
                         objetivo=usuario,
                         ip=obtener_ip(self.request),
                         detalle=services.describir_cambios(cambios),
+                        cambios=cambios,
                     )
                 if cambia_el_rol:
                     # Los permisos viejos siguen vivos en la sesión abierta: hay

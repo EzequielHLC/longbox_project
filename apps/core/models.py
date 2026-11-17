@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from apps.core import cambios as registro_de_cambios
 from apps.core import colores
 
 
@@ -739,6 +740,11 @@ class RegistroAuditoria(models.Model):
     # Texto libre: en las modificaciones (CU-USR-MOD) guarda los valores anteriores
     # y los nuevos de cada campo, así que no entra en un largo fijo corto.
     detalle = models.TextField(blank=True)
+    # Plan 16, segunda parte: qué se cambió y cómo estaba antes, campo por campo
+    # (`[{campo, antes, despues}]`, con `imagen` cuando el valor es un archivo).
+    # Las entradas anteriores a esta parte lo tienen vacío y se leen por su
+    # detalle: el log es inmutable y no se reescriben.
+    cambios = models.JSONField(default=list, blank=True)
     ocurrido_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -773,6 +779,7 @@ class RegistroAuditoria(models.Model):
         detalle="",
         objetivo=None,
         objetivo_email="",
+        cambios=None,
     ):
         """Punto de entrada único para escribir en el log.
 
@@ -780,8 +787,16 @@ class RegistroAuditoria(models.Model):
         `LoteAlta`, y lo que traigan los módulos siguientes. El correo se
         desnormaliza únicamente cuando el objetivo tiene uno —un lote no lo
         tiene— y por eso se pide con `getattr` y no directo.
+
+        `cambios` es lo que se modificó con su valor anterior (plan 16, segunda
+        parte), en cualquiera de las formas que acepta `cambios.a_lista`. Si el
+        sitio no escribe un detalle propio, el detalle se arma con los cambios.
         """
+        lista = registro_de_cambios.a_lista(cambios)
+        if lista and not detalle:
+            detalle = registro_de_cambios.describir_lista(lista)
         return cls.objects.create(
+            cambios=lista,
             accion=accion,
             actor=actor,
             actor_email=actor_email or (actor.email if actor else ""),

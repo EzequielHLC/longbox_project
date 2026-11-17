@@ -1196,3 +1196,27 @@ def test_la_ficha_avisa_cuando_no_se_pueden_agregar_mas_unidades(client, cliente
         'name="cantidad"'
         not in ficha.partition("ficha-publica__compra")[2].partition("</div>\n        </div>")[0]
     )
+
+
+def test_CO253_cambiar_la_imagen_de_una_seccion_registra_la_anterior(client_admin, shonen):
+    """Plan 16, segunda parte: el log dice qué imagen tenía antes (B-16-005)."""
+    seccion = SeccionPortada.objects.create(etiqueta=shonen, orden=3, imagen="filas/vieja.webp")
+
+    client_admin.post(
+        URL_CONFIGURAR,
+        {
+            **formset(
+                {"id": str(seccion.pk), "origen": f"e:{shonen.pk}", "orden": "3", "activa": "on"},
+                existentes=1,
+            ),
+            "form-0-imagen": imagen(),
+        },
+    )
+
+    seccion.refresh_from_db()
+    assert {
+        "campo": "imagen de Shonen",
+        "antes": "filas/vieja.webp",
+        "despues": seccion.imagen.name,
+        "imagen": True,
+    } in auditoria().cambios

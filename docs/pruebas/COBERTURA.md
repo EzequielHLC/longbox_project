@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-11-16, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el 2026-11-17, del repositorio y no de memoria.
 > **Generado por `scripts/generar_cobertura.py`.** No lo edites: la próxima corrida lo pisa.
 > Se reemplaza entero. Si algo está mal acá, anotalo en la bitácora del módulo.
 
@@ -26,7 +26,7 @@ es otra puerta y su número también vive ahí.
 | Contratos especificados | 219 |
 | Con al menos una prueba que lleva su código | 219 |
 | Sin ninguna | 0 |
-| Pruebas de contrato en la suite | 1300 |
+| Pruebas de contrato en la suite | 1309 |
 
 **Pruebas que nombran un contrato inexistente.** Un tipeo en el código del contrato produce una prueba que parece cubrir algo y no cubre nada:
 
@@ -54,9 +54,9 @@ es otra puerta y su número también vive ahí.
 - `CO-250` — `test_CO250_presenta_los_cierres_del_mas_reciente_al_mas_antiguo`, `test_CO250_consultar_los_cierres_no_cambia_nada`, `test_CO250_E1_sin_cierres_lo_informa`, `test_CO250_CO251_el_cliente_no_consulta_por_la_direccion_real`
 - `CO-251` — `test_CO251_presenta_los_totales_y_cada_transaccion_incluida`, `test_CO251_consultar_un_cierre_no_cambia_nada`
 - `CO-252` — `test_CO252_presenta_las_secciones_como_tarjetas_en_su_orden`, `test_CO252_consultar_las_secciones_no_cambia_nada`
-- `CO-253` — `test_CO253_agregar_secciones_de_productos_por_etiqueta_y_por_grupo`, `test_CO253_agregar_accesos_con_sus_imagenes_y_destinos`, `test_CO253_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada`, `test_CO253_un_destino_fuera_de_la_lista_se_rechaza`, `test_CO253_un_codigo_de_producto_que_no_existe_se_rechaza`, `test_CO253_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina`, `test_CO253_las_fijas_no_se_quitan`, `test_CO253_apagar_una_fija_la_saca_de_la_portada`, `test_CO253_el_tipo_de_una_seccion_no_cambia`, `test_CO253_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada`, `test_CO253_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos`, `test_CO253_eliminar_una_seccion_con_sus_imagenes`, `test_CO253_quitar_una_imagen_y_reordenar_las_demas`, `test_CO253_guardar_sin_cambios_no_audita`, `test_CO253_solo_el_administrador_configura_las_secciones`
+- `CO-253` — `test_CO253_agregar_secciones_de_productos_por_etiqueta_y_por_grupo`, `test_CO253_agregar_accesos_con_sus_imagenes_y_destinos`, `test_CO253_un_tipo_fuera_de_su_cantidad_de_imagenes_no_guarda_nada`, `test_CO253_un_destino_fuera_de_la_lista_se_rechaza`, `test_CO253_un_codigo_de_producto_que_no_existe_se_rechaza`, `test_CO253_una_imagen_sin_archivo_se_rechaza_salvo_la_onomatopeya_de_la_pagina`, `test_CO253_las_fijas_no_se_quitan`, `test_CO253_apagar_una_fija_la_saca_de_la_portada`, `test_CO253_el_tipo_de_una_seccion_no_cambia`, `test_CO253_una_de_productos_sin_origen_se_rechaza_y_no_se_guarda_nada`, `test_CO253_el_origen_y_la_vitrina_se_ignoran_fuera_de_las_de_productos`, `test_CO253_eliminar_una_seccion_con_sus_imagenes`, `test_CO253_quitar_una_imagen_y_reordenar_las_demas`, `test_CO253_guardar_sin_cambios_no_audita`, `test_CO253_solo_el_administrador_configura_las_secciones`, `test_CO253_cambiar_la_imagen_de_una_seccion_registra_la_anterior`
 - `CO-254` — `test_CO254_el_administrador_ve_su_perfil_con_sus_datos_y_sus_avisos`, `test_CO254_otro_rol_no_entra_al_perfil_por_la_direccion_real`, `test_CO254_consultar_el_perfil_no_cambia_nada`
-- `CO-255` — `test_CO255_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal`, `test_CO255_los_canales_se_guardan_por_tipo_y_quedan_auditados`, `test_CO255_sin_chat_vinculado_telegram_no_se_puede_elegir`, `test_CO255_todo_por_telegram_con_el_chat_vinculado`
+- `CO-255` — `test_CO255_sin_chat_marcar_telegram_en_un_opcional_lo_deja_sin_canal`, `test_CO255_los_canales_se_guardan_por_tipo_y_quedan_auditados`, `test_CO255_sin_chat_vinculado_telegram_no_se_puede_elegir`, `test_CO255_todo_por_telegram_con_el_chat_vinculado`, `test_CO255_los_canales_registran_como_estaban_antes`
 - `CO-256` — `test_CO256_sin_token_no_se_puede_vincular`, `test_CO256_vincular_da_un_enlace_de_un_solo_uso_al_bot`
 - `CO-257` — `test_CO257_start_no_vincula_todavia_da_un_numero_para_el_perfil`, `test_CO257_un_codigo_vencido_o_usado_no_vincula`, `test_CO257_el_codigo_de_otro_rol_no_vincula`
 - `CO-258` — `test_CO258_el_numero_en_el_perfil_vincula_el_chat`, `test_CO258_un_numero_equivocado_no_vincula_y_cinco_anulan_el_enlace`, `test_CO258_confirmar_sin_que_el_bot_haya_dado_un_numero`, `test_CO258_el_numero_de_otra_cuenta_no_sirve`, `test_CO258_un_chat_es_de_una_sola_cuenta`
@@ -373,7 +373,7 @@ es otra puerta y su número también vive ahí.
 | --- | --- | ---: | --- |
 | `CO-129` | exportarLogDeAuditoria | 2 | `apps/core/tests/test_contratos_16_auditoria.py` |
 | `CO-205` | consultarLogDeAuditoria | 3 | `apps/core/tests/test_contratos_16_auditoria.py` |
-| `CO-206` | consultarDetalleDeEntradaDeAuditoria | 1 | `apps/core/tests/test_contratos_16_auditoria.py` |
+| `CO-206` | consultarDetalleDeEntradaDeAuditoria | 5 | `apps/core/tests/test_auditoria_como_estaba_antes.py`, `apps/core/tests/test_contratos_16_auditoria.py` |
 
 ### `17-configuracion-del-sistema.md` — 17 Configuración del Sistema
 
@@ -382,11 +382,11 @@ es otra puerta y su número también vive ahí.
 | Contrato | Operación | Pruebas | Dónde |
 | --- | --- | ---: | --- |
 | `CO-130` | actualizarParametrosOperacionales | 19 | `apps/accounts/tests/test_parametros_de_seguridad.py`, `apps/catalog/tests/test_parametros_compra.py`, `apps/devoluciones/tests/test_contratos_09_devoluciones.py`, `apps/puntos/tests/test_contratos_10_caducidad_y_ajuste.py` |
-| `CO-131` | actualizarIdentidadVisual | 8 | `apps/core/tests/test_contratos_17_contenido.py` |
+| `CO-131` | actualizarIdentidadVisual | 10 | `apps/core/tests/test_auditoria_como_estaba_antes.py`, `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-132` | agregarBanner | 2 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-133` | editarBanner | 4 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-134` | eliminarBanner | 2 | `apps/core/tests/test_contratos_17_contenido.py` |
-| `CO-135` | publicarContenidoDeFaq | 4 | `apps/core/tests/test_contratos_17_contenido.py` |
+| `CO-135` | publicarContenidoDeFaq | 5 | `apps/core/tests/test_auditoria_como_estaba_antes.py`, `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-136` | confirmarPublicacionDeFaqVacia | 1 | `apps/core/tests/test_contratos_17_contenido.py` |
 | `CO-138` | editarEditorial | 4 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
 | `CO-139` | solicitarBajaDeEditorial | 2 | `apps/catalog/tests/test_contratos_17_catalogos.py` |
@@ -1652,6 +1652,8 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO131_la_imagen_del_ingreso_se_procesa_y_se_audita` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO131_la_tienda_carga_la_hoja_sin_cambiar_el_backoffice` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO131_quitar_el_logo_y_la_imagen_del_ingreso_vuelve_a_lo_predeterminado` — `apps/core/tests/test_contratos_17_contenido.py`
+- `test_CO131_reemplazar_el_logo_conserva_el_anterior_en_el_log` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
+- `test_CO131_un_color_cambiado_queda_con_su_valor_anterior` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
 
 **`CO-132` · agregarBanner**
 
@@ -1663,16 +1665,17 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 - `test_CO133_E1_imagen_invalida_no_registra_tampoco_la_posicion` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO133_la_posicion_fuera_de_rango_se_rechaza` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO133_mover_un_banner_reajusta_a_los_demas` — `apps/core/tests/test_contratos_17_contenido.py`
-- `test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_borra_la_anterior` — `apps/core/tests/test_contratos_17_contenido.py`
+- `test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_la_imagen_anterior` — `apps/core/tests/test_contratos_17_contenido.py`
 
 **`CO-134` · eliminarBanner**
 
-- `test_CO134_eliminar_reajusta_y_conserva_el_orden_relativo` — `apps/core/tests/test_contratos_17_contenido.py`
+- `test_CO134_eliminar_reajusta_conserva_el_orden_relativo_y_la_imagen_en_el_log` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO134_sin_confirmacion_no_hay_eliminacion` — `apps/core/tests/test_contratos_17_contenido.py`
 
 **`CO-135` · publicarContenidoDeFaq**
 
 - `test_CO135_el_markdown_se_publica_sin_html_crudo` — `apps/core/tests/test_contratos_17_contenido.py`
+- `test_CO135_la_faq_guarda_el_contenido_anterior_entero` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
 - `test_CO135_la_vista_previa_no_publica` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO135_publicar_reemplaza_el_contenido_y_queda_en_la_tienda` — `apps/core/tests/test_contratos_17_contenido.py`
 - `test_CO135_vacio_no_publica_sin_confirmacion` — `apps/core/tests/test_contratos_17_contenido.py`
@@ -2149,7 +2152,11 @@ Cada contrato con sus pruebas, por nombre. El nombre dice qué postcondición ve
 
 **`CO-206` · consultarDetalleDeEntradaDeAuditoria**
 
+- `test_CO206_el_cajero_no_ve_el_detalle_por_la_direccion_real` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
+- `test_CO206_el_detalle_muestra_que_se_cambio_y_como_estaba_antes` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
 - `test_CO206_el_detalle_presenta_la_entrada_completa` — `apps/core/tests/test_contratos_16_auditoria.py`
+- `test_CO206_una_entrada_anterior_sin_cambios_se_sigue_viendo_por_su_detalle` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
+- `test_CO206_una_imagen_se_muestra_como_estaba_antes` — `apps/core/tests/test_auditoria_como_estaba_antes.py`
 
 **`CO-207` · consultarParametrosOperacionales**
 

@@ -109,6 +109,7 @@ def confirmar_modificacion(fila, nuevo_pvp, *, actor, ip=None):
                 f"{combinacion(fila)}: {_pesos(anterior)} → {_pesos(nuevo_pvp)}; "
                 f"{actualizados} productos actualizados"
             ),
+            cambios=[(f"precio de {combinacion(fila)}", _pesos(anterior), _pesos(nuevo_pvp))],
         )
     return ResumenDeModificacion(combinacion(fila), anterior, Decimal(nuevo_pvp), actualizados)
 
@@ -229,6 +230,10 @@ def restaurar_precio_calculado(producto, *, actor, ip=None):
                 f"Se restauró el precio calculado: precio {_pesos(anterior)} → "
                 f"{_pesos(editorial.precio)}; precio fijado a mano: no"
             ),
+            cambios=[
+                ("precio", _pesos(anterior), _pesos(editorial.precio)),
+                ("precio fijado a mano", "sí", "no"),
+            ],
         )
     return restauracion
 
@@ -326,6 +331,7 @@ def confirmar_cambio_de_margen(nuevo_margen, *, actor, ip=None):
                 f"{len(recalcular)} productos recalculados; "
                 f"{excluidos} excluidos por precio a mano"
             ),
+            cambios=[("margen global", porcentaje(anterior), porcentaje(nuevo_margen))],
         )
     return ResumenDeMargen(anterior, nuevo_margen, len(recalcular), excluidos)
 

@@ -34,6 +34,12 @@ from apps.core.utils import obtener_ip
 logger = logging.getLogger(__name__)
 
 
+def _canales(por_correo, por_telegram):
+    """Los canales de un aviso como se leen en el registro."""
+    canales = [n for n, si in (("correo", por_correo), ("Telegram", por_telegram)) if si]
+    return " y ".join(canales) or "ninguno"
+
+
 class PerfilMixin(RolRequeridoMixin):
     roles_permitidos = (Usuario.ADMINISTRADOR,)
 
@@ -114,6 +120,12 @@ class CanalesView(PerfilMixin, View):
         vinculado = VinculoTelegram.objects.filter(usuario=usuario).exists()
         todo_por_telegram = request.POST.get("atajo") == "telegram"
         cambios = []
+        registro = []
+        # Plan 16, segunda parte: cómo estaba cada aviso antes de guardar.
+        antes = {
+            p.tipo: (p.por_correo, p.por_telegram)
+            for p in PreferenciaAviso.objects.filter(usuario=usuario)
+        }
         with transaction.atomic():
             for tipo in TIPOS:
                 clave, nombre = tipo.clave, tipo.nombre
@@ -132,16 +144,19 @@ class CanalesView(PerfilMixin, View):
                     tipo=clave,
                     defaults={"por_correo": por_correo, "por_telegram": por_telegram},
                 )
-                canales = [
-                    n for n, si in (("correo", por_correo), ("Telegram", por_telegram)) if si
-                ]
-                cambios.append(f"{nombre}: {' y '.join(canales) or 'ninguno'}")
+                ahora = _canales(por_correo, por_telegram)
+                cambios.append(f"{nombre}: {ahora}")
+                previo = antes.get(clave)
+                anterior = _canales(*previo) if previo else "sin configurar"
+                if anterior != ahora:
+                    registro.append((nombre, anterior, ahora))
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.CANALES_DE_AVISO,
                 actor=usuario,
                 objetivo=usuario,
                 ip=obtener_ip(request),
                 detalle="; ".join(cambios),
+                cambios=registro,
             )
         messages.success(request, "Se guardaron tus avisos.")
         return redirect("avisos:perfil")

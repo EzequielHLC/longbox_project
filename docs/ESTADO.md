@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el **2026-11-13**, del repositorio y no de memoria.
+> **Tipo: Fotografía.** Tomada el **2026-11-17**, del repositorio y no de memoria.
 > Se reemplaza entera. No contiene reglas: si acá aparece una, está mal ubicada. La escala de
 > estados y los umbrales de las siete puertas son reglas y viven en `CLAUDE.md`.
 
@@ -10,6 +10,18 @@ enlazan a éste.
 ---
 
 ## Resumen
+
+Del 2026-11-17: **la auditoría dice cómo estaba antes** ([plan 16, segunda parte](planes/16-auditoria.md),
+aprobado con las recomendaciones; exigencia de la cátedra). Ningún caso de uso cambia de estado:
+
+- **Cada modificación guarda qué se cambió, cómo estaba antes y cómo quedó**, campo por campo, y
+  el detalle de la entrada (`CO-206`) lo presenta en una tabla, con las dos imágenes cuando el
+  valor es una imagen (B-16-005). Las entradas anteriores se siguen viendo por su texto.
+- **Las imágenes reemplazadas o quitadas ya no se borran**: banner, logo, fondo, imagen del
+  ingreso, secciones de la portada e imágenes adicionales del producto. Corrige la nota de
+  `CO-133` y `CO-131` («la imagen anterior no se conserva»): enmienda pendiente en el documento.
+- **Lo que se perdía**: el contenido anterior de la FAQ, los canales de aviso como estaban, la
+  sinopsis completa y la portada del producto. La clave del modelo no entra nunca al log.
 
 Del 2026-11-11: **el escaparate vivo** ([plan 07, novena parte](planes/07-tienda-online.md),
 aprobado con las recomendaciones). Cambia la parte pública; el mostrador no se toca:
@@ -497,7 +509,7 @@ tiene `base-select` el desplegable usa una lista propia (B-00-011, desvío consu
 | --- | --- | --- | --- |
 | `CU-CAJ-CIE` | Verificado | 3 / 3 | `apps/caja`. **Todos sus contratos verificados**: resumen por canal y por medio, un cierre por día (lo posterior va al siguiente, B-14-001), lo de días anteriores sin cerrar entra y se avisa (B-14-002), A1, CSV auditado, y dos cierres a la vez. Plan 14. |
 | `CU-REP-GEN` | Verificado | 2 / 2 | `apps/reportes`. **Todos sus contratos verificados.** Los cinco reportes con su filtro, E1 y E2, y el CSV auditado (B-15-001). |
-| `CU-AUD-CON` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `LogListaView` de a 50 con filtros por actor, rol, acción, entidad y fechas (B-16-001, B-16-002); `LogDetalleView`; exportación CSV en flujo de todo el filtro, auditada. Toda escritura responde 403. |
+| `CU-AUD-CON` | Verificado | 3 / 3 | **Todos sus contratos verificados.** `LogListaView` de a 50 con filtros por actor, rol, acción, entidad y fechas (B-16-001, B-16-002); `LogDetalleView` con la tabla «Qué se cambió · Cómo estaba antes · Cómo quedó» (B-16-005); exportación CSV en flujo de todo el filtro, auditada. Toda escritura responde 403. |
 
 ### `17` Configuración del Sistema
 

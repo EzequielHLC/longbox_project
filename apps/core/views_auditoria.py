@@ -14,6 +14,7 @@ import csv
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
+from django.core.files.storage import default_storage
 from django.http import StreamingHttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -244,15 +245,35 @@ class LogListaView(SoloLecturaMixin, ListView):
 
 
 class LogDetalleView(SoloLecturaMixin, DetailView):
-    """`CO-206`: la entrada completa.
+    """`CO-206`: la entrada completa, con el valor anterior y el nuevo.
 
-    El modelo guarda los valores anterior y nuevo dentro de un único detalle,
-    y se presenta tal como se registró (plan 16, ambigüedad 3).
+    Desde la segunda parte del plan 16 cada modificación guarda, campo por
+    campo, qué se cambió y cómo estaba antes, y se presenta en una tabla; si el
+    valor es una imagen, se muestra la imagen. Las entradas anteriores no tienen
+    esa lista y se presentan por su detalle, tal como se registró.
     """
 
     model = RegistroAuditoria
     template_name = "core/auditoria_detalle.html"
     context_object_name = "entrada"
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["cambios"] = [
+            {**cambio, **_urls_de_imagen(cambio)} for cambio in self.object.cambios or []
+        ]
+        return contexto
+
+
+def _urls_de_imagen(cambio):
+    """La dirección de cada versión de una imagen, si el archivo sigue estando."""
+    if not cambio.get("imagen"):
+        return {}
+    return {
+        f"url_{momento}": default_storage.url(cambio[momento])
+        for momento in ("antes", "despues")
+        if cambio.get(momento) and default_storage.exists(cambio[momento])
+    }
 
 
 class _Eco:

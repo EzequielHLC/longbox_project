@@ -359,7 +359,8 @@ def editar(oferta, datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
             raise TopeRequerido(afectados)
 
         tocados_antes = list(productos_tocados(oferta).values_list("pk", flat=True))
-        cambios = _cambios(antes, datos)
+        pares = _pares(antes, datos)
+        cambios = [f"{nombre}: «{anterior}» → «{nuevo}»" for nombre, anterior, nuevo in pares]
         if not cambios:
             return []
 
@@ -376,13 +377,15 @@ def editar(oferta, datos, *, actor, ip=None, aceptar_tope=False, hoy=None):
             objetivo=oferta,
             ip=ip,
             detalle=f"«{oferta.descripcion}»: " + "; ".join(cambios),
+            cambios=pares,
         )
         tocados = set(tocados_antes) | set(productos_tocados(oferta).values_list("pk", flat=True))
         _actualizar_carritos(Producto.objects.filter(pk__in=tocados))
     return cambios
 
 
-def _cambios(antes, despues):
+def _pares(antes, despues):
+    """`(campo, antes, después)` de lo que cambió, con los valores como se leen."""
     cambios = []
     for campo, nombre in CAMPOS_EDITABLES:
         anterior, nuevo = getattr(antes, campo), getattr(despues, campo)
@@ -398,7 +401,7 @@ def _cambios(antes, despues):
         elif isinstance(anterior, date):
             anterior, nuevo = f"{anterior:%d/%m/%Y}", f"{nuevo:%d/%m/%Y}"
         if anterior != nuevo:
-            cambios.append(f"{nombre}: «{anterior}» → «{nuevo}»")
+            cambios.append((nombre, anterior, nuevo))
     return cambios
 
 

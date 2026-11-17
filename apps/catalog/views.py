@@ -606,6 +606,7 @@ class ParametrosView(CatalogoAdminMixin, View):
                     objetivo=configuracion,
                     ip=obtener_ip(request),
                     detalle=f"{self._nombre(campo)}: {anterior[campo]} → {nuevo}",
+                    cambios=[(self._nombre(campo), anterior[campo], nuevo)],
                 )
 
         if rechazado is not None:
@@ -663,6 +664,11 @@ class ParametrosView(CatalogoAdminMixin, View):
             ]
             if formulario.cleaned_data.get("api_key"):
                 detalles.append("se reemplazó la clave de la API")
+            despues = (
+                configuracion.get_llm_modo_display(),
+                configuracion.llm_url,
+                configuracion.llm_modelo or "el que tenga cargado el servidor",
+            )
 
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
@@ -670,6 +676,12 @@ class ParametrosView(CatalogoAdminMixin, View):
                 objetivo=configuracion,
                 ip=obtener_ip(request),
                 detalle="; ".join(detalles),
+                cambios=_cambios_del_modelo(
+                    ("modo", "dirección", "modelo"),
+                    anterior,
+                    despues,
+                    "clave de la API" if formulario.cleaned_data.get("api_key") else None,
+                ),
             )
 
         messages.success(
@@ -703,12 +715,27 @@ class ParametrosView(CatalogoAdminMixin, View):
             ]
             if formulario.cleaned_data.get("respaldo_api_key"):
                 detalles.append("se reemplazó la clave de la API del respaldo")
+            despues = (
+                configuracion.get_llm_respaldo_modo_display(),
+                configuracion.llm_respaldo_url or "sin respaldo",
+                configuracion.llm_respaldo_modelo or "el que tenga cargado el servidor",
+            )
             RegistroAuditoria.registrar(
                 accion=RegistroAuditoria.PARAMETRO_MODIFICADO,
                 actor=request.user,
                 objetivo=configuracion,
                 ip=obtener_ip(request),
                 detalle="; ".join(detalles),
+                cambios=_cambios_del_modelo(
+                    ("modo del respaldo", "dirección del respaldo", "modelo del respaldo"),
+                    anterior,
+                    despues,
+                    (
+                        "clave de la API del respaldo"
+                        if formulario.cleaned_data.get("respaldo_api_key")
+                        else None
+                    ),
+                ),
             )
         messages.success(request, "Se actualizó el modelo de respaldo.")
         return redirect("catalog:parametros")
@@ -1570,6 +1597,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
     def _guardar(self, form, campos, anterior, antes):
         """El guardado de la edición con su historial, en una transacción."""
         etiquetas_antes = set(anterior.etiquetas.values_list("pk", flat=True))
+        galeria_antes = set(anterior.imagenes.values_list("imagen", flat=True))
         with transaction.atomic():
             producto = form.save()
             # Antes de medir los cambios: «Usar como portada» cambia la portada.
@@ -1589,11 +1617,13 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                 if antes[etiqueta] != leer(producto)
             }
             partes = [cambios.describir(lo_que_cambio)] if lo_que_cambio else []
+            registro = _cambios_del_producto(lo_que_cambio, anterior, producto)
             # B-05-006: el stock decide si está Agotado. Reponer lo vuelve a la venta.
             estado = _estado_por_stock(producto, anterior.stock)
             if estado != producto.estado:
                 nuevo = dict(Producto.ESTADO_CHOICES)[estado]
                 partes.append(f"estado: «{producto.get_estado_display()}» → «{nuevo}»")
+                registro.append(("estado", producto.get_estado_display(), nuevo))
                 Producto.objects.filter(pk=producto.pk).update(estado=estado)
                 producto.estado = estado
             # B-05-020: como la venta, dejarlo en cero abre la pre-venta si hay
@@ -1603,6 +1633,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                 partes.append(
                     "estado: «Agotado» → «Pre-venta», con un pedido al proveedor en camino"
                 )
+                registro.append(("estado", "Agotado", "Pre-venta"))
             restock.al_subir_stock(
                 producto,
                 anterior.stock,
@@ -1611,6 +1642,14 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
             )
             if agregadas or quitadas:
                 partes.append(galeria.describir(agregadas, quitadas))
+            galeria_despues = set(producto.imagenes.values_list("imagen", flat=True))
+            registro += [
+                cambios.imagen("imagen adicional", nombre, "")
+                for nombre in sorted(galeria_antes - galeria_despues)
+            ] + [
+                cambios.imagen("imagen adicional", "", nombre)
+                for nombre in sorted(galeria_despues - galeria_antes)
+            ]
             partes.extend(orden_y_portada)
             # B-01-025: las etiquetas de los grupos «de serie» siguen a la serie entera.
             self.tomos_de_la_serie = 0
@@ -1632,6 +1671,7 @@ class ProductoEdicionView(CatalogoAdminMixin, UpdateView):
                     ip=obtener_ip(self.request),
                     objetivo=producto,
                     detalle=f"{producto.codigo} · " + "; ".join(partes),
+                    cambios=registro,
                 )
         return producto, partes
 
@@ -1695,6 +1735,39 @@ class _Sinopsis(str):
 
 def _sinopsis(producto):
     return _Sinopsis(producto.descripcion or "")
+
+
+def _cambios_del_producto(lo_que_cambio, anterior, producto):
+    """Los cambios de la ficha para el registro, con el valor entero (plan 16, segunda parte).
+
+    El detalle resume la sinopsis en «N caracteres» y la portada en el nombre del
+    archivo; acá va la sinopsis completa y la portada como imagen, para que el
+    log muestre cómo estaba antes.
+    """
+    registro = []
+    for etiqueta, (antes, ahora) in lo_que_cambio.items():
+        if etiqueta == "portada":
+            registro.append(cambios.imagen("portada", anterior.portada.name, producto.portada.name))
+        elif isinstance(antes, _Sinopsis):
+            registro.append((etiqueta, antes.texto, ahora.texto))
+        else:
+            registro.append((etiqueta, antes, ahora))
+    return registro
+
+
+def _cambios_del_modelo(nombres, anterior, despues, clave=None):
+    """Lo que cambió en la configuración del modelo, para el registro (plan 16, segunda parte).
+
+    La clave nunca entra en el log, ni la vieja ni la nueva: sólo que se reemplazó.
+    """
+    cambios = [
+        (nombre, antes, ahora)
+        for nombre, antes, ahora in zip(nombres, anterior, despues, strict=True)
+        if antes != ahora
+    ]
+    if clave:
+        cambios.append((clave, "(oculta)", "reemplazada"))
+    return cambios
 
 
 class ProductoBajaView(CatalogoAdminMixin, DetailView):

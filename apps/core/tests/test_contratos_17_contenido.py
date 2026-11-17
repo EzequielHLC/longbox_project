@@ -216,13 +216,13 @@ def test_CO133_mover_un_banner_reajusta_a_los_demas(client_admin, administrador)
     assert "posición: 3 → 1" in registro.detalle
 
 
-def test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_borra_la_anterior(
+def test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_la_imagen_anterior(
     client_admin, media_temporal, django_capture_on_commit_callbacks
 ):
     a, b = cargar(client_admin, 2)
     vieja = b.imagen.name
 
-    # El archivo viejo se borra cuando la transacción confirma.
+    # B-16-005: el archivo viejo se conserva, también después de confirmar.
     with django_capture_on_commit_callbacks(execute=True):
         client_admin.post(
             reverse("core:banner_editar", args=[b.pk]),
@@ -232,7 +232,11 @@ def test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_borra_la_anterior(
     b.refresh_from_db()
     assert b.posicion == 1
     assert b.imagen.name != vieja
-    assert not (media_temporal / vieja).exists()
+    assert (media_temporal / vieja).exists()
+    registro = auditorias(RegistroAuditoria.MODIFICACION_BANNER).get()
+    assert registro.cambios == [
+        {"campo": "imagen", "antes": vieja, "despues": b.imagen.name, "imagen": True}
+    ]
 
 
 def test_CO133_E1_imagen_invalida_no_registra_tampoco_la_posicion(client_admin):
@@ -256,7 +260,7 @@ def test_CO133_la_posicion_fuera_de_rango_se_rechaza(client_admin):
     assert respuesta.context["form"].errors["numero"]
 
 
-def test_CO134_eliminar_reajusta_y_conserva_el_orden_relativo(
+def test_CO134_eliminar_reajusta_conserva_el_orden_relativo_y_la_imagen_en_el_log(
     client_admin, media_temporal, django_capture_on_commit_callbacks
 ):
     a, b, c = cargar(client_admin, 3)
@@ -266,8 +270,10 @@ def test_CO134_eliminar_reajusta_y_conserva_el_orden_relativo(
         client_admin.post(reverse("core:banner_baja", args=[b.pk]))
 
     assert list(Banner.objects.values_list("pk", "posicion")) == [(a.pk, 0), (c.pk, 1)]
-    assert not (media_temporal / archivo).exists()
-    assert auditorias(RegistroAuditoria.BAJA_BANNER).count() == 1
+    # B-16-005: lo que mostraba queda en el log, con su archivo.
+    assert (media_temporal / archivo).exists()
+    registro = auditorias(RegistroAuditoria.BAJA_BANNER).get()
+    assert {"campo": "imagen", "antes": archivo, "despues": "", "imagen": True} in registro.cambios
 
 
 def test_CO134_sin_confirmacion_no_hay_eliminacion(client_admin):

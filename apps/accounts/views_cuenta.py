@@ -296,8 +296,7 @@ class DatosView(ClienteMixin, View):
         with transaction.atomic():
             usuario = formulario.save()
             cambios = [
-                f"{Usuario._meta.get_field(campo).verbose_name}: "
-                f"«{antes[campo]}» → «{getattr(usuario, campo)}»"
+                (Usuario._meta.get_field(campo).verbose_name, antes[campo], getattr(usuario, campo))
                 for campo in campos
                 if antes[campo] != getattr(usuario, campo)
             ]
@@ -307,7 +306,7 @@ class DatosView(ClienteMixin, View):
                     actor=usuario,
                     objetivo=usuario,
                     ip=obtener_ip(request),
-                    detalle="; ".join(cambios),
+                    cambios=cambios,
                 )
         if cambios:
             messages.success(request, "Tus datos quedaron actualizados.")
@@ -508,6 +507,7 @@ class ConfirmarCorreoView(View):
                     objetivo=usuario,
                     ip=obtener_ip(request),
                     detalle=f"{anterior} → {usuario.email}",
+                    cambios=[("correo", anterior, usuario.email)],
                 )
         except IntegrityError:
             # Otra cuenta tomó ese correo entre el pedido y la confirmación (I-10).

@@ -74,8 +74,8 @@ def procesar(archivo, *, lado_mayor=LADO_MAYOR_POR_DEFECTO, tamano_maximo=TAMANO
 def borrar(campo):
     """Saca del almacenamiento el archivo de un campo de imagen, si tiene uno.
 
-    «La imagen anterior no se conserva» (`CO-133`): reemplazar o eliminar un
-    banner, un logo o un fondo borra el archivo, no sólo la referencia.
+    Ya no se usa al reemplazar ni al eliminar un banner, un logo o un fondo: desde
+    B-16-005 la imagen anterior se conserva para que el log de auditoría la muestre.
     """
     if campo and campo.name:
         campo.storage.delete(campo.name)

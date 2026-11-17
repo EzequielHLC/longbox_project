@@ -41,6 +41,13 @@ for modelo in apps.get_models():
         for nombre in modelo.objects.exclude(**{campo: ''}).values_list(campo, flat=True):
             if nombre and (raiz / nombre).is_file():
                 nombres.add(Path(nombre).as_posix())
+# Las imágenes que el log de auditoría muestra como estaban antes (B-16-005).
+from apps.core.models import RegistroAuditoria
+for lista in RegistroAuditoria.objects.exclude(cambios=[]).values_list('cambios', flat=True):
+    for cambio in lista:
+        for nombre in (cambio.get('antes'), cambio.get('despues')) if cambio.get('imagen') else ():
+            if nombre and (raiz / nombre).is_file():
+                nombres.add(Path(nombre).as_posix())
 Path(os.environ['LISTA']).write_bytes(b'\0'.join(n.encode() for n in sorted(nombres)))
 print(len(nombres), 'archivos de media/')
 "

@@ -2,9 +2,10 @@
 {% comment %}
 CU-AUD-CON paso 5 — el detalle de una entrada (CO-206).
 
-El modelo guarda los valores anterior y nuevo dentro del detalle, y se presenta
-tal como se registró: separarlos con un análisis de texto sería interpretar lo
-que el log dice, y el log no se interpreta.
+Desde la segunda parte del plan 16 una modificación guarda, campo por campo, qué
+se cambió y cómo estaba antes, y se presenta en una tabla. Las entradas
+anteriores no tienen esa lista: se presentan por su detalle, tal como se
+registró, sin separarlo con un análisis de texto.
 {% endcomment %}
 
 {% block titulo %}Entrada de auditoría · Longbox{% endblock %}
@@ -30,4 +31,29 @@ que el log dice, y el log no se interpreta.
   <dt>Dirección IP</dt><dd class="datos">{{ entrada.ip|default:"—" }}</dd>
   <dt>Detalle</dt><dd class="cortar-palabras">{{ entrada.detalle|default:"—"|linebreaksbr }}</dd>
 </dl>
+
+{% if cambios %}
+  <h2 class="titulo-3">Qué se cambió</h2>
+  <div class="tabla-desplazable">
+    <table class="tabla tabla-de-cambios">
+      <thead>
+        <tr><th>Qué se cambió</th><th>Cómo estaba antes</th><th>Cómo quedó</th></tr>
+      </thead>
+      <tbody>
+        {% for cambio in cambios %}
+          <tr>
+            <td><strong>{{ cambio.campo|capfirst }}</strong></td>
+            {% if cambio.imagen %}
+              <td data-rotulo="Cómo estaba antes">{% if cambio.url_antes %}<a href="{{ cambio.url_antes }}" target="_blank" rel="noopener"><img class="miniatura-banner" src="{{ cambio.url_antes }}" alt="{{ cambio.campo|capfirst }}, como estaba antes" loading="lazy"></a>{% elif cambio.antes %}<span class="secundario">El archivo ya no está</span>{% else %}<span class="secundario">Sin imagen</span>{% endif %}</td>
+              <td data-rotulo="Cómo quedó">{% if cambio.url_despues %}<a href="{{ cambio.url_despues }}" target="_blank" rel="noopener"><img class="miniatura-banner" src="{{ cambio.url_despues }}" alt="{{ cambio.campo|capfirst }}, como quedó" loading="lazy"></a>{% elif cambio.despues %}<span class="secundario">El archivo ya no está</span>{% else %}<span class="secundario">Sin imagen</span>{% endif %}</td>
+            {% else %}
+              <td class="cortar-palabras" data-rotulo="Cómo estaba antes">{% if cambio.antes %}{{ cambio.antes|linebreaksbr }}{% else %}<span class="secundario">Vacío</span>{% endif %}</td>
+              <td class="cortar-palabras" data-rotulo="Cómo quedó">{% if cambio.despues %}{{ cambio.despues|linebreaksbr }}{% else %}<span class="secundario">Vacío</span>{% endif %}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
 {% endblock %}

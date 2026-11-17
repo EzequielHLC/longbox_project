@@ -133,7 +133,7 @@ def test_la_edicion_agrega_imagenes_procesadas_y_las_registra(client_admin):
     assert "imágenes adicionales: 2 agregadas" in registro.detalle
 
 
-def test_quitar_una_imagen_reordena_y_borra_el_archivo(
+def test_quitar_una_imagen_reordena_y_conserva_el_archivo_para_el_log(
     client_admin, media_temporal, django_capture_on_commit_callbacks
 ):
     producto = ProductoFactory()
@@ -145,7 +145,14 @@ def test_quitar_una_imagen_reordena_y_borra_el_archivo(
         editar(client_admin, producto, quitar_imagenes=[str(primera.pk)])
 
     assert list(producto.imagenes.values_list("pk", "posicion")) == [(segunda.pk, 0)]
-    assert not (media_temporal / archivo).exists()
+    # B-16-005: el archivo se conserva y el log lo muestra como estaba antes.
+    assert (media_temporal / archivo).exists()
+    registro = RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.MODIFICACION_PRODUCTO
+    ).first()
+    assert {"campo": "imagen adicional", "antes": archivo, "despues": "", "imagen": True} in (
+        registro.cambios
+    )
 
 
 def test_no_se_pasan_de_ocho_imagenes(client_admin):

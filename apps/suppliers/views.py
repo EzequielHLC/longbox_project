@@ -251,6 +251,7 @@ class ProveedorEdicionView(ProveedoresMixin, UpdateView):
                     objetivo_email=proveedor.correo_comercial,
                     ip=obtener_ip(self.request),
                     detalle=services.describir_cambios(cambios),
+                    cambios=cambios,
                 )
 
         self.object = proveedor
