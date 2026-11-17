@@ -1,1 +1,4 @@
 *.bat text eol=crlf
+# Los guiones de shell corren en la VM (Linux): siempre con fin de línea LF,
+# aunque core.autocrlf los convierta en Windows.
+*.sh text eol=lf
