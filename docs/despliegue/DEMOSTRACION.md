@@ -394,6 +394,22 @@ base anterior. Para volver: `DB_NAME=longbox_db` en el `.env` y `media/` desde e
 
 ## Última verificación
 
+> **Fotografía del 2026-11-17, ruta 3: la base limpia para la presentación y la auditoría con lo anterior.**
+
+- **La base local se limpió** antes de subirla, con un respaldo previo en
+  `respaldos/antes-de-limpiar-20261117/`. Salieron los 27 pedidos de prueba con lo que colgaba
+  de ellos (pagos, cobros, carritos, puntos, 4 devoluciones, stock en local, 3 cierres de caja),
+  la propuesta de restock, los 40 pedidos a proveedor, los 7 correos ya procesados o descartados
+  con sus borradores y las dos cuentas de cliente extra; lo vendido (41 unidades) volvió al stock.
+  Quedan el catálogo, el proveedor, la identidad, los parámetros, las 12 secciones del escaparate,
+  4 ofertas, 3 banners, la FAQ, los 3 correos pendientes de la demostración y las tres cuentas,
+  con `cliente@correo.com` reactivada. El registro de auditoría no se tocó: es inmutable.
+- **Se subió con `--con-base`** (`fec50ed`, `c99d623`): la base de la VM es ésa, con `core.0055`.
+  La primera subida falló antes de tocar la VM porque `instalar_en_vm.sh` llegaba con CRLF;
+  `.gitattributes` fija ahora los `.sh` en LF.
+- **Las contraseñas del Administrador y del Cajero se cambiaron** en la VM, por la entrada
+  estándar. `cliente@correo.com` conserva la de siempre.
+
 > **Fotografía del 2026-11-07, ruta 3: «Por llegar», el modelo de respaldo y MercadoPago.**
 
 Se subió sólo el código (`subir_a_vm.sh`, sin `--con-base`): aplicaron `avisos.0004` y `core.0050`, y
