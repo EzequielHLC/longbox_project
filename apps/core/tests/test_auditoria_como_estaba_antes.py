@@ -19,6 +19,7 @@ from PIL import Image
 from apps.catalog.views import _cambios_del_modelo
 from apps.core import cambios, contenido
 from apps.core.models import Banner, ContenidoFAQ, IdentidadVisual, RegistroAuditoria
+from apps.core.views_auditoria import reemplazos_del_detalle
 
 pytestmark = pytest.mark.django_db
 
@@ -97,21 +98,62 @@ def test_CO206_una_imagen_se_muestra_como_estaba_antes(client_admin, media_tempo
     assert (media_temporal / vieja).exists()
 
 
-def test_CO206_una_entrada_anterior_sin_cambios_se_sigue_viendo_por_su_detalle(
+def test_CO206_una_entrada_anterior_muestra_sus_reemplazos_en_tabla_sin_reescribirse(
     client_admin, administrador
 ):
-    """Postcondición negativa: el log es inmutable y las entradas viejas no se reescriben."""
+    """B-16-006. Postcondición negativa: el log es inmutable y la entrada vieja no cambia."""
+    texto = "Editorial «Ivrea»: nombre: «Ivra» → «Ivrea»; activa: «no» → «sí»"
     registro = RegistroAuditoria.registrar(
-        accion=RegistroAuditoria.MODIFICACION_CATALOGO,
-        actor=administrador,
-        detalle="Editorial «Ivrea»: nombre: «Ivra» → «Ivrea»",
+        accion=RegistroAuditoria.MODIFICACION_CATALOGO, actor=administrador, detalle=texto
     )
 
     pagina = detalle(client_admin, registro)
 
-    assert registro.cambios == []
-    assert "«Ivra» → «Ivrea»" in pagina
+    registro.refresh_from_db()
+    assert registro.cambios == [] and registro.detalle == texto
+    assert "Leído del detalle" in pagina
+    assert "<td><strong>Nombre</strong></td>" in pagina
+    assert 'data-rotulo="Cómo estaba antes">Ivra</td>' in pagina
+    assert 'data-rotulo="Cómo quedó">sí</td>' in pagina
+
+
+def test_CO206_un_texto_sin_reemplazos_claros_no_inventa_una_tabla(client_admin, administrador):
+    registro = RegistroAuditoria.registrar(
+        accion=RegistroAuditoria.CONFIRMACION_INGRESO,
+        actor=administrador,
+        detalle="Tokyo #6: llegaron 30 unidad(es), cubren 1 reserva(s). Pre-venta → Activo.",
+    )
+
+    pagina = detalle(client_admin, registro)
+
+    assert "Pre-venta → Activo" in pagina
     assert "Cómo estaba antes" not in pagina
+
+
+@pytest.mark.parametrize(
+    ("accion", "texto", "esperado"),
+    [
+        (
+            RegistroAuditoria.PARAMETRO_MODIFICADO,
+            "pasarela de pago: Pasarela de prueba → MercadoPago",
+            [("pasarela de pago", "Pasarela de prueba", "MercadoPago")],
+        ),
+        (
+            RegistroAuditoria.BAJA_USUARIO,
+            "estado: 'activo' → 'inactivo'; cuenta de cliente; sesiones cerradas",
+            [("estado", "activo", "inactivo")],
+        ),
+        (
+            RegistroAuditoria.MODIFICACION_PRODUCTO,
+            "N-1 · etiquetas: «A: B, C» → «A: B»; precio: «$100» → «$120»",
+            [("etiquetas", "A: B, C", "A: B"), ("precio", "$100", "$120")],
+        ),
+    ],
+)
+def test_los_reemplazos_de_las_entradas_viejas_se_leen_del_detalle(accion, texto, esperado):
+    leidos = reemplazos_del_detalle(accion, texto)
+
+    assert [(c["campo"], c["antes"], c["despues"]) for c in leidos] == esperado
 
 
 def test_CO206_el_cajero_no_ve_el_detalle_por_la_direccion_real(client, cajero, administrador):

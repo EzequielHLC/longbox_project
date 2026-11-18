@@ -10,6 +10,7 @@ Administrador (comentario de la ficha), antes de tocar nada.
 """
 
 import csv
+import re
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -259,10 +260,65 @@ class LogDetalleView(SoloLecturaMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        contexto["cambios"] = [
-            {**cambio, **_urls_de_imagen(cambio)} for cambio in self.object.cambios or []
-        ]
+        cambios = self.object.cambios or []
+        # Una entrada anterior a la lista estructurada: sus reemplazos se leen del
+        # detalle sólo para mostrarlos en la tabla. La entrada no se toca.
+        contexto["cambios_leidos"] = not cambios
+        if not cambios:
+            cambios = reemplazos_del_detalle(self.object.accion, self.object.detalle)
+        contexto["cambios"] = [{**cambio, **_urls_de_imagen(cambio)} for cambio in cambios]
         return contexto
+
+
+# Lo que el sistema escribió siempre igual: «campo: «antes» → «después»».
+_REEMPLAZO_CITADO = re.compile(
+    r"(?:^|(?<=[;·:] ))(?P<campo>[^:;·«»\n]+?): «(?P<antes>.*?)» → «(?P<despues>.*?)»", re.S
+)
+# Sin comillas («margen global: 40 % → 45 %»): sólo en las acciones que modifican,
+# un reemplazo por tramo y sin otra oración en el medio.
+_REEMPLAZO_SIMPLE = re.compile(r"^(?P<campo>[^:«»]+): (?P<antes>[^→«»]+?) → (?P<despues>[^→«»]+)$")
+_ACCIONES_QUE_MODIFICAN = {
+    RegistroAuditoria.MODIFICACION_USUARIO,
+    RegistroAuditoria.MODIFICACION_DATOS_CLIENTE,
+    RegistroAuditoria.MODIFICACION_PRODUCTO,
+    RegistroAuditoria.PARAMETRO_MODIFICADO,
+    RegistroAuditoria.MODIFICACION_PROVEEDOR,
+    RegistroAuditoria.MODIFICACION_CATALOGO,
+    RegistroAuditoria.MODIFICACION_PRECIO_REFERENCIA,
+    RegistroAuditoria.MODIFICACION_IDENTIDAD_VISUAL,
+    RegistroAuditoria.MODIFICACION_BANNER,
+    RegistroAuditoria.MODIFICACION_OFERTA,
+    RegistroAuditoria.AVANCE_ESTADO_PEDIDO,
+    RegistroAuditoria.BAJA_USUARIO,
+}
+
+
+def reemplazos_del_detalle(accion, detalle):
+    """Los reemplazos «antes → después» que dice el texto de una entrada vieja.
+
+    Sólo para presentarlos: lo que no tiene una de las dos formas que el sistema
+    escribió se queda en el detalle, y la tabla nunca dice algo que el texto no diga.
+    """
+    if not detalle:
+        return []
+    citados = [
+        {"campo": m["campo"].strip(), "antes": m["antes"], "despues": m["despues"]}
+        for m in _REEMPLAZO_CITADO.finditer(detalle)
+    ]
+    if citados or accion not in _ACCIONES_QUE_MODIFICAN:
+        return citados
+    simples = []
+    for tramo in detalle.split("; "):
+        coincide = _REEMPLAZO_SIMPLE.match(tramo.strip().rstrip("."))
+        if coincide:
+            simples.append(
+                {
+                    "campo": coincide["campo"].strip(),
+                    "antes": coincide["antes"].strip().strip("'"),
+                    "despues": coincide["despues"].strip().strip("'"),
+                }
+            )
+    return simples
 
 
 def _urls_de_imagen(cambio):

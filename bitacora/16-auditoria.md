@@ -158,3 +158,30 @@ salvo la eliminación de un banner, que ahora deja su imagen en el log.
   valor nuevo).
 - `CU-AUD-CON` paso 5: la presentación en tabla, con las imágenes.
 - El plan 16, ambigüedad 3 de la primera parte, queda superada por esta parte.
+
+---
+
+### B-16-006 · Las entradas viejas muestran sus reemplazos en la tabla, leídos del detalle
+
+**Tipo:** Agregado · **Fecha:** 2026-11-17 · **Alcance:** `CO-206`
+**Estado:** Resuelta — pedido del responsable del 2026-11-17
+
+**Qué apareció.**
+Las entradas anteriores a B-16-005 no tienen la lista de cambios, y sus reemplazos se leían en una
+sola línea («nombre: «Ivra» → «Ivrea»; activa: «no» → «sí»»), difícil de seguir cuando cambian
+varios campos.
+
+**Qué dice la especificación.**
+Nada sobre la forma de presentarlos. El plan 16, ambigüedad 3 de la primera parte, había decidido
+no separar el detalle con un análisis de texto.
+
+**Qué se hizo.**
+El detalle de una entrada vieja arma la misma tabla leyendo los reemplazos de su texto, con un
+aviso de que salen del detalle. Se reconocen sólo las dos formas que el sistema escribió:
+`campo: «antes» → «después»` en cualquier acción, y `campo: antes → después` en las acciones que
+modifican. Lo que no tiene esa forma queda sólo en el texto, para que la tabla nunca diga algo que
+la entrada no dice. La entrada no se modifica. Sobre la base de la presentación, las 71
+modificaciones viejas con un reemplazo se leen enteras.
+
+**Qué habría que cambiar.**
+Nada en el documento: es presentación.

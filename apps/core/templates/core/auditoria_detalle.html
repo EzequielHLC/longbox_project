@@ -4,8 +4,8 @@ CU-AUD-CON paso 5 — el detalle de una entrada (CO-206).
 
 Desde la segunda parte del plan 16 una modificación guarda, campo por campo, qué
 se cambió y cómo estaba antes, y se presenta en una tabla. Las entradas
-anteriores no tienen esa lista: se presentan por su detalle, tal como se
-registró, sin separarlo con un análisis de texto.
+anteriores no tienen esa lista: sus reemplazos se leen del detalle sólo para la
+tabla (B-16-006), y la entrada no se toca.
 {% endcomment %}
 
 {% block titulo %}Entrada de auditoría · Longbox{% endblock %}
@@ -34,6 +34,7 @@ registró, sin separarlo con un análisis de texto.
 
 {% if cambios %}
   <h2 class="titulo-3">Qué se cambió</h2>
+  {% if cambios_leidos %}<p class="texto-chico secundario">Leído del detalle: la entrada es anterior al registro campo por campo.</p>{% endif %}
   <div class="tabla-desplazable">
     <table class="tabla tabla-de-cambios">
       <thead>
