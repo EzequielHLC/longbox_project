@@ -300,8 +300,7 @@ código sin terminar.
 
 | Enmienda pendiente | De dónde sale |
 | --- | --- |
-| `CP-AUD-CON-02` entre los casos de R-07 en la reevaluación de riesgos (6.5) | B-16-005 |
-| La imagen anterior se conserva y el log la presenta (`CO-131`, `CO-133`, `CO-134`); la FAQ guarda el contenido anterior (`CO-135`, `CO-136`); `RegistroAuditoria` gana «cambios»; `CU-AUD-CON` paso 5 en tabla | B-16-005 |
+| `RegistroAuditoria` gana «cambios» en la figura del modelo de dominio (la grafica el responsable). El resto de B-16-005 se aplicó en la versión 15 | B-16-005 |
 | Las tareas de consola quedan fuera del modelo de casos de uso | R-01-002 |
 | Los cinco catálogos no distinguen mayúsculas (Área 2 dice «único» a secas en `Formato` y `GrupoEtiqueta`) | R-02-002 |
 | `CO-120`: el correo no pertenece a ninguna cuenta en cualquier estado | R-13-004 |
