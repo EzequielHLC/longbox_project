@@ -33,7 +33,7 @@ los scripts en orden y guarda la salida de cada uno.
 | R-14 · El modelo de lenguaje no está disponible | 1,80 | CP-CFG-LLM-01, CP-PRV-COL-01 |
 | R-13 · El modelo de lenguaje responde mal | 0,80 | CP-SIS-R11-01, CP-ALT-REV-01 |
 | R-15 · Procesos periódicos | 1,80 | CP-PVP-VEN-01 |
-| R-07 · Acceso no autorizado | Crítico | CP-SIS-R03-01, CP-AUT-INI-01, CP-AUT-REC-01, CP-CAT-INV-01, CP-SIS-R03-02, CP-TDA-CRM-01, CP-CFG-BNA-01, CP-SIS-R04-01, CP-USR-MOD-01, CP-USR-BAJ-01, CP-AUD-CON-01 |
+| R-07 · Acceso no autorizado | Crítico | CP-SIS-R03-01, CP-AUT-INI-01, CP-AUT-REC-01, CP-CAT-INV-01, CP-SIS-R03-02, CP-TDA-CRM-01, CP-CFG-BNA-01, CP-SIS-R04-01, CP-USR-MOD-01, CP-USR-BAJ-01, CP-AUD-CON-01, CP-AUD-CON-02 |
 | R-08 · Pérdida de datos | Crítico | CP-SIS-R12-01, CP-SIS-R12-02, CP-ALT-NAC-01 |
 | Carga y volumen | `RNF-02`, `RNF-07` | CP-SIS-R02-01, CP-SIS-R07-01, CP-SIS-R02-02 |
 
@@ -349,6 +349,26 @@ los scripts en orden y guarda la salida de cada uno.
 - **Resultado esperado:** Los tres se rechazan con «El log de auditoría es inmutable».
 - **Postcondiciones:** La entrada sigue idéntica. Las entradas nuevas se siguen registrando.
 - **Se ejecuta con:** `apps/core/tests/test_inmutabilidad_auditoria_en_la_base.py`.
+
+### CP-AUD-CON-02 · El registro dice qué se cambió y cómo estaba antes, también una imagen
+
+- **Trazabilidad:** R-07, R-08 · `CU-AUD-CON`, paso 5 · `CO-206`, `CO-133`, `CO-131`, `CO-135` ·
+  `RNF-09` · B-16-005, B-16-006.
+- **Precondiciones:** Sesión de Administrador. Hay un banner cargado y la FAQ tiene contenido.
+- **Datos de entrada:**
+  - a) el margen global pasa de 40 % a 45 %;
+  - b) se reemplaza la imagen del banner;
+  - c) se publica una FAQ distinta;
+  - d) una entrada anterior a la lista de cambios, cuyo detalle dice
+    «nombre: «Ivra» → «Ivrea»; activa: «no» → «sí»».
+- **Pasos:** 1. Se hace cada modificación. 2. Se abre el detalle de cada entrada.
+- **Resultado esperado:** El detalle presenta una tabla «Qué se cambió · Cómo estaba antes · Cómo
+  quedó»: 40 % y 45 % en a); la imagen anterior y la nueva en b); el contenido anterior completo en
+  c). En d), la misma tabla, leída del detalle y con el aviso de que sale de él. El Cajero no
+  puede abrir el detalle.
+- **Postcondiciones:** El archivo de la imagen anterior sigue existiendo. La entrada d) no cambió:
+  ni su detalle ni su lista de cambios.
+- **Se ejecuta con:** `apps/core/tests/test_auditoria_como_estaba_antes.py`.
 
 ---
 

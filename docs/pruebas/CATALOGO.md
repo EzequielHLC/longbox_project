@@ -1,4 +1,4 @@
-> **Tipo: Fotografía.** Tomada el 2026-11-16 de una corrida real de la suite.
+> **Tipo: Fotografía.** Tomada el 2026-11-17 de una corrida real de la suite.
 > **Generado por `scripts/generar_catalogo.py`.** No lo edites: la próxima corrida lo pisa.
 
 # Catálogo de pruebas
@@ -11,14 +11,14 @@ qué casos de prueba verifican, en [`CASOS_DE_PRUEBA.md`](CASOS_DE_PRUEBA.md).
 
 | | |
 | --- | ---: |
-| Archivos de prueba | 184 |
-| Funciones de prueba | 3257 |
-| Casos, contando cada valor de `parametrize` | 3720 |
-| Pasan | 3257 |
+| Archivos de prueba | 185 |
+| Funciones de prueba | 3272 |
+| Casos, contando cada valor de `parametrize` | 3737 |
+| Pasan | 3272 |
 | Fallan | 0 |
 | Omitidas | 0 |
 | No corrieron | 0 |
-| Duración de la corrida | 253 s |
+| Duración de la corrida | 245 s |
 | Scripts de resistencia en `scripts/demo/` | 24 |
 
 ---
@@ -937,6 +937,7 @@ Módulo 19 · el perfil, los canales de aviso y el despachador (plan 00 de Teleg
 | `test_el_enlace_pendiente_trae_su_qr` | El enlace pendiente trae su qr | 1 | Pasa |
 | `test_sin_el_nombre_del_bot_no_hay_qr` | Sin el nombre del bot no hay qr | 1 | Pasa |
 | `test_CO254_consultar_el_perfil_no_cambia_nada` | CO254 consultar el perfil no cambia nada | 1 | Pasa |
+| `test_CO255_los_canales_registran_como_estaban_antes` | Plan 16, segunda parte: no sólo cómo quedaron, también cómo estaban. | 1 | Pasa |
 
 ### `test_refresh.py`
 
@@ -1894,7 +1895,7 @@ Historial del producto, galería de imágenes, medidas de los formatos, alta al 
 | `test_una_sinopsis_distinta_del_mismo_largo_tambien_se_registra` | Una sinopsis distinta del mismo largo tambien se registra | 1 | Pasa |
 | `test_el_detalle_usa_comillas_angulares` | El detalle usa comillas angulares | 1 | Pasa |
 | `test_la_edicion_agrega_imagenes_procesadas_y_las_registra` | La edicion agrega imagenes procesadas y las registra | 1 | Pasa |
-| `test_quitar_una_imagen_reordena_y_borra_el_archivo` | Quitar una imagen reordena y borra el archivo | 1 | Pasa |
+| `test_quitar_una_imagen_reordena_y_conserva_el_archivo_para_el_log` | Quitar una imagen reordena y conserva el archivo para el log | 1 | Pasa |
 | `test_no_se_pasan_de_ocho_imagenes` | No se pasan de ocho imagenes | 1 | Pasa |
 | `test_una_imagen_invalida_se_nombra_y_no_guarda_nada` | Una imagen invalida se nombra y no guarda nada | 1 | Pasa |
 | `test_el_alta_no_editorial_carga_imagenes_y_la_ficha_las_muestra` | El alta no editorial carga imagenes y la ficha las muestra | 1 | Pasa |
@@ -2293,6 +2294,28 @@ El registro de auditoría: lo que queda escrito y lo que no se puede reescribir.
 | `test_una_entrada_de_auditoria_no_se_puede_borrar` | Una entrada de auditoria no se puede borrar | 1 | Pasa |
 | `test_la_traza_sobrevive_a_la_baja_del_usuario` | La traza sobrevive a la baja del usuario | 1 | Pasa |
 
+### `test_auditoria_como_estaba_antes.py`
+
+Plan 16, segunda parte: toda modificación deja qué se cambió y cómo estaba antes.
+
+**Casos de prueba que ejecuta:** CP-AUD-CON-02.
+
+| Prueba | Qué hace | Casos | Resultado |
+| --- | --- | ---: | --- |
+| `test_CO206_el_detalle_muestra_que_se_cambio_y_como_estaba_antes` | CO206 el detalle muestra que se cambio y como estaba antes | 1 | Pasa |
+| `test_CO206_una_imagen_se_muestra_como_estaba_antes` | CO206 una imagen se muestra como estaba antes | 1 | Pasa |
+| `test_CO206_una_entrada_anterior_muestra_sus_reemplazos_en_tabla_sin_reescribirse` | B-16-006. | 1 | Pasa |
+| `test_CO206_un_texto_sin_reemplazos_claros_no_inventa_una_tabla` | CO206 un texto sin reemplazos claros no inventa una tabla | 1 | Pasa |
+| `test_los_reemplazos_de_las_entradas_viejas_se_leen_del_detalle` | Los reemplazos de las entradas viejas se leen del detalle | 3 | Pasa |
+| `test_CO206_el_cajero_no_ve_el_detalle_por_la_direccion_real` | CO206 el cajero no ve el detalle por la direccion real | 1 | Pasa |
+| `test_CO135_la_faq_guarda_el_contenido_anterior_entero` | CO135 la faq guarda el contenido anterior entero | 1 | Pasa |
+| `test_CO131_reemplazar_el_logo_conserva_el_anterior_en_el_log` | CO131 reemplazar el logo conserva el anterior en el log | 1 | Pasa |
+| `test_CO131_un_color_cambiado_queda_con_su_valor_anterior` | CO131 un color cambiado queda con su valor anterior | 1 | Pasa |
+| `test_la_clave_del_modelo_nunca_entra_en_el_log` | La clave del modelo nunca entra en el log | 1 | Pasa |
+| `test_los_valores_se_guardan_como_texto` | Los valores se guardan como texto | 1 | Pasa |
+| `test_toda_modificacion_registra_como_estaba_antes` | Toda modificacion registra como estaba antes | 1 | Pasa |
+| `test_el_recorrido_encuentra_los_sitios_que_modifican` | Que la prueba anterior no pase por no encontrar nada. | 1 | Pasa |
+
 ### `test_capa_carga.py`
 
 La capa de carga entre pantallas (plan 00 de tope de reservas y errores, C).
@@ -2419,10 +2442,10 @@ Pruebas de contrato del módulo 17 · contenido de la tienda.
 | `test_CO132_E1_una_imagen_invalida_no_agrega_nada` | CO132 E1 una imagen invalida no agrega nada | 1 | Pasa |
 | `test_CO209_consultar_banners_en_orden_con_la_vista_previa` | CO209 consultar banners en orden con la vista previa | 1 | Pasa |
 | `test_CO133_mover_un_banner_reajusta_a_los_demas` | CO133 mover un banner reajusta a los demas | 1 | Pasa |
-| `test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_borra_la_anterior` | CO133 reemplazar la imagen conserva la posicion y borra la anterior | 1 | Pasa |
+| `test_CO133_reemplazar_la_imagen_conserva_la_posicion_y_la_imagen_anterior` | CO133 reemplazar la imagen conserva la posicion y la imagen anterior | 1 | Pasa |
 | `test_CO133_E1_imagen_invalida_no_registra_tampoco_la_posicion` | CO133 E1 imagen invalida no registra tampoco la posicion | 1 | Pasa |
 | `test_CO133_la_posicion_fuera_de_rango_se_rechaza` | CO133 la posicion fuera de rango se rechaza | 1 | Pasa |
-| `test_CO134_eliminar_reajusta_y_conserva_el_orden_relativo` | CO134 eliminar reajusta y conserva el orden relativo | 1 | Pasa |
+| `test_CO134_eliminar_reajusta_conserva_el_orden_relativo_y_la_imagen_en_el_log` | CO134 eliminar reajusta conserva el orden relativo y la imagen en el log | 1 | Pasa |
 | `test_CO134_sin_confirmacion_no_hay_eliminacion` | CU-CFG-BNB A1: abrir la confirmación y volver. | 1 | Pasa |
 | `test_el_carrusel_tiene_anterior_siguiente_y_pausar` | `identidad_visual.md`: un contenido que cambia solo debe poder detenerse. | 1 | Pasa |
 | `test_CO208_consultar_identidad_presenta_los_valores_actuales` | CO208 consultar identidad presenta los valores actuales | 1 | Pasa |
@@ -2838,6 +2861,7 @@ Las secciones de la portada (`CU-CFG-SEC`, `CU-TDA-POR`; plan 07, novena parte).
 | `test_la_tienda_trae_el_telon_y_apaga_la_transicion_nativa` | El barrido en negro no depende de la transición del navegador (B-07-055). | 1 | Pasa |
 | `test_la_ficha_es_un_expediente_con_el_sello_del_estado` | La ficha es un expediente con el sello del estado | 1 | Pasa |
 | `test_la_ficha_avisa_cuando_no_se_pueden_agregar_mas_unidades` | Pedido del responsable (2026-11-11): el «+» de la ficha dice por qué no sube. | 1 | Pasa |
+| `test_CO253_cambiar_la_imagen_de_una_seccion_registra_la_anterior` | Plan 16, segunda parte: el log dice qué imagen tenía antes (B-16-005). | 1 | Pasa |
 
 ### `test_segundo_plano.py`
 

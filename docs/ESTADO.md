@@ -320,8 +320,10 @@ tener suscriptores (B-05-001): su parcialidad viene de otras operaciones.
 | Pendientes | 0 |
 | Bloqueados | 0 |
 
-Contratos de operación especificados: **219**. Con prueba y verificados: **219**. El detalle por
-contrato está en [pruebas/COBERTURA.md](pruebas/COBERTURA.md), regenerado hoy.
+Contratos de operación especificados en el documento de análisis (versión 14): **258**, todos con
+al menos una prueba que lleva su código (1310 pruebas de contrato). El detalle por contrato está en
+[pruebas/COBERTURA.md](pruebas/COBERTURA.md), que desde el 2026-11-17 se genera del documento y no
+de `.contexto-ia/`, que iba atrasado (219).
 
 ### Cómo leer la columna «Contratos»
 

@@ -123,6 +123,18 @@ valor. **Eso ya es el cuerpo de la prueba.** No hay que diseñarlo, hay que tran
 La tercera es la que se hace mal más seguido. Afirmar sólo el valor final deja pasar el caso en que
 el atributo ya valía Y desde el principio y la operación no hizo nada.
 
+### La entrada de auditoría de una modificación
+
+Cuando el contrato pide registrar la operación y la operación modifica algo, la entrada guarda qué
+se cambió y cómo estaba antes (plan 16, segunda parte). La prueba lo afirma sobre la lista
+`cambios` de la entrada y no sobre el texto del detalle: el campo, el valor anterior y el nuevo,
+las dos mitades, igual que en (c). Si el valor es una imagen, afirma además que el archivo anterior
+**sigue existiendo**, porque es lo que el log muestra como estaba antes.
+
+Que ninguna operación que modifica escriba sólo el texto lo vigila una prueba de recorrido
+(`test_toda_modificacion_registra_como_estaba_antes`), que lee el código y no lo ejecuta. Una acción
+de modificación nueva se agrega a su lista.
+
 ### Postcondiciones negativas
 
 Varios contratos declaran explícitamente qué **no** debe cambiar. Que los pedidos activos no se
