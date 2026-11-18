@@ -205,8 +205,8 @@ bash scripts/despliegue/subir_a_vm.sh               # el código, con los cambio
 bash scripts/despliegue/subir_a_vm.sh --con-base    # además, reemplaza la base y media/
 ```
 
-Sube los archivos que versiona git más los nuevos sin ignorar —nunca el `.env`, `media/` ni el
-entorno virtual— y corre `instalar_en_vm.sh`: dependencias, migraciones, `collectstatic`,
+Sube los archivos que versiona git más los nuevos sin ignorar —nunca el `.env`, `media/`, el
+entorno virtual ni `docs/documentacion/`, que se versiona pero no hace falta en la VM— y corre `instalar_en_vm.sh`: dependencias, migraciones, `collectstatic`,
 `check --deploy` y reinicio de los servicios. **`--con-base` pisa la base de la VM** con un respaldo
 verificado de la del `.env` local, y de `media/` sube sólo lo que esa base referencia. Las
 contraseñas del personal vuelven a ser las de la base local: hay que cambiarlas de nuevo (ver

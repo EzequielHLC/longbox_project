@@ -21,7 +21,10 @@ trap 'rm -rf "$TEMP"' EXIT
 cd "$RAIZ"
 
 echo "1. Código"
-git -c core.quotepath=off ls-files -z -co --exclude-standard > "$TEMP/archivos.lst"
+# Sin `docs/documentacion/`: el documento, los manuales y la presentación se versionan
+# pero no hacen falta en la VM (y pesan más de 100 MB).
+git -c core.quotepath=off ls-files -z -co --exclude-standard \
+    | grep -z -v '^docs/documentacion/' > "$TEMP/archivos.lst"
 tar --force-local --null -czf "$TEMP/codigo.tar.gz" -T "$TEMP/archivos.lst"
 archivos=("$TEMP/codigo.tar.gz")
 
